@@ -7,19 +7,17 @@
 #define TracyWebGPUDestroy(ctx)
 #define TracyWebGPUContextName(ctx, name, size)
 
-#define TracyWebGPUNewFrame(ctx)
+#define TracyWebGPUZone(ctx, encoder, passDesc, name)
+#define TracyWebGPUZoneC(ctx, encoder, passDesc, name, color)
+#define TracyWebGPUNamedZone(ctx, varname, encoder, passDesc, name, active)
+#define TracyWebGPUNamedZoneC(ctx, varname, encoder, passDesc, name, color, active)
+#define TracyWebGPUZoneTransient(ctx, varname, encoder, passDesc, name, active)
 
-#define TracyWebGPUZone(ctx, encoder, name)
-#define TracyWebGPUZoneC(ctx, encoder, name, color)
-#define TracyWebGPUNamedZone(ctx, varname, encoder, name, active)
-#define TracyWebGPUNamedZoneC(ctx, varname, encoder, name, color, active)
-#define TracyWebGPUZoneTransient(ctx, varname, encoder, name, active)
-
-#define TracyWebGPUZoneS(ctx, encoder, name, depth)
-#define TracyWebGPUZoneCS(ctx, encoder, name, color, depth)
-#define TracyWebGPUNamedZoneS(ctx, varname, encoder, name, depth, active)
-#define TracyWebGPUNamedZoneCS(ctx, varname, encoder, name, color, depth, active)
-#define TracyWebGPUZoneTransientS(ctx, varname, encoder, name, depth, active)
+#define TracyWebGPUZoneS(ctx, encoder, passDesc, name, depth)
+#define TracyWebGPUZoneCS(ctx, encoder, passDesc, name, color, depth)
+#define TracyWebGPUNamedZoneS(ctx, varname, encoder, passDesc, name, depth, active)
+#define TracyWebGPUNamedZoneCS(ctx, varname, encoder, passDesc, name, color, depth, active)
+#define TracyWebGPUZoneTransientS(ctx, varname, encoder, passDesc, name, depth, active)
 
 #define TracyWebGPUCollect(ctx)
 
@@ -33,14 +31,15 @@ using TracyWebGPUCtx = void*;
 #else
 
 #include "Tracy.hpp"
-#include "client/TracyProfiler.hpp"
-#include "client/TracyCallstack.hpp"
-#include "common/TracyAlign.hpp"
-#include "common/TracyAlloc.hpp"
+#include "../client/TracyProfiler.hpp"
+#include "../client/TracyCallstack.hpp"
+#include "../common/TracyAlign.hpp"
+#include "../common/TracyAlloc.hpp"
 
 #include <atomic>
 #include <mutex>
 #include <vector>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <cassert>
@@ -67,7 +66,7 @@ using TracyWebGPUCtx = void*;
 #define TracyWebGPUAssert(predicate, ...) assert(predicate);
 #endif
 
-#define TracyWebGPULog(severity, msg) tracy::Profiler::LogString( tracy::MessageSourceType::Tracy, tracy::MessageSeverity::severity, tracy::Color::Red4, 0, msg );
+#define TracyWebGPULog(severity, msg) fprintf(stdout, "%s", msg), tracy::Profiler::LogString( tracy::MessageSourceType::Tracy, tracy::MessageSeverity::severity, tracy::Color::Red4, 0, msg );
 #define TracyWebGPUPanic(msg, ...) do { TracyWebGPULog(Error, msg); TracyWebGPUAssert(false && "TracyWebGPU: " msg); __VA_ARGS__; } while(false);
 
 namespace tracy
@@ -85,28 +84,28 @@ namespace tracy
         WGPUDevice   m_device   = nullptr;
         WGPUQueue    m_queue    = nullptr;
 
-        WGPUQuerySet m_querySet       = nullptr;
-        WGPUBuffer   m_resolveBuffer  = nullptr;  // QueryResolve | CopySrc
-        WGPUBuffer   m_readbackBuffer = nullptr;  // CopyDst | MapRead
+        struct ReadbackSlot
+        {
+            WGPUBuffer            buffer;
+            std::atomic<uint64_t> copiedUpto;
+            std::atomic<WGPUMapAsyncStatus> mapStatus = {};
+            WGPUFuture            pendingFuture = {};
+        };
+        static_assert(std::atomic<WGPUMapAsyncStatus>::is_always_lock_free, "WGPUMapAsyncStatus must be lock-free atomic");
+
+        WGPUQuerySet  m_querySet        = nullptr;
+        WGPUBuffer    m_resolveBuffer   = nullptr;  // QueryResolve | CopySrc
+        ReadbackSlot  m_readbackSlots[3];            // CopyDst | MapRead (3-slot ring)
+        std::atomic<int> m_writeIdx{0};              // WRITE slot index (ring: 0→1→2→0)
 
         using atomic_counter = std::atomic<uint64_t>;
-        atomic_counter m_queryCounter      = 0;
+        atomic_counter m_queryCounter       = 0;
         atomic_counter m_previousCheckpoint = 0;
 
         uint32_t m_queryLimit = 0;
 
         std::vector<uint64_t> m_shadowBuffer;
-        uint64_t m_latestKnownGpuTimestamp = 0;
-
-        // Map-state machine for the readback buffer.
-        enum class MapState : uint8_t
-        {
-            Idle,       // not mapped; GPU may write to it
-            Pending,    // MapAsync in flight
-            Ready,      // callback has fired, buffer is mapped for read
-            Failed      // last map attempt failed
-        };
-        std::atomic<MapState> m_mapState = MapState::Idle;
+        uint64_t m_prevCalibGpuTime = 0;
 
         tracy_force_inline void SubmitQueueItem(tracy::QueueItem* item)
         {
@@ -116,86 +115,182 @@ namespace tracy
             Profiler::QueueSerialFinish();
         }
 
-        // Drive the WebGPU event queue. Some implementations (e.g. Dawn) want
-        // wgpuDeviceTick(); the canonical webgpu.h uses
-        // wgpuInstanceProcessEvents(). We only require the latter here.
-        void ProcessEvents()
+        bool CalibrateClocks(uint64_t& outCpuTime, uint64_t& outGpuTime)
         {
-            if (m_instance)
-                wgpuInstanceProcessEvents(m_instance);
-        }
+            ZoneScoped;
 
-        bool Anchor(uint64_t& outCpuTime, uint64_t& outGpuTime)
-        {
-            // Anchor() establishes a (cpuTime, gpuTime) anchor pair by querying
-            // a single timestamp (and synchronously resolving/reading it back)
-            WGPUCommandEncoderDescriptor encDesc = {};
-            WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(m_device, &encDesc);
-            if (!enc) return false;
+            WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(m_device, nullptr);
+            if (!enc) { TracyWebGPUPanic("Failed to create calibration command encoder.", return false); }
 
-            // Snapshot CPU time as close to the GPU work as possible.
-            outCpuTime = static_cast<uint64_t>(Profiler::GetTime());
+            // wgpuCommandEncoderWriteTimestamp is deprecated and returns 0 on Metal.
+            // Use a render pass with an actual draw call: on Metal TBDR, begin-of-pass
+            // timestamps fire at tile rasterization start. An empty render pass (no
+            // geometry) may never trigger rasterization, yielding a deferred or
+            // meaningless timestamp that doesn't reflect actual GPU execution order.
+            static const char kCalibShader[] = R"(
+                @vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {
+                    var p = array(vec4f(-1,-1,.5,1), vec4f(3,-1,.5,1), vec4f(-1,3,.5,1));
+                    return p[i];
+                }
+                @fragment fn fs() -> @location(0) vec4f { return vec4f(0.0); }
+            )";
+            WGPUShaderSourceWGSL wgslSrc = {};
+            wgslSrc.chain.sType = WGPUSType_ShaderSourceWGSL;
+            wgslSrc.code        = { kCalibShader, WGPU_STRLEN };
+            WGPUShaderModuleDescriptor smDesc = {};
+            smDesc.nextInChain  = reinterpret_cast<WGPUChainedStruct*>(&wgslSrc);
+            WGPUShaderModule calibShader = wgpuDeviceCreateShaderModule(m_device, &smDesc);
+            if (!calibShader) { wgpuCommandEncoderRelease(enc); TracyWebGPUPanic("Failed to create calibration shader.", return false); }
 
-            // NOTE: m_querySet slot 0 is used by Anchor(), but it can be immediately
-            // reclaimed/reused since Anchor() operates synchronously
-            wgpuCommandEncoderWriteTimestamp(enc, m_querySet, 0);
-            wgpuCommandEncoderResolveQuerySet(enc, m_querySet, 0, 1, m_resolveBuffer, 0);
-            wgpuCommandEncoderCopyBufferToBuffer(enc, m_resolveBuffer, 0, m_readbackBuffer, 0, sizeof(uint64_t));
+            WGPUTextureDescriptor texDesc = {};
+            texDesc.usage         = WGPUTextureUsage_RenderAttachment;
+            texDesc.dimension     = WGPUTextureDimension_2D;
+            texDesc.size          = { 1, 1, 1 };
+            texDesc.format        = WGPUTextureFormat_BGRA8Unorm;
+            texDesc.mipLevelCount = 1;
+            texDesc.sampleCount   = 1;
+            WGPUTexture tex = wgpuDeviceCreateTexture(m_device, &texDesc);
+            if (!tex) { wgpuShaderModuleRelease(calibShader); wgpuCommandEncoderRelease(enc); TracyWebGPUPanic("Failed to create calibration scratch texture.", return false); }
+            WGPUTextureView texView = wgpuTextureCreateView(tex, nullptr);
+            if (!texView) { wgpuTextureRelease(tex); wgpuShaderModuleRelease(calibShader); wgpuCommandEncoderRelease(enc); TracyWebGPUPanic("Failed to create calibration scratch texture view.", return false); }
 
-            WGPUCommandBufferDescriptor cmdDesc = {};
-            WGPUCommandBuffer cmd = wgpuCommandEncoderFinish(enc, &cmdDesc);
+            WGPUColorTargetState colorTarget = {};
+            colorTarget.format    = WGPUTextureFormat_BGRA8Unorm;
+            colorTarget.writeMask = WGPUColorWriteMask_All;
+            WGPUFragmentState fragState = {};
+            fragState.module      = calibShader;
+            fragState.entryPoint  = { "fs", WGPU_STRLEN };
+            fragState.targetCount = 1;
+            fragState.targets     = &colorTarget;
+            WGPURenderPipelineDescriptor pipeDesc = {};
+            pipeDesc.vertex.module        = calibShader;
+            pipeDesc.vertex.entryPoint    = { "vs", WGPU_STRLEN };
+            pipeDesc.primitive.topology   = WGPUPrimitiveTopology_TriangleList;
+            pipeDesc.multisample.count    = 1;
+            pipeDesc.fragment             = &fragState;
+            WGPURenderPipeline calibPipeline = wgpuDeviceCreateRenderPipeline(m_device, &pipeDesc);
+            if (!calibPipeline) { wgpuTextureViewRelease(texView); wgpuTextureRelease(tex); wgpuShaderModuleRelease(calibShader); wgpuCommandEncoderRelease(enc); TracyWebGPUPanic("Failed to create calibration pipeline.", return false); }
+
+            //const uint64_t calibTicket = NextQueryId();
+            //const uint32_t calibSlotB  = RingIndex(calibTicket);
+            //const uint32_t calibSlotE  = calibSlotB + 1;
+            const uint32_t calibSlotB  = 0;
+            const uint32_t calibSlotE  = 1;
+
+            WGPUPassTimestampWrites anchorTs = {};
+            anchorTs.querySet                  = m_querySet;
+            anchorTs.beginningOfPassWriteIndex = calibSlotB;
+            anchorTs.endOfPassWriteIndex       = calibSlotE;
+
+            WGPURenderPassColorAttachment att = {};
+            att.view       = texView;
+            att.loadOp     = WGPULoadOp_Clear;
+            att.storeOp    = WGPUStoreOp_Store;
+            att.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+
+            WGPURenderPassDescriptor passDesc = {};
+            passDesc.colorAttachmentCount = 1;
+            passDesc.colorAttachments     = &att;
+            passDesc.timestampWrites      = &anchorTs;
+
+            WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &passDesc);
+            wgpuRenderPassEncoderSetPipeline(pass, calibPipeline);
+            wgpuRenderPassEncoderDraw(pass, 3, 1, 0, 0);
+            wgpuRenderPassEncoderEnd(pass);
+            wgpuRenderPassEncoderRelease(pass);
+            wgpuRenderPipelineRelease(calibPipeline);
+            wgpuShaderModuleRelease(calibShader);
+            wgpuTextureViewRelease(texView);
+            wgpuTextureRelease(tex);
+
+            wgpuCommandEncoderResolveQuerySet(enc, m_querySet, calibSlotB, 2, m_resolveBuffer, calibSlotB * sizeof(uint64_t));
+            wgpuCommandEncoderCopyBufferToBuffer(enc, m_resolveBuffer, calibSlotB * sizeof(uint64_t), m_readbackSlots[0].buffer, calibSlotB * sizeof(uint64_t), 2 * sizeof(uint64_t));
+
+            WGPUCommandBuffer cmd = wgpuCommandEncoderFinish(enc, nullptr);
             wgpuCommandEncoderRelease(enc);
-            if (!cmd) return false;
+            if (!cmd) { TracyWebGPUPanic("Failed to finish calibration command encoder.", return false); }
 
+            auto t0 = Profiler::GetTime();
             wgpuQueueSubmit(m_queue, 1, &cmd);
             wgpuCommandBufferRelease(cmd);
 
-            // Map and pump.
-            struct MapCtx { std::atomic<int> status{-1}; };
-            MapCtx mctx;
+            // Wait for the GPU to finish executing the command buffer before mapping.
+            bool gpuDone = false;
+            WGPUQueueWorkDoneCallbackInfo doneCB = {};
+            doneCB.mode      = WGPUCallbackMode_AllowSpontaneous;
+            doneCB.callback  = [](WGPUQueueWorkDoneStatus, WGPUStringView, void* ud, void*) {
+                *static_cast<bool*>(ud) = true;
+            };
+            doneCB.userdata1 = &gpuDone;
+            wgpuQueueOnSubmittedWorkDone(m_queue, doneCB);
 
+            const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+            while (!gpuDone && std::chrono::steady_clock::now() < deadline)
+                wgpuInstanceProcessEvents(m_instance);
+
+            struct MapCtx { WGPUBuffer buffer; uint32_t slotB; uint64_t gpuTime = 0; bool ok = false; };
+            MapCtx mctx{ m_readbackSlots[0].buffer, calibSlotB };
             WGPUBufferMapCallbackInfo cbInfo = {};
-            cbInfo.mode = WGPUCallbackMode_AllowProcessEvents;
-            cbInfo.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/, void* userdata1, void* /*userdata2*/) {
-                auto* c = static_cast<MapCtx*>(userdata1);
-                c->status.store(static_cast<int>(status), std::memory_order_release);
+            cbInfo.mode      = WGPUCallbackMode_AllowSpontaneous;
+            cbInfo.callback  = [](WGPUMapAsyncStatus status, WGPUStringView, void* ud, void*) {
+                auto* ctx = static_cast<MapCtx*>(ud);
+                if (status != WGPUMapAsyncStatus_Success) return;
+                const auto* ts = static_cast<const uint64_t*>(
+                    wgpuBufferGetConstMappedRange(ctx->buffer, ctx->slotB * sizeof(uint64_t), 2 * sizeof(uint64_t)));
+                if (ts)
+                {
+                    ctx->gpuTime = ts[0];
+                    ctx->ok = true;
+                    fprintf(stdout, "CalibrateClocks() -> %llu | %llu | %lld\n", ts[0], ts[1], ts[1]-ts[0]);
+                }
+                wgpuBufferUnmap(ctx->buffer);
             };
             cbInfo.userdata1 = &mctx;
+            wgpuBufferMapAsync(m_readbackSlots[0].buffer, WGPUMapMode_Read,
+                               calibSlotB * sizeof(uint64_t), 2 * sizeof(uint64_t), cbInfo);
 
-            wgpuBufferMapAsync(m_readbackBuffer, WGPUMapMode_Read, 0, sizeof(uint64_t), cbInfo);
+            while (!mctx.ok && std::chrono::steady_clock::now() < deadline)
+                wgpuInstanceProcessEvents(m_instance);
+            //m_previousCheckpoint = m_queryCounter.load();
 
-            // Pump until the callback fires (with a generous timeout).
-            const auto t0 = std::chrono::steady_clock::now();
-            while (mctx.status.load(std::memory_order_acquire) < 0)
+            auto t1 = Profiler::GetTime();
+            //outCpuTime = static_cast<uint64_t>(t0 + (t1-t0)/2);
+            outCpuTime = t1;
+
+            if (!mctx.ok)
             {
-                ProcessEvents();
-                if (std::chrono::steady_clock::now() - t0 > std::chrono::seconds(2))
-                {
-                    TracyWebGPUPanic("Timed out waiting for anchor timestamp readback.", return false);
-                }
-                std::this_thread::sleep_for(std::chrono::microseconds(100));
+                TracyWebGPUPanic("Failed to calibrate CPU/GPU clocks.", return false);
             }
 
-            if (mctx.status.load(std::memory_order_acquire) != static_cast<int>(WGPUMapAsyncStatus_Success))
-            {
-                TracyWebGPUPanic("Failed to map anchor readback buffer.", return false);
-            }
-
-            const void* mapped = wgpuBufferGetConstMappedRange(m_readbackBuffer, 0, sizeof(uint64_t));
-            if (!mapped)
-            {
-                wgpuBufferUnmap(m_readbackBuffer);
-                return false;
-            }
-            uint64_t gpuTs;
-            std::memcpy(&gpuTs, mapped, sizeof(uint64_t));
-            wgpuBufferUnmap(m_readbackBuffer);
-
-            outGpuTime = gpuTs;
+            outGpuTime = mctx.gpuTime;
+            fprintf(stdout, "CalibrateClocks() -> %llu\n", outGpuTime);
+            if (outGpuTime < m_prevCalibGpuTime)
+                fprintf(stdout, "CalibrateClocks() -> WARNING!!! going backwards!\n%llu\n%llu\n%lld\n", m_prevCalibGpuTime, outGpuTime, outGpuTime-m_prevCalibGpuTime);
+            m_prevCalibGpuTime = outGpuTime;
             return true;
         }
 
     public:
+        static bool SetupDevice(WGPUDeviceDescriptor& deviceDescriptor)
+        {
+            // piggy-back on WGPU_DAWN_TOGGLES_DESCRIPTOR_INIT to detect Dawn header
+#           ifdef WGPU_DAWN_TOGGLES_DESCRIPTOR_INIT
+                fprintf(stderr, "[INFO] [DAWN] ENABLING RAW TIMESTAMP TICKS (disabling ns conversion + quantization)\n");
+                // disable_timestamp_query_conversion: resolve timestamps as raw GPU ticks, not nanoseconds.
+                // timestamp_quantization: disabled defensively (off by default on Metal, but on elsewhere).
+                static const char* dawnDisabledToggles[] = { "timestamp_quantization" };
+                static const char* dawnEnabledToggles[]  = { "disable_timestamp_query_conversion" };
+                static WGPUDawnTogglesDescriptor togglesDesc = {};
+                togglesDesc.chain.sType = WGPUSType_DawnTogglesDescriptor;
+                togglesDesc.disabledToggles = dawnDisabledToggles;
+                togglesDesc.disabledToggleCount = 1;
+                togglesDesc.enabledToggles = dawnEnabledToggles;
+                togglesDesc.enabledToggleCount  = 1;
+                deviceDescriptor.nextInChain = reinterpret_cast<WGPUChainedStruct*>(&togglesDesc);
+#           endif
+            return true;
+        }
+
         WebGPUQueueCtx(WGPUInstance instance, WGPUDevice device, WGPUQueue queue)
             : m_instance(instance)
             , m_device(device)
@@ -208,12 +303,35 @@ namespace tracy
             wgpuDeviceAddRef(m_device);
             wgpuQueueAddRef(m_queue);
 
+            // Graceful early-out: if the logical device was created without the
+            // required timestamp features, GPU zones will silently do nothing.
+            // m_contextId stays 255 (invalid); CreateWebGPUContext destroys and
+            // returns nullptr, and all TracyWebGPU* macros become no-ops.
+            if (!wgpuDeviceHasFeature(m_device, WGPUFeatureName_TimestampQuery))
+            {
+                TracyWebGPUPanic(
+                    "timestamp-query feature not enabled on device; GPU profiling disabled.",
+                    return
+                )
+            }
+            // wgpuCommandEncoderResolveQuerySet requires the wgpu-native
+            // TIMESTAMP_QUERY_INSIDE_ENCODERS feature on some backends.
+#ifdef WGPUNativeFeature_TimestampQueryInsideEncoders
+            if (!wgpuDeviceHasFeature(m_device, (WGPUFeatureName)WGPUNativeFeature_TimestampQueryInsideEncoders))
+            {
+                TracyWebGPUPanic(
+                    "WGPUNativeFeature_TimestampQueryInsideEncoders not enabled on device; "
+                    "GPU profiling disabled (needed for ResolveQuerySet on the command encoder).",
+                    return
+                );
+            }
+#endif
+
             // Pick a query budget. WebGPU has no native upper bound on query
-            // set size in the spec, but per-implementation maxQueriesPerQuerySet
-            // is typically 8192. We start at 64K and halve on failure, mirroring
-            // D3D12. Queries are issued in (begin, end) pairs, so the count is
+            // set size in the spec. The WebGPU default/max for maxQuerySetSize
+            // is 4096. Queries are issued in (begin, end) pairs, so the count is
             // always even.
-            static constexpr uint32_t MaxQueries = 64 * 1024;
+            static constexpr uint32_t MaxQueries = 512; //4096;
             m_queryLimit = MaxQueries;
 
             WGPUQuerySetDescriptor qsDesc = {};
@@ -242,14 +360,15 @@ namespace tracy
                 TracyWebGPUPanic("Failed to create timestamp resolve buffer.", return);
             }
 
-            // Readback buffer: target of CopyBufferToBuffer; mappable for read.
+            // Readback buffers: targets of CopyBufferToBuffer; mappable for read (3-slot ring).
             WGPUBufferDescriptor readbackDesc = {};
             readbackDesc.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
             readbackDesc.size  = static_cast<uint64_t>(m_queryLimit) * sizeof(uint64_t);
-            m_readbackBuffer = wgpuDeviceCreateBuffer(m_device, &readbackDesc);
-            if (!m_readbackBuffer)
+            for (auto& slot : m_readbackSlots)
             {
-                TracyWebGPUPanic("Failed to create timestamp readback buffer.", return);
+                slot.buffer = wgpuDeviceCreateBuffer(m_device, &readbackDesc);
+                slot.copiedUpto = 0;
+                if (!slot.buffer) { TracyWebGPUPanic("Failed to create timestamp readback buffer.", return); }
             }
 
             // Establish the (cpuTime, gpuTime) anchor for Tracy's GpuNewContext.
@@ -257,13 +376,14 @@ namespace tracy
             // to estimate a correlation for the CPU and the GPU timestamps.
             uint64_t cpuTimestamp = 0;
             uint64_t gpuTimestamp = 0;
-            if (!Anchor(cpuTimestamp, gpuTimestamp))
+            if (!CalibrateClocks(cpuTimestamp, gpuTimestamp))
             {
-                TracyWebGPUPanic("Failed to establish CPU/GPU timestamp anchor.", return);
+                TracyWebGPUPanic("Failed to calibrate CPU/GPU clocks.", return);
             }
 
-            m_shadowBuffer.resize(m_queryLimit, gpuTimestamp);
-            m_latestKnownGpuTimestamp = gpuTimestamp;
+            fprintf(stdout, "INFO: gpuTimestamp is %llu\n", gpuTimestamp);
+            //m_shadowBuffer.resize(m_queryLimit, gpuTimestamp);
+            m_shadowBuffer.resize(m_queryLimit, 0);
 
             // WebGPU timestamps are in nanoseconds, as per the spec.
             const float period = 1.0f;  // 1ns/tick
@@ -286,25 +406,11 @@ namespace tracy
 
         ~WebGPUQueueCtx()
         {
-            ZoneScopedC(Color::Red4);
-            ZoneValue(m_contextId);
+            Collect(); // best-effort non-blocking flush
 
-            // Drain pending queries.
-            uint64_t endTicket = m_queryCounter;
-            uint64_t lastIssuedTicket = (endTicket >= 2) ? (endTicket - 2) : 0;
-            Drain(lastIssuedTicket, 200);
-
-            if (Distance(endTicket, m_queryCounter) > 0)
-                TracyWebGPUPanic("client is still pushing queries.");
-
-            // If the readback buffer is mapped, unmap it before release.
-            if (m_readbackBuffer && m_mapState.load() == MapState::Ready)
-            {
-                wgpuBufferUnmap(m_readbackBuffer);
-                m_mapState.store(MapState::Idle);
-            }
-
-            if (m_readbackBuffer) { wgpuBufferRelease(m_readbackBuffer); m_readbackBuffer = nullptr; }
+            // Block until any in-flight map completes before releasing buffers.
+            for (auto& slot : m_readbackSlots)
+                if (slot.buffer) { wgpuBufferRelease(slot.buffer); slot.buffer = nullptr; }
             if (m_resolveBuffer)  { wgpuBufferRelease(m_resolveBuffer);  m_resolveBuffer  = nullptr; }
             if (m_querySet)       { wgpuQuerySetRelease(m_querySet);     m_querySet       = nullptr; }
             if (m_queue)          { wgpuQueueRelease(m_queue);           m_queue          = nullptr; }
@@ -336,307 +442,130 @@ namespace tracy
             if (!GetProfiler().IsConnected()) return;
 #endif
             if (!m_collectionMutex.try_lock()) return;
-            std::unique_lock lock(m_collectionMutex, std::adopt_lock);
-            Collect(lock, m_queryCounter, false);
+            std::unique_lock<std::mutex> lock(m_collectionMutex, std::adopt_lock);
+
+            ZoneScopedC(Color::Red4);
+
+            if (Distance(m_previousCheckpoint, m_queryCounter) <= 0)
+                return;
+
+            const int collectIdx = (m_writeIdx + 2) % 3;
+            auto& collectSlot = m_readbackSlots[collectIdx];
+
+            // Poll for an in-flight map to complete.
+            if (collectSlot.pendingFuture.id != 0)
+            {
+                wgpuInstanceProcessEvents(m_instance);
+                if (collectSlot.mapStatus == WGPUMapAsyncStatus{})
+                    return;  // callback hasn't fired yet
+                collectSlot.pendingFuture = {};
+            }
+
+            // If a buffer is mapped, process as many resolved queries as possible.
+            if (collectSlot.mapStatus == WGPUMapAsyncStatus_Success)
+            {
+                const uint64_t* ts = static_cast<const uint64_t*>(
+                    wgpuBufferGetConstMappedRange(collectSlot.buffer, 0,
+                        static_cast<uint64_t>(m_queryLimit) * sizeof(uint64_t)));
+                if (ts)
+                {
+                    uint64_t ticket = m_previousCheckpoint;
+                    const uint64_t end = collectSlot.copiedUpto;
+                    fprintf(stdout, "[TWG] Collect [%d] (%llu, %llu)\n", collectIdx, ticket, end);
+                    for (; Distance(ticket, end) > 0; ticket += 2)
+                    {
+                        const uint32_t slotB = RingIndex(ticket);
+                        const uint32_t slotE = slotB + 1;
+                        fprintf(stderr,
+                            "[TWG] slot B=%4u E=%4u ts[B]=%llu ts[E]=%llu shadow[E]=%llu ts-diff=%lld shadow-diff=%lld\n",
+                            slotB, slotE,
+                            (unsigned long long)ts[slotB],
+                            (unsigned long long)ts[slotE],
+                            (unsigned long long)m_shadowBuffer[slotE],
+                            (long long)Distance(ts[slotB], ts[slotE]),
+                            (long long)Distance(m_shadowBuffer[slotE], ts[slotE]));
+                        if (Distance(m_shadowBuffer[slotE], ts[slotE]) <= 0)
+                            break; // GPU hasn't written this timestamp yet; retry next Collect()
+                        EmitGpuTime(ts[slotB], slotB);
+                        EmitGpuTime(ts[slotE], slotE);
+                    }
+                    m_previousCheckpoint = ticket;
+
+                    if (Distance(ticket, end) > 0)
+                        return; // still unresolved queries in this buffer; come back next Collect()
+                }
+
+                // All queries resolved (or getMappedRange failed): unmap and fall through to rotate.
+                wgpuBufferUnmap(collectSlot.buffer);
+                collectSlot.mapStatus = {};
+            }
+
+            // Idle: rotate the ring and start the next map if there is committed data to collect.
+            //   WRITE   = m_writeIdx
+            //   PENDING = (m_writeIdx + 1) % 3  ← map this
+            //   COLLECT = (m_writeIdx + 2) % 3  ← recycle as new WRITE
+            const int writeIdx   = m_writeIdx;
+            const int pendingIdx = (writeIdx + 1) % 3;
+
+            if (m_readbackSlots[writeIdx].copiedUpto <= m_previousCheckpoint)
+                return;
+
+            const int newWriteIdx = (writeIdx + 2) % 3;
+
+            m_readbackSlots[newWriteIdx].copiedUpto = m_previousCheckpoint.load();
+
+            m_writeIdx = newWriteIdx;
+
+            WGPUBufferMapCallbackInfo cbInfo = {};
+            cbInfo.mode      = WGPUCallbackMode_AllowSpontaneous;
+            cbInfo.callback  = &WebGPUQueueCtx::OnMapped;
+            cbInfo.userdata1 = this;
+            m_readbackSlots[pendingIdx].pendingFuture = wgpuBufferMapAsync(
+                m_readbackSlots[pendingIdx].buffer, WGPUMapMode_Read, 0,
+                static_cast<uint64_t>(m_queryLimit) * sizeof(uint64_t), cbInfo);
+
+            // Optimistic immediate poll: deliver any already-completed callbacks.
+            wgpuInstanceProcessEvents(m_instance);
+            if (m_readbackSlots[pendingIdx].mapStatus != WGPUMapAsyncStatus{})
+                m_readbackSlots[pendingIdx].pendingFuture = {};
         }
 
     private:
-        // Issue (or progress) the readback for the range [earliest, end). On
-        // entry, the buffer is in some MapState; on return, if a complete
-        // readback was performed, queries up to the resolved point are emitted
-        // to Tracy and m_previousCheckpoint is advanced.
-        //
-        // Strategy:
-        //   * If MapState::Idle, kick off a CopyBufferToBuffer + MapAsync for
-        //     the unread range. Pump events briefly so the callback can land
-        //     before we return. This is the steady-state code path.
-        //   * If MapState::Pending, just pump events.
-        //   * If MapState::Ready, read the timestamps, unmap, mark Idle.
-        //   * If MapState::Failed, reset to Idle and bail.
-        void Collect(std::unique_lock<std::mutex>& lock, uint64_t targetTicket, bool urgent)
+        // Drive the WebGPU event queue to deliver pending callbacks.
+        // wgpuInstanceProcessEvents is the canonical webgpu.h API.
+        // wgpu-native additionally benefits from wgpuDevicePoll.
+        void ProcessEvents()
         {
-            ZoneScopedC(Color::Red4);
-            TracyWebGPUAssert(lock.owns_lock());
-            TracyWebGPUDebug(ZoneValue(m_contextId));
-
-            uint64_t earliestTicket = m_previousCheckpoint;
-            uint64_t endTicket = m_queryCounter;
-            if (Distance(earliestTicket, endTicket) <= 0)
-                return;
-
-            // Drive the state machine. If the buffer is already mapped, harvest
-            // it. Otherwise, kick off a new map for the current unread range.
-            MapState state = m_mapState.load(std::memory_order_acquire);
-
-            if (state == MapState::Failed)
-            {
-                // Try again next time.
-                m_mapState.store(MapState::Idle, std::memory_order_release);
-                return;
-            }
-
-            if (state == MapState::Idle)
-            {
-                if (!IssueReadback(earliestTicket, endTicket))
-                    return;
-                state = m_mapState.load(std::memory_order_acquire);
-            }
-
-            // If we're in urgent mode, pump until we get a Ready or Failed.
-            if (urgent && state == MapState::Pending)
-            {
-                const auto t0 = std::chrono::steady_clock::now();
-                while ((state = m_mapState.load(std::memory_order_acquire)) == MapState::Pending)
-                {
-                    ProcessEvents();
-                    if (std::chrono::steady_clock::now() - t0 > std::chrono::seconds(1))
-                    {
-                        TracyWebGPULog(Warning, "Timed out waiting for urgent timestamp readback.");
-                        break;
-                    }
-                    std::this_thread::sleep_for(std::chrono::microseconds(50));
-                }
-            }
-            else if (state == MapState::Pending)
-            {
-                // Non-urgent: pump once and bail; the callback may land later.
-                ProcessEvents();
-                state = m_mapState.load(std::memory_order_acquire);
-                if (state != MapState::Ready) return;
-            }
-
-            if (state != MapState::Ready) return;
-
-            // We have a mapped range covering [m_pendingFirst, m_pendingLast).
-            HarvestMappedRange(targetTicket, urgent);
-
-            // After we've drained, stop. The next Collect() will issue a new
-            // readback for whatever has accumulated since.
+            if (m_instance)
+                wgpuInstanceProcessEvents(m_instance);
+#ifdef WGPU_H_
+            wgpuDevicePoll(m_device, false, nullptr);
+#endif
         }
 
-        // Set when the most recent IssueReadback was called.
-        uint64_t m_pendingFirstTicket = 0;
-        uint64_t m_pendingEndTicket   = 0;
-
-        // Issue a CopyBufferToBuffer + MapAsync for query slots in [first, end).
-        // Note: 'first' and 'end' are ticket numbers (logical, monotonic).
-        // Their wrapped slot indices may straddle the end of the ring buffer;
-        // in that case we issue two separate copies.
-        bool IssueReadback(uint64_t first, uint64_t end)
+        static void OnMapped(WGPUMapAsyncStatus status, WGPUStringView, void* ud, void*)
         {
-            const int64_t span = Distance(first, end);
-            if (span <= 0) return false;
-
-            // Cap the readback to the ring's size. If span > capacity, the older
-            // entries will have been overwritten in the resolve buffer, so we
-            // can only meaningfully read the most recent capacity worth of
-            // entries.
-            uint64_t actualFirst = first;
-            if (static_cast<uint64_t>(span) > RingCapacity())
-            {
-                actualFirst = end - RingCapacity();
-            }
-
-            const uint32_t firstSlot = RingIndex(actualFirst);
-            const uint32_t lastSlot  = RingIndex(end);  // exclusive end
-            const uint32_t cap       = RingCapacity();
-
-            WGPUCommandEncoderDescriptor encDesc = {};
-            WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(m_device, &encDesc);
-            if (!enc) return false;
-
-            // Either a single contiguous copy, or two copies that wrap around.
-            if (firstSlot < lastSlot || lastSlot == 0)
-            {
-                const uint32_t count = (lastSlot == 0) ? (cap - firstSlot) : (lastSlot - firstSlot);
-                wgpuCommandEncoderCopyBufferToBuffer(
-                    enc,
-                    m_resolveBuffer,
-                    static_cast<uint64_t>(firstSlot) * sizeof(uint64_t),
-                    m_readbackBuffer,
-                    static_cast<uint64_t>(firstSlot) * sizeof(uint64_t),
-                    static_cast<uint64_t>(count) * sizeof(uint64_t));
-            }
-            else
-            {
-                // Wrap: [firstSlot, cap) and [0, lastSlot).
-                wgpuCommandEncoderCopyBufferToBuffer(
-                    enc,
-                    m_resolveBuffer,
-                    static_cast<uint64_t>(firstSlot) * sizeof(uint64_t),
-                    m_readbackBuffer,
-                    static_cast<uint64_t>(firstSlot) * sizeof(uint64_t),
-                    static_cast<uint64_t>(cap - firstSlot) * sizeof(uint64_t));
-                wgpuCommandEncoderCopyBufferToBuffer(
-                    enc,
-                    m_resolveBuffer,
-                    0,
-                    m_readbackBuffer,
-                    0,
-                    static_cast<uint64_t>(lastSlot) * sizeof(uint64_t));
-            }
-
-            WGPUCommandBufferDescriptor cmdDesc = {};
-            WGPUCommandBuffer cmd = wgpuCommandEncoderFinish(enc, &cmdDesc);
-            wgpuCommandEncoderRelease(enc);
-            if (!cmd) return false;
-
-            wgpuQueueSubmit(m_queue, 1, &cmd);
-            wgpuCommandBufferRelease(cmd);
-
-            // Map the entire buffer (covers both contiguous and wrapped cases).
-            // We could be tighter and map just the touched range(s), but the
-            // single-range MapAsync makes the wrap case awkward, so we map all.
-            m_pendingFirstTicket = actualFirst;
-            m_pendingEndTicket   = end;
-            m_mapState.store(MapState::Pending, std::memory_order_release);
-
-            WGPUBufferMapCallbackInfo cbInfo = {};
-            cbInfo.mode = WGPUCallbackMode_AllowProcessEvents;
-            cbInfo.callback = &WebGPUQueueCtx::OnMapped;
-            cbInfo.userdata1 = this;
-
-            wgpuBufferMapAsync(
-                m_readbackBuffer,
-                WGPUMapMode_Read,
-                0,
-                static_cast<uint64_t>(cap) * sizeof(uint64_t),
-                cbInfo);
-
-            // A single pump in case the callback can fire immediately.
-            ProcessEvents();
-            return true;
+            auto* self = static_cast<WebGPUQueueCtx*>(ud);
+            const int collectIdx = (self->m_writeIdx + 2) % 3;
+            self->m_readbackSlots[collectIdx].mapStatus = status;
         }
 
-        static void OnMapped(WGPUMapAsyncStatus status, WGPUStringView /*msg*/, void* userdata1, void* /*userdata2*/)
-        {
-            auto* self = static_cast<WebGPUQueueCtx*>(userdata1);
-            if (status == WGPUMapAsyncStatus_Success)
-                self->m_mapState.store(MapState::Ready, std::memory_order_release);
-            else
-                self->m_mapState.store(MapState::Failed, std::memory_order_release);
-        }
-
-        void HarvestMappedRange(uint64_t targetTicket, bool urgent)
-        {
-            const uint32_t cap = RingCapacity();
-            const void* mapped = wgpuBufferGetConstMappedRange(
-                m_readbackBuffer, 0, static_cast<uint64_t>(cap) * sizeof(uint64_t));
-
-            if (!mapped)
-            {
-                wgpuBufferUnmap(m_readbackBuffer);
-                m_mapState.store(MapState::Idle, std::memory_order_release);
-                TracyWebGPUPanic("Failed to read mapped readback buffer.", return);
-            }
-
-            const uint64_t* timestampBuffer = static_cast<const uint64_t*>(mapped);
-
-            uint64_t ticket = m_pendingFirstTicket;
-            const uint64_t end = m_pendingEndTicket;
-
-            for (; ticket != end; ticket += 2)
-            {
-                if (!ResolveTimestamp(ticket, timestampBuffer))
-                    break;
-            }
-
-            // Urgent: ensure 'targetTicket' is collected before returning.
-            if (urgent)
-            {
-                while (Distance(ticket, targetTicket) >= 0)
-                {
-                    DropTimestamp(ticket, timestampBuffer);
-                    ticket += 2;
-                }
-            }
-
-            // Overflow handling: drop oldest queries to normalize the situation.
-            uint64_t curEnd = m_queryCounter;
-            while (Distance(ticket, curEnd) > static_cast<int64_t>(RingCapacity()))
-            {
-                DropTimestamp(ticket, timestampBuffer);
-                ticket += 2;
-            }
-
-            wgpuBufferUnmap(m_readbackBuffer);
-            m_mapState.store(MapState::Idle, std::memory_order_release);
-        }
-
-        bool Wait(uint64_t queryTicket, uint64_t timeout_ms)
-        {
-            ZoneScopedC(Color::Red4);
-            const auto t0 = std::chrono::steady_clock::now();
-            int64_t elapsed = 0;
-            while ((Distance(m_previousCheckpoint, queryTicket) >= 0)
-                   && (static_cast<uint64_t>(elapsed) < timeout_ms))
-            {
-                std::unique_lock lock(m_collectionMutex);
-                Collect(lock, queryTicket, false);
-                lock.unlock();
-                std::this_thread::sleep_for(std::chrono::microseconds(100));
-                elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-                    std::chrono::steady_clock::now() - t0).count();
-            }
-            return Distance(m_previousCheckpoint, queryTicket) < 0;
-        }
-
-        void Drain(uint64_t queryTicket, uint64_t gracePeriod_ms)
-        {
-            ZoneScopedC(Color::Red4);
-            if (Wait(queryTicket, gracePeriod_ms))
-                return;
-            std::unique_lock lock(m_collectionMutex);
-            Collect(lock, queryTicket, true);
-        }
-
-        bool ResolveTimestamp(uint64_t queryTicket, const uint64_t* timestampBuffer)
-        {
-            uint32_t queryId = RingIndex(queryTicket);
-            uint64_t gpuZoneBeginTimestamp = timestampBuffer[queryId];
-            uint64_t gpuZoneEndTimestamp   = timestampBuffer[queryId + 1];
-            uint64_t baselineTimestamp     = m_shadowBuffer[queryId + 1];
-            int64_t  baseline_diff = Distance(baselineTimestamp, gpuZoneEndTimestamp);
-            if (baseline_diff <= 0)
-                return false;
-            EmitGpuTime(gpuZoneBeginTimestamp, queryId);
-            EmitGpuTime(gpuZoneEndTimestamp,   queryId + 1);
-            RetireTicket(queryTicket);
-            if (Distance(m_latestKnownGpuTimestamp, gpuZoneEndTimestamp) > 0)
-                m_latestKnownGpuTimestamp = gpuZoneEndTimestamp;
-            return true;
-        }
-
-        void DropTimestamp(uint64_t queryTicket, const uint64_t* timestampBuffer)
-        {
-            if (ResolveTimestamp(queryTicket, timestampBuffer))
-                return;
-            uint32_t queryId = RingIndex(queryTicket);
-            uint64_t latestGpuTimestamp = m_latestKnownGpuTimestamp;
-            EmitGpuTime(latestGpuTimestamp, queryId);
-            EmitGpuTime(latestGpuTimestamp, queryId + 1);
-            RetireTicket(queryTicket);
-        }
-
-        void EmitGpuTime(uint64_t gpuTimestamp, uint32_t queryId)
+        void EmitGpuTime(uint64_t gpuTimestamp, uint32_t slot)
         {
             auto* item = Profiler::QueueSerial();
             MemWrite(&item->hdr.type, QueueType::GpuTime);
             MemWrite(&item->gpuTime.gpuTime, static_cast<int64_t>(gpuTimestamp));
-            MemWrite(&item->gpuTime.queryId, static_cast<uint16_t>(queryId));
+            MemWrite(&item->gpuTime.queryId, static_cast<uint16_t>(slot));
             MemWrite(&item->gpuTime.context, GetId());
             Profiler::QueueSerialFinish();
-            m_shadowBuffer[queryId] = gpuTimestamp;
+            m_shadowBuffer[slot] = gpuTimestamp;
         }
 
-        tracy_force_inline uint32_t RingCapacity() const
-        {
-            return m_queryLimit;
-        }
+        tracy_force_inline uint32_t RingCapacity() const { return m_queryLimit; }
 
-        tracy_force_inline uint32_t RingIndex(uint64_t logicalSlot) const
+        tracy_force_inline uint32_t RingIndex(uint64_t t) const
         {
-            return static_cast<uint32_t>(logicalSlot % RingCapacity());
+            return static_cast<uint32_t>(t % RingCapacity());
         }
 
         tracy_force_inline static int64_t Distance(uint64_t begin, uint64_t end)
@@ -644,34 +573,28 @@ namespace tracy
             return static_cast<int64_t>(end - begin);
         }
 
-        void RetireTicket(uint64_t ticket)
-        {
-            TracyWebGPUAssert(m_previousCheckpoint == ticket);
-            uint64_t nextTicket = ticket + 2;
-            m_previousCheckpoint.store(nextTicket, std::memory_order_release);
-        }
-
-        tracy_force_inline uint32_t NextQueryId()
+        tracy_force_inline uint64_t NextQueryId()
         {
             const uint64_t ticket = m_queryCounter.fetch_add(2, std::memory_order_relaxed);
-            const uint64_t checkpoint = m_previousCheckpoint.load(std::memory_order_relaxed);
-            if (Distance(checkpoint, ticket) >= static_cast<int64_t>(RingCapacity()))
+            if (Distance(m_previousCheckpoint, ticket)
+                >= static_cast<int64_t>(RingCapacity()))
             {
-                ZoneScopedC(Color::Red4);
                 TracyWebGPULog(Warning, "Too many pending GPU queries: stalling!");
-                uint64_t oldTicket = ticket - RingCapacity();
-                Drain(oldTicket, 0);
+                Collect();
             }
-            return RingIndex(ticket);
+            return ticket;
         }
     };
 
     class WebGPUZoneScope
     {
-        const bool m_active;
-        WebGPUQueueCtx* m_ctx = nullptr;
-        WGPUCommandEncoder m_encoder = nullptr;
-        uint32_t m_queryId = 0;
+        const bool         m_active;
+        WebGPUQueueCtx*    m_ctx       = nullptr;
+        WGPUCommandEncoder m_encoder   = nullptr;
+        uint64_t           m_rawTicket = 0;  // raw (non-modded) ticket from NextQueryId
+        uint32_t           m_queryId   = 0;  // ring index = m_rawTicket % queryLimit
+
+        WGPUPassTimestampWrites m_timestampWrites = {};
 
         tracy_force_inline void WriteQueueItem(const SourceLocationData* srcLocation, int32_t callstackDepth, uint32_t sourceLine, const char* sourceFile, size_t sourceFileLen, const char* functionName, size_t functionNameLen, const char* zoneName, size_t zoneNameLen)
         {
@@ -720,7 +643,25 @@ namespace tracy
             Profiler::QueueSerialFinish();
         }
 
-        tracy_force_inline WebGPUZoneScope(WebGPUQueueCtx* ctx, WGPUCommandEncoder encoder, bool active)
+        // Fills in m_timestampWrites and assigns its address to passDesc.timestampWrites.
+        // Works with both WGPURenderPassDescriptor and WGPUComputePassDescriptor.
+        template<typename PassDescriptor>
+        tracy_force_inline void InitBase(WebGPUQueueCtx* ctx, WGPUCommandEncoder encoder, PassDescriptor& passDesc)
+        {
+            m_ctx       = ctx;
+            m_encoder   = encoder;
+
+            m_rawTicket = m_ctx->NextQueryId();
+            m_queryId   = static_cast<uint32_t>(m_rawTicket % ctx->m_queryLimit);
+            m_timestampWrites.querySet                  = m_ctx->m_querySet;
+            m_timestampWrites.beginningOfPassWriteIndex = m_queryId;
+            m_timestampWrites.endOfPassWriteIndex       = m_queryId + 1;
+            passDesc.timestampWrites                    = &m_timestampWrites;
+        }
+
+    public:
+        template<typename PassDescriptor>
+        tracy_force_inline WebGPUZoneScope(WebGPUQueueCtx* ctx, WGPUCommandEncoder encoder, PassDescriptor& passDesc, const SourceLocationData* srcLocation, bool active)
 #ifdef TRACY_ON_DEMAND
             : m_active(active && GetProfiler().IsConnected())
 #else
@@ -728,36 +669,46 @@ namespace tracy
 #endif
         {
             if (!m_active) return;
-
-            m_ctx = ctx;
-            m_encoder = encoder;
-
-            m_queryId = m_ctx->NextQueryId();
-            wgpuCommandEncoderWriteTimestamp(m_encoder, m_ctx->m_querySet, m_queryId);
-        }
-
-    public:
-        tracy_force_inline WebGPUZoneScope(WebGPUQueueCtx* ctx, WGPUCommandEncoder encoder, const SourceLocationData* srcLocation, bool active)
-            : WebGPUZoneScope(ctx, encoder, active)
-        {
+            InitBase(ctx, encoder, passDesc);
             WriteQueueItem(srcLocation, 0, 0, nullptr, 0, nullptr, 0, nullptr, 0);
         }
 
-        tracy_force_inline WebGPUZoneScope(WebGPUQueueCtx* ctx, WGPUCommandEncoder encoder, const SourceLocationData* srcLocation, int32_t depth, bool active)
-            : WebGPUZoneScope(ctx, encoder, active)
+        template<typename PassDescriptor>
+        tracy_force_inline WebGPUZoneScope(WebGPUQueueCtx* ctx, WGPUCommandEncoder encoder, PassDescriptor& passDesc, const SourceLocationData* srcLocation, int32_t depth, bool active)
+#ifdef TRACY_ON_DEMAND
+            : m_active(active && GetProfiler().IsConnected())
+#else
+            : m_active(active)
+#endif
         {
+            if (!m_active) return;
+            InitBase(ctx, encoder, passDesc);
             WriteQueueItem(srcLocation, depth, 0, nullptr, 0, nullptr, 0, nullptr, 0);
         }
 
-        tracy_force_inline WebGPUZoneScope(WebGPUQueueCtx* ctx, uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, WGPUCommandEncoder encoder, bool active)
-            : WebGPUZoneScope(ctx, encoder, active)
+        template<typename PassDescriptor>
+        tracy_force_inline WebGPUZoneScope(WebGPUQueueCtx* ctx, uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, WGPUCommandEncoder encoder, PassDescriptor& passDesc, bool active)
+#ifdef TRACY_ON_DEMAND
+            : m_active(active && GetProfiler().IsConnected())
+#else
+            : m_active(active)
+#endif
         {
+            if (!m_active) return;
+            InitBase(ctx, encoder, passDesc);
             WriteQueueItem(nullptr, 0, line, source, sourceSz, function, functionSz, name, nameSz);
         }
 
-        tracy_force_inline WebGPUZoneScope(WebGPUQueueCtx* ctx, uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, WGPUCommandEncoder encoder, int32_t depth, bool active)
-            : WebGPUZoneScope(ctx, encoder, active)
+        template<typename PassDescriptor>
+        tracy_force_inline WebGPUZoneScope(WebGPUQueueCtx* ctx, uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, WGPUCommandEncoder encoder, PassDescriptor& passDesc, int32_t depth, bool active)
+#ifdef TRACY_ON_DEMAND
+            : m_active(active && GetProfiler().IsConnected())
+#else
+            : m_active(active)
+#endif
         {
+            if (!m_active) return;
+            InitBase(ctx, encoder, passDesc);
             WriteQueueItem(nullptr, depth, line, source, sourceSz, function, functionSz, name, nameSz);
         }
 
@@ -775,20 +726,34 @@ namespace tracy
             MemWrite(&item->gpuZoneEnd.context, m_ctx->GetId());
             Profiler::QueueSerialFinish();
 
-            // Write the end timestamp and resolve the (begin, end) pair into
-            // the resolve buffer right away. We cannot move the resolve to
-            // Collect() because the user may finish/destroy the encoder
-            // immediately after the zone closes, and ResolveQuerySet must be
-            // recorded into an encoder belonging to the same submission as the
-            // timestamp writes if we want to read the values for THIS zone in
-            // the same frame. Recording it here also matches the D3D12 backend.
-            wgpuCommandEncoderWriteTimestamp(m_encoder, m_ctx->m_querySet, queryId);
-            wgpuCommandEncoderResolveQuerySet(
-                m_encoder,
-                m_ctx->m_querySet,
-                m_queryId, 2,
-                m_ctx->m_resolveBuffer,
-                static_cast<uint64_t>(m_queryId) * sizeof(uint64_t));
+            if (m_queryId % 32 == 30)
+            {
+                // 32 queries = 32 * 8 bytes = 256 bytes
+                const uint32_t blockStart  = m_queryId - 30;
+                const uint64_t blockOffset = static_cast<uint64_t>(blockStart) * sizeof(uint64_t);
+                wgpuCommandEncoderResolveQuerySet(
+                    m_encoder,
+                    m_ctx->m_querySet,
+                    blockStart, 32,
+                    m_ctx->m_resolveBuffer,
+                    blockOffset // MUST be a multiple of (aligned to) 256...
+                );
+                auto& slot = m_ctx->m_readbackSlots[m_ctx->m_writeIdx];
+                auto readbackBuffer = slot.buffer;
+                wgpuCommandEncoderCopyBufferToBuffer(
+                    m_encoder,
+                    m_ctx->m_resolveBuffer,
+                    blockOffset,
+                    readbackBuffer,
+                    blockOffset,
+                    32 * sizeof(uint64_t));
+                // Advance this slot's high-water mark to cover the block just encoded.
+                const uint64_t blockEnd = m_rawTicket + 2;
+                uint64_t prev = slot.copiedUpto;
+                while (prev < blockEnd &&
+                       !slot.copiedUpto.compare_exchange_weak(prev, blockEnd)) {}
+                fprintf(stdout, "[TWG] WebGPUZoneScope [%d] (%d,%d)\n", (int)m_ctx->m_writeIdx, blockStart, m_queryId);
+            }
         }
     };
 
@@ -826,38 +791,36 @@ using TracyWebGPUCtx = tracy::WebGPUQueueCtx*;
 #define TracyWebGPUDestroy(ctx) tracy::DestroyWebGPUContext(ctx);
 #define TracyWebGPUContextName(ctx, name, size) ctx->Name(name, size);
 
-#define TracyWebGPUNewFrame(ctx) ((void)(ctx))
-
 #define TracyWebGPUUnnamedZone ___tracy_gpu_webgpu_zone
 #define TracyWebGPUSrcLocSymbol TracyConcat(__tracy_webgpu_source_location,TracyLine)
 #define TracyWebGPUSrcLocObject(name, color) static constexpr tracy::SourceLocationData TracyWebGPUSrcLocSymbol { name, TracyFunction, TracyFile, (uint32_t)TracyLine, color };
 
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
-#  define TracyWebGPUZone(ctx, encoder, name) TracyWebGPUNamedZoneS(ctx, TracyWebGPUUnnamedZone, encoder, name, TRACY_CALLSTACK, true)
-#  define TracyWebGPUZoneC(ctx, encoder, name, color) TracyWebGPUNamedZoneCS(ctx, TracyWebGPUUnnamedZone, encoder, name, color, TRACY_CALLSTACK, true)
-#  define TracyWebGPUNamedZone(ctx, varname, encoder, name, active) TracyWebGPUSrcLocObject(name, 0); tracy::WebGPUZoneScope varname{ ctx, encoder, &TracyWebGPUSrcLocSymbol, TRACY_CALLSTACK, active };
-#  define TracyWebGPUNamedZoneC(ctx, varname, encoder, name, color, active) TracyWebGPUSrcLocObject(name, color); tracy::WebGPUZoneScope varname{ ctx, encoder, &TracyWebGPUSrcLocSymbol, TRACY_CALLSTACK, active };
-#  define TracyWebGPUZoneTransient(ctx, varname, encoder, name, active) TracyWebGPUZoneTransientS(ctx, varname, encoder, name, TRACY_CALLSTACK, active)
+#  define TracyWebGPUZone(ctx, encoder, passDesc, name) TracyWebGPUNamedZoneS(ctx, TracyWebGPUUnnamedZone, encoder, passDesc, name, TRACY_CALLSTACK, true)
+#  define TracyWebGPUZoneC(ctx, encoder, passDesc, name, color) TracyWebGPUNamedZoneCS(ctx, TracyWebGPUUnnamedZone, encoder, passDesc, name, color, TRACY_CALLSTACK, true)
+#  define TracyWebGPUNamedZone(ctx, varname, encoder, passDesc, name, active) TracyWebGPUSrcLocObject(name, 0); tracy::WebGPUZoneScope varname{ ctx, encoder, passDesc, &TracyWebGPUSrcLocSymbol, TRACY_CALLSTACK, active };
+#  define TracyWebGPUNamedZoneC(ctx, varname, encoder, passDesc, name, color, active) TracyWebGPUSrcLocObject(name, color); tracy::WebGPUZoneScope varname{ ctx, encoder, passDesc, &TracyWebGPUSrcLocSymbol, TRACY_CALLSTACK, active };
+#  define TracyWebGPUZoneTransient(ctx, varname, encoder, passDesc, name, active) TracyWebGPUZoneTransientS(ctx, varname, encoder, passDesc, name, TRACY_CALLSTACK, active)
 #else
-#  define TracyWebGPUZone(ctx, encoder, name) TracyWebGPUNamedZone(ctx, TracyWebGPUUnnamedZone, encoder, name, true)
-#  define TracyWebGPUZoneC(ctx, encoder, name, color) TracyWebGPUNamedZoneC(ctx, TracyWebGPUUnnamedZone, encoder, name, color, true)
-#  define TracyWebGPUNamedZone(ctx, varname, encoder, name, active) TracyWebGPUSrcLocObject(name, 0); tracy::WebGPUZoneScope varname{ ctx, encoder, &TracyWebGPUSrcLocSymbol, active };
-#  define TracyWebGPUNamedZoneC(ctx, varname, encoder, name, color, active) TracyWebGPUSrcLocObject(name, color); tracy::WebGPUZoneScope varname{ ctx, encoder, &TracyWebGPUSrcLocSymbol, active };
-#  define TracyWebGPUZoneTransient(ctx, varname, encoder, name, active) tracy::WebGPUZoneScope varname{ ctx, TracyLine, TracyFile, strlen(TracyFile), TracyFunction, strlen(TracyFunction), name, strlen(name), encoder, active };
+#  define TracyWebGPUZone(ctx, encoder, passDesc, name) TracyWebGPUNamedZone(ctx, TracyWebGPUUnnamedZone, encoder, passDesc, name, true)
+#  define TracyWebGPUZoneC(ctx, encoder, passDesc, name, color) TracyWebGPUNamedZoneC(ctx, TracyWebGPUUnnamedZone, encoder, passDesc, name, color, true)
+#  define TracyWebGPUNamedZone(ctx, varname, encoder, passDesc, name, active) TracyWebGPUSrcLocObject(name, 0); tracy::WebGPUZoneScope varname{ ctx, encoder, passDesc, &TracyWebGPUSrcLocSymbol, active };
+#  define TracyWebGPUNamedZoneC(ctx, varname, encoder, passDesc, name, color, active) TracyWebGPUSrcLocObject(name, color); tracy::WebGPUZoneScope varname{ ctx, encoder, passDesc, &TracyWebGPUSrcLocSymbol, active };
+#  define TracyWebGPUZoneTransient(ctx, varname, encoder, passDesc, name, active) tracy::WebGPUZoneScope varname{ ctx, TracyLine, TracyFile, strlen(TracyFile), TracyFunction, strlen(TracyFunction), name, strlen(name), encoder, passDesc, active };
 #endif
 
 #ifdef TRACY_HAS_CALLSTACK
-#  define TracyWebGPUZoneS(ctx, encoder, name, depth) TracyWebGPUNamedZoneS(ctx, TracyWebGPUUnnamedZone, encoder, name, depth, true)
-#  define TracyWebGPUZoneCS(ctx, encoder, name, color, depth) TracyWebGPUNamedZoneCS(ctx, TracyWebGPUUnnamedZone, encoder, name, color, depth, true)
-#  define TracyWebGPUNamedZoneS(ctx, varname, encoder, name, depth, active) TracyWebGPUSrcLocObject(name, 0); tracy::WebGPUZoneScope varname{ ctx, encoder, &TracyWebGPUSrcLocSymbol, depth, active };
-#  define TracyWebGPUNamedZoneCS(ctx, varname, encoder, name, color, depth, active) TracyWebGPUSrcLocObject(name, color); tracy::WebGPUZoneScope varname{ ctx, encoder, &TracyWebGPUSrcLocSymbol, depth, active };
-#  define TracyWebGPUZoneTransientS(ctx, varname, encoder, name, depth, active) tracy::WebGPUZoneScope varname{ ctx, TracyLine, TracyFile, strlen(TracyFile), TracyFunction, strlen(TracyFunction), name, strlen(name), encoder, depth, active };
+#  define TracyWebGPUZoneS(ctx, encoder, passDesc, name, depth) TracyWebGPUNamedZoneS(ctx, TracyWebGPUUnnamedZone, encoder, passDesc, name, depth, true)
+#  define TracyWebGPUZoneCS(ctx, encoder, passDesc, name, color, depth) TracyWebGPUNamedZoneCS(ctx, TracyWebGPUUnnamedZone, encoder, passDesc, name, color, depth, true)
+#  define TracyWebGPUNamedZoneS(ctx, varname, encoder, passDesc, name, depth, active) TracyWebGPUSrcLocObject(name, 0); tracy::WebGPUZoneScope varname{ ctx, encoder, passDesc, &TracyWebGPUSrcLocSymbol, depth, active };
+#  define TracyWebGPUNamedZoneCS(ctx, varname, encoder, passDesc, name, color, depth, active) TracyWebGPUSrcLocObject(name, color); tracy::WebGPUZoneScope varname{ ctx, encoder, passDesc, &TracyWebGPUSrcLocSymbol, depth, active };
+#  define TracyWebGPUZoneTransientS(ctx, varname, encoder, passDesc, name, depth, active) tracy::WebGPUZoneScope varname{ ctx, TracyLine, TracyFile, strlen(TracyFile), TracyFunction, strlen(TracyFunction), name, strlen(name), encoder, passDesc, depth, active };
 #else
-#  define TracyWebGPUZoneS(ctx, encoder, name, depth) TracyWebGPUZone(ctx, encoder, name)
-#  define TracyWebGPUZoneCS(ctx, encoder, name, color, depth) TracyWebGPUZoneC(ctx, encoder, name, color)
-#  define TracyWebGPUNamedZoneS(ctx, varname, encoder, name, depth, active) TracyWebGPUNamedZone(ctx, varname, encoder, name, active)
-#  define TracyWebGPUNamedZoneCS(ctx, varname, encoder, name, color, depth, active) TracyWebGPUNamedZoneC(ctx, varname, encoder, name, color, active)
-#  define TracyWebGPUZoneTransientS(ctx, varname, encoder, name, depth, active) TracyWebGPUZoneTransient(ctx, varname, encoder, name, active)
+#  define TracyWebGPUZoneS(ctx, encoder, passDesc, name, depth) TracyWebGPUZone(ctx, encoder, passDesc, name)
+#  define TracyWebGPUZoneCS(ctx, encoder, passDesc, name, color, depth) TracyWebGPUZoneC(ctx, encoder, passDesc, name, color)
+#  define TracyWebGPUNamedZoneS(ctx, varname, encoder, passDesc, name, depth, active) TracyWebGPUNamedZone(ctx, varname, encoder, passDesc, name, active)
+#  define TracyWebGPUNamedZoneCS(ctx, varname, encoder, passDesc, name, color, depth, active) TracyWebGPUNamedZoneC(ctx, varname, encoder, passDesc, name, color, active)
+#  define TracyWebGPUZoneTransientS(ctx, varname, encoder, passDesc, name, depth, active) TracyWebGPUZoneTransient(ctx, varname, encoder, passDesc, name, active)
 #endif
 
 #define TracyWebGPUCollect(ctx) ctx->Collect();

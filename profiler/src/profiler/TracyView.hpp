@@ -135,6 +135,7 @@ public:
     void ViewSource( const char* fileName, int line );
     void ViewSource( const char* fileName, int line, const char* functionName );
     void ViewSourceCheckKeyMod( const char* fileName, int line, const char* functionName );
+    void ViewSymbolSource( const char* fileName, int line );
     void ViewSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr );
     bool ViewDispatch( const char* fileName, int line, uint64_t symAddr );
 

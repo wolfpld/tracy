@@ -228,6 +228,19 @@ void View::ViewSourceCheckKeyMod( const char* fileName, int line, const char* fu
     }
 }
 
+void View::ViewSymbolSource( const char* fileName, int line )
+{
+    assert( fileName );
+    if( m_sourceView->SwitchTo( fileName, line, m_worker, *this ) )
+    {
+        m_sourceViewFile = fileName;
+    }
+    else
+    {
+        ViewSource( fileName, line );
+    }
+}
+
 void View::ViewSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr )
 {
     assert( fileName || symAddr );

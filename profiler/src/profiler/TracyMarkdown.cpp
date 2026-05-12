@@ -438,7 +438,7 @@ private:
                 if( idx.Active() )
                 {
                     auto str = m_worker->GetString( idx );
-                    m_view->ViewSource( str, line );
+                    m_view->ViewSymbolSource( str, line );
                 }
             }
             else if( isAnchor )

@@ -1118,7 +1118,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
             if( as.ipTotalAsm.ext )
             {
                 ImGui::SameLine();
-                ImGui::Text( "(%c%s)", m_childCalls ? '-' : '+', RealToString( as.ipTotalAsm.ext ) );
+                ImGui::TextDisabled( "(%c%s)", m_childCalls ? '-' : '+', RealToString( as.ipTotalAsm.ext ) );
                 TooltipIfHovered( "Child call samples" );
             }
         }

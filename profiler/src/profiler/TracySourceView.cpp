@@ -1060,7 +1060,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         }
         if( m_cost == CostType::SampleCount )
         {
-            if( !samplesReady )
+            if( !samplesReady || as.ipTotalAsm.ext == 0 )
             {
                 ImGui::PushItemFlag( ImGuiItemFlags_Disabled, true );
                 ImGui::PushStyleVar( ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f );
@@ -1071,8 +1071,6 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
             SmallCheckbox( ICON_FA_RIGHT_FROM_BRACKET " Child calls", &m_childCalls );
             if( !samplesReady )
             {
-                ImGui::PopStyleVar();
-                ImGui::PopItemFlag();
                 TooltipIfHovered( "Please wait, processing data…" );
             }
             else
@@ -1081,6 +1079,11 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
             }
             ImGui::SameLine();
             if( ImGui::SmallButton( m_childCallList ? " " ICON_FA_CARET_UP " " : " " ICON_FA_CARET_DOWN " " ) ) m_childCallList = !m_childCallList;
+            if( !samplesReady || as.ipTotalAsm.ext == 0 )
+            {
+                ImGui::PopStyleVar();
+                ImGui::PopItemFlag();
+            }
             ImGui::SameLine();
             ImGui::Spacing();
             ImGui::SameLine();
@@ -1119,7 +1122,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                 TooltipIfHovered( "Child call samples" );
             }
         }
-        else
+        else if( m_cost != CostType::SampleCount )
         {
             TextFocused( "Events:", RealToString( as.ipTotalAsm.local ) );
             m_childCallList = false;

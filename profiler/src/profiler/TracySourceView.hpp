@@ -71,6 +71,8 @@ public:
     void OpenSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, Worker& worker, const View& view, bool updateHistory = true );
     void Render( Worker& worker, View& view );
 
+    bool SwitchTo( const char* fileName, int line, const Worker& worker, const View& view );
+
     void CalcInlineStats( bool val ) { m_calcInlineStats = val; }
     bool IsSymbolView() const { return !m_asm.empty(); }
 

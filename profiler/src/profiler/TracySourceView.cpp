@@ -5287,4 +5287,25 @@ void SourceView::UnsetFont()
     ImGui::PopFont();
 }
 
+bool SourceView::SwitchTo( const char* fileName, int line, const Worker& worker, const View& view )
+{
+    if( m_asm.empty() ) return false;
+    for( auto& v : m_sourceFiles )
+    {
+        auto fstr = worker.GetString( StringIdx( v.first ) );
+        if( SourceFileValid( fstr, worker.GetCaptureTime(), view, worker ) )
+        {
+            if( strcmp( fileName, fstr ) == 0 )
+            {
+                ParseSource( fstr, worker, view );
+                m_targetLine = line;
+                SelectLine( line, &worker );
+                SelectViewMode();
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 }

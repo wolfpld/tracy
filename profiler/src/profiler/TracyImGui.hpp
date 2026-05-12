@@ -277,13 +277,13 @@ static constexpr const uint32_t AsmSyntaxColors[] = {
 [[maybe_unused]] static tracy_force_inline void DrawLine( ImDrawList* draw, const ImVec2& v1, const ImVec2& v2, uint32_t col, float thickness = 1.0f )
 {
     const ImVec2 data[2] = { v1, v2 };
-    draw->AddPolyline( data, 2, col, 0, thickness );
+    draw->AddPolyline( data, 2, col, thickness );
 }
 
 [[maybe_unused]] static tracy_force_inline void DrawLine( ImDrawList* draw, const ImVec2& v1, const ImVec2& v2, const ImVec2& v3, uint32_t col, float thickness = 1.0f )
 {
     const ImVec2 data[3] = { v1, v2, v3 };
-    draw->AddPolyline( data, 3, col, 0, thickness );
+    draw->AddPolyline( data, 3, col, thickness );
 }
 
 [[maybe_unused]] static tracy_force_inline void TooltipIfHovered( const char* text )

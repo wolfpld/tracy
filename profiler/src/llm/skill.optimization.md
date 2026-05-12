@@ -42,6 +42,13 @@ The first instruction that loads the value from memory is the high-latency one, 
 
 A careful investigation of the cost attribution is thus needed.
 
+# Symbols vs source code
+
+Analyzing a user program can be done in two complementary ways.
+
+1. You can retrieve the function source code and look at what it does. This is enough for simple checks.
+2. Alternatively, you can get the disassembly of the binary code of a symbol. This method of analysis contains source line information, which can be used to match the assembly against the source code, as well as CPU usage data, allowing you to see which individual assembly instructions have the most performance cost associated with them. Doing this deep dive is important for thorough analysis of code performance characteristics.
+
 # General optimization procedure
 
 1. Start by mapping the assembly instructions to the source code. All reasoning should be performed with source code first. The assembly can only be used as a supplementary source.

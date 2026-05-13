@@ -416,6 +416,10 @@ struct StringTable {
     }
 };
 
+// NOTE: `add()` and `retrieve()` accept `std::string_view` for ergonomics, but
+// callers must back the views with NUL-terminated storage. The stored
+// SourceLocationData holds `function.data()` / `file.data()` as `const char*`
+// and tracy later consumes those as C strings. See `add()` for details.
 struct SourceLocationMap {
     static constexpr bool instrument = false;
 

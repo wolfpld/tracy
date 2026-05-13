@@ -434,8 +434,12 @@ struct SourceLocationMap {
 
     tracy::SourceLocationData* add(std::string_view function, std::string_view file, int line, uint32_t color=0) {
         ZoneNamed(emplace, instrument);
-        assert(*function.end() == '\0');
-        assert(*file.end() == '\0');
+        // PRECONDITION: `function` and `file` must reference NUL-terminated
+        // storage. `function.data()` and `file.data()` are stored verbatim in
+        // SourceLocationData and later consumed as C strings by tracy.
+        // We cannot validate this at runtime: dereferencing string_view::end()
+        // is UB, and `data()[size()]` is also UB (the buffer can end on a
+        // page boundary, causing a fault on read). Callers are responsible.
         void* bytes = tracyMalloc(sizeof(tracy::SourceLocationData));
         auto pSrcLoc = new(bytes)tracy::SourceLocationData{ function.data(), TracyFunction, file.data(), (uint32_t)line, color };
         auto [it, inserted] = locations.emplace(function, pSrcLoc);

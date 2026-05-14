@@ -160,6 +160,9 @@ public:
     const MessageData* GetMessageHighlight() const { return m_msgHighlight; }
     uint32_t GetLockInfoWindow() const { return m_lockInfoWindow; }
 
+    const std::string& GetFilename() const { return m_filename; }
+    const UserData& GetUserData() const { return m_userData; }
+
     tracy_force_inline bool& Vis( const void* ptr )
     {
         auto it = m_visMap.find( ptr );

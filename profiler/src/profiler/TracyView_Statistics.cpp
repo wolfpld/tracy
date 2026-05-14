@@ -813,7 +813,7 @@ void View::DrawStatistics()
                     const auto image = m_worker.GetString( v.second.imageName );
                     bool pass =
                         ( m_statShowKernel || ( v.first >> 63 ) == 0 ) &&
-                        ( m_statShowExternal || !IsFrameExternal( m_worker.GetString( v.second.file ), image ) ) &&
+                        ( m_statShowExternal || !m_worker.IsFrameExternal( v.second.file, v.second.imageName ) ) &&
                         m_statisticsFilter.PassFilter( name ) &&
                         m_statisticsImageFilter.PassFilter( image );
                     if( !pass && v.second.size.Val() == 0 )
@@ -827,7 +827,7 @@ void View::DrawStatistics()
                                 const auto parentName = m_worker.GetString( pit->second.name );
                                 pass =
                                     ( m_statShowKernel || ( parentAddr >> 63 ) == 0 ) &&
-                                    ( m_statShowExternal || !IsFrameExternal( m_worker.GetString( pit->second.file ), image ) ) &&
+                                    ( m_statShowExternal || !m_worker.IsFrameExternal( pit->second.file, v.second.imageName ) ) &&
                                     m_statisticsFilter.PassFilter( parentName ) &&
                                     m_statisticsImageFilter.PassFilter( image );
                             }
@@ -927,7 +927,7 @@ void View::DrawStatistics()
                         const auto image = m_worker.GetString( sit->second.imageName );
                         bool pass =
                             ( m_statShowKernel || ( v.first >> 63 ) == 0 ) &&
-                            ( m_statShowExternal || !IsFrameExternal( m_worker.GetString( sit->second.file ), image ) ) &&
+                            ( m_statShowExternal || !m_worker.IsFrameExternal( sit->second.file, sit->second.imageName ) ) &&
                             m_statisticsFilter.PassFilter( name ) &&
                             m_statisticsImageFilter.PassFilter( image );
                         if( !pass && sit->second.size.Val() == 0 )
@@ -941,7 +941,7 @@ void View::DrawStatistics()
                                     const auto parentName = m_worker.GetString( pit->second.name );
                                     pass =
                                         ( m_statShowKernel || ( parentAddr >> 63 ) == 0 ) &&
-                                        ( m_statShowExternal || !IsFrameExternal( m_worker.GetString( pit->second.file ), image ) ) &&
+                                        ( m_statShowExternal || !m_worker.IsFrameExternal( pit->second.file, sit->second.imageName ) ) &&
                                         m_statisticsFilter.PassFilter( parentName ) &&
                                         m_statisticsImageFilter.PassFilter( image );
                                 }

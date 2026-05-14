@@ -1010,10 +1010,8 @@ void View::DrawSampleParents()
                     for( uint8_t f=0; f<fsz; f++ )
                     {
                         const auto& frame = frameData->data[f];
-                        auto filename = m_worker.GetString( frame.file );
-                        auto image = frameData->imageName.Active() ? m_worker.GetString( frameData->imageName ) : nullptr;
 
-                        if( IsFrameExternal( filename, image ) )
+                        if( m_worker.IsFrameExternal( frame.file, frameData->imageName ) )
                         {
                             if( !m_showExternalFrames )
                             {

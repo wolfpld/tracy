@@ -302,14 +302,9 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
                     {
                         const auto frame = frameData->data[j-1];
                         const auto symaddr = frame.symAddr;
-                        if( symaddr != 0 )
+                        if( symaddr != 0 && !m_worker.IsFrameExternal( frame.file, frameData->imageName ) )
                         {
-                            auto filename = m_worker.GetString( frame.file );
-                            auto image = frameData->imageName.Active() ? m_worker.GetString( frameData->imageName ) : nullptr;
-                            if( !IsFrameExternal( filename, image ) )
-                            {
-                                cache.emplace_back( FrameCache { symaddr, frame.name } );
-                            }
+                            cache.emplace_back( FrameCache { symaddr, frame.name } );
                         }
                     }
                 }
@@ -328,9 +323,7 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
                         const auto symaddr = frame.symAddr;
                         if( symaddr != 0 )
                         {
-                            auto filename = m_worker.GetString( frame.file );
-                            auto image = frameData->imageName.Active() ? m_worker.GetString( frameData->imageName ) : nullptr;
-                            cache.emplace_back( FrameCache { symaddr, frame.name, IsFrameExternal( filename, image ) } );
+                            cache.emplace_back( FrameCache { symaddr, frame.name, m_worker.IsFrameExternal( frame.file, frameData->imageName ) } );
                         }
                     }
                 }

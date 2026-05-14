@@ -417,10 +417,7 @@ void View::DrawCallstackTable( const CallstackFrameId* data, size_t size, uint64
                         if( match ) continue;
                     }
 
-                    auto filename = m_worker.GetString( frame.file );
-                    auto image = frameData->imageName.Active() ? m_worker.GetString( frameData->imageName ) : nullptr;
-
-                    const bool isExternal = IsFrameExternal( filename, image );
+                    const bool isExternal = m_worker.IsFrameExternal( frame.file, frameData->imageName );
                     if( isExternal )
                     {
                         if( !m_showExternalFrames )
@@ -511,6 +508,7 @@ void View::DrawCallstackTable( const CallstackFrameId* data, size_t size, uint64
                         indentVal = sin( time * 60.f ) * 10.f * time;
                         ImGui::Indent( indentVal );
                     }
+                    auto filename = m_worker.GetString( frame.file );
                     switch( m_showCallstackFrameAddress )
                     {
                     case 0:
@@ -623,8 +621,9 @@ void View::DrawCallstackTable( const CallstackFrameId* data, size_t size, uint64
                     }
                     ImGui::PopTextWrapPos();
                     ImGui::TableNextColumn();
-                    if( image )
+                    if( frameData->imageName.Active() )
                     {
+                        auto image = m_worker.GetString( frameData->imageName );
                         const char* end = image + strlen( image );
 
                         if( m_shortImageNames )
@@ -695,13 +694,13 @@ void View::SmallCallstackButton( const char* name, uint32_t callstack, int& idx,
     }
 }
 
-void View::DrawCallstackCalls( uint32_t callstack, uint16_t limit ) const
+void View::DrawCallstackCalls( uint32_t callstack, uint16_t limit )
 {
     const auto& csdata = m_worker.GetCallstack( callstack );
     DrawCallstackCalls( csdata.data(), csdata.size(), limit );
 }
 
-void View::DrawCallstackCalls( const CallstackFrameId* data, size_t size, uint16_t limit ) const
+void View::DrawCallstackCalls( const CallstackFrameId* data, size_t size, uint16_t limit )
 {
     bool first = true;
     int i;
@@ -711,9 +710,7 @@ void View::DrawCallstackCalls( const CallstackFrameId* data, size_t size, uint16
         const auto frameData = m_worker.GetCallstackFrame( v );
         if( !frameData ) break;
         const auto& frame = frameData->data[frameData->size - 1];
-        auto filename = m_worker.GetString( frame.file );
-        auto image = frameData->imageName.Active() ? m_worker.GetString( frameData->imageName ) : nullptr;
-        if( IsFrameExternal( filename, image ) ) continue;
+        if( m_worker.IsFrameExternal( frame.file, frameData->imageName ) ) continue;
         if( first )
         {
             first = false;
@@ -748,9 +745,7 @@ void View::DrawCallstackCalls( const CallstackFrameId* data, size_t size, uint16
             const auto frameData = m_worker.GetCallstackFrame( v );
             if( !frameData ) break;
             const auto& frame = frameData->data[frameData->size - 1];
-            auto filename = m_worker.GetString( frame.file );
-            auto image = frameData->imageName.Active() ? m_worker.GetString( frameData->imageName ) : nullptr;
-            if( IsFrameExternal( filename, image ) ) continue;
+            if( m_worker.IsFrameExternal( frame.file, frameData->imageName ) ) continue;
             framesLeft = true;
             break;
         }
@@ -808,10 +803,6 @@ void View::CallstackTooltipContents( uint32_t idx )
                     if( match ) continue;
                 }
 
-                auto filename = m_worker.GetString( frame.file );
-                auto image = frameData->imageName.Active() ? m_worker.GetString( frameData->imageName ) : nullptr;
-                const auto external = IsFrameExternal( filename, image );
-
                 if( f == fsz-1 )
                 {
                     ImGui::TextDisabled( "%i.", fidx++ );
@@ -829,7 +820,7 @@ void View::CallstackTooltipContents( uint32_t idx )
                 {
                     TextColoredUnformatted( 0xFF8888FF, txt );
                 }
-                else if( external )
+                else if( m_worker.IsFrameExternal( frame.file, frameData->imageName ) )
                 {
                     if( m_vd.shortenName == ShortenName::Never )
                     {

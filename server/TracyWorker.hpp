@@ -703,6 +703,7 @@ public:
     void DoPostponedWorkAll();
 
     void CacheSourceFiles();
+    bool IsFrameExternal( StringIdx filename, StringIdx image );
 
     StringLocation StoreString( const char* str, size_t sz );
 

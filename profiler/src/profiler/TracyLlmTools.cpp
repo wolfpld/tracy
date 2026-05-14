@@ -948,7 +948,7 @@ std::string TracyLlmTools::SourceSearch( std::string query, bool caseInsensitive
     size_t total = 0;
     for( auto& item : cache )
     {
-        if( IsFrameExternal( item.first, nullptr ) ) continue;
+        if( m_worker.IsFrameExternal( StringIdx( m_worker.FindStringIdx( item.first ) ), StringIdx() ) ) continue;
         if( !path.empty() && !std::regex_search( item.first, rxPath ) ) continue;
 
         char* tmp = nullptr;

@@ -8947,20 +8947,20 @@ static bool IsFrameExternalImpl( const char* filename, const char* image )
     return strncmp( image, "/usr/", 5 ) == 0 || strncmp( image, "/lib/", 5 ) == 0 || strncmp( image, "/lib64/", 7 ) == 0 || strcmp( image, "<kernel>" ) == 0;
 }
 
-bool Worker::IsFrameExternal( StringIdx filename, StringIdx image )
+bool Worker::IsFrameExternal( StringIdx filename, StringIdx image ) const
+{
+    return IsFrameExternalImpl( GetString( filename ), image.Active() ? GetString( image ) : nullptr );
+}
+
+bool Worker::IsFrameExternal( StringIdx filename, StringIdx image, unordered_flat_map<uint64_t, bool>& cache ) const
 {
     const auto key = ( uint64_t( filename.Raw() ) << 32 ) | image.Raw();
-
-    {
-        std::shared_lock lock( m_isExternalCacheLock );
-        auto it = m_isExternalCache.find( key );
-        if( it != m_isExternalCache.end() ) return it->second;
-    }
+    auto it = cache.find( key );
+    if( it != cache.end() ) return it->second;
 
     const auto res = IsFrameExternalImpl( GetString( filename ), image.Active() ? GetString( image ) : nullptr );
+    cache.emplace( key, res );
 
-    std::lock_guard lock( m_isExternalCacheLock );
-    m_isExternalCache.emplace( key, res );
     return res;
 }
 

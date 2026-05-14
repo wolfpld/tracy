@@ -703,7 +703,8 @@ public:
     void DoPostponedWorkAll();
 
     void CacheSourceFiles();
-    bool IsFrameExternal( StringIdx filename, StringIdx image );
+    bool IsFrameExternal( StringIdx filename, StringIdx image ) const;
+    bool IsFrameExternal( StringIdx filename, StringIdx image, unordered_flat_map<uint64_t, bool>& cache ) const;
 
     StringLocation StoreString( const char* str, size_t sz );
 
@@ -1150,9 +1151,6 @@ private:
     Vector<InlineStackData> m_inlineStack;
 
     std::vector<uint32_t> m_pendingThreadHints;
-
-    unordered_flat_map<uint64_t, bool> m_isExternalCache;
-    std::shared_mutex m_isExternalCacheLock;
 };
 
 }

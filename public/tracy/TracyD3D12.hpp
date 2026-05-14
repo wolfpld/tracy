@@ -33,10 +33,10 @@ using TracyD3D12Ctx = void*;
 #else
 
 #include "Tracy.hpp"
+#include "../client/TracyFastVector.hpp"
 
 #include <atomic>
 #include <mutex>
-#include <vector>
 #include <cstdlib>
 #include <cstring>
 #include <cassert>
@@ -64,8 +64,6 @@ using TracyD3D12Ctx = void*;
 #define TracyD3D12Log(severity, msg) tracy::Profiler::LogString( tracy::MessageSourceType::Tracy, tracy::MessageSeverity::severity, tracy::Color::Red4, 0, msg );
 #define TracyD3D12Panic(msg, ...) do { TracyD3D12Log(Error, msg); TracyD3D12Assert(false && "TracyD3D12: " msg); __VA_ARGS__; } while(false);
 
-#define TracyD3D12Relax() _mm_pause() // TracyYield()
-
 namespace tracy
 {
 
@@ -91,9 +89,9 @@ namespace tracy
         atomic_counter m_queryCounter = 0;
         atomic_counter m_previousCheckpoint = 0;
 
-        uint32_t m_queryLimit = 0;
+        uint32_t m_queryLimit = 64 * 1024;  // Must be even: each scope is a (begin, end) pair of queries
 
-        std::vector<UINT64> m_shadowBuffer;
+        FastVector<UINT64> m_shadowBuffer;
         UINT64 m_latestKnownGpuTimestamp = 0;
 
         UINT64 m_prevCalibrationTicksCPU = 0;
@@ -143,6 +141,7 @@ namespace tracy
         D3D12QueueCtx(ID3D12Device* device, ID3D12CommandQueue* queue)
             : m_device(device)
             , m_queue(queue)
+            , m_shadowBuffer(m_queryLimit)
         {
             ZoneScopedC(Color::Red4);
 
@@ -158,9 +157,6 @@ namespace tracy
                     TracyD3D12Panic("Platform does not support profiling of copy queues.", return);
                 }
             }
-
-            static constexpr uint32_t MaxQueries = 64 * 1024;  // Must be even, because queries are (begin, end) pairs
-            m_queryLimit = MaxQueries;
 
             D3D12_QUERY_HEAP_DESC heapDesc{};
             heapDesc.Type = queue->GetDesc().Type == D3D12_COMMAND_LIST_TYPE_COPY ? D3D12_QUERY_HEAP_TYPE_COPY_QUEUE_TIMESTAMP : D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
@@ -228,7 +224,9 @@ namespace tracy
                 TracyD3D12Panic("Failed to get queue clock calibration.", return);
             }
 
-            m_shadowBuffer.resize(m_queryLimit, gpuTimestamp);
+            // FastVector: clean/resize/init
+            for (size_t i = 0; i < m_queryLimit; ++i) *m_shadowBuffer.push_next() = gpuTimestamp;
+
             m_latestKnownGpuTimestamp = gpuTimestamp;
 
             // Save the device cpu timestamp, not the profiler's timestamp.

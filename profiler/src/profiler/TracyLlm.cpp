@@ -11,6 +11,7 @@
 #include "TracyLlmChat.hpp"
 #include "TracyLlmTools.hpp"
 #include "TracyPrint.hpp"
+#include "TracyView.hpp"
 #include "TracyWeb.hpp"
 #include "TracyWorker.hpp"
 #include "../Fonts.hpp"
@@ -33,6 +34,7 @@ TracyLlm::TracyLlm( Worker& worker, View& view, const TracyManualData& manual )
     , m_input( nullptr )
     , m_apiInput( nullptr )
     , m_worker( worker )
+    , m_view( view )
 {
     if( !s_config.llm ) return;
 

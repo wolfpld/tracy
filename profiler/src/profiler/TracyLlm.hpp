@@ -126,6 +126,7 @@ private:
     nlohmann::json m_toolsJson;
 
     Worker& m_worker;
+    View& m_view;
 };
 
 }

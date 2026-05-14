@@ -999,7 +999,7 @@ nlohmann::json View::GetCallstackJson( const CallstackFrameId* data, size_t size
     return json;
 }
 
-static size_t GetNumLocalFrames( Worker& m_worker, const CallstackFrameId* data, size_t size )
+static size_t GetNumLocalFrames( const Worker& m_worker, const CallstackFrameId* data, size_t size )
 {
     size_t local = 0;
     auto end = data + size;
@@ -1013,7 +1013,7 @@ static size_t GetNumLocalFrames( Worker& m_worker, const CallstackFrameId* data,
     return local;
 }
 
-std::vector<CallstackFrameId> View::ReconstructZoneCallstack( const ZoneEvent& ev )
+std::vector<CallstackFrameId> View::ReconstructZoneCallstack( const ZoneEvent& ev ) const
 {
     constexpr int SampleLimit = 10000;
     std::vector<CallstackFrameId> ret;

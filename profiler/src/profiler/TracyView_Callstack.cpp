@@ -694,13 +694,13 @@ void View::SmallCallstackButton( const char* name, uint32_t callstack, int& idx,
     }
 }
 
-void View::DrawCallstackCalls( uint32_t callstack, uint16_t limit )
+void View::DrawCallstackCalls( uint32_t callstack, uint16_t limit ) const
 {
     const auto& csdata = m_worker.GetCallstack( callstack );
     DrawCallstackCalls( csdata.data(), csdata.size(), limit );
 }
 
-void View::DrawCallstackCalls( const CallstackFrameId* data, size_t size, uint16_t limit )
+void View::DrawCallstackCalls( const CallstackFrameId* data, size_t size, uint16_t limit ) const
 {
     bool first = true;
     int i;

@@ -339,7 +339,7 @@ private:
     unordered_flat_map<uint64_t, CallstackFrameTree> GetParentsCallstackFrameTreeTopDown( const unordered_flat_map<uint32_t, uint32_t>& stacks, bool group ) const;
     void DrawParentsFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrameTree>& tree, int& idx );
 
-    std::vector<CallstackFrameId> ReconstructZoneCallstack( const ZoneEvent& ev );
+    std::vector<CallstackFrameId> ReconstructZoneCallstack( const ZoneEvent& ev ) const;
 
     void DrawInfoWindow();
     void DrawZoneInfoWindow();
@@ -404,8 +404,8 @@ private:
     std::vector<MemoryPage> GetMemoryPages() const;
 
     void SmallCallstackButton( const char* name, uint32_t callstack, int& idx, uint64_t tid, bool tooltip = true );
-    void DrawCallstackCalls( uint32_t callstack, uint16_t limit );
-    void DrawCallstackCalls( const CallstackFrameId* data, size_t size, uint16_t limit );
+    void DrawCallstackCalls( uint32_t callstack, uint16_t limit ) const;
+    void DrawCallstackCalls( const CallstackFrameId* data, size_t size, uint16_t limit ) const;
     nlohmann::json GetCallstackJson( const CallstackFrameId* data, size_t size ) const;
     void SetViewToLastFrames();
     int64_t GetZoneChildTime( const ZoneEvent& zone );

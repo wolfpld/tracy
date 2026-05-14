@@ -85,6 +85,13 @@ public:
         return idx - 1;
     }
 
+    tracy_force_inline uint32_t Raw() const
+    {
+        uint32_t raw = 0;
+        memcpy( &raw, m_idx, 3 );
+        return raw;
+    }
+
     tracy_force_inline bool Active() const
     {
         uint32_t zero = 0;

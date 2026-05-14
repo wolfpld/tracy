@@ -346,7 +346,7 @@ void View::DrawZoneInfoWindow()
         const auto selftime = GetZoneSelfTime( ev );
         TextFocused( "Time from start of program:", TimeToStringExact( ev.Start() ) );
         const std::time_t ts = m_worker.GetCaptureTime() + ev.Start() / 1000000000;
-        TextFocused( "Wall clock time:", std::asctime( std::localtime( &ts) ) );
+        TextFocused( "Wall clock time:", std::asctime( std::localtime( &ts ) ) );
         TextFocused( "Execution time:", TimeToString( ztime ) );
 #ifndef TRACY_NO_STATISTICS
         if( m_worker.AreSourceLocationZonesReady() )

@@ -8949,7 +8949,19 @@ static bool IsFrameExternalImpl( const char* filename, const char* image )
 
 bool Worker::IsFrameExternal( StringIdx filename, StringIdx image )
 {
-    return IsFrameExternalImpl( GetString( filename ), image.Active() ? GetString( image ) : nullptr );
+    const auto key = ( uint64_t( filename.Raw() ) << 32 ) | image.Raw();
+
+    {
+        std::shared_lock lock( m_isExternalCacheLock );
+        auto it = m_isExternalCache.find( key );
+        if( it != m_isExternalCache.end() ) return it->second;
+    }
+
+    const auto res = IsFrameExternalImpl( GetString( filename ), image.Active() ? GetString( image ) : nullptr );
+
+    std::lock_guard lock( m_isExternalCacheLock );
+    m_isExternalCache.emplace( key, res );
+    return res;
 }
 
 }

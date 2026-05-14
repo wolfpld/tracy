@@ -1150,6 +1150,9 @@ private:
     Vector<InlineStackData> m_inlineStack;
 
     std::vector<uint32_t> m_pendingThreadHints;
+
+    unordered_flat_map<uint64_t, bool> m_isExternalCache;
+    std::shared_mutex m_isExternalCacheLock;
 };
 
 }

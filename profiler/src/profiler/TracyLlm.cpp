@@ -903,10 +903,32 @@ void TracyLlm::UpdateSystemPrompt()
     static constexpr std::string_view UserToken = "%USER%";
     static constexpr std::string_view TimeToken = "%TIME%";
     static constexpr std::string_view ProgramNameToken = "%PROGRAMNAME%";
+    static constexpr std::string_view ProgramTimeToken = "%PROGRAMTIME%";
+    static constexpr std::string_view ProfileTimeToken = "%PROFILETIME%";
+    static constexpr std::string_view ProfileDescriptionToken = "%PROFILEDESCRIPTION%";
     static constexpr std::string_view SkillsToken = "%SKILLS%";
 
     auto userName = GetUserFullName();
     if( !userName ) userName = GetUserLogin();
+
+    const auto exectime = m_worker.GetExecutableTime();
+    const auto capturetime = m_worker.GetCaptureTime();
+
+    char etime[64], ctime[64];
+
+    time_t et = exectime;
+    auto elt = localtime( &et );
+    strftime( etime, 64, "%F %T", elt );
+
+    time_t ct = capturetime;
+    auto clt = localtime( &ct );
+    strftime( ctime, 64, "%F %T", clt );
+
+    std::string descStr;
+    const auto& desc = m_view.GetUserData().GetDescription();
+    if( !desc.empty() ) descStr += " Profiling session description: '" + desc + "'.";
+    const auto& filename = m_view.GetFilename();
+    if( !filename.empty() ) descStr += " Profiling session file: '" + filename + "'.";
 
     std::string skills;
     for( auto& skill : m_skills ) skills += skill.name + ": " + skill.description + "\n";
@@ -916,6 +938,9 @@ void TracyLlm::UpdateSystemPrompt()
     Replace( systemPrompt, UserToken, userName );
     Replace( systemPrompt, TimeToken, m_tools->GetCurrentTime() );
     Replace( systemPrompt, ProgramNameToken, m_worker.GetCaptureProgram() );
+    Replace( systemPrompt, ProgramTimeToken, etime );
+    Replace( systemPrompt, ProfileTimeToken, ctime );
+    Replace( systemPrompt, ProfileDescriptionToken, descStr );
     Replace( systemPrompt, SkillsToken, skills );
 
     if( !m_api )

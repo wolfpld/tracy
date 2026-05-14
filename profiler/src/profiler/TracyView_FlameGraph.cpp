@@ -245,7 +245,7 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
     }
 }
 
-void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& data, const Vector<SampleData>& samples )
+void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& data, const Vector<SampleData>& samples, unordered_flat_map<uint64_t, bool>& externalCache )
 {
     struct FrameCache
     {
@@ -302,7 +302,7 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
                     {
                         const auto frame = frameData->data[j-1];
                         const auto symaddr = frame.symAddr;
-                        if( symaddr != 0 && !m_worker.IsFrameExternal( frame.file, frameData->imageName ) )
+                        if( symaddr != 0 && !m_worker.IsFrameExternal( frame.file, frameData->imageName, externalCache ) )
                         {
                             cache.emplace_back( FrameCache { symaddr, frame.name } );
                         }
@@ -323,7 +323,7 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
                         const auto symaddr = frame.symAddr;
                         if( symaddr != 0 )
                         {
-                            cache.emplace_back( FrameCache { symaddr, frame.name, m_worker.IsFrameExternal( frame.file, frameData->imageName ) } );
+                            cache.emplace_back( FrameCache { symaddr, frame.name, m_worker.IsFrameExternal( frame.file, frameData->imageName, externalCache ) } );
                         }
                     }
                 }
@@ -920,7 +920,8 @@ void View::DrawFlameGraph()
                 if( FlameGraphThread( thread->id ) )
                 {
                     m_td.Queue( [this, idx, thread, &threadData] {
-                        BuildFlameGraph( m_worker, threadData[idx], thread->samples );
+                        unordered_flat_map<uint64_t, bool> externalCache;
+                        BuildFlameGraph( m_worker, threadData[idx], thread->samples, externalCache );
                     } );
                     idx++;
                 }

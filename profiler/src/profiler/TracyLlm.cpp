@@ -918,11 +918,13 @@ void TracyLlm::UpdateSystemPrompt()
 
     time_t et = exectime;
     auto elt = localtime( &et );
-    strftime( etime, 64, "%F %T", elt );
+    if( elt ) strftime( etime, 64, "%F %T", elt );
+    else strcpy( etime, "unknown" );
 
     time_t ct = capturetime;
     auto clt = localtime( &ct );
-    strftime( ctime, 64, "%F %T", clt );
+    if( clt ) strftime( ctime, 64, "%F %T", clt );
+    else strcpy( ctime, "unknown" );
 
     std::string descStr;
     const auto& desc = m_view.GetUserData().GetDescription();

@@ -784,7 +784,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         TextDisabledUnformatted( tmp );
     }
 
-    if( ImGui::IsWindowFocused() )
+    if( ImGui::IsWindowFocused( ImGuiFocusedFlags_ChildWindows ) )
     {
         if( ImGui::IsKeyDown( ImGuiKey_Z ) ) m_childCalls = !m_childCalls;
         if( ImGui::IsKeyDown( ImGuiKey_X ) ) m_propagateInlines = !m_propagateInlines;
@@ -1311,7 +1311,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         break;
     }
 
-    if( ImGui::IsWindowFocused() )
+    if( ImGui::IsWindowFocused( ImGuiFocusedFlags_ChildWindows ) )
     {
         if( ImGui::IsKeyDown( ImGuiKey_Z ) ) m_childCalls = !m_childCalls;
         if( ImGui::IsKeyDown( ImGuiKey_X ) ) m_propagateInlines = !m_propagateInlines;

@@ -2913,7 +2913,7 @@ static bool PrintPercentage( float val, uint32_t col = 0xFFFFFFFF )
     memset( buf, ' ', 7-sz );
     memcpy( buf + 7 - sz, tmp, sz+1 );
 
-    draw->AddRectFilled( wpos + ImVec2( 0, 1 ), wpos + ImVec2( val * tw / 100, ty ), 0xFF444444 );
+    draw->AddRectFilled( wpos + ImVec2( 0, 1 ), wpos + ImVec2( std::min( val, 100.f ) * tw / 100, ty ), 0xFF444444 );
     DrawTextContrast( draw, wpos + ImVec2( htw, 0 ), col, buf );
 
     ImGui::ItemSize( ImVec2( stw * 7, ty ), 0 );

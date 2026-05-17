@@ -704,8 +704,8 @@ public:
 
     void CacheSourceFiles();
     bool IsFrameExternal( StringIdx filename, StringIdx image ) const;
-    bool IsImageExternal( StringIdx image, unordered_flat_map<uint32_t, bool>& cache ) const;
-    bool IsSourceExternal( StringIdx filename, unordered_flat_map<uint32_t, bool>& cache ) const;
+    bool IsImageExternal( StringIdx image, unordered_flat_map<uint32_t, bool>& cache, uint32_t& last ) const;
+    bool IsSourceExternal( StringIdx filename, unordered_flat_map<uint32_t, bool>& cache, uint32_t& last ) const;
 
     StringLocation StoreString( const char* str, size_t sz );
 

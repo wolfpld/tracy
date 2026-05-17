@@ -495,7 +495,19 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                     }
                     if( ImGui::IsItemHovered() )
                     {
-                        DrawSourceTooltip( file, line );
+                        auto frame = m_worker.GetCallstackFrame( m_worker.PackPointer( v.symAddr ) );
+                        if( frame && frame->size > 1 )
+                        {
+                            ImGui::BeginTooltip();
+                            if( DrawSourceTooltip( file, line, 3, 3, false ) ) ImGui::Separator();
+                            TextDisabledUnformatted( "Local call stack:" );
+                            PrintLocalStack( frame, m_worker, *this );
+                            ImGui::EndTooltip();
+                        }
+                        else
+                        {
+                            DrawSourceTooltip( file, line );
+                        }
                         if( ImGui::IsItemClicked( 1 ) )
                         {
                             if( SourceFileValid( file, m_worker.GetCaptureTime(), *this, m_worker ) )
@@ -724,7 +736,21 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                                 }
                                 if( ImGui::IsItemHovered() )
                                 {
-                                    DrawSourceTooltip( file, line );
+                                    bool passed = false;
+                                    if( iv.count <= 1 )
+                                    {
+                                        auto frame = m_worker.GetCallstackFrame( m_worker.PackPointer( iv.symAddr ) );
+                                        if( frame && frame->size > 1 )
+                                        {
+                                            ImGui::BeginTooltip();
+                                            if( DrawSourceTooltip( file, line, 3, 3, false ) ) ImGui::Separator();
+                                            TextDisabledUnformatted( "Local call stack:" );
+                                            PrintLocalStack( frame, m_worker, *this );
+                                            ImGui::EndTooltip();
+                                            passed = true;
+                                        }
+                                    }
+                                    if( !passed ) DrawSourceTooltip( file, line );
                                     if( ImGui::IsItemClicked( 1 ) )
                                     {
                                         if( SourceFileValid( file, m_worker.GetCaptureTime(), *this, m_worker ) )

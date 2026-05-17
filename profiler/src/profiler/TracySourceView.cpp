@@ -3126,12 +3126,13 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
                 col = GetHotnessColor( ipcnt.local, as.ipMaxSrc.local );
                 glow = GetHotnessGlow( ipcnt.local, as.ipMaxSrc.local );
             }
+            const auto ds = scale * 3;
             if( glow )
             {
-                DrawLine( draw, dpos + ImVec2( scale, 2 ), dpos + ImVec2( scale, ty-1 ), glow, scale );
-                DrawLine( draw, dpos + ImVec2( -scale, 2 ), dpos + ImVec2( -scale, ty-1 ), glow, scale );
+                draw->AddRectFilledMultiColor( dpos + ImVec2( ds * 0.5f, 1 ), dpos + ImVec2( ds * 1.5f, ty-2 ), glow, 0, 0, glow );
+                draw->AddRectFilledMultiColor( dpos + ImVec2( -ds * 1.5f, 1 ), dpos + ImVec2( -ds * 0.5f, ty-2 ), 0, glow, glow, 0 );
             }
-            DrawLine( draw, dpos + ImVec2( 0, 2 ), dpos + ImVec2( 0, ty-1 ), col, scale );
+            DrawLine( draw, dpos + ImVec2( 0, 1 ), dpos + ImVec2( 0, ty-2 ), col, ds );
         }
         ImGui::SameLine( 0, ty );
     }
@@ -3479,12 +3480,13 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                 col = GetHotnessColor( ipcnt.local, as.ipMaxAsm.local );
                 glow = GetHotnessGlow( ipcnt.local, as.ipMaxAsm.local );
             }
+            const auto ds = scale * 3;
             if( glow )
             {
-                DrawLine( draw, dpos + ImVec2( scale, 2 ), dpos + ImVec2( scale, ty-1 ), glow, scale );
-                DrawLine( draw, dpos + ImVec2( -scale, 2 ), dpos + ImVec2( -scale, ty-1 ), glow, scale );
+                draw->AddRectFilledMultiColor( dpos + ImVec2( ds * 0.5f, 1 ), dpos + ImVec2( ds * 1.5f, ty-2 ), glow, 0, 0, glow );
+                draw->AddRectFilledMultiColor( dpos + ImVec2( -ds * 1.5f, 1 ), dpos + ImVec2( -ds * 0.5f, ty-2 ), 0, glow, glow, 0 );
             }
-            DrawLine( draw, dpos + ImVec2( 0, 2 ), dpos + ImVec2( 0, ty-1 ), col, scale );
+            DrawLine( draw, dpos + ImVec2( 0, 1 ), dpos + ImVec2( 0, ty-2 ), col, ds );
         }
         ImGui::SameLine( 0, ty );
     }

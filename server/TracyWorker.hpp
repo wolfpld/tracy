@@ -704,8 +704,21 @@ public:
 
     void CacheSourceFiles();
     bool IsFrameExternal( StringIdx filename, StringIdx image ) const;
-    bool IsImageExternal( StringIdx image, unordered_flat_map<uint32_t, bool>& cache, uint32_t& last ) const;
-    bool IsSourceExternal( StringIdx filename, unordered_flat_map<uint32_t, bool>& cache, uint32_t& last ) const;
+
+    tracy_force_inline bool IsImageExternal( StringIdx image, unordered_flat_map<uint32_t, bool>& cache, uint32_t& last ) const
+    {
+        assert( image.Active() );
+        const auto key = image.Raw();
+        if( ( last & 0x00FFFFFF ) == key ) return last >> 24;
+        return IsImageExternalBody( image, key, cache, last );
+    }
+
+    tracy_force_inline bool IsSourceExternal( StringIdx filename, unordered_flat_map<uint32_t, bool>& cache, uint32_t& last ) const
+    {
+        const auto key = filename.Raw();
+        if( ( last & 0x00FFFFFF ) == key ) return last >> 24;
+        return IsSourceExternalBody( filename, key, cache, last );
+    }
 
     StringLocation StoreString( const char* str, size_t sz );
 
@@ -1000,6 +1013,9 @@ private:
 
     int64_t GetZoneEndImpl( const ZoneEvent& ev ) const;
     int64_t GetZoneEndImpl( const GpuEvent& ev ) const;
+
+    bool IsImageExternalBody( StringIdx image, uint32_t key, unordered_flat_map<uint32_t, bool>& cache, uint32_t& last ) const;
+    bool IsSourceExternalBody( StringIdx filename, uint32_t key,unordered_flat_map<uint32_t, bool>& cache, uint32_t& last ) const;
 
     void UpdateMbps( int64_t td );
 

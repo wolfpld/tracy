@@ -8974,13 +8974,8 @@ bool Worker::IsFrameExternal( StringIdx filename, StringIdx image ) const
     return IsFrameExternalImpl( GetString( filename ), image.Active() ? GetString( image ) : nullptr );
 }
 
-bool Worker::IsImageExternal( StringIdx image, unordered_flat_map<uint32_t, bool>& cache, uint32_t& last ) const
+bool Worker::IsImageExternalBody( StringIdx image, uint32_t key, unordered_flat_map<uint32_t, bool>& cache, uint32_t& last ) const
 {
-    assert( image.Active() );
-    const auto key = image.Raw();
-
-    if( ( last & 0x00FFFFFF ) == key ) return last >> 24;
-
     auto it = cache.find( key );
     if( it != cache.end() )
     {
@@ -8995,12 +8990,8 @@ bool Worker::IsImageExternal( StringIdx image, unordered_flat_map<uint32_t, bool
     return res;
 }
 
-bool Worker::IsSourceExternal( StringIdx filename, unordered_flat_map<uint32_t, bool>& cache, uint32_t& last ) const
+bool Worker::IsSourceExternalBody( StringIdx filename, uint32_t key, unordered_flat_map<uint32_t, bool>& cache, uint32_t& last ) const
 {
-    const auto key = filename.Raw();
-
-    if( ( last & 0x00FFFFFF ) == key ) return last >> 24;
-
     auto it = cache.find( key );
     if( it != cache.end() )
     {

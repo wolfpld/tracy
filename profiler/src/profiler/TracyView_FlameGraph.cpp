@@ -245,7 +245,7 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
     }
 }
 
-void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& data, const Vector<SampleData>& samples, unordered_flat_map<uint64_t, bool>& externalCache )
+void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& data, const Vector<SampleData>& samples, unordered_flat_map<uint32_t, bool>& externalCache )
 {
     struct FrameCache
     {
@@ -298,13 +298,16 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
                 auto frameData = worker.GetCallstackFrame( callstack[i-1] );
                 if( frameData )
                 {
-                    for( uint8_t j=frameData->size; j>0; j-- )
+                    if( !m_worker.IsImageExternal( frameData->imageName, externalCache ) )
                     {
-                        const auto frame = frameData->data[j-1];
-                        const auto symaddr = frame.symAddr;
-                        if( symaddr != 0 && !m_worker.IsFrameExternal( frame.file, frameData->imageName, externalCache ) )
+                        for( uint8_t j=frameData->size; j>0; j-- )
                         {
-                            cache.emplace_back( FrameCache { symaddr, frame.name } );
+                            const auto frame = frameData->data[j-1];
+                            const auto symaddr = frame.symAddr;
+                            if( symaddr != 0 && !m_worker.IsSourceExternal( frame.file, externalCache ) )
+                            {
+                                cache.emplace_back( FrameCache { symaddr, frame.name } );
+                            }
                         }
                     }
                 }
@@ -317,13 +320,15 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
                 auto frameData = worker.GetCallstackFrame( callstack[i-1] );
                 if( frameData )
                 {
+                    bool imageExternal = m_worker.IsImageExternal( frameData->imageName, externalCache );
                     for( uint8_t j=frameData->size; j>0; j-- )
                     {
                         const auto frame = frameData->data[j-1];
                         const auto symaddr = frame.symAddr;
                         if( symaddr != 0 )
                         {
-                            cache.emplace_back( FrameCache { symaddr, frame.name, m_worker.IsFrameExternal( frame.file, frameData->imageName, externalCache ) } );
+                            bool external = imageExternal || m_worker.IsSourceExternal( frame.file, externalCache );
+                            cache.emplace_back( FrameCache { symaddr, frame.name, external } );
                         }
                     }
                 }
@@ -920,7 +925,7 @@ void View::DrawFlameGraph()
                 if( FlameGraphThread( thread->id ) )
                 {
                     m_td.Queue( [this, idx, thread, &threadData] {
-                        unordered_flat_map<uint64_t, bool> externalCache;
+                        unordered_flat_map<uint32_t, bool> externalCache;
                         BuildFlameGraph( m_worker, threadData[idx], thread->samples, externalCache );
                     } );
                     idx++;

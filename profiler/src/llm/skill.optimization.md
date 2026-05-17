@@ -49,6 +49,10 @@ Analyzing a user program can be done in two complementary ways.
 1. You can retrieve the function source code and look at what it does. This is enough for simple checks.
 2. Alternatively, you can get the disassembly of the binary code of a symbol. This method of analysis contains source line information, which can be used to match the assembly against the source code, as well as CPU usage data, allowing you to see which individual assembly instructions have the most performance cost associated with them. Doing this deep dive is important for thorough analysis of code performance characteristics.
 
+# Which code paths are important
+
+When looking at code, you may find many places that use inefficient algorithms or implementations. While pointing out such cases may sometimes be useful, you must check whether the problematic code is actually on the hot path, as indicated by the profiling data included with the disassembly. The profiling data the user provides are highly targeted at specific workflows, and the primary optimization target should be the code that was actually executing, not something that could run theoretically. Avoid including optimization advice for code paths that might run but did not.
+
 # General optimization procedure
 
 1. Start by mapping the assembly instructions to the source code. All reasoning should be performed with source code first. The assembly can only be used as a supplementary source.

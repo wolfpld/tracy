@@ -8934,23 +8934,25 @@ void Worker::CacheSourceFiles()
     }
 }
 
-static bool IsFrameExternalImpl( const char* filename, const char* image )
+static bool IsImageExternalImpl( const char* image )
 {
-    if( image && (
-        strncmp( image, "/usr/", 5 ) == 0 ||
-        strncmp( image, "/lib/", 5 ) == 0 ||
-        strncmp( image, "/lib64/", 7 ) == 0 ||
-        strcmp( image, "<kernel>" ) == 0
-    ) ) return true;
+    assert( image );
+    if( strncmp( image, "/usr/", 5 ) == 0 ) return true;
+    if( strncmp( image, "/lib/", 5 ) == 0 ) return true;
+    if( strncmp( image, "/lib64/", 7 ) == 0 ) return true;
+    if( strcmp( image, "<kernel>" ) == 0 ) return true;
+    return false;
+}
 
-    if(
-        strncmp( filename, "/usr/", 5 ) == 0 ||
-        strncmp( filename, "/lib/", 5 ) == 0 ||
-        strcmp( filename, "[unknown]" ) == 0 ||
-        strcmp( filename, "<kernel>" ) == 0 ||
-        strncmp( filename, "C:\\Program Files", 16 ) == 0 ||
-        strncmp( filename, "d:\\a01\\_work\\", 13 ) == 0
-    ) return true;
+static bool IsSourceExternalImpl( const char* filename )
+{
+    assert( filename );
+    if( strncmp( filename, "/usr/", 5 ) == 0 ) return true;
+    if( strncmp( filename, "/lib/", 5 ) == 0 ) return true;
+    if( strcmp( filename, "[unknown]" ) == 0 ) return true;
+    if( strcmp( filename, "<kernel>" ) == 0 ) return true;
+    if( strncmp( filename, "C:\\Program Files", 16 ) == 0 ) return true;
+    if( strncmp( filename, "d:\\a01\\_work\\", 13 ) == 0 ) return true;
 
     while( *filename )
     {
@@ -8959,6 +8961,12 @@ static bool IsFrameExternalImpl( const char* filename, const char* image )
     }
 
     return false;
+}
+
+static bool IsFrameExternalImpl( const char* filename, const char* image )
+{
+    if( image && IsImageExternalImpl( image ) ) return true;
+    return IsSourceExternalImpl( filename );
 }
 
 bool Worker::IsFrameExternal( StringIdx filename, StringIdx image ) const

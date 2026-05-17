@@ -298,7 +298,7 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
                 auto frameData = worker.GetCallstackFrame( callstack[i-1] );
                 if( frameData )
                 {
-                    if( !m_worker.IsImageExternal( frameData->imageName, externalCache, lastImage ) )
+                    if( !frameData->imageName.Active() || !m_worker.IsImageExternal( frameData->imageName, externalCache, lastImage ) )
                     {
                         for( uint8_t j=frameData->size; j>0; j-- )
                         {
@@ -320,7 +320,7 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
                 auto frameData = worker.GetCallstackFrame( callstack[i-1] );
                 if( frameData )
                 {
-                    bool imageExternal = m_worker.IsImageExternal( frameData->imageName, externalCache, lastImage );
+                    bool imageExternal = frameData->imageName.Active() && m_worker.IsImageExternal( frameData->imageName, externalCache, lastImage );
                     for( uint8_t j=frameData->size; j>0; j-- )
                     {
                         const auto frame = frameData->data[j-1];

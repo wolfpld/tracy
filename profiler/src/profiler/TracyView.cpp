@@ -1420,12 +1420,12 @@ void View::CrashTooltip()
     ImGui::EndTooltip();
 }
 
-void View::DrawSourceTooltip( const char* filename, uint32_t srcline, int before, int after, bool separateTooltip )
+bool View::DrawSourceTooltip( const char* filename, uint32_t srcline, int before, int after, bool separateTooltip )
 {
-    if( !filename ) return;
-    if( !SourceFileValid( filename, m_worker.GetCaptureTime(), *this, m_worker ) ) return;
+    if( !filename ) return false;
+    if( !SourceFileValid( filename, m_worker.GetCaptureTime(), *this, m_worker ) ) return false;
     m_srcHintCache.Parse( filename, m_worker, *this );
-    if( m_srcHintCache.empty() ) return;
+    if( m_srcHintCache.empty() ) return false;
     ImGui::PushStyleVar( ImGuiStyleVar_ItemSpacing, ImVec2( 0, 0 ) );
     if( separateTooltip ) ImGui::BeginTooltip();
     ImGui::PushFont( g_fonts.mono, FontNormal );
@@ -1478,6 +1478,7 @@ void View::DrawSourceTooltip( const char* filename, uint32_t srcline, int before
     ImGui::PopFont();
     if( separateTooltip ) ImGui::EndTooltip();
     ImGui::PopStyleVar();
+    return true;
 }
 
 bool View::Save( const char* fn, FileCompression comp, int zlevel, bool buildDict, int streams )

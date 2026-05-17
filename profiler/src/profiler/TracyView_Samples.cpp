@@ -8,6 +8,7 @@
 #include "TracySourceView.hpp"
 #include "TracyTimelineContext.hpp"
 #include "TracyTimelineDraw.hpp"
+#include "TracyUtility.hpp"
 #include "TracyView.hpp"
 #include "tracy_pdqsort.h"
 #include "../Fonts.hpp"

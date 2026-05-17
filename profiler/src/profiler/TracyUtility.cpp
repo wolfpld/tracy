@@ -3,7 +3,9 @@
 #include "TracyColor.hpp"
 #include "TracyPrint.hpp"
 #include "TracyUtility.hpp"
+#include "TracyView.hpp"
 #include "TracyWorker.hpp"
+#include "../Fonts.hpp"
 
 namespace tracy
 {
@@ -211,6 +213,31 @@ std::vector<std::string> SplitLines( const char* data, size_t sz )
         txt = end;
     }
     return ret;
+}
+
+void PrintLocalStack( const CallstackFrameData* frame, const Worker& worker, const View& view )
+{
+    for( uint8_t i=0; i<frame->size; i++ )
+    {
+        ImGui::TextDisabled( "%i.", i+1 );
+        ImGui::SameLine();
+        const auto symName = worker.GetString( frame->data[i].name );
+        const auto normalized = view.GetShortenName() != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, symName ) : symName;
+        ImGui::Text( "%s", normalized );
+        ImGui::SameLine();
+        ImGui::PushFont( g_fonts.normal, FontSmall );
+        ImGui::AlignTextToFramePadding();
+        const auto srcline = frame->data[i].line;
+        if( srcline != 0 )
+        {
+            ImGui::TextDisabled( "%s:%i", worker.GetString( frame->data[i].file ), srcline );
+        }
+        else
+        {
+            ImGui::TextDisabled( "%s", worker.GetString( frame->data[i].file ) );
+        }
+        ImGui::PopFont();
+    }
 }
 
 }

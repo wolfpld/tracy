@@ -3681,27 +3681,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                 {
                     ImGui::Separator();
                     TextDisabledUnformatted( "Local call stack:" );
-                    for( uint8_t i=0; i<frame->size; i++ )
-                    {
-                        ImGui::TextDisabled( "%i.", i+1 );
-                        ImGui::SameLine();
-                        const auto symName = worker.GetString( frame->data[i].name );
-                        const auto normalized = view.GetShortenName() != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, symName ) : symName;
-                        ImGui::Text( "%s", normalized );
-                        ImGui::SameLine();
-                        ImGui::PushFont( g_fonts.normal, FontSmall );
-                        ImGui::AlignTextToFramePadding();
-                        const auto srcline = frame->data[i].line;
-                        if( srcline != 0 )
-                        {
-                            ImGui::TextDisabled( "%s:%i", worker.GetString( frame->data[i].file ), srcline );
-                        }
-                        else
-                        {
-                            ImGui::TextDisabled( "%s", worker.GetString( frame->data[i].file ) );
-                        }
-                        ImGui::PopFont();
-                    }
+                    PrintLocalStack( frame, worker, view );
                 }
                 ImGui::EndTooltip();
                 SetFont();

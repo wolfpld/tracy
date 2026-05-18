@@ -462,16 +462,10 @@ std::string TracyLlmTools::SearchWikipedia( std::string query, const std::string
     for( auto& page : pages )
     {
         if( !page.contains( "key" ) ) continue;
-
         const auto key = page["key"].get_ref<const std::string&>();
-
-        auto summary = FetchHttp( "https://" + lang + ".wikipedia.org/api/rest_v1/page/summary/" + key );
-        auto summaryJson = nlohmann::json::parse( summary );
-
         nlohmann::json j = {
             { "key", key },
             { "title", page["title"] },
-            { "preview", summaryJson["extract"] },
             { "excerpt", page["excerpt"] }
         };
         if( page.contains( "description" ) && !page["description"].is_null() ) j["description"] = page["description"];

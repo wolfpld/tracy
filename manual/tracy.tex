@@ -2535,6 +2535,7 @@ Configure your AI assistant using that URL. For example, for a JSON-based MCP co
 \item \texttt{connect\_instance} --- Set the active instance for subsequent analysis calls.
 \item \texttt{live\_connect} --- Connect to a running Tracy-instrumented application by address and port.
 \item \texttt{discover\_instances} --- Scan a port range for running Tracy-instrumented applications.
+\item \texttt{save\_trace} --- Snapshot a loaded or live instance to a \texttt{.tracy} file. Holds the main-thread data lock so live captures yield cooperatively for the duration of the write; defaults to \texttt{async\_mode=True} since large traces take seconds-to-minutes. Useful for A/B performance comparison: snapshot build A, switch builds, snapshot build B, then \texttt{load\_capture} both for diff analysis.
 \item \texttt{eval} --- Execute arbitrary Python against the active \texttt{Worker} object (available as \texttt{ctx}). Supports \texttt{async\_mode=True} for long-running queries.
 \item \texttt{task} --- Poll, cancel, or list background analysis tasks started with \texttt{async\_mode=True}.
 \end{itemize}

@@ -192,12 +192,12 @@
     "parameters": {
       "type": "object",
       "properties": {
-        "name": {
+        "address": {
           "type": "string",
-          "description": "Symbol name."
+          "description": "Symbol address, for example `0x12345678`."
         }
       },
-      "required": ["name"]
+      "required": ["address"]
     }
   }
 }

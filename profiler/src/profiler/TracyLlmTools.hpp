@@ -65,7 +65,7 @@ private:
     std::string SourceFile( const std::string& file, uint32_t line, uint32_t context, uint32_t contextBack ) const;
     std::string SourceSearch( std::string query, bool caseInsensitive, const std::string& path ) const;
     std::string GetSkill( const std::string& name ) const;
-    std::string SymbolDisasm( const std::string& name ) const;
+    std::string SymbolDisasm( const std::string& address ) const;
 
     void ManualEmbeddingsWorker( TracyLlmApi& api );
 

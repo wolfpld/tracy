@@ -139,8 +139,13 @@ std::string TracyLlmChat::ToolCallDescription( const nlohmann::json& json ) cons
     }
     else if( name == "symbol_disasm" )
     {
-        if( !args.contains( "name" ) ) return "";
-        return "Disassemble symbol: " + args["name"].get_ref<const std::string&>();
+        if( !args.contains( "address" ) ) return "";
+        auto addr = args["address"].get_ref<const std::string&>();
+        auto symAddr = strtoull( addr.c_str(), nullptr, 16 );
+        auto sym = m_worker.GetSymbolData( symAddr );
+        if( !sym ) return "";
+        if( sym->isInline ) return "";
+        return "Disassemble symbol: " + std::string( m_worker.GetString( sym->name ) );
     }
     return "";
 }
@@ -150,6 +155,7 @@ TracyLlmChat::TracyLlmChat( View& view, Worker& worker, const std::vector<LlmSki
     : m_width( new float[NumRoles] )
     , m_markdown( &view, &worker )
     , m_skills( skills )
+    , m_worker( worker )
     , m_view( view )
 {
 }

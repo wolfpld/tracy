@@ -192,7 +192,7 @@ std::string TracyLlmTools::HandleToolCalls( const std::string& tool, const nlohm
         }
         else if( tool == "symbol_disasm" )
         {
-            return SymbolDisasm( Param( "name" ) );
+            return SymbolDisasm( Param( "address" ) );
         }
         return "Unknown tool call: " + tool;
     }
@@ -1021,17 +1021,11 @@ std::string TracyLlmTools::GetSkill( const std::string& name ) const
     return it->content;
 }
 
-std::string TracyLlmTools::SymbolDisasm( const std::string& name ) const
+std::string TracyLlmTools::SymbolDisasm( const std::string& address ) const
 {
-    for( auto& v : m_worker.GetSymbolMap() )
-    {
-        if( !v.second.isInline && strcmp( m_worker.GetString( v.second.name ), name.c_str() ) == 0 )
-        {
-            auto json = JsonDisassembly( v.first, m_worker, m_view );
-            return json.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
-        }
-    }
-    return "Symbol not found.";
+    uint64_t symaddr = strtoull( address.c_str(), nullptr, 16 );
+    auto json = JsonDisassembly( symaddr, m_worker, m_view );
+    return json.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
 }
 
 }

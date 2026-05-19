@@ -67,6 +67,7 @@ private:
     std::string m_label;
 
     const std::vector<LlmSkill>& m_skills;
+    const Worker& m_worker;
     View& m_view;
 };
 

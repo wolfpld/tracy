@@ -11,6 +11,7 @@
 #  pragma GCC diagnostic ignored "-Wnarrowing"
 #endif
 #include "../../server/TracyFileRead.hpp"
+#include "../../server/TracyFileWrite.hpp"
 #include "../../server/TracyWorker.hpp"
 #ifdef _MSC_VER
 #  pragma warning( pop )
@@ -1084,6 +1085,32 @@ PYBIND11_MODULE( TracyServerBindings, m )
     m.def( "create_worker_from_file", []( std::shared_ptr<FileRead> f ) {
         return std::make_unique<Worker>( *f );
     } );
+
+    // -------------------------------------------------------------------------
+    // FileWrite — snapshot a Worker (live or loaded) to a .tracy file.
+    //
+    // Mirrors capture.cpp and View::Save: open a Zstd FileWrite, call
+    // Worker::Write under the main-thread data lock (so a live receive thread
+    // yields cooperatively rather than racing with our reads), then Finish to
+    // drain the compression streams before returning the size pair.
+    //
+    // Defaults match the standalone capture tool: Zstd level 3, 4 streams,
+    // fiDict=false. Returns (uncompressed_bytes, compressed_bytes).
+    // -------------------------------------------------------------------------
+    m.def( "save_worker", []( Worker& w, const char* path, int level, int streams, bool fiDict ) {
+        auto f = std::unique_ptr<FileWrite>( FileWrite::Open( path, FileCompression::Zstd, level, streams ) );
+        if( !f ) throw std::runtime_error( "Could not open output file for writing" );
+        std::pair<size_t, size_t> stats;
+        {
+            py::gil_scoped_release release;
+            auto lock = w.ObtainLockForMainThread();
+            w.Write( *f, fiDict );
+            f->Finish();
+            stats = f->GetCompressionStatistics();
+        }
+        return py::make_tuple( stats.first, stats.second );
+    }, py::arg( "worker" ), py::arg( "path" ),
+       py::arg( "level" ) = 3, py::arg( "streams" ) = 4, py::arg( "fi_dict" ) = false );
 }
 
 } // namespace tracy

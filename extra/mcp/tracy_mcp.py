@@ -437,6 +437,110 @@ async def load_capture(path: str, alias: str | None = None) -> str:
 
 
 @mcp_server.tool()
+async def save_trace(
+    instance_id: str,
+    path: str,
+    level: int = 3,
+    streams: int = 4,
+    fi_dict: bool = False,
+    overwrite: bool = False,
+    async_mode: bool = True,
+) -> object:
+    """
+    Snapshot a Tracy instance (live or loaded) to a .tracy file.
+
+    Wraps `Worker::Write` under the main-thread data lock — safe for live
+    instances; the receive thread yields cooperatively for the duration of
+    the write. Concurrent `eval` calls against the same live instance may
+    stall until the save completes.
+
+    Parameters:
+      instance_id — name returned by live_connect / load_capture.
+      path        — output file. Absolute paths are used as-is; a bare
+                    filename is resolved under TRACY_CAPTURES_DIR if set.
+                    On Windows use backslashes (e.g. 'E:\\\\traces\\\\a.tracy').
+      level       — Zstd compression level (default 3, matches capture tool).
+      streams     — number of compression streams (default 4).
+      fi_dict     — rebuild frame-image dedup dictionary on save. Only
+                    meaningful for traces containing screenshots; default
+                    False matches the capture tool and GUI default.
+      overwrite   — refuse to clobber an existing file unless True.
+      async_mode  — default True; large traces take seconds-to-minutes.
+                    Returns {task_id, status: "running"}; poll with `task`.
+
+    On success returns a dict with path, uncompressed_bytes, compressed_bytes,
+    ratio, and elapsed_ms — the same numbers the capture tool prints.
+    """
+    if instance_id not in instances:
+        return f"Error: Instance '{instance_id}' not found. Use list_instances to find valid IDs."
+    instance = instances[instance_id]
+    if not instance.worker:
+        return f"Error: Instance '{instance_id}' has no worker."
+
+    if not os.path.isabs(path):
+        if captures_dir and os.path.basename(path) == path:
+            path = os.path.join(captures_dir, path)
+        else:
+            return (
+                f"Error: '{path}' is not absolute. Pass a full path, or a bare "
+                f"filename with TRACY_CAPTURES_DIR set (currently "
+                f"{captures_dir!r})."
+            )
+    if not path.endswith(".tracy"):
+        path += ".tracy"
+    if os.path.exists(path) and not overwrite:
+        return (
+            f"Error: '{path}' already exists. Pass overwrite=True to clobber, "
+            f"or choose a different path."
+        )
+
+    if not async_mode:
+        return await _execute_save(instance.worker, path, level, streams, fi_dict)
+
+    task_id = str(uuid.uuid4())
+    t = Task(task_id, f"save_trace({instance_id} -> {path})")
+    tasks[task_id] = t
+    asyncio.get_running_loop().run_in_executor(
+        executor, _run_save_task_sync, t, instance.worker, path, level, streams, fi_dict
+    )
+    return {"task_id": task_id, "status": "running"}
+
+
+def _save_worker_sync(worker: object, path: str, level: int, streams: int, fi_dict: bool) -> dict:
+    t0 = time.time()
+    uncompressed, compressed = tracy_server.save_worker(
+        worker, path, level, streams, fi_dict
+    )
+    elapsed_ms = int((time.time() - t0) * 1000)
+    ratio = (compressed / uncompressed) if uncompressed else 0.0
+    return {
+        "path": path,
+        "uncompressed_bytes": uncompressed,
+        "compressed_bytes": compressed,
+        "ratio": ratio,
+        "elapsed_ms": elapsed_ms,
+    }
+
+
+def _run_save_task_sync(t: Task, worker: object, path: str, level: int, streams: int, fi_dict: bool) -> None:
+    t.status = "running"
+    try:
+        t.result = _save_worker_sync(worker, path, level, streams, fi_dict)
+        t.status = "completed"
+    except Exception as e:
+        t.error = str(e)
+        t.status = "failed"
+    finally:
+        t.end_time = time.time()
+
+
+async def _execute_save(worker: object, path: str, level: int, streams: int, fi_dict: bool) -> dict:
+    return await asyncio.get_running_loop().run_in_executor(
+        executor, _save_worker_sync, worker, path, level, streams, fi_dict
+    )
+
+
+@mcp_server.tool()
 async def unload_capture(instance_id: str) -> str:
     """Unload a Tracy instance and release its memory."""
     if instance_id in instances:

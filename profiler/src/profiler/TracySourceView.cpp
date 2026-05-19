@@ -2064,9 +2064,13 @@ void SourceView::AttachRangeToLlm( size_t start, size_t stop, Worker& worker, Vi
         GatherAdditionalIpStats( m_baseAddr, as, worker, limitView, view, nullptr, false );
     }
 
+    char tmp[32];
+    sprintf( tmp, "0x%" PRIx64, m_baseAddr );
+
     nlohmann::json json = {
         { "type", "assembly" },
         { "symbol", symName },
+        { "address", tmp },
         { "files", nlohmann::json::object() },
         { "hint", "Code lines format is: fileIdx:line:offset:cost:callCost:assembly. To decode file names, access files[fileIdx]." }
     };

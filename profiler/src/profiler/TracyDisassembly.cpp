@@ -732,8 +732,11 @@ nlohmann::json JsonDisassembly( uint64_t symAddr, Worker& worker, const View& vi
     }
     GatherAdditionalIpStats( symAddr, as, worker, limitView, view, nullptr, false );
 
+    char tmp[32];
+    sprintf( tmp, "0x%" PRIx64, symAddr );
+
     nlohmann::json json = {
-        { "address", symAddr },
+        { "address", tmp },
         { "files", nlohmann::json::object() },
         { "hint", "Code lines format is: fileIdx:line:offset:cost:callCost:assembly. To decode file names, access files[fileIdx]." },
         { "symbol", worker.GetString( sym->name ) }

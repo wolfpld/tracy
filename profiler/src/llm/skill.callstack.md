@@ -99,6 +99,10 @@ A sample lands inside ComputeHash. The captured stack looks like this:
 
 Tracy Profiler can intercept crashes and report them to the user for analysis. To do this, some code machinery is needed, and then the Tracy crash handler needs to run, capture the call stack, and send it over the network. All this only happens after the actual crash occurred; otherwise, there would be no reason to run the crash handler. As a consequence, the retrieved crash trace may include parts of the crash handler stack, which you must ignore.
 
+# Base address and instruction pointer
+
+Each frame in a call stack has an associated instruction pointer, `ip` – the return address where the execution will return from the function a frame above. This address is somewhere in the symbol code. The start of the symbol is provided as the `baseAddr` value. This base address identifies the symbol and can be used in various symbol-related tool calls as the symbol address.
+
 # Inspecting call stacks
 
 1. Focus on user's code. Ignore standard library boilerplate.

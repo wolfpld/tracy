@@ -217,7 +217,7 @@ namespace tracy
             // Wait for the GPU to finish executing the command buffer before mapping.
             bool gpuDone = false;
             WGPUQueueWorkDoneCallbackInfo doneCB = {};
-            doneCB.mode      = WGPUCallbackMode_AllowSpontaneous;
+            doneCB.mode      = WGPUCallbackMode_AllowProcessEvents;
             doneCB.callback  = [](WGPUQueueWorkDoneStatus, WGPUStringView, void* ud, void*) {
                 *static_cast<bool*>(ud) = true;
             };
@@ -231,7 +231,7 @@ namespace tracy
             struct MapCtx { WGPUBuffer buffer; uint32_t slotB; uint64_t gpuTime = 0; bool ok = false; };
             MapCtx mctx{ m_readbackSlots[0].buffer, calibSlotB };
             WGPUBufferMapCallbackInfo cbInfo = {};
-            cbInfo.mode      = WGPUCallbackMode_AllowSpontaneous;
+            cbInfo.mode      = WGPUCallbackMode_AllowProcessEvents;
             cbInfo.callback  = [](WGPUMapAsyncStatus status, WGPUStringView, void* ud, void*) {
                 auto* ctx = static_cast<MapCtx*>(ud);
                 if (status != WGPUMapAsyncStatus_Success) return;
@@ -436,7 +436,7 @@ namespace tracy
             SubmitQueueItem(item);
         }
 
-        void Collect()
+        void Collect(bool webgpuProcessEvents=false)
         {
 #ifdef TRACY_ON_DEMAND
             if (!GetProfiler().IsConnected()) return;
@@ -455,7 +455,8 @@ namespace tracy
             // Poll for an in-flight map to complete.
             if (collectSlot.pendingFuture.id != 0)
             {
-                wgpuInstanceProcessEvents(m_instance);
+                if (webgpuProcessEvents)
+                    wgpuInstanceProcessEvents(m_instance);
                 if (collectSlot.mapStatus == WGPUMapAsyncStatus{})
                     return;  // callback hasn't fired yet
                 collectSlot.pendingFuture = {};
@@ -517,7 +518,7 @@ namespace tracy
             m_writeIdx = newWriteIdx;
 
             WGPUBufferMapCallbackInfo cbInfo = {};
-            cbInfo.mode      = WGPUCallbackMode_AllowSpontaneous;
+            cbInfo.mode      = WGPUCallbackMode_AllowProcessEvents;
             cbInfo.callback  = &WebGPUQueueCtx::OnMapped;
             cbInfo.userdata1 = this;
             m_readbackSlots[pendingIdx].pendingFuture = wgpuBufferMapAsync(

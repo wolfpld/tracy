@@ -105,7 +105,50 @@ namespace tracy
         uint32_t m_queryLimit = 0;
 
         std::vector<uint64_t> m_shadowBuffer;
-        uint64_t m_prevCalibGpuTime = 0;
+
+        struct Calibration {
+            uint64_t cpuTime = 0;
+            uint64_t gpuTime = 0;
+            static bool WaitQueueIdle(WGPUQueue queue, WGPUInstance instance)
+            {
+                bool gpuDone = false;
+                WGPUQueueWorkDoneCallbackInfo doneCB = {};
+                doneCB.mode = WGPUCallbackMode_AllowProcessEvents;
+                doneCB.callback = [](WGPUQueueWorkDoneStatus, WGPUStringView, void* userData, void*) {
+                    *static_cast<bool*>(userData) = true;
+                };
+                doneCB.userdata1 = &gpuDone;
+                wgpuQueueOnSubmittedWorkDone(queue, doneCB);
+
+                const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+                while (!gpuDone && std::chrono::steady_clock::now() < deadline)
+                    wgpuInstanceProcessEvents(instance);
+                return gpuDone;
+            }
+            static const uint64_t* MapBufferSync(WGPUBuffer buffer, WGPUInstance instance)
+            {
+                struct MapCtx { WGPUMapAsyncStatus status = (WGPUMapAsyncStatus)0; } ctx;
+                WGPUBufferMapCallbackInfo cbInfo = {};
+                cbInfo.mode      = WGPUCallbackMode_AllowProcessEvents;
+                cbInfo.callback  = [](WGPUMapAsyncStatus status, WGPUStringView, void* userData, void*) {
+                    auto* ctx = static_cast<MapCtx*>(userData);
+                    ctx->status = status;
+                };
+                cbInfo.userdata1 = &ctx;
+                size_t offset = 0;
+                size_t size = 2 * sizeof(uint64_t);
+                wgpuBufferMapAsync(buffer, WGPUMapMode_Read, offset, size, cbInfo);
+
+                const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+                while (ctx.status == 0 && std::chrono::steady_clock::now() < deadline)
+                    wgpuInstanceProcessEvents(instance);
+
+                if (ctx.status != WGPUMapAsyncStatus_Success) return nullptr;
+                auto data = wgpuBufferGetConstMappedRange(buffer, offset, size);
+                return static_cast<const uint64_t*>(data);
+            }
+            bool Update(uint64_t tcpu0, uint64_t tcpu1, uint64_t tgpu) { return false; }
+        } m_calibration;
 
         tracy_force_inline void SubmitQueueItem(tracy::QueueItem* item)
         {
@@ -118,9 +161,6 @@ namespace tracy
         bool CalibrateClocks(uint64_t& outCpuTime, uint64_t& outGpuTime)
         {
             ZoneScoped;
-
-            WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(m_device, nullptr);
-            if (!enc) { TracyWebGPUPanic("Failed to create calibration command encoder.", return false); }
 
             // wgpuCommandEncoderWriteTimestamp is deprecated and returns 0 on Metal.
             // Use a render pass with an actual draw call: on Metal TBDR, begin-of-pass
@@ -140,7 +180,7 @@ namespace tracy
             WGPUShaderModuleDescriptor smDesc = {};
             smDesc.nextInChain  = reinterpret_cast<WGPUChainedStruct*>(&wgslSrc);
             WGPUShaderModule calibShader = wgpuDeviceCreateShaderModule(m_device, &smDesc);
-            if (!calibShader) { wgpuCommandEncoderRelease(enc); TracyWebGPUPanic("Failed to create calibration shader.", return false); }
+            if (!calibShader) { TracyWebGPUPanic("Failed to create calibration shader.", return false); }
 
             WGPUTextureDescriptor texDesc = {};
             texDesc.usage         = WGPUTextureUsage_RenderAttachment;
@@ -150,9 +190,9 @@ namespace tracy
             texDesc.mipLevelCount = 1;
             texDesc.sampleCount   = 1;
             WGPUTexture tex = wgpuDeviceCreateTexture(m_device, &texDesc);
-            if (!tex) { wgpuShaderModuleRelease(calibShader); wgpuCommandEncoderRelease(enc); TracyWebGPUPanic("Failed to create calibration scratch texture.", return false); }
+            if (!tex) { wgpuShaderModuleRelease(calibShader); TracyWebGPUPanic("Failed to create calibration scratch texture.", return false); }
             WGPUTextureView texView = wgpuTextureCreateView(tex, nullptr);
-            if (!texView) { wgpuTextureRelease(tex); wgpuShaderModuleRelease(calibShader); wgpuCommandEncoderRelease(enc); TracyWebGPUPanic("Failed to create calibration scratch texture view.", return false); }
+            if (!texView) { wgpuTextureRelease(tex); wgpuShaderModuleRelease(calibShader); TracyWebGPUPanic("Failed to create calibration scratch texture view.", return false); }
 
             WGPUColorTargetState colorTarget = {};
             colorTarget.format    = WGPUTextureFormat_BGRA8Unorm;
@@ -169,11 +209,13 @@ namespace tracy
             pipeDesc.multisample.count    = 1;
             pipeDesc.fragment             = &fragState;
             WGPURenderPipeline calibPipeline = wgpuDeviceCreateRenderPipeline(m_device, &pipeDesc);
-            if (!calibPipeline) { wgpuTextureViewRelease(texView); wgpuTextureRelease(tex); wgpuShaderModuleRelease(calibShader); wgpuCommandEncoderRelease(enc); TracyWebGPUPanic("Failed to create calibration pipeline.", return false); }
+            if (!calibPipeline) { wgpuTextureViewRelease(texView); wgpuTextureRelease(tex); wgpuShaderModuleRelease(calibShader); TracyWebGPUPanic("Failed to create calibration pipeline.", return false); }
 
             //const uint64_t calibTicket = NextQueryId();
             //const uint32_t calibSlotB  = RingIndex(calibTicket);
             //const uint32_t calibSlotE  = calibSlotB + 1;
+            //m_previousCheckpoint = m_queryCounter.load();
+
             const uint32_t calibSlotB  = 0;
             const uint32_t calibSlotE  = 1;
 
@@ -193,86 +235,70 @@ namespace tracy
             passDesc.colorAttachments     = &att;
             passDesc.timestampWrites      = &anchorTs;
 
-            WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &passDesc);
-            wgpuRenderPassEncoderSetPipeline(pass, calibPipeline);
-            wgpuRenderPassEncoderDraw(pass, 3, 1, 0, 0);
-            wgpuRenderPassEncoderEnd(pass);
-            wgpuRenderPassEncoderRelease(pass);
+            int64_t minCpuRange = 999'999'999'999;
+            for (int i=0; i<10; ++i)
+            {
+                WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(m_device, nullptr);
+                if (!enc) { TracyWebGPUPanic("Failed to create calibration command encoder.", return false); }
+
+                WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &passDesc);
+                wgpuRenderPassEncoderSetPipeline(pass, calibPipeline);
+                wgpuRenderPassEncoderDraw(pass, 3, 1, 0, 0);
+                wgpuRenderPassEncoderEnd(pass);
+                wgpuRenderPassEncoderRelease(pass);
+
+                wgpuCommandEncoderResolveQuerySet(enc, m_querySet, calibSlotB, 2, m_resolveBuffer, calibSlotB * sizeof(uint64_t));
+                wgpuCommandEncoderCopyBufferToBuffer(enc, m_resolveBuffer, calibSlotB * sizeof(uint64_t), m_readbackSlots[0].buffer, calibSlotB * sizeof(uint64_t), 2 * sizeof(uint64_t));
+
+                WGPUCommandBuffer cmd = wgpuCommandEncoderFinish(enc, nullptr);
+                wgpuCommandEncoderRelease(enc);
+                if (!cmd) { TracyWebGPUPanic("Failed to finish calibration command encoder.", return false); }
+
+                Calibration::WaitQueueIdle(m_queue, m_instance);
+                int64_t cpu [2] = {};
+                cpu[0] = Profiler::GetTime();
+                wgpuQueueSubmit(m_queue, 1, &cmd);
+                wgpuCommandBufferRelease(cmd);
+                Calibration::WaitQueueIdle(m_queue, m_instance);
+                cpu[1] = Profiler::GetTime();
+                int64_t cpuRange = cpu[1] - cpu[0];
+                auto gpu = Calibration::MapBufferSync(m_readbackSlots[0].buffer, m_instance);
+                TracyWebGPUAssert(gpu != nullptr);
+                fprintf(stdout, "CalibrateClocks() -> %llu | %llu | %lld /// %lld\n", gpu[0], gpu[1], gpu[1]-gpu[0], cpuRange);
+                if (cpuRange < minCpuRange)
+                {
+                    outCpuTime = cpu[1];    // static_cast<uint64_t>(t0 + (t1-t0)/2);
+                    outGpuTime = gpu[0];
+                    minCpuRange = cpuRange;
+                }
+                wgpuBufferUnmap(m_readbackSlots[0].buffer);
+
+                if (outGpuTime < m_calibration.gpuTime)
+                    fprintf(stdout, "CalibrateClocks() -> WARNING!!! going backwards!\n%llu\n%llu\n%lld\n", m_calibration.gpuTime, outGpuTime, outGpuTime - m_calibration.gpuTime);
+                m_calibration.gpuTime = outGpuTime;
+            }
+
             wgpuRenderPipelineRelease(calibPipeline);
             wgpuShaderModuleRelease(calibShader);
             wgpuTextureViewRelease(texView);
             wgpuTextureRelease(tex);
 
-            wgpuCommandEncoderResolveQuerySet(enc, m_querySet, calibSlotB, 2, m_resolveBuffer, calibSlotB * sizeof(uint64_t));
-            wgpuCommandEncoderCopyBufferToBuffer(enc, m_resolveBuffer, calibSlotB * sizeof(uint64_t), m_readbackSlots[0].buffer, calibSlotB * sizeof(uint64_t), 2 * sizeof(uint64_t));
-
-            WGPUCommandBuffer cmd = wgpuCommandEncoderFinish(enc, nullptr);
-            wgpuCommandEncoderRelease(enc);
-            if (!cmd) { TracyWebGPUPanic("Failed to finish calibration command encoder.", return false); }
-
-            auto t0 = Profiler::GetTime();
-            wgpuQueueSubmit(m_queue, 1, &cmd);
-            wgpuCommandBufferRelease(cmd);
-
-            // Wait for the GPU to finish executing the command buffer before mapping.
-            bool gpuDone = false;
-            WGPUQueueWorkDoneCallbackInfo doneCB = {};
-            doneCB.mode      = WGPUCallbackMode_AllowProcessEvents;
-            doneCB.callback  = [](WGPUQueueWorkDoneStatus, WGPUStringView, void* ud, void*) {
-                *static_cast<bool*>(ud) = true;
-            };
-            doneCB.userdata1 = &gpuDone;
-            wgpuQueueOnSubmittedWorkDone(m_queue, doneCB);
-
-            const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
-            while (!gpuDone && std::chrono::steady_clock::now() < deadline)
-                wgpuInstanceProcessEvents(m_instance);
-
-            struct MapCtx { WGPUBuffer buffer; uint32_t slotB; uint64_t gpuTime = 0; bool ok = false; };
-            MapCtx mctx{ m_readbackSlots[0].buffer, calibSlotB };
-            WGPUBufferMapCallbackInfo cbInfo = {};
-            cbInfo.mode      = WGPUCallbackMode_AllowProcessEvents;
-            cbInfo.callback  = [](WGPUMapAsyncStatus status, WGPUStringView, void* ud, void*) {
-                auto* ctx = static_cast<MapCtx*>(ud);
-                if (status != WGPUMapAsyncStatus_Success) return;
-                const auto* ts = static_cast<const uint64_t*>(
-                    wgpuBufferGetConstMappedRange(ctx->buffer, ctx->slotB * sizeof(uint64_t), 2 * sizeof(uint64_t)));
-                if (ts)
-                {
-                    ctx->gpuTime = ts[0];
-                    ctx->ok = true;
-                    fprintf(stdout, "CalibrateClocks() -> %llu | %llu | %lld\n", ts[0], ts[1], ts[1]-ts[0]);
-                }
-                wgpuBufferUnmap(ctx->buffer);
-            };
-            cbInfo.userdata1 = &mctx;
-            wgpuBufferMapAsync(m_readbackSlots[0].buffer, WGPUMapMode_Read,
-                               calibSlotB * sizeof(uint64_t), 2 * sizeof(uint64_t), cbInfo);
-
-            while (!mctx.ok && std::chrono::steady_clock::now() < deadline)
-                wgpuInstanceProcessEvents(m_instance);
-            //m_previousCheckpoint = m_queryCounter.load();
-
-            auto t1 = Profiler::GetTime();
-            //outCpuTime = static_cast<uint64_t>(t0 + (t1-t0)/2);
-            outCpuTime = t1;
-
-            if (!mctx.ok)
-            {
-                TracyWebGPUPanic("Failed to calibrate CPU/GPU clocks.", return false);
-            }
-
-            outGpuTime = mctx.gpuTime;
-            fprintf(stdout, "CalibrateClocks() -> %llu\n", outGpuTime);
-            if (outGpuTime < m_prevCalibGpuTime)
-                fprintf(stdout, "CalibrateClocks() -> WARNING!!! going backwards!\n%llu\n%llu\n%lld\n", m_prevCalibGpuTime, outGpuTime, outGpuTime-m_prevCalibGpuTime);
-            m_prevCalibGpuTime = outGpuTime;
             return true;
         }
 
     public:
         static bool SetupDevice(WGPUDeviceDescriptor& deviceDescriptor)
         {
+            static constexpr int MaxFeatures = 128;
+            static WGPUFeatureName features [MaxFeatures] = {};
+
+            int n = deviceDescriptor.requiredFeatureCount;
+            assert(n < MaxFeatures && "Too many required features in WGPUDeviceDescriptor");
+            if (n > 0 && deviceDescriptor.requiredFeatures)
+                memcpy(features, deviceDescriptor.requiredFeatures, n * sizeof(WGPUFeatureName));
+
+            features[n++] = WGPUFeatureName_TimestampQuery;
+
             // piggy-back on WGPU_DAWN_TOGGLES_DESCRIPTOR_INIT to detect Dawn header
 #           ifdef WGPU_DAWN_TOGGLES_DESCRIPTOR_INIT
                 fprintf(stderr, "[INFO] [DAWN] ENABLING RAW TIMESTAMP TICKS (disabling ns conversion + quantization)\n");
@@ -287,7 +313,20 @@ namespace tracy
                 togglesDesc.enabledToggles = dawnEnabledToggles;
                 togglesDesc.enabledToggleCount  = 1;
                 deviceDescriptor.nextInChain = reinterpret_cast<WGPUChainedStruct*>(&togglesDesc);
+#           else
+                // wgpu-native: passTimestampWrites requires the non-standard
+                // TIMESTAMP_QUERY_INSIDE_PASSES device feature in addition to
+                // the standard TimestampQuery feature.
+                fprintf(stderr, "[INFO] [WGPU] Requesting TimestampQueryInsidePasses native feature\n");
+                {
+                    constexpr auto WGPUNativeFeature_TimestampQueryInsideEncoders = 0x00030024;
+                    constexpr auto WGPUNativeFeature_TimestampQueryInsidePasses = 0x00030025;
+                    features[n++] = (WGPUFeatureName)WGPUNativeFeature_TimestampQueryInsideEncoders;
+                    //features[n++] = (WGPUFeatureName)WGPUNativeFeature_TimestampQueryInsidePasses;
+                }
 #           endif
+            deviceDescriptor.requiredFeatures = features;
+            deviceDescriptor.requiredFeatureCount = static_cast<uint32_t>(n);
             return true;
         }
 
@@ -597,17 +636,17 @@ namespace tracy
 
         WGPUPassTimestampWrites m_timestampWrites = {};
 
-        void ResolveQueryBatch(uint32_t queryId)
+        void ResolveQueryBatch(uint32_t queryBatchStartId)
         {
             // 32 queries = 32 * 8 bytes = 256 bytes
-            const uint32_t blockStart  = queryId - 30;
-            TracyWebGPUAssert(blockStart % 32 == 0, return);
+            TracyWebGPUAssert(queryBatchStartId % 32 == 0, return);
+            queryBatchStartId = queryBatchStartId % m_ctx->m_queryLimit;
 
-            const uint64_t blockOffset = static_cast<uint64_t>(blockStart) * sizeof(uint64_t);
+            const uint64_t blockOffset = static_cast<uint64_t>(queryBatchStartId) * sizeof(uint64_t);
             wgpuCommandEncoderResolveQuerySet(
                 m_encoder,
                 m_ctx->m_querySet,
-                blockStart, 32,
+                queryBatchStartId, 32,
                 m_ctx->m_resolveBuffer,
                 blockOffset // MUST be a multiple of (aligned to) 256...
             );
@@ -624,11 +663,11 @@ namespace tracy
             );
 
             // Advance this slot's high-water mark to cover the block just encoded.
-            const uint64_t blockEnd = m_rawTicket + 2;
+            const uint64_t blockEnd = m_rawTicket;
             uint64_t prev = slot.copiedUpto;
             while (prev < blockEnd &&
                    !slot.copiedUpto.compare_exchange_weak(prev, blockEnd)) {}
-            fprintf(stdout, "[TWG] WebGPUZoneScope [%d] (%d,%d)\n", (int)m_ctx->m_writeIdx, blockStart, queryId);
+            fprintf(stdout, "[TWG] WebGPUZoneScope [%d] (%d,%d)\n", (int)m_ctx->m_writeIdx, queryBatchStartId, queryBatchStartId+32);
         }
 
         tracy_force_inline void WriteQueueItem(const SourceLocationData* srcLocation, int32_t callstackDepth, uint32_t sourceLine, const char* sourceFile, size_t sourceFileLen, const char* functionName, size_t functionNameLen, const char* zoneName, size_t zoneNameLen)
@@ -761,8 +800,8 @@ namespace tracy
             MemWrite(&item->gpuZoneEnd.context, m_ctx->GetId());
             Profiler::QueueSerialFinish();
 
-            if (m_queryId % 32 == 30)
-                ResolveQueryBatch(m_queryId);
+            if (m_queryId % 32 == 0)
+                ResolveQueryBatch(m_queryId-32);
         }
     };
 

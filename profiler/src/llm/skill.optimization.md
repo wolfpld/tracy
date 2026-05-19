@@ -53,6 +53,12 @@ Analyzing a user program can be done in two complementary ways.
 
 When looking at code, you may find many places that use inefficient algorithms or implementations. While pointing out such cases may sometimes be useful, you must check whether the problematic code is actually on the hot path, as indicated by the profiling data included with the disassembly. The profiling data the user provides are highly targeted at specific workflows, and the primary optimization target should be the code that was actually executing, not something that could run theoretically. Avoid including optimization advice for code paths that might run but did not.
 
+# Context is important
+
+When reasoning about the performance of a symbol, you should look at the environment where it is used. You can do this by:
+1. Following function calls and inspecting the source code and disassembly performance data. Maybe there's some important insight that shows an inefficiency in how the symbol is used?
+2. Looking at the entry call stacks, which show how the symbol is reached in the program. Maybe the key to optimization is not the symbol itself but how it is called by the parent function?
+
 # General optimization procedure
 
 1. Start by mapping the assembly instructions to the source code. All reasoning should be performed with source code first. The assembly can only be used as a supplementary source.

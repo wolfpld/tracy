@@ -979,10 +979,16 @@ nlohmann::json View::GetCallstackJson( const CallstackFrameId* data, size_t size
                 } );
                 auto& frameJson = frames.back();
 
+                char tmp[32];
+                sprintf( tmp, "0x%" PRIx64, m_worker.GetCanonicalPointer( entry ) );
+                frameJson["ip"] = tmp;
+
                 if( f == fsz-1 )
                 {
                     frameJson["frame"] = fidx++;
                     frameJson["inline"] = false;
+                    sprintf( tmp, "0x%" PRIx64, frame.symAddr );
+                    frameJson["baseAddr"] = tmp;
                 }
                 else
                 {

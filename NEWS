@@ -65,6 +65,7 @@ vx.xx.x (2026-xx-xx)
     setting the "fast" model to a smaller and much quicker one.
   - Chat topic description is now provided, based on the first user question.
   - Each assistant reply is now labeled with used model and reply time.
+  - Follow-up questions can be automatically suggested.
 - Expanded LLM attachments.
   - You can now attach complete symbol assembly.
   - Entry call stacks can be now attached (previously it was only regular
@@ -143,8 +144,15 @@ vx.xx.x (2026-xx-xx)
 - "Visible threads" checkboxes in messages, flame graph and wait stacks
   windows are now displayed in multiple columns, and the maximum number of
   visible rows is limited, with fallback to scrollable view.
-- Child call distribution box in the symbol view window can be now resized
-  horizontally.
+- Improved child call distribution list in the symbol view window.
+  - The visible area can be now resized horizontally.
+  - The list is now displayed as a table with resizable columns, etc.
+  - Child calls time percentage is now shown as a percentage of calls (as
+    it was before), and also as a percentage of total symbol time.
+- Child calls time is now also displayed as a percentage.
+- Prototype implementation of system tracing on Apple devices.
+- Local (inline) call stack printouts were added to tooltips in statistics
+  window, in sampling mode.
 
 
 v0.13.1 (2025-12-11)

@@ -597,6 +597,40 @@ namespace tracy
 
         WGPUPassTimestampWrites m_timestampWrites = {};
 
+        void ResolveQueryBatch(uint32_t queryId)
+        {
+            // 32 queries = 32 * 8 bytes = 256 bytes
+            const uint32_t blockStart  = queryId - 30;
+            TracyWebGPUAssert(blockStart % 32 == 0, return);
+
+            const uint64_t blockOffset = static_cast<uint64_t>(blockStart) * sizeof(uint64_t);
+            wgpuCommandEncoderResolveQuerySet(
+                m_encoder,
+                m_ctx->m_querySet,
+                blockStart, 32,
+                m_ctx->m_resolveBuffer,
+                blockOffset // MUST be a multiple of (aligned to) 256...
+            );
+
+            auto& slot = m_ctx->m_readbackSlots[m_ctx->m_writeIdx];
+            auto readbackBuffer = slot.buffer;
+            wgpuCommandEncoderCopyBufferToBuffer(
+                m_encoder,
+                m_ctx->m_resolveBuffer,
+                blockOffset,
+                readbackBuffer,
+                blockOffset,
+                32 * sizeof(uint64_t)
+            );
+
+            // Advance this slot's high-water mark to cover the block just encoded.
+            const uint64_t blockEnd = m_rawTicket + 2;
+            uint64_t prev = slot.copiedUpto;
+            while (prev < blockEnd &&
+                   !slot.copiedUpto.compare_exchange_weak(prev, blockEnd)) {}
+            fprintf(stdout, "[TWG] WebGPUZoneScope [%d] (%d,%d)\n", (int)m_ctx->m_writeIdx, blockStart, queryId);
+        }
+
         tracy_force_inline void WriteQueueItem(const SourceLocationData* srcLocation, int32_t callstackDepth, uint32_t sourceLine, const char* sourceFile, size_t sourceFileLen, const char* functionName, size_t functionNameLen, const char* zoneName, size_t zoneNameLen)
         {
             if (!m_active) return;
@@ -728,33 +762,7 @@ namespace tracy
             Profiler::QueueSerialFinish();
 
             if (m_queryId % 32 == 30)
-            {
-                // 32 queries = 32 * 8 bytes = 256 bytes
-                const uint32_t blockStart  = m_queryId - 30;
-                const uint64_t blockOffset = static_cast<uint64_t>(blockStart) * sizeof(uint64_t);
-                wgpuCommandEncoderResolveQuerySet(
-                    m_encoder,
-                    m_ctx->m_querySet,
-                    blockStart, 32,
-                    m_ctx->m_resolveBuffer,
-                    blockOffset // MUST be a multiple of (aligned to) 256...
-                );
-                auto& slot = m_ctx->m_readbackSlots[m_ctx->m_writeIdx];
-                auto readbackBuffer = slot.buffer;
-                wgpuCommandEncoderCopyBufferToBuffer(
-                    m_encoder,
-                    m_ctx->m_resolveBuffer,
-                    blockOffset,
-                    readbackBuffer,
-                    blockOffset,
-                    32 * sizeof(uint64_t));
-                // Advance this slot's high-water mark to cover the block just encoded.
-                const uint64_t blockEnd = m_rawTicket + 2;
-                uint64_t prev = slot.copiedUpto;
-                while (prev < blockEnd &&
-                       !slot.copiedUpto.compare_exchange_weak(prev, blockEnd)) {}
-                fprintf(stdout, "[TWG] WebGPUZoneScope [%d] (%d,%d)\n", (int)m_ctx->m_writeIdx, blockStart, m_queryId);
-            }
+                ResolveQueryBatch(m_queryId);
         }
     };
 

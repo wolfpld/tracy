@@ -190,6 +190,8 @@ public:
 
     void ViewCallstack( uint32_t callstack, uint32_t thread );
 
+    nlohmann::json GetCallstackJson( const CallstackFrameId* data, size_t size ) const;
+
     bool m_showRanges = false;
     Range m_statRange;
     Range m_flameRange;
@@ -406,7 +408,6 @@ private:
     void SmallCallstackButton( const char* name, uint32_t callstack, int& idx, uint64_t tid, bool tooltip = true );
     void DrawCallstackCalls( uint32_t callstack, uint16_t limit ) const;
     void DrawCallstackCalls( const CallstackFrameId* data, size_t size, uint16_t limit ) const;
-    nlohmann::json GetCallstackJson( const CallstackFrameId* data, size_t size ) const;
     void SetViewToLastFrames();
     int64_t GetZoneChildTime( const ZoneEvent& zone );
     int64_t GetZoneChildTime( const GpuEvent& zone );

@@ -147,6 +147,18 @@ std::string TracyLlmChat::ToolCallDescription( const nlohmann::json& json ) cons
         if( sym->isInline ) return "";
         return "Disassemble symbol: " + std::string( m_worker.GetString( sym->name ) );
     }
+    else if( name == "symbol_parents" )
+    {
+        if( !args.contains( "address" ) ) return "";
+        auto addr = args["address"].get_ref<const std::string&>();
+        auto symAddr = strtoull( addr.c_str(), nullptr, 16 );
+        auto sym = m_worker.GetSymbolData( symAddr );
+        if( !sym ) return "";
+        if( sym->isInline ) return "";
+        std::string limit;
+        if( args.contains( "limit" ) ) limit = ", limit: " + std::to_string( args["limit"].get<uint32_t>() );
+        return "Symbol parents: " + std::string( m_worker.GetString( sym->name ) ) + limit;
+    }
     return "";
 }
 

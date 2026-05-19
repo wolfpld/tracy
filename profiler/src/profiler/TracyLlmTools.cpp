@@ -8,6 +8,7 @@
 #include <tidybuffio.h>
 #include <time.h>
 #include <regex>
+#include <vector>
 
 #include "TracyConfig.hpp"
 #include "TracyDisassembly.hpp"
@@ -15,9 +16,12 @@
 #include "TracyLlmApi.hpp"
 #include "TracyLlmTools.hpp"
 #include "TracyManualData.hpp"
+#include "TracyPrint.hpp"
 #include "TracyStorage.hpp"
 #include "TracyUtility.hpp"
+#include "TracyView.hpp"
 #include "TracyWorker.hpp"
+#include "tracy_pdqsort.h"
 
 constexpr const char* NoNetworkAccess = "Internet access is disabled by the user. Inform the user that they may enable it in the settings, so that you can use the tools to gather information.";
 
@@ -194,6 +198,12 @@ std::string TracyLlmTools::HandleToolCalls( const std::string& tool, const nlohm
         {
             return SymbolDisasm( Param( "address" ) );
         }
+#ifndef TRACY_NO_STATISTICS
+        else if( tool == "symbol_parents" )
+        {
+            return SymbolParents( Param( "address" ), ParamOptU32( "limit", 10 ) );
+        }
+#endif
         return "Unknown tool call: " + tool;
     }
     catch( const std::exception& e )
@@ -1027,5 +1037,75 @@ std::string TracyLlmTools::SymbolDisasm( const std::string& address ) const
     auto json = JsonDisassembly( symaddr, m_worker, m_view );
     return json.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
 }
+
+#ifndef TRACY_NO_STATISTICS
+std::string TracyLlmTools::SymbolParents( const std::string& address, uint32_t limit ) const
+{
+    uint64_t symAddr = strtoull( address.c_str(), nullptr, 16 );
+    auto ss = m_worker.GetSymbolStats( symAddr );
+    if( !ss ) return "No parent callstack data for this symbol.";
+
+    const auto symbol = m_worker.GetSymbolData( symAddr );
+    if( !symbol ) return "Symbol not found.";
+    if( symbol->isInline ) return "Symbol is inline.";
+
+    auto stats = ss->parents;
+    auto excl = ss->excl;
+
+    const auto symLen = symbol->size.Val();
+    auto inSym = m_worker.GetInlineSymbolList( symAddr, symLen );
+    if( inSym )
+    {
+        const auto symEnd = symAddr + symLen;
+        while( *inSym < symEnd )
+        {
+            auto istat = m_worker.GetSymbolStats( *inSym++ );
+            if( !istat ) continue;
+            excl += istat->excl;
+            for( auto& v : istat->baseParents )
+            {
+                auto it = stats.find( v.first );
+                if( it == stats.end() )
+                {
+                    stats[v.first] = v.second;
+                }
+                else
+                {
+                    it->second += v.second;
+                }
+            }
+        }
+    }
+    if( stats.empty() ) return "No parent callstack data for this symbol.";
+
+    std::vector<decltype(stats.begin())> sorted;
+    sorted.reserve( stats.size() );
+    for( auto it = stats.begin(); it != stats.end(); ++it ) sorted.push_back( it );
+    pdqsort_branchless( sorted.begin(), sorted.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second > rhs->second; } );
+    if( sorted.size() > limit ) sorted.resize( limit );
+
+    nlohmann::json result = {
+        { "entries", nlohmann::json::array() },
+        { "hint", "Frame N is where frame N-1 returns to. The caller of frame N-1 may differ from frame N." }
+    };
+    auto& entries = result["entries"];
+
+    for( auto& entry : sorted )
+    {
+        auto& cs = m_worker.GetParentCallstack( entry->first );
+        auto frames = m_view.GetCallstackJson( cs.data(), cs.size() )["frames"];
+
+        char buf[32];
+        auto end = PrintFloat( buf, buf+32, 100.f * entry->second / excl, 4 );
+        *end = '\0';
+
+        entries.push_back( {
+            { "callstack", frames },
+            { "percentage", buf }
+        } );
+    }
+    return result.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
+}
+#endif
 
 }

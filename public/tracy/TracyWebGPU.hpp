@@ -137,7 +137,7 @@ namespace tracy
             }
             static const uint64_t* MapBufferSync(WGPUBuffer buffer, WGPUInstance instance)
             {
-                struct MapCtx { WGPUMapAsyncStatus status = (WGPUMapAsyncStatus)0; } ctx;
+                struct MapCtx { WGPUMapAsyncStatus status = {}; } ctx;
                 WGPUBufferMapCallbackInfo cbInfo = {};
                 cbInfo.mode      = WGPUCallbackMode_AllowProcessEvents;
                 cbInfo.callback  = [](WGPUMapAsyncStatus status, WGPUStringView, void* userData, void*) {
@@ -544,31 +544,31 @@ namespace tracy
             //   COLLECT = (m_writeIdx + 2) % 3  ← recycle as new WRITE
             const int writeIdx   = m_writeIdx;
             const int pendingIdx = (writeIdx + 1) % 3;
+            const int newWriteIdx = (writeIdx + 2) % 3;
 
             if (m_readbackSlots[writeIdx].copiedUpto <= m_previousCheckpoint)
                 return;
-
-            const int newWriteIdx = (writeIdx + 2) % 3;
 
             m_readbackSlots[newWriteIdx].copiedUpto = m_previousCheckpoint.load();
 
             m_writeIdx = newWriteIdx;
 
+            auto& nextToCollect = m_readbackSlots[pendingIdx];
             WGPUBufferMapCallbackInfo cbInfo = {};
-            cbInfo.mode = WGPUCallbackMode_AllowProcessEvents;
-            cbInfo.callback = [](WGPUMapAsyncStatus status, WGPUStringView, void* ud, void*)
+            // This readback buffer map callback can fire "spontaneously"
+            cbInfo.mode = WGPUCallbackMode_AllowSpontaneous;
+            cbInfo.callback = [](WGPUMapAsyncStatus status, WGPUStringView, void* userData, void*)
             {
-                auto* self = static_cast<WebGPUQueueCtx*>(ud);
-                const int collectIdx = (self->m_writeIdx + 2) % 3;
-                self->m_readbackSlots[collectIdx].mapStatus = status;
+                auto* slot = static_cast<ReadbackSlot*>(userData);
+                slot->mapStatus = status;
             };
-            cbInfo.userdata1 = this;
-            m_readbackSlots[pendingIdx].pendingFuture = wgpuBufferMapAsync(
-                m_readbackSlots[pendingIdx].buffer, WGPUMapMode_Read, 0,
+            cbInfo.userdata1 = &nextToCollect;
+            nextToCollect.pendingFuture = wgpuBufferMapAsync(
+                nextToCollect.buffer, WGPUMapMode_Read, 0,
                 static_cast<uint64_t>(m_queryLimit) * sizeof(uint64_t), cbInfo);
 
-            if (m_readbackSlots[pendingIdx].mapStatus != WGPUMapAsyncStatus{})
-                m_readbackSlots[pendingIdx].pendingFuture = {};
+            if (nextToCollect.mapStatus != WGPUMapAsyncStatus{})
+                nextToCollect.pendingFuture = {};
         }
 
     private:
@@ -622,6 +622,7 @@ namespace tracy
         {
             // 32 queries = 32 * 8 bytes = 256 bytes
             TracyWebGPUAssert(queryBatchStartId % 32 == 0, return);
+            queryBatchStartId = m_ctx->RingIndex(queryBatchStartId);
 
             const uint64_t blockOffset = static_cast<uint64_t>(queryBatchStartId) * sizeof(uint64_t);
             wgpuCommandEncoderResolveQuerySet(

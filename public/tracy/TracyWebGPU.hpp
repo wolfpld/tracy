@@ -109,6 +109,7 @@ namespace tracy
         struct Calibration {
             uint64_t cpuTime = 0;
             uint64_t gpuTime = 0;
+            int64_t minCpuRange = ~uint64_t(0) >> 1;
             static bool WaitQueueIdle(WGPUQueue queue, WGPUInstance instance)
             {
                 bool gpuDone = false;
@@ -147,7 +148,16 @@ namespace tracy
                 auto data = wgpuBufferGetConstMappedRange(buffer, offset, size);
                 return static_cast<const uint64_t*>(data);
             }
-            bool Update(uint64_t tcpu0, uint64_t tcpu1, uint64_t tgpu) { return false; }
+            bool Update(uint64_t tcpu0, uint64_t tcpu1, uint64_t tgpu)
+            {
+                // TODO: run some interval-based incremental regression here
+                int64_t cpuRange = tcpu1 - tcpu0;
+                if (cpuRange >= minCpuRange) return false;
+                minCpuRange = cpuRange;
+                this->cpuTime = tcpu1;    // t0 + (t1-t0)/2
+                this->gpuTime = tgpu;
+                return true;
+            }
         } m_calibration;
 
         tracy_force_inline void SubmitQueueItem(tracy::QueueItem* item)
@@ -211,18 +221,11 @@ namespace tracy
             WGPURenderPipeline calibPipeline = wgpuDeviceCreateRenderPipeline(m_device, &pipeDesc);
             if (!calibPipeline) { wgpuTextureViewRelease(texView); wgpuTextureRelease(tex); wgpuShaderModuleRelease(calibShader); TracyWebGPUPanic("Failed to create calibration pipeline.", return false); }
 
-            //const uint64_t calibTicket = NextQueryId();
-            //const uint32_t calibSlotB  = RingIndex(calibTicket);
-            //const uint32_t calibSlotE  = calibSlotB + 1;
-            //m_previousCheckpoint = m_queryCounter.load();
-
-            const uint32_t calibSlotB  = 0;
-            const uint32_t calibSlotE  = 1;
-
+            uint32_t queryId = 0;
             WGPUPassTimestampWrites anchorTs = {};
             anchorTs.querySet                  = m_querySet;
-            anchorTs.beginningOfPassWriteIndex = calibSlotB;
-            anchorTs.endOfPassWriteIndex       = calibSlotE;
+            anchorTs.beginningOfPassWriteIndex = queryId;
+            anchorTs.endOfPassWriteIndex       = queryId+1;
 
             WGPURenderPassColorAttachment att = {};
             att.view       = texView;
@@ -235,8 +238,8 @@ namespace tracy
             passDesc.colorAttachments     = &att;
             passDesc.timestampWrites      = &anchorTs;
 
-            int64_t minCpuRange = 999'999'999'999;
-            for (int i=0; i<10; ++i)
+            const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(100);
+            do
             {
                 WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(m_device, nullptr);
                 if (!enc) { TracyWebGPUPanic("Failed to create calibration command encoder.", return false); }
@@ -247,8 +250,11 @@ namespace tracy
                 wgpuRenderPassEncoderEnd(pass);
                 wgpuRenderPassEncoderRelease(pass);
 
-                wgpuCommandEncoderResolveQuerySet(enc, m_querySet, calibSlotB, 2, m_resolveBuffer, calibSlotB * sizeof(uint64_t));
-                wgpuCommandEncoderCopyBufferToBuffer(enc, m_resolveBuffer, calibSlotB * sizeof(uint64_t), m_readbackSlots[0].buffer, calibSlotB * sizeof(uint64_t), 2 * sizeof(uint64_t));
+                WGPUBuffer readBackBuffer = m_readbackSlots[0].buffer;
+                uint32_t byteOffset = queryId * sizeof(uint64_t);
+                uint32_t sizeInBytes = 2 * sizeof(uint64_t);
+                wgpuCommandEncoderResolveQuerySet(enc, m_querySet, queryId, 2, m_resolveBuffer, byteOffset);
+                wgpuCommandEncoderCopyBufferToBuffer(enc, m_resolveBuffer, byteOffset, readBackBuffer, byteOffset, sizeInBytes);
 
                 WGPUCommandBuffer cmd = wgpuCommandEncoderFinish(enc, nullptr);
                 wgpuCommandEncoderRelease(enc);
@@ -261,27 +267,23 @@ namespace tracy
                 wgpuCommandBufferRelease(cmd);
                 Calibration::WaitQueueIdle(m_queue, m_instance);
                 cpu[1] = Profiler::GetTime();
-                int64_t cpuRange = cpu[1] - cpu[0];
-                auto gpu = Calibration::MapBufferSync(m_readbackSlots[0].buffer, m_instance);
+                auto gpu = Calibration::MapBufferSync(readBackBuffer, m_instance);
                 TracyWebGPUAssert(gpu != nullptr);
-                fprintf(stdout, "CalibrateClocks() -> %llu | %llu | %lld /// %lld\n", gpu[0], gpu[1], gpu[1]-gpu[0], cpuRange);
-                if (cpuRange < minCpuRange)
-                {
-                    outCpuTime = cpu[1];    // static_cast<uint64_t>(t0 + (t1-t0)/2);
-                    outGpuTime = gpu[0];
-                    minCpuRange = cpuRange;
-                }
-                wgpuBufferUnmap(m_readbackSlots[0].buffer);
+                fprintf(stdout, "CalibrateClocks() -> %llu | %llu | %lld /// %lld\n", gpu[0], gpu[1], gpu[1]-gpu[0], cpu[1]-cpu[0]);
+                if (gpu[0] < m_calibration.gpuTime)
+                    fprintf(stdout, "CalibrateClocks() -> WARNING!!! going backwards!\n%llu\n%llu\n%lld\n", m_calibration.gpuTime, gpu[0], gpu[0] - m_calibration.gpuTime);
+                m_calibration.Update(cpu[0], cpu[1], gpu[0]);
+                wgpuBufferUnmap(readBackBuffer);
 
-                if (outGpuTime < m_calibration.gpuTime)
-                    fprintf(stdout, "CalibrateClocks() -> WARNING!!! going backwards!\n%llu\n%llu\n%lld\n", m_calibration.gpuTime, outGpuTime, outGpuTime - m_calibration.gpuTime);
-                m_calibration.gpuTime = outGpuTime;
-            }
+            } while (std::chrono::steady_clock::now() < deadline);
 
             wgpuRenderPipelineRelease(calibPipeline);
             wgpuShaderModuleRelease(calibShader);
             wgpuTextureViewRelease(texView);
             wgpuTextureRelease(tex);
+
+            outCpuTime = m_calibration.cpuTime;
+            outGpuTime = m_calibration.gpuTime;
 
             return true;
         }
@@ -366,28 +368,20 @@ namespace tracy
             }
 #endif
 
-            // Pick a query budget. WebGPU has no native upper bound on query
-            // set size in the spec. The WebGPU default/max for maxQuerySetSize
-            // is 4096. Queries are issued in (begin, end) pairs, so the count is
-            // always even.
-            static constexpr uint32_t MaxQueries = 512; //4096;
-            m_queryLimit = MaxQueries;
-
+            // WebGPU maxQuerySetSize is 4096. Queries are issued in (begin, end) pairs.
             WGPUQuerySetDescriptor qsDesc = {};
             qsDesc.type  = WGPUQueryType_Timestamp;
-            qsDesc.count = m_queryLimit;
-
+            qsDesc.count = 4096;
             for (;;)
             {
                 m_querySet = wgpuDeviceCreateQuerySet(m_device, &qsDesc);
                 if (m_querySet) break;
-                m_queryLimit /= 2;
-                qsDesc.count = m_queryLimit;
-                if (m_queryLimit < 64)
-                {
-                    TracyWebGPUPanic("Failed to create timestamp query set (timestamp-query feature missing?).", return);
-                }
+                qsDesc.count /= 2;
+                if (qsDesc.count < 128) break;
             }
+            if (m_querySet == nullptr)
+                TracyWebGPUPanic("Failed to create timestamp query set.", return);
+            m_queryLimit = qsDesc.count;
 
             // Resolve buffer: the GPU resolves query results into this buffer.
             WGPUBufferDescriptor resolveDesc = {};
@@ -395,9 +389,7 @@ namespace tracy
             resolveDesc.size  = static_cast<uint64_t>(m_queryLimit) * sizeof(uint64_t);
             m_resolveBuffer = wgpuDeviceCreateBuffer(m_device, &resolveDesc);
             if (!m_resolveBuffer)
-            {
                 TracyWebGPUPanic("Failed to create timestamp resolve buffer.", return);
-            }
 
             // Readback buffers: targets of CopyBufferToBuffer; mappable for read (3-slot ring).
             WGPUBufferDescriptor readbackDesc = {};
@@ -564,8 +556,6 @@ namespace tracy
                 m_readbackSlots[pendingIdx].buffer, WGPUMapMode_Read, 0,
                 static_cast<uint64_t>(m_queryLimit) * sizeof(uint64_t), cbInfo);
 
-            // Optimistic immediate poll: deliver any already-completed callbacks.
-            wgpuInstanceProcessEvents(m_instance);
             if (m_readbackSlots[pendingIdx].mapStatus != WGPUMapAsyncStatus{})
                 m_readbackSlots[pendingIdx].pendingFuture = {};
         }

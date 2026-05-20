@@ -144,14 +144,13 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
             if( !v.IsEndValid() ) break;
             const auto srcloc = v.SrcLoc();
             int64_t duration;
-            uint64_t cnt;
             if ( m_flameRange.active )
             {
-                if( !GetZoneRunningTime( ctx, v, m_flameGraphInvariant.range, duration, cnt ) ) continue;
+                if( !GetZoneRunningTime( ctx, v, m_flameGraphInvariant.range, duration ) ) continue;
             }
             else
             {
-                if( !GetZoneRunningTime( ctx, v, duration, cnt ) ) break;
+                if( !GetZoneRunningTime( ctx, v, duration ) ) break;
             }
 
             if( srcloc == last )
@@ -197,14 +196,13 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
             if( !v->IsEndValid() ) break;
             const auto srcloc = v->SrcLoc();
             int64_t duration;
-            uint64_t cnt;
             if ( m_flameRange.active )
             {
-                if( !GetZoneRunningTime( ctx, *v, m_flameGraphInvariant.range, duration, cnt ) ) continue;
+                if( !GetZoneRunningTime( ctx, *v, m_flameGraphInvariant.range, duration ) ) continue;
             }
             else
             {
-                if( !GetZoneRunningTime( ctx, *v, duration, cnt ) ) break;
+                if( !GetZoneRunningTime( ctx, *v, duration ) ) break;
             }
 
             if( srcloc == last )

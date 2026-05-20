@@ -1971,8 +1971,12 @@ void Profiler::Worker()
         }
 
 #ifdef TRACY_ON_DEMAND
+#  ifdef TRACY_HAS_CALLSTACK
+        // Only wait on m_symbolsBusy if the symbol worker thread exists; otherwise nobody
+        // ever resets the flag and we'd spin forever on the second connection.
         while( m_symbolsBusy.load( std::memory_order_acquire ) ) { YieldThread(); }
         m_symbolsBusy.store( true, std::memory_order_release );
+#  endif
         const auto currentTime = GetTime();
         ClearQueues( token );
         m_connectionId.fetch_add( 1, std::memory_order_release );

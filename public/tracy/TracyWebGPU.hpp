@@ -48,6 +48,15 @@ using TracyWebGPUCtx = void*;
 
 #include <webgpu/webgpu.h>
 
+// piggy-back on WGPU_DAWN_TOGGLES_DESCRIPTOR_INIT to detect Dawn header
+#ifdef WGPU_DAWN_TOGGLES_DESCRIPTOR_INIT
+#define TRACY_WEBGPU_DAWN_NATIVE (1)
+#include <dawn/native/DawnNative.h>
+#else
+#define TRACY_WEBGPU_WGPU_NATIVE (1)
+#include <webgpu/wgpu.h>
+#endif
+
 #ifndef TRACY_WEBGPU_DEBUG_LEVEL
 #define TRACY_WEBGPU_DEBUG_LEVEL (0)
 #endif//TRACY_WEBGPU_DEBUG_LEVEL
@@ -81,25 +90,25 @@ namespace tracy
         std::mutex m_collectionMutex;
 
         WGPUInstance m_instance = nullptr;
-        WGPUDevice   m_device   = nullptr;
-        WGPUQueue    m_queue    = nullptr;
+        WGPUDevice m_device = nullptr;
+        WGPUQueue m_queue = nullptr;
 
         struct ReadbackSlot
         {
-            WGPUBuffer            buffer;
-            std::atomic<uint64_t> copiedUpto;
+            WGPUBuffer buffer = nullptr;
+            std::atomic<uint64_t> copiedUpto {0};
             std::atomic<WGPUMapAsyncStatus> mapStatus = {};
-            WGPUFuture            pendingFuture = {};
+            WGPUFuture pendingFuture = {};
         };
         static_assert(std::atomic<WGPUMapAsyncStatus>::is_always_lock_free, "WGPUMapAsyncStatus must be lock-free atomic");
 
-        WGPUQuerySet  m_querySet        = nullptr;
-        WGPUBuffer    m_resolveBuffer   = nullptr;  // QueryResolve | CopySrc
-        ReadbackSlot  m_readbackSlots[3];            // CopyDst | MapRead (3-slot ring)
-        std::atomic<int> m_writeIdx{0};              // WRITE slot index (ring: 0→1→2→0)
+        WGPUQuerySet  m_querySet = nullptr;
+        WGPUBuffer    m_resolveBuffer = nullptr;
+        ReadbackSlot  m_readbackSlots [3];
+        std::atomic<int> m_writeIdx {0};
 
         using atomic_counter = std::atomic<uint64_t>;
-        atomic_counter m_queryCounter       = 0;
+        atomic_counter m_queryCounter = 0;
         atomic_counter m_previousCheckpoint = 0;
 
         uint32_t m_queryLimit = 0;
@@ -170,23 +179,26 @@ namespace tracy
 
         bool CalibrateClocks(uint64_t& outCpuTime, uint64_t& outGpuTime)
         {
+            // WebGPU does not have any clock calibration API.
+            // This routine attempts to estimates a reasonable (cpuTime, gpuTime) correlation
+            // by sampling CPU and GPU timestamps around a "synchronous" draw call.
+            // Several samples are taken to tighten the estimation.
+
             ZoneScoped;
 
-            // wgpuCommandEncoderWriteTimestamp is deprecated and returns 0 on Metal.
-            // Use a render pass with an actual draw call: on Metal TBDR, begin-of-pass
-            // timestamps fire at tile rasterization start. An empty render pass (no
-            // geometry) may never trigger rasterization, yielding a deferred or
-            // meaningless timestamp that doesn't reflect actual GPU execution order.
-            static const char kCalibShader[] = R"(
+            WGPUShaderSourceWGSL wgslSrc = {};
+            wgslSrc.chain.sType = WGPUSType_ShaderSourceWGSL;
+            wgslSrc.code =
+            {
+                R"(
                 @vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {
                     var p = array(vec4f(-1,-1,.5,1), vec4f(3,-1,.5,1), vec4f(-1,3,.5,1));
                     return p[i];
                 }
                 @fragment fn fs() -> @location(0) vec4f { return vec4f(0.0); }
-            )";
-            WGPUShaderSourceWGSL wgslSrc = {};
-            wgslSrc.chain.sType = WGPUSType_ShaderSourceWGSL;
-            wgslSrc.code        = { kCalibShader, WGPU_STRLEN };
+                )",
+                WGPU_STRLEN
+            };
             WGPUShaderModuleDescriptor smDesc = {};
             smDesc.nextInChain  = reinterpret_cast<WGPUChainedStruct*>(&wgslSrc);
             WGPUShaderModule calibShader = wgpuDeviceCreateShaderModule(m_device, &smDesc);
@@ -301,8 +313,7 @@ namespace tracy
 
             features[n++] = WGPUFeatureName_TimestampQuery;
 
-            // piggy-back on WGPU_DAWN_TOGGLES_DESCRIPTOR_INIT to detect Dawn header
-#           ifdef WGPU_DAWN_TOGGLES_DESCRIPTOR_INIT
+#           if (TRACY_WEBGPU_DAWN_NATIVE)
                 fprintf(stderr, "[INFO] [DAWN] ENABLING RAW TIMESTAMP TICKS (disabling ns conversion + quantization)\n");
                 // disable_timestamp_query_conversion: resolve timestamps as raw GPU ticks, not nanoseconds.
                 // timestamp_quantization: disabled defensively (off by default on Metal, but on elsewhere).
@@ -315,21 +326,43 @@ namespace tracy
                 togglesDesc.enabledToggles = dawnEnabledToggles;
                 togglesDesc.enabledToggleCount  = 1;
                 deviceDescriptor.nextInChain = reinterpret_cast<WGPUChainedStruct*>(&togglesDesc);
-#           else
+#           elif (TRACY_WEBGPU_WGPU_NATIVE)
                 // wgpu-native: passTimestampWrites requires the non-standard
                 // TIMESTAMP_QUERY_INSIDE_PASSES device feature in addition to
                 // the standard TimestampQuery feature.
                 fprintf(stderr, "[INFO] [WGPU] Requesting TimestampQueryInsidePasses native feature\n");
                 {
-                    constexpr auto WGPUNativeFeature_TimestampQueryInsideEncoders = 0x00030024;
-                    constexpr auto WGPUNativeFeature_TimestampQueryInsidePasses = 0x00030025;
                     features[n++] = (WGPUFeatureName)WGPUNativeFeature_TimestampQueryInsideEncoders;
-                    //features[n++] = (WGPUFeatureName)WGPUNativeFeature_TimestampQueryInsidePasses;
                 }
 #           endif
             deviceDescriptor.requiredFeatures = features;
             deviceDescriptor.requiredFeatureCount = static_cast<uint32_t>(n);
             return true;
+        }
+
+        bool VerifyDevice(WGPUDevice device)
+        {
+            if (device == nullptr)
+                return false;
+            if (wgpuDeviceHasFeature(device, WGPUFeatureName_TimestampQuery) == WGPU_FALSE)
+                return false;
+#           if (TRACY_WEBGPU_DAWN_NATIVE)
+                bool hasDisableConversion = false, hasQuantization = false;
+                for (const char* t : ::dawn::native::GetTogglesUsed(device))
+                {
+                    if (strcmp(t, "disable_timestamp_query_conversion") == 0)
+                        hasDisableConversion = true;
+                    if (strcmp(t, "timestamp_quantization") == 0)
+                        hasQuantization = true;
+                }
+                return hasDisableConversion && !hasQuantization;
+#           elif (TRACY_WEBGPU_WGPU_NATIVE)
+                // wgpu-native also requires TimestampQueryInsideEncoders for ResolveQuerySet.
+                if (wgpuDeviceHasFeature(device, (WGPUFeatureName)WGPUNativeFeature_TimestampQueryInsideEncoders) == WGPU_FALSE)
+                    return false;
+                return true;
+#           endif
+            return false;
         }
 
         WebGPUQueueCtx(WGPUInstance instance, WGPUDevice device, WGPUQueue queue)
@@ -339,38 +372,17 @@ namespace tracy
         {
             ZoneScopedC(Color::Red4);
 
-            // The canonical webgpu.h uses AddRef/Release for refcounting.
-            if (m_instance) wgpuInstanceAddRef(m_instance);
-            wgpuDeviceAddRef(m_device);
-            wgpuQueueAddRef(m_queue);
+            if (!VerifyDevice(m_device))
+                TracyWebGPUPanic("GPU profiling disabled because the device did not enable the necessary features.")
 
-            // Graceful early-out: if the logical device was created without the
-            // required timestamp features, GPU zones will silently do nothing.
-            // m_contextId stays 255 (invalid); CreateWebGPUContext destroys and
-            // returns nullptr, and all TracyWebGPU* macros become no-ops.
-            if (!wgpuDeviceHasFeature(m_device, WGPUFeatureName_TimestampQuery))
-            {
-                TracyWebGPUPanic(
-                    "timestamp-query feature not enabled on device; GPU profiling disabled.",
-                    return
-                )
-            }
-            // wgpuCommandEncoderResolveQuerySet requires the wgpu-native
-            // TIMESTAMP_QUERY_INSIDE_ENCODERS feature on some backends.
-#ifdef WGPUNativeFeature_TimestampQueryInsideEncoders
-            if (!wgpuDeviceHasFeature(m_device, (WGPUFeatureName)WGPUNativeFeature_TimestampQueryInsideEncoders))
-            {
-                TracyWebGPUPanic(
-                    "WGPUNativeFeature_TimestampQueryInsideEncoders not enabled on device; "
-                    "GPU profiling disabled (needed for ResolveQuerySet on the command encoder).",
-                    return
-                );
-            }
-#endif
+            TracyWebGPUAssert(m_instance); wgpuInstanceAddRef(m_instance);
+            TracyWebGPUAssert(m_device); wgpuDeviceAddRef(m_device);
+            TracyWebGPUAssert(m_queue); wgpuQueueAddRef(m_queue);
 
-            // WebGPU maxQuerySetSize is 4096. Queries are issued in (begin, end) pairs.
+            // Setup Query Set: must have even size since queries are issued in pairs.
+            // (The WebGPU spec mandates 4096, with no way to query the device limit.)
             WGPUQuerySetDescriptor qsDesc = {};
-            qsDesc.type  = WGPUQueryType_Timestamp;
+            qsDesc.type = WGPUQueryType_Timestamp;
             qsDesc.count = 4096;
             for (;;)
             {
@@ -383,7 +395,6 @@ namespace tracy
                 TracyWebGPUPanic("Failed to create timestamp query set.", return);
             m_queryLimit = qsDesc.count;
 
-            // Resolve buffer: the GPU resolves query results into this buffer.
             WGPUBufferDescriptor resolveDesc = {};
             resolveDesc.usage = WGPUBufferUsage_QueryResolve | WGPUBufferUsage_CopySrc;
             resolveDesc.size  = static_cast<uint64_t>(m_queryLimit) * sizeof(uint64_t);
@@ -391,7 +402,6 @@ namespace tracy
             if (!m_resolveBuffer)
                 TracyWebGPUPanic("Failed to create timestamp resolve buffer.", return);
 
-            // Readback buffers: targets of CopyBufferToBuffer; mappable for read (3-slot ring).
             WGPUBufferDescriptor readbackDesc = {};
             readbackDesc.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
             readbackDesc.size  = static_cast<uint64_t>(m_queryLimit) * sizeof(uint64_t);
@@ -402,22 +412,18 @@ namespace tracy
                 if (!slot.buffer) { TracyWebGPUPanic("Failed to create timestamp readback buffer.", return); }
             }
 
-            // Establish the (cpuTime, gpuTime) anchor for Tracy's GpuNewContext.
-            // WebGPU has no "clock calibration API", so we use a one-shot anchor
-            // to estimate a correlation for the CPU and the GPU timestamps.
             uint64_t cpuTimestamp = 0;
             uint64_t gpuTimestamp = 0;
             if (!CalibrateClocks(cpuTimestamp, gpuTimestamp))
-            {
                 TracyWebGPUPanic("Failed to calibrate CPU/GPU clocks.", return);
-            }
 
             fprintf(stdout, "INFO: gpuTimestamp is %llu\n", gpuTimestamp);
-            //m_shadowBuffer.resize(m_queryLimit, gpuTimestamp);
-            m_shadowBuffer.resize(m_queryLimit, 0);
+            m_shadowBuffer.resize(m_queryLimit, gpuTimestamp);
 
             // WebGPU timestamps are in nanoseconds, as per the spec.
-            const float period = 1.0f;  // 1ns/tick
+            float period = 1.0f;  // 1ns/tick
+            // TODO: however, with raw timestamps, the period may need adjustment
+            // (we measure that that during CalibrateClocks())
 
             // All setup completed: register the context.
             m_contextId = GetGpuCtxCounter().fetch_add(1);
@@ -549,8 +555,13 @@ namespace tracy
             m_writeIdx = newWriteIdx;
 
             WGPUBufferMapCallbackInfo cbInfo = {};
-            cbInfo.mode      = WGPUCallbackMode_AllowProcessEvents;
-            cbInfo.callback  = &WebGPUQueueCtx::OnMapped;
+            cbInfo.mode = WGPUCallbackMode_AllowProcessEvents;
+            cbInfo.callback = [](WGPUMapAsyncStatus status, WGPUStringView, void* ud, void*)
+            {
+                auto* self = static_cast<WebGPUQueueCtx*>(ud);
+                const int collectIdx = (self->m_writeIdx + 2) % 3;
+                self->m_readbackSlots[collectIdx].mapStatus = status;
+            };
             cbInfo.userdata1 = this;
             m_readbackSlots[pendingIdx].pendingFuture = wgpuBufferMapAsync(
                 m_readbackSlots[pendingIdx].buffer, WGPUMapMode_Read, 0,
@@ -561,25 +572,6 @@ namespace tracy
         }
 
     private:
-        // Drive the WebGPU event queue to deliver pending callbacks.
-        // wgpuInstanceProcessEvents is the canonical webgpu.h API.
-        // wgpu-native additionally benefits from wgpuDevicePoll.
-        void ProcessEvents()
-        {
-            if (m_instance)
-                wgpuInstanceProcessEvents(m_instance);
-#ifdef WGPU_H_
-            wgpuDevicePoll(m_device, false, nullptr);
-#endif
-        }
-
-        static void OnMapped(WGPUMapAsyncStatus status, WGPUStringView, void* ud, void*)
-        {
-            auto* self = static_cast<WebGPUQueueCtx*>(ud);
-            const int collectIdx = (self->m_writeIdx + 2) % 3;
-            self->m_readbackSlots[collectIdx].mapStatus = status;
-        }
-
         void EmitGpuTime(uint64_t gpuTimestamp, uint32_t slot)
         {
             auto* item = Profiler::QueueSerial();
@@ -630,7 +622,6 @@ namespace tracy
         {
             // 32 queries = 32 * 8 bytes = 256 bytes
             TracyWebGPUAssert(queryBatchStartId % 32 == 0, return);
-            queryBatchStartId = queryBatchStartId % m_ctx->m_queryLimit;
 
             const uint64_t blockOffset = static_cast<uint64_t>(queryBatchStartId) * sizeof(uint64_t);
             wgpuCommandEncoderResolveQuerySet(
@@ -716,7 +707,7 @@ namespace tracy
             m_encoder   = encoder;
 
             m_rawTicket = m_ctx->NextQueryId();
-            m_queryId   = static_cast<uint32_t>(m_rawTicket % ctx->m_queryLimit);
+            m_queryId   = m_ctx->RingIndex(m_rawTicket);
             m_timestampWrites.querySet                  = m_ctx->m_querySet;
             m_timestampWrites.beginningOfPassWriteIndex = m_queryId;
             m_timestampWrites.endOfPassWriteIndex       = m_queryId + 1;

@@ -43,7 +43,7 @@ public:
     void Begin();
     void End();
 
-    bool Turn( TurnRole role, std::vector<nlohmann::json>::iterator it, const std::vector<nlohmann::json>::iterator& end, Think think, bool last );
+    bool Turn( TurnRole role, std::vector<nlohmann::json>::iterator it, const std::vector<nlohmann::json>::iterator& end, Think think, bool last, bool fadeout );
     void SetModelTimeLabel( const char* model, uint64_t duration_ns );
 
 private:

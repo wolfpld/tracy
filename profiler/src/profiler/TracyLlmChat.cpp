@@ -227,7 +227,7 @@ void TracyLlmChat::End()
     }
 }
 
-bool TracyLlmChat::Turn( TurnRole role, std::vector<nlohmann::json>::iterator it, const std::vector<nlohmann::json>::iterator& end, Think think, bool last )
+bool TracyLlmChat::Turn( TurnRole role, std::vector<nlohmann::json>::iterator it, const std::vector<nlohmann::json>::iterator& end, Think think, bool last, bool fadeout )
 {
     auto& json = *it;
     if( json.contains( "role" ) && json["role"].get_ref<const std::string&>() == "tool" ) return true;
@@ -391,7 +391,9 @@ bool TracyLlmChat::Turn( TurnRole role, std::vector<nlohmann::json>::iterator it
                 if( ptr != end )
                 {
                     NormalScope();
+                    if( fadeout ) ImGui::PushStyleColor( ImGuiCol_Text, ImGui::GetStyle().Colors[ImGuiCol_TextDisabled] );
                     m_markdown.Print( content.c_str(), content.size() );
+                    if( fadeout ) ImGui::PopStyleColor();
                     if( roleStr == "assistant" ) ImGui::Spacing();
                 }
             }

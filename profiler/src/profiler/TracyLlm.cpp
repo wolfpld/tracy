@@ -615,7 +615,25 @@ void TracyLlm::Draw()
                 think = TracyLlmChat::Think::ToolCall;
             }
             const auto isLast = it + 1 == m_chat.end();
-            if( !m_chatUi->Turn( role, it, m_chat.end(), think, isLast ) )
+            bool fadeout = false;
+            if( role == TracyLlmChat::TurnRole::Assistant && !m_allThinkingRegions && !isLast )
+            {
+                auto nit = it + 1;
+                while( nit != m_chat.end() )
+                {
+                    const auto& nline = *nit;
+                    if( !nline.contains( "role" ) ) { nit++; continue; }
+                    const auto& nroleStr = nline["role"].get_ref<const std::string&>();
+                    if( nroleStr == "assistant" && nline.contains( "content" ) )
+                    {
+                        fadeout = true;
+                        break;
+                    }
+                    if( nroleStr == "user" ) break;
+                    nit++;
+                }
+            }
+            if( !m_chatUi->Turn( role, it, m_chat.end(), think, isLast, fadeout ) )
             {
                 if( role == TracyLlmChat::TurnRole::Assistant )
                 {

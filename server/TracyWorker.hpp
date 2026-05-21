@@ -678,6 +678,14 @@ public:
     uint8_t GetHandshakeStatus() const { return m_handshake.load( std::memory_order_relaxed ); }
     int64_t GetSamplingPeriod() const { return m_samplingPeriod; }
     bool AreSamplesInconsistent() const { return m_inconsistentSamples; }
+    void NotifyExcessiveZoneDepth( int64_t time )
+    {
+        if( m_excessiveZoneDepthTime.load( std::memory_order_relaxed ) != -1 ) return;
+        int64_t expected = -1;
+        m_excessiveZoneDepthTime.compare_exchange_strong( expected, time, std::memory_order_relaxed );
+    }
+    int64_t GetExcessiveZoneDepthTime() const { return m_excessiveZoneDepthTime.load( std::memory_order_relaxed ); }
+    bool HasExcessiveZoneDepth() const { return GetExcessiveZoneDepthTime() != -1; }
 
     static const LoadProgress& GetLoadProgress() { return s_loadProgress; }
     int64_t GetLoadTime() const { return m_loadTime; }
@@ -1068,6 +1076,7 @@ private:
     bool m_combineSamples;
     bool m_identifySamples = false;
     bool m_inconsistentSamples;
+    std::atomic<int64_t> m_excessiveZoneDepthTime { -1 };
     bool m_allowStringModification = false;
 
     short_ptr<GpuCtxData> m_gpuCtxMap[256];

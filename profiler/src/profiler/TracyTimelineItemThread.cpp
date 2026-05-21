@@ -430,6 +430,12 @@ int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V
 template<typename Adapter, typename V>
 int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V& vec, int depth, bool visible, const uint32_t inheritedColor )
 {
+    if( depth >= 256 )
+    {
+        m_worker.NotifyExcessiveZoneDepth( Adapter{}( vec.front() ).Start() );
+        return depth;
+    }
+
     const auto vStart = ctx.vStart;
     const auto vEnd = ctx.vEnd;
     const auto nspx = ctx.nspx;

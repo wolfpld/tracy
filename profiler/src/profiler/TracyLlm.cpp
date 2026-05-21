@@ -614,7 +614,8 @@ void TracyLlm::Draw()
             {
                 think = TracyLlmChat::Think::ToolCall;
             }
-            if( !m_chatUi->Turn( role, it, m_chat.end(), think, turnIdx == m_chat.size() - 1 ) )
+            const auto isLast = it + 1 == m_chat.end();
+            if( !m_chatUi->Turn( role, it, m_chat.end(), think, isLast ) )
             {
                 if( role == TracyLlmChat::TurnRole::Assistant )
                 {

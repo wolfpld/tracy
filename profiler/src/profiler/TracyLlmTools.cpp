@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <curl/curl.h>
+#include <inttypes.h>
 #include <nlohmann/json.hpp>
 #include <libbase64.h>
 #include <pugixml.hpp>
@@ -202,6 +203,11 @@ std::string TracyLlmTools::HandleToolCalls( const std::string& tool, const nlohm
         else if( tool == "symbol_parents" )
         {
             return SymbolParents( Param( "address" ), ParamOptU32( "limit", 10 ) );
+        }
+        else if( tool == "sampling_stats" )
+        {
+            std::string empty;
+            return SamplingStats( ParamOptString( "query", empty ), ParamOptU32( "limit", 30 ) );
         }
 #endif
         return "Unknown tool call: " + tool;
@@ -1104,6 +1110,112 @@ std::string TracyLlmTools::SymbolParents( const std::string& address, uint32_t l
             { "percentage", buf }
         } );
     }
+    return result.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
+}
+
+std::string TracyLlmTools::SamplingStats( const std::string& query, uint32_t limit ) const
+{
+    if( !m_worker.AreSymbolSamplesReady() ) return "Sampling data is not ready yet. Wait for background processing to complete.";
+    if( m_worker.GetCallstackSampleCount() == 0 ) return "No call stack samples in this trace.";
+
+    std::regex rx;
+    if( !query.empty() )
+    {
+        try
+        {
+            rx = std::regex( query );
+        }
+        catch( const std::regex_error& e )
+        {
+            return "Error: Invalid query regex: " + std::string( e.what() );
+        }
+    }
+
+    const auto& symMap = m_worker.GetSymbolMap();
+    const auto& symStat = m_worker.GetSymbolStats();
+
+    struct SymEntry
+    {
+        uint64_t symAddr;
+        uint32_t excl;
+    };
+
+    std::vector<SymEntry> data;
+    data.reserve( symStat.size() );
+    for( auto& v : symStat )
+    {
+        auto sit = symMap.find( v.first );
+        if( sit == symMap.end() ) continue;
+        data.emplace_back( v.first, v.second.excl );
+    }
+    if( data.empty() ) return "No symbol statistics available.";
+
+    unordered_flat_map<uint64_t, SymEntry> baseMap;
+    for( auto& v : data )
+    {
+        auto sym = m_worker.GetSymbolData( v.symAddr );
+        const auto symAddr = ( sym && sym->isInline ) ? m_worker.GetSymbolForAddress( v.symAddr ) : v.symAddr;
+        auto it = baseMap.find( symAddr );
+        if( it == baseMap.end() )
+        {
+            baseMap.emplace( symAddr, SymEntry { symAddr, v.excl } );
+        }
+        else
+        {
+            assert( symAddr == it->second.symAddr );
+            it->second.excl += v.excl;
+        }
+    }
+
+    data.clear();
+    for( auto& v : baseMap )
+    {
+        auto sit = symMap.find( v.second.symAddr );
+        if( sit == symMap.end() ) continue;
+        if( !query.empty() )
+        {
+            const auto name = m_worker.GetString( sit->second.name );
+            if( !std::regex_search( name, rx ) ) continue;
+        }
+        data.emplace_back( v.second );
+    }
+    if( data.empty() ) return "No symbols match the query.";
+
+    pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l.excl > r.excl; } );
+    if( data.size() > limit ) data.resize( limit );
+
+    const auto period = m_worker.GetSamplingPeriod();
+    const auto totalSamples = m_worker.GetCallstackSampleCount();
+
+    nlohmann::json result = {
+        { "total_time", TimeToString( totalSamples * period ) },
+        { "entries", nlohmann::json::array() },
+        { "hint", "Entries are sorted by exclusive time (child time not included), highest first." }
+    };
+    auto& entries = result["entries"];
+
+    for( auto& v : data )
+    {
+        auto sit = symMap.find( v.symAddr );
+        assert( sit != symMap.end() );
+
+        char addr[32];
+        snprintf( addr, sizeof( addr ), "0x%" PRIx64, v.symAddr );
+
+        const auto file = m_worker.GetString( sit->second.file );
+        char loc[1024];
+        snprintf( loc, sizeof( loc ), "%s:%u", file, sit->second.line );
+
+        entries.push_back( {
+            { "name", m_worker.GetString( sit->second.name ) },
+            { "address", addr },
+            { "location", loc },
+            { "image", m_worker.GetString( sit->second.imageName ) },
+            { "time", TimeToString( v.excl * period ) },
+            { "code_size", MemSizeToString( sit->second.size.Val() ) }
+        } );
+    }
+
     return result.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
 }
 #endif

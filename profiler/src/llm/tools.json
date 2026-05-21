@@ -221,5 +221,26 @@
       "required": ["address"]
     }
   }
+},
+{
+  "type": "function",
+  "function": {
+    "name": "sampling_stats",
+    "description": "Get sampling statistics for functions, sorted by time spent in each.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "ECMAScript regex to search for."
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Maximum number of entries to return. Default: 30."
+        }
+      },
+      "required": []
+    }
+  }
 }
 ]

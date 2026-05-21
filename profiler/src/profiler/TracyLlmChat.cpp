@@ -159,6 +159,13 @@ std::string TracyLlmChat::ToolCallDescription( const nlohmann::json& json ) cons
         if( args.contains( "limit" ) ) limit = ", limit: " + std::to_string( args["limit"].get<uint32_t>() );
         return "Symbol parents: " + std::string( m_worker.GetString( sym->name ) ) + limit;
     }
+    else if( name == "sampling_stats" )
+    {
+        std::string query, limit;
+        if( args.contains( "query" ) ) query = ", query: " + args["query"].get_ref<const std::string&>();
+        if( args.contains( "limit" ) ) limit = ", limit: " + std::to_string( args["limit"].get<uint32_t>() );
+        return "Sampling stats" + query + limit;
+    }
     return "";
 }
 

@@ -92,6 +92,22 @@ void View::DrawNotificationArea()
         TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_EYE_DROPPER );
         TooltipIfHovered( "Sampling data and ghost zones may be displayed wrongly due to data inconsistency. Save and reload the trace to fix this." );
     }
+    if( m_worker.HasExcessiveZoneDepth() )
+    {
+        ImGui::SameLine();
+        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_LAYER_GROUP );
+        if( ImGui::IsItemHovered() )
+        {
+            const auto t = m_worker.GetExcessiveZoneDepthTime();
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted( "Some zones exceed the maximum nesting depth of 256 and are not displayed." );
+            ImGui::Separator();
+            TextFocused( "First occurrence:", TimeToString( t - m_worker.GetFirstTime() ) );
+            ImGui::TextDisabled( "Click to center the view at this time." );
+            ImGui::EndTooltip();
+            if( IsMouseClicked( 0 ) ) CenterAtTime( t );
+        }
+    }
     if( m_vd.drawEmptyLabels )
     {
         ImGui::SameLine();

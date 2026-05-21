@@ -6,7 +6,7 @@
 #  include <windows.h>
 #elif defined __linux__
 #  include <sys/sysinfo.h>
-#elif defined __APPLE__ || defined BSD
+#elif defined __APPLE__ || defined __FreeBSD__ || defined __NetBSD__ || defined __OpenBSD__ || defined __DragonFly__
 #  include <sys/types.h>
 #  include <sys/sysctl.h>
 #endif
@@ -30,7 +30,7 @@ size_t GetPhysicalMemorySize()
     size_t sz = sizeof( memSize );
     sysctlbyname( "hw.memsize", &memSize, &sz, nullptr, 0 );
     return memSize;
-#elif defined BSD
+#elif defined __FreeBSD__ || defined __NetBSD__ || defined __OpenBSD__ || defined __DragonFly__
     size_t memSize;
     size_t sz = sizeof( memSize );
     sysctlbyname( "hw.physmem", &memSize, &sz, nullptr, 0 );

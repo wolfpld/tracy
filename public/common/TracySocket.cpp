@@ -27,7 +27,6 @@
 #else
 #  include <arpa/inet.h>
 #  include <sys/socket.h>
-#  include <sys/param.h>
 #  include <errno.h>
 #  include <fcntl.h>
 #  include <netinet/in.h>
@@ -509,7 +508,7 @@ bool ListenSocket::Listen( uint16_t port, int backlog )
 #if defined _WIN32
     unsigned long val = 0;
     setsockopt( m_sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&val, sizeof( val ) );
-#elif defined BSD
+#elif defined __APPLE__ || defined __FreeBSD__ || defined __NetBSD__ || defined __OpenBSD__ || defined __DragonFly__
     int val = 0;
     setsockopt( m_sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&val, sizeof( val ) );
     val = 1;

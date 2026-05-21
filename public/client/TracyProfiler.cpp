@@ -15,7 +15,6 @@
 #  endif
 #else
 #  include <sys/time.h>
-#  include <sys/param.h>
 #endif
 
 #ifdef _GNU_SOURCE
@@ -29,7 +28,7 @@
 #  include <sys/syscall.h>
 #endif
 
-#if defined __APPLE__ || defined BSD
+#if defined __APPLE__ || defined __FreeBSD__ || defined __NetBSD__ || defined __OpenBSD__ || defined __DragonFly__
 #  include <sys/types.h>
 #  include <sys/sysctl.h>
 #endif
@@ -447,7 +446,7 @@ static const char* GetProcessName()
 #  endif
 #elif defined __linux__ && defined _GNU_SOURCE
     if( program_invocation_short_name ) processName = program_invocation_short_name;
-#elif defined __APPLE__ || defined BSD
+#elif defined __APPLE__ || defined __FreeBSD__ || defined __NetBSD__ || defined __OpenBSD__ || defined __DragonFly__
     auto buf = getprogname();
     if( buf ) processName = buf;
 #elif defined __QNX__
@@ -725,7 +724,7 @@ static const char* GetHostInfo()
     size_t sz = sizeof( memSize );
     sysctlbyname( "hw.memsize", &memSize, &sz, nullptr, 0 );
     ptr += sprintf( ptr, "RAM: %zu MB\n", memSize / 1024 / 1024 );
-#elif defined BSD
+#elif defined __FreeBSD__ || defined __NetBSD__ || defined __OpenBSD__ || defined __DragonFly__
     size_t memSize;
     size_t sz = sizeof( memSize );
     sysctlbyname( "hw.physmem", &memSize, &sz, nullptr, 0 );
@@ -1534,7 +1533,7 @@ Profiler::Profiler()
 
 #ifndef _WIN32
     pipe(m_pipe);
-#  if defined __APPLE__ || defined BSD
+#  if defined __APPLE__ || defined __FreeBSD__ || defined __NetBSD__ || defined __OpenBSD__ || defined __DragonFly__
     // FreeBSD/XNU don't have F_SETPIPE_SZ, so use the default
     m_pipeBufSize = 16384;
 #  else

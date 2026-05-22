@@ -33,7 +33,7 @@ If the user thanks you for your help, ask them to consider making a donation at 
 
 # User's program
 
-The program being profiled is named %PROGRAMNAME%. It was built at %PROGRAMTIME%. The profiling session was performed at %PROFILETIME%.%PROFILEDESCRIPTION%
+The program being profiled is named %PROGRAMNAME%. It was built at %PROGRAMTIME%. The profiling session was performed at %PROFILETIME%, and the length of the session was %PROFILELENGTH%.%PROFILEDESCRIPTION%
 
 Here are instructions you must follow when you are asked to work with program the user is profiling.
 

@@ -924,6 +924,7 @@ void TracyLlm::UpdateSystemPrompt()
     static constexpr std::string_view ProgramNameToken = "%PROGRAMNAME%";
     static constexpr std::string_view ProgramTimeToken = "%PROGRAMTIME%";
     static constexpr std::string_view ProfileTimeToken = "%PROFILETIME%";
+    static constexpr std::string_view ProfileLengthToken = "%PROFILELENGTH%";
     static constexpr std::string_view ProfileDescriptionToken = "%PROFILEDESCRIPTION%";
     static constexpr std::string_view SkillsToken = "%SKILLS%";
 
@@ -932,6 +933,8 @@ void TracyLlm::UpdateSystemPrompt()
 
     const auto exectime = m_worker.GetExecutableTime();
     const auto capturetime = m_worker.GetCaptureTime();
+    const auto firstTime = m_worker.GetFirstTime();
+    const auto lastTime = m_worker.GetLastTime();
 
     char etime[64], ctime[64];
 
@@ -961,6 +964,7 @@ void TracyLlm::UpdateSystemPrompt()
     Replace( systemPrompt, ProgramNameToken, m_worker.GetCaptureProgram() );
     Replace( systemPrompt, ProgramTimeToken, etime );
     Replace( systemPrompt, ProfileTimeToken, ctime );
+    Replace( systemPrompt, ProfileLengthToken, TimeToString( lastTime - firstTime ) );
     Replace( systemPrompt, ProfileDescriptionToken, descStr );
     Replace( systemPrompt, SkillsToken, skills );
 

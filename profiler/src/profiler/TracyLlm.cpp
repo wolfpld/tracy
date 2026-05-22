@@ -55,7 +55,7 @@ TracyLlm::TracyLlm( Worker& worker, View& view, const TracyManualData& manual )
 
     m_input = new char[InputBufferSize];
     m_apiInput = new char[InputBufferSize];
-    ResetChat();
+    *m_input = 0;
 
     m_api = std::make_unique<TracyLlmApi>();
     m_chatUi = std::make_unique<TracyLlmChat>( view, worker, m_skills );
@@ -147,6 +147,7 @@ void TracyLlm::Draw()
     ImGui::SameLine();
 
     std::lock_guard lock( m_chatLock );
+    if( m_chatId.load( std::memory_order_acquire ) == 0 ) ResetChat();
 
     const auto hasChat = m_chat.size() <= 1 && *m_input == 0;
     if( hasChat ) ImGui::BeginDisabled();
@@ -909,12 +910,13 @@ void TracyLlm::ResetChat()
 {
     *m_input = 0;
     m_usedCtx = 0;
-    m_chatId.fetch_add( 1, std::memory_order_release );
     m_chat.clear();
     m_summary.clear();
     m_suggestion.clear();
 
     UpdateSystemPrompt();
+
+    m_chatId.fetch_add( 1, std::memory_order_release );
 }
 
 void TracyLlm::UpdateSystemPrompt()
@@ -968,7 +970,7 @@ void TracyLlm::UpdateSystemPrompt()
     Replace( systemPrompt, ProfileDescriptionToken, descStr );
     Replace( systemPrompt, SkillsToken, skills );
 
-    if( !m_api )
+    if( !m_api || m_chatId.load( std::memory_order_acquire ) == 0 )
     {
         m_chat.push_back( {
             { "role", "system" },

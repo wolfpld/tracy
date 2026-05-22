@@ -1906,17 +1906,22 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     if( m_worker.HasZoneExtra( ev ) )
     {
         auto& extra = m_worker.GetZoneExtra( ev );
-        if( extra.callstack.Val() != 0 )
+        const auto callstack = extra.callstack.Val();
+        if( callstack != 0 )
         {
-            ImGui::Separator();
-            DrawCallstackCalls( extra.callstack.Val(), 6 );
-            callstackDone = true;
+            const auto& csdata = m_worker.GetCallstack( callstack );
+            if( CallstackHasLocals( csdata.data(), csdata.size() ) )
+            {
+                ImGui::Separator();
+                DrawCallstackCalls( callstack, 6 );
+                callstackDone = true;
+            }
         }
     }
     if( !callstackDone )
     {
         auto cs = ReconstructZoneCallstack( ev );
-        if( !cs.empty() )
+        if( !cs.empty() && CallstackHasLocals( cs.data(), cs.size() ) )
         {
             ImGui::Separator();
             TextDisabledUnformatted( ICON_FA_WAND_SPARKLES );

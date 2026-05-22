@@ -123,56 +123,107 @@ namespace tracy
 
         std::vector<uint64_t> m_shadowBuffer;
 
+        using WallTime = std::chrono::steady_clock::time_point;
+        static tracy_force_inline auto GetWallTime() { return WallTime::clock::now(); }
+        static tracy_force_inline auto Milliseconds(int value) { return std::chrono::milliseconds(value); }
+
+        static bool WaitQueueIdle(WGPUQueue queue, WGPUInstance instance)
+        {
+            bool gpuDone = false;
+            WGPUQueueWorkDoneCallbackInfo doneCB = {};
+            doneCB.mode = WGPUCallbackMode_AllowProcessEvents;
+            doneCB.callback = [](WGPUQueueWorkDoneStatus, WGPUStringView, void* userData, void*) {
+                *static_cast<bool*>(userData) = true;
+            };
+            doneCB.userdata1 = &gpuDone;
+            wgpuQueueOnSubmittedWorkDone(queue, doneCB);
+
+            const auto deadline = GetWallTime() + Milliseconds(2000);
+            while (!gpuDone && GetWallTime() < deadline)
+                wgpuInstanceProcessEvents(instance);
+            return gpuDone;
+        }
+
+        static const uint64_t* MapBufferSync(WGPUBuffer buffer, WGPUInstance instance)
+        {
+            struct MapCtx { WGPUMapAsyncStatus status = {}; } ctx;
+            WGPUBufferMapCallbackInfo cbInfo = {};
+            cbInfo.mode      = WGPUCallbackMode_AllowProcessEvents;
+            cbInfo.callback  = [](WGPUMapAsyncStatus status, WGPUStringView, void* userData, void*) {
+                auto* ctx = static_cast<MapCtx*>(userData);
+                ctx->status = status;
+            };
+            cbInfo.userdata1 = &ctx;
+            size_t offset = 0;
+            size_t size = 2 * sizeof(uint64_t);
+            wgpuBufferMapAsync(buffer, WGPUMapMode_Read, offset, size, cbInfo);
+
+            const auto deadline = GetWallTime() + Milliseconds(2000);
+            while (ctx.status == 0 && GetWallTime() < deadline)
+                wgpuInstanceProcessEvents(instance);
+
+            if (ctx.status != WGPUMapAsyncStatus_Success) return nullptr;
+            auto data = wgpuBufferGetConstMappedRange(buffer, offset, size);
+            return static_cast<const uint64_t*>(data);
+        }
+
         struct Calibration {
-            uint64_t cpuTime = 0;
-            uint64_t gpuTime = 0;
             int64_t minCpuRange = ~uint64_t(0) >> 1;
-            static bool WaitQueueIdle(WGPUQueue queue, WGPUInstance instance)
+            struct Regression
             {
-                bool gpuDone = false;
-                WGPUQueueWorkDoneCallbackInfo doneCB = {};
-                doneCB.mode = WGPUCallbackMode_AllowProcessEvents;
-                doneCB.callback = [](WGPUQueueWorkDoneStatus, WGPUStringView, void* userData, void*) {
-                    *static_cast<bool*>(userData) = true;
-                };
-                doneCB.userdata1 = &gpuDone;
-                wgpuQueueOnSubmittedWorkDone(queue, doneCB);
-
-                const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
-                while (!gpuDone && std::chrono::steady_clock::now() < deadline)
-                    wgpuInstanceProcessEvents(instance);
-                return gpuDone;
+                int64_t n = 0;
+                int64_t mean_x = 0;
+                int64_t mean_y = 0;
+                int64_t S_xx = 0;
+                int64_t S_xy = 0;
+                void Update(int64_t x, int64_t y)
+                {
+                    n += 1;
+                    int64_t dx = x - mean_x;
+                    int64_t dy = y - mean_y;
+                    mean_x += dx / n;
+                    mean_y += dy / n;
+                    S_xx += dx * (x - mean_x);
+                    S_xy += dx * (y - mean_y);
+                }
+                double Slope() const { return double(S_xy) / S_xx; }
+                double Intercept() const { return mean_y - Slope() * mean_x; }
+            };
+            Regression cpuToGpuModel;   // cpu-ticks to gpu-ticks
+            Regression cpuRangeModel;   // cpu-tick interval uncertainty
+            Regression wallToGpuModel;  // nanoseconds to gpu-ticks
+            void GetReferenceTime(uint64_t& cpuTime, uint64_t& gpuTime) const
+            {
+                // the mean belongs to the regression line
+                cpuTime = cpuToGpuModel.mean_x;
+                gpuTime = cpuToGpuModel.mean_y;
             }
-            static const uint64_t* MapBufferSync(WGPUBuffer buffer, WGPUInstance instance)
-            {
-                struct MapCtx { WGPUMapAsyncStatus status = {}; } ctx;
-                WGPUBufferMapCallbackInfo cbInfo = {};
-                cbInfo.mode      = WGPUCallbackMode_AllowProcessEvents;
-                cbInfo.callback  = [](WGPUMapAsyncStatus status, WGPUStringView, void* userData, void*) {
-                    auto* ctx = static_cast<MapCtx*>(userData);
-                    ctx->status = status;
-                };
-                cbInfo.userdata1 = &ctx;
-                size_t offset = 0;
-                size_t size = 2 * sizeof(uint64_t);
-                wgpuBufferMapAsync(buffer, WGPUMapMode_Read, offset, size, cbInfo);
-
-                const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
-                while (ctx.status == 0 && std::chrono::steady_clock::now() < deadline)
-                    wgpuInstanceProcessEvents(instance);
-
-                if (ctx.status != WGPUMapAsyncStatus_Success) return nullptr;
-                auto data = wgpuBufferGetConstMappedRange(buffer, offset, size);
-                return static_cast<const uint64_t*>(data);
+            double Period() const { return 1.0 / wallToGpuModel.Slope(); }    // ns/tick
+            bool AcceptX(const Regression& r, int64_t x, double threshold = 3.0) const {
+                if (r.n < 2) return true;
+                auto dx = x - r.mean_x;
+                if (dx <= 0) return true; // always accept "tighter" outliers
+                double variance = double(r.S_xx) / (r.n - 1);
+                if (variance == 0.0) return true;
+                double zz = (double)(dx*dx) / variance;
+                return zz <= (threshold*threshold);
             }
-            bool Update(uint64_t tcpu0, uint64_t tcpu1, uint64_t tgpu)
+            bool Update(WallTime twall0, WallTime twall1, uint64_t tcpu0, uint64_t tcpu1, uint64_t tgpu)
             {
-                // TODO: run some interval-based incremental regression here
+                using namespace std::chrono;
                 int64_t cpuRange = tcpu1 - tcpu0;
-                if (cpuRange >= minCpuRange) return false;
-                minCpuRange = cpuRange;
-                this->cpuTime = tcpu1;    // t0 + (t1-t0)/2
-                this->gpuTime = tgpu;
+                cpuRangeModel.Update(cpuRange, 0);
+                if (!AcceptX(cpuRangeModel, cpuRange, 1.0)) return false;
+                // Process sample:
+                int64_t tcpu = tcpu0 + (tcpu1 - tcpu0) / 2; // mid-point
+                int64_t twall = duration_cast<nanoseconds>(
+                    (twall0 + (twall1 - twall0) / 2)        // mid-point
+                    .time_since_epoch()
+                ).count();
+                // incremental regression:
+                cpuToGpuModel.Update(tcpu, tgpu);
+                wallToGpuModel.Update(twall, tgpu);
+                fprintf(stderr, "----- (sample accepted! period = %f)\n", Period());
                 return true;
             }
         } m_calibration;
@@ -185,7 +236,7 @@ namespace tracy
             Profiler::QueueSerialFinish();
         }
 
-        bool CalibrateClocks(uint64_t& outCpuTime, uint64_t& outGpuTime)
+        bool CalibrateClocks(uint64_t& outCpuTime, uint64_t& outGpuTime, double& period)
         {
             // WebGPU does not have any clock calibration API.
             // This routine attempts to estimates a reasonable (cpuTime, gpuTime) correlation
@@ -258,11 +309,16 @@ namespace tracy
             passDesc.colorAttachments     = &att;
             passDesc.timestampWrites      = &anchorTs;
 
-            const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(100);
-            do
+            // calibration loop
+            const auto deadline = GetWallTime() + Milliseconds(100);
+            for (int i = 0; i < 1000; ++i)
             {
+                // loop until time budget (100ms) allows, but ensure at least 5 iterations
+                if ((GetWallTime() >= deadline) && (i > 5))
+                    break;
+
                 WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(m_device, nullptr);
-                if (!enc) { TracyWebGPUPanic("Failed to create calibration command encoder.", return false); }
+                if (!enc) { TracyWebGPUPanic("Failed to create command encoder for time calibration.", return false); }
 
                 WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &passDesc);
                 wgpuRenderPassEncoderSetPipeline(pass, calibPipeline);
@@ -280,32 +336,47 @@ namespace tracy
                 wgpuCommandEncoderRelease(enc);
                 if (!cmd) { TracyWebGPUPanic("Failed to finish calibration command encoder.", return false); }
 
-                Calibration::WaitQueueIdle(m_queue, m_instance);
+                WaitQueueIdle(m_queue, m_instance);
                 int64_t cpu [2] = {};
+                int64_t gpu [2] = {};
+                WallTime wall [2] = {};
                 cpu[0] = Profiler::GetTime();
+                wall[0] = GetWallTime();
                 wgpuQueueSubmit(m_queue, 1, &cmd);
                 wgpuCommandBufferRelease(cmd);
-                Calibration::WaitQueueIdle(m_queue, m_instance);
+                WaitQueueIdle(m_queue, m_instance);
+                wall[1] = GetWallTime();
                 cpu[1] = Profiler::GetTime();
-                auto gpu = Calibration::MapBufferSync(readBackBuffer, m_instance);
-                TracyWebGPUAssert(gpu != nullptr);
-                TracyWebGPUDebug(
-                    fprintf(stdout, "CalibrateClocks() -> %llu | %llu | %lld /// %lld\n", gpu[0], gpu[1], gpu[1]-gpu[0], cpu[1]-cpu[0]);
-                    if (gpu[0] < m_calibration.gpuTime)
-                        fprintf(stdout, "CalibrateClocks() -> WARNING!!! going backwards!\n%llu\n%llu\n%lld\n", m_calibration.gpuTime, gpu[0], gpu[0] - m_calibration.gpuTime);
-                );
-                m_calibration.Update(cpu[0], cpu[1], gpu[0]);
+                auto gpuTimestamps = MapBufferSync(readBackBuffer, m_instance);
+                TracyWebGPUAssert(gpuTimestamps != nullptr);
+                gpu[0] = gpuTimestamps[0];
+                gpu[1] = gpuTimestamps[0];
                 wgpuBufferUnmap(readBackBuffer);
+                TracyWebGPUDebug(
+                    fprintf(stdout, "[%03d] CalibrateClocks() -> %llu | %llu | %lld /// %lld\n", i, gpu[0], gpu[1], gpu[1]-gpu[0], cpu[1]-cpu[0]);
+                    uint64_t cpuTimeRef, gpuTimeRef;
+                    m_calibration.GetReferenceTime(cpuTimeRef, gpuTimeRef);
+                    if (gpu[0] < gpuTimeRef)
+                        fprintf(stdout, "!!!!! CalibrateClocks() -> WARNING!!! going backwards!\n%llu\n%llu\n%lld\n", gpuTimeRef, gpu[0], gpu[0] - gpuTimeRef);
+                );
 
-            } while (std::chrono::steady_clock::now() < deadline);
+                // skip first sample since it is quite jittery (lazy intialization of WebGPU objects)
+                if (i == 0)
+                    continue;
+
+                m_calibration.Update(wall[0], wall[1], cpu[0], cpu[1], gpu[0]);
+            };
 
             wgpuRenderPipelineRelease(calibPipeline);
             wgpuShaderModuleRelease(calibShader);
             wgpuTextureViewRelease(texView);
             wgpuTextureRelease(tex);
 
-            outCpuTime = m_calibration.cpuTime;
-            outGpuTime = m_calibration.gpuTime;
+            m_calibration.GetReferenceTime(outCpuTime, outGpuTime);
+            period = m_calibration.Period();
+            // assume 1 ns/tick if the period estimation is close enough to 1
+            if (std::abs(period - 1.0) < 0.001)
+                period = 1.0;
 
             return true;
         }
@@ -422,16 +493,12 @@ namespace tracy
 
             uint64_t cpuTimestamp = 0;
             uint64_t gpuTimestamp = 0;
-            if (!CalibrateClocks(cpuTimestamp, gpuTimestamp))
+            double period = 0.0;  // in nanoseconds per gpu-tick
+            if (!CalibrateClocks(cpuTimestamp, gpuTimestamp, period))
                 TracyWebGPUPanic("Failed to calibrate CPU/GPU clocks.", return);
 
-            TracyWebGPUDebug( fprintf(stdout, "INFO: gpuTimestamp is %llu\n", gpuTimestamp) );
+            TracyWebGPUDebug( fprintf(stdout, "[WebGPUQueueCtx] cpuTimestamp: %llu | gpuTimestamp: %llu | period: %f\n", cpuTimestamp, gpuTimestamp, period) );
             m_shadowBuffer.resize(m_queryLimit, gpuTimestamp);
-
-            // WebGPU timestamps are in nanoseconds, as per the spec.
-            float period = 1.0f;  // 1ns/tick
-            // TODO: however, with raw timestamps, the period may need adjustment
-            // (we measure that that during CalibrateClocks())
 
             // All setup completed: register the context.
             m_contextId = GetGpuCtxCounter().fetch_add(1);
@@ -442,7 +509,7 @@ namespace tracy
             MemWrite(&item->gpuNewContext.cpuTime, static_cast<int64_t>(cpuTimestamp));
             MemWrite(&item->gpuNewContext.gpuTime, static_cast<int64_t>(gpuTimestamp));
             MemWrite(&item->gpuNewContext.thread, static_cast<uint32_t>(0));
-            MemWrite(&item->gpuNewContext.period, period);
+            MemWrite(&item->gpuNewContext.period, static_cast<float>(period));
             MemWrite(&item->gpuNewContext.context, static_cast<uint8_t>(GetId()));
             MemWrite(&item->gpuNewContext.flags, static_cast<uint8_t>(0));  // no calibration available
             MemWrite(&item->gpuNewContext.type, static_cast<uint8_t>(GpuContextType::WebGPU));

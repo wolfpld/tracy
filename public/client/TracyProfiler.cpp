@@ -372,6 +372,137 @@ static void InitFailure( const char* msg )
     exit( 1 );
 }
 
+#if defined __linux__ && defined TRACY_HAS_RDTSC && defined TRACY_HAS_SYSTEM_TRACING
+#include <linux/perf_event.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+#include <sys/prctl.h>
+
+// Linux exposes time_zero/time_mult/time_shift on the perf_event mmap page for
+// converting sample timestamps back to TSC cycles. cap_user_time_zero only
+// states the conversion math is valid; the underlying counter is the kernel's
+// sched_clock, which on x86 is TSC iff sched_clock_stable(). On Ryzen the
+// kernel can set cap_user_time_zero while TSC silently drifts between cores
+// before the clocksource watchdog catches it. This probe verifies the
+// conversion lands inside an rdtsc-sandwiched window for a synthesized
+// PERF_RECORD_COMM, mirroring tools/perf/tests/perf-time-to-tsc.c.
+static bool CheckLinuxPerfTscConsistency()
+{
+    int csfd = open( "/sys/devices/system/clocksource/clocksource0/current_clocksource", O_RDONLY );
+    if( csfd >= 0 )
+    {
+        char buf[32] = {};
+        auto n = read( csfd, buf, sizeof( buf ) - 1 );
+        close( csfd );
+        while( n > 0 && ( buf[n - 1] == '\n' || buf[n - 1] == '\r' ) ) buf[--n] = 0;
+        if( n >= 3 && memcmp( buf, "tsc", 3 ) != 0 )
+        {
+            TracyDebug( "TSC check: clocksource is '%s', not 'tsc'; TSC considered unreliable", buf );
+            return false;
+        }
+    }
+
+    perf_event_attr attr = {};
+    attr.type = PERF_TYPE_SOFTWARE;
+    attr.config = PERF_COUNT_SW_DUMMY;
+    attr.size = sizeof( attr );
+    attr.sample_type = PERF_SAMPLE_TIME;
+    attr.sample_id_all = 1;
+    attr.comm = 1;
+    attr.disabled = 1;
+    attr.exclude_kernel = 1;
+
+    const int pfd = (int)syscall( SYS_perf_event_open, &attr, 0, -1, -1, 0 );
+    if( pfd < 0 )
+    {
+        TracyDebug( "TSC check: perf_event_open failed (%s); skipping probe", strerror( errno ) );
+        return true;
+    }
+
+    const auto pageSize = (size_t)sysconf( _SC_PAGESIZE );
+    const auto mapSize = pageSize * 2;
+    auto map = mmap( nullptr, mapSize, PROT_READ | PROT_WRITE, MAP_SHARED, pfd, 0 );
+    if( map == MAP_FAILED ) { close( pfd ); return true; }
+
+    auto* meta = (perf_event_mmap_page*)map;
+    if( !meta->cap_user_time_zero )
+    {
+        munmap( map, mapSize );
+        close( pfd );
+        TracyDebug( "TSC check: cap_user_time_zero not set, kernel says no" );
+        return false;
+    }
+
+    ioctl( pfd, PERF_EVENT_IOC_ENABLE, 0 );
+
+    char origName[16] = {};
+    prctl( PR_GET_NAME, origName, 0, 0, 0 );
+
+    const uint64_t tsc0 = __builtin_ia32_rdtsc();
+    prctl( PR_SET_NAME, "tracy-tsc-prb", 0, 0, 0 );
+    const uint64_t tsc1 = __builtin_ia32_rdtsc();
+
+    ioctl( pfd, PERF_EVENT_IOC_DISABLE, 0 );
+    prctl( PR_SET_NAME, origName, 0, 0, 0 );
+
+    const auto head = std::atomic_load_explicit(
+        (std::atomic<uint64_t>*)&meta->data_head, std::memory_order_acquire );
+    const auto tail = meta->data_tail;
+    const auto dataMask = pageSize - 1;
+    char* data = (char*)map + pageSize;
+
+    bool tscOk = false;
+    bool sawComm = false;
+    uint64_t pos = tail;
+    while( pos < head )
+    {
+        perf_event_header hdr;
+        memcpy( &hdr, data + ( pos & dataMask ), sizeof( hdr ) );
+
+        if( hdr.type == PERF_RECORD_COMM )
+        {
+            sawComm = true;
+            uint64_t sampleTime;
+            const auto timeOff = pos + hdr.size - sizeof( uint64_t );
+            memcpy( &sampleTime, data + ( timeOff & dataMask ), sizeof( sampleTime ) );
+
+            const auto t = sampleTime - meta->time_zero;
+            const auto quot = t / meta->time_mult;
+            const auto rem  = t % meta->time_mult;
+            const uint64_t cyc = ( quot << meta->time_shift )
+                               + ( rem  << meta->time_shift ) / meta->time_mult;
+
+            // ~1 ms of slack at 3 GHz; covers prctl syscall + ring write latency.
+            const uint64_t slack = 3000000;
+            if( cyc + slack >= tsc0 && cyc <= tsc1 + slack )
+            {
+                tscOk = true;
+            }
+            else
+            {
+                TracyDebug( "TSC check: conversion outside rdtsc window "
+                            "(tsc0=%llu cyc=%llu tsc1=%llu)",
+                            (unsigned long long)tsc0,
+                            (unsigned long long)cyc,
+                            (unsigned long long)tsc1 );
+            }
+            break;
+        }
+        pos += hdr.size;
+    }
+
+    munmap( map, mapSize );
+    close( pfd );
+
+    if( !sawComm )
+    {
+        TracyDebug( "TSC check: no PERF_RECORD_COMM in probe ring; treating as inconclusive" );
+        return true;
+    }
+    return tscOk;
+}
+#endif
+
 static bool CheckHardwareSupportsInvariantTSC()
 {
     const char* noCheck = GetEnvVar( "TRACY_NO_INVARIANT_CHECK" );
@@ -388,9 +519,23 @@ static bool CheckHardwareSupportsInvariantTSC()
 #endif
     }
     CpuId( regs, 0x80000007 );
-    if( regs[3] & ( 1 << 8 ) ) return true;
+    if( !( regs[3] & ( 1 << 8 ) ) ) return false;
 
-    return false;
+#if defined __linux__ && defined TRACY_HAS_RDTSC && defined TRACY_HAS_SYSTEM_TRACING
+    if( !CheckLinuxPerfTscConsistency() )
+    {
+#if !defined TRACY_TIMER_QPC && !defined TRACY_TIMER_FALLBACK
+        InitFailure( "TSC reported as invariant by CPUID but failed runtime consistency check "
+                     "(clocksource demoted or perf-to-TSC conversion mismatch).\n"
+                     "Define TRACY_NO_INVARIANT_CHECK=1 to ignore this error, *if you know what you are doing*.\n"
+                     "Alternatively rebuild with TRACY_TIMER_FALLBACK to enable the clock_gettime fallback." );
+#else
+        return false;
+#endif
+    }
+#endif
+
+    return true;
 }
 
 #if defined TRACY_TIMER_FALLBACK && defined TRACY_HW_TIMER

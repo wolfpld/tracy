@@ -205,6 +205,7 @@ namespace tracy
                 if (dx <= 0) return true; // always accept "tighter" outliers
                 double variance = double(r.S_xx) / (r.n - 1);
                 if (variance == 0.0) return true;
+                // WARN: dx*dx "could" overflow, but very unlikely in practice
                 double zz = (double)(dx*dx) / variance;
                 return zz <= (threshold*threshold);
             }
@@ -350,7 +351,7 @@ namespace tracy
                 auto gpuTimestamps = MapBufferSync(readBackBuffer, m_instance);
                 TracyWebGPUAssert(gpuTimestamps != nullptr);
                 gpu[0] = gpuTimestamps[0];
-                gpu[1] = gpuTimestamps[0];
+                gpu[1] = gpuTimestamps[1];
                 wgpuBufferUnmap(readBackBuffer);
                 TracyWebGPUDebug(
                     fprintf(stdout, "[%03d] CalibrateClocks() -> %llu | %llu | %lld /// %lld\n", i, gpu[0], gpu[1], gpu[1]-gpu[0], cpu[1]-cpu[0]);
@@ -384,6 +385,7 @@ namespace tracy
     public:
         static bool SetupDevice(WGPUDeviceDescriptor& deviceDescriptor)
         {
+            // TODO: pass features array/size as argument to better allow for repeated calls
             static constexpr int MaxFeatures = 128;
             static WGPUFeatureName features [MaxFeatures] = {};
 
@@ -452,7 +454,7 @@ namespace tracy
             ZoneScopedC(Color::Red4);
 
             if (!VerifyDevice(m_device))
-                TracyWebGPUPanic("GPU profiling disabled because the device did not enable the necessary features.")
+                TracyWebGPUPanic("GPU profiling disabled because the device did not enable the necessary features.", return)
 
             TracyWebGPUAssert(m_instance); wgpuInstanceAddRef(m_instance);
             TracyWebGPUAssert(m_device); wgpuDeviceAddRef(m_device);

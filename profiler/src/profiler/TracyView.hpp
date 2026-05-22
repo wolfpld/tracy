@@ -342,6 +342,7 @@ private:
     void DrawParentsFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrameTree>& tree, int& idx );
 
     std::vector<CallstackFrameId> ReconstructZoneCallstack( const ZoneEvent& ev ) const;
+    bool CallstackHasLocals( const CallstackFrameId* data, size_t size ) const;
 
     void DrawInfoWindow();
     void DrawZoneInfoWindow();

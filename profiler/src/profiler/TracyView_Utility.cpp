@@ -1164,4 +1164,17 @@ std::vector<CallstackFrameId> View::ReconstructZoneCallstack( const ZoneEvent& e
     return ret;
 }
 
+bool View::CallstackHasLocals( const CallstackFrameId* data, size_t size ) const
+{
+    auto end = data + size;
+    while( data < end )
+    {
+        auto frameData = m_worker.GetCallstackFrame( *data++ );
+        if( !frameData ) continue;
+        const auto& frame = frameData->data[frameData->size - 1];
+        if( !m_worker.IsFrameExternal( frame.file, frameData->imageName ) ) return true;
+    }
+    return false;
+}
+
 }

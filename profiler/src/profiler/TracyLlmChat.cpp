@@ -331,6 +331,23 @@ bool TracyLlmChat::Turn( TurnRole role, std::vector<nlohmann::json>::iterator it
                     }
                 }
             }
+            else if( type == "assembly" )
+            {
+                if( j.contains( "address" ) )
+                {
+                    const auto addrStr = j["address"].get_ref<const std::string&>();
+                    const auto address = strtoull( addrStr.c_str(), nullptr, 16 );
+                    ImGui::SameLine();
+                    if( ImGui::SmallButton( ICON_FA_EYE ) )
+                    {
+                        auto sym = m_worker.GetSymbolData( address );
+                        if( sym )
+                        {
+                            m_view.ViewDispatch( m_worker.GetString( sym->file ), sym->line, address );
+                        }
+                    }
+                }
+            }
             if( expand )
             {
                 ImGui::PushFont( g_fonts.mono, FontNormal );

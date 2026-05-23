@@ -1833,6 +1833,7 @@ void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker,
             }
         }
 
+        const auto gs = 4.f * scale;
         const auto x40 = round( rect.Min.x + rect.GetWidth() * 0.4f );
         const auto x60 = round( rect.Min.x + rect.GetWidth() * 0.6f );
         for( size_t i=0; i<buckets.size(); i++ )
@@ -1841,7 +1842,13 @@ void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker,
             const auto y0 = round( rect.Min.y + float( i ) / bucketNum * rect.GetHeight() );
             const auto y1 = round( rect.Min.y + float( i + 1 ) / bucketNum * rect.GetHeight() );
             const auto color = buckets[i] == 0 ? 0x22FFFFFF : ( GetHotnessColor( buckets[i], m_childCalls ? (as.ipMaxSrc.local + as.ipMaxSrc.ext) : as.ipMaxSrc.local ) );
+            const auto glow = GetHotnessGlow( buckets[i], m_childCalls ? (as.ipMaxSrc.local + as.ipMaxSrc.ext) : as.ipMaxSrc.local );
             draw->AddRectFilled( ImVec2( x40, y0 ), ImVec2( x60, y1 ), color );
+            if( glow )
+            {
+                draw->AddRectFilledMultiColor( ImVec2( x60, y0 ), ImVec2( x60 + gs, y1 ), glow, 0, 0, glow );
+                draw->AddRectFilledMultiColor( ImVec2( x40 - gs, y0 ), ImVec2( x40, y1 ), 0, glow, glow, 0 );
+            }
         }
 
         ImGui::PopClipRect();
@@ -2763,6 +2770,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
             }
         }
 
+        const auto gs = 4.f * scale;
         const auto x40 = round( rect.Min.x + rect.GetWidth() * 0.4f );
         const auto x60 = round( rect.Min.x + rect.GetWidth() * 0.6f );
         for( size_t i=0; i<buckets.size(); i++ )
@@ -2771,7 +2779,13 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
             const auto y0 = round( rect.Min.y + float( i ) / bucketNum * rect.GetHeight() );
             const auto y1 = round( rect.Min.y + float( i + 1 ) / bucketNum * rect.GetHeight() );
             const auto color = GetHotnessColor( buckets[i], m_childCalls ? (as.ipMaxAsm.local + as.ipMaxAsm.ext) : as.ipMaxAsm.local );
+            const auto glow = GetHotnessGlow( buckets[i], m_childCalls ? (as.ipMaxAsm.local + as.ipMaxAsm.ext) : as.ipMaxAsm.local );
             draw->AddRectFilled( ImVec2( x40, y0 ), ImVec2( x60, y1 ), color );
+            if( glow )
+            {
+                draw->AddRectFilledMultiColor( ImVec2( x60, y0 ), ImVec2( x60 + gs, y1 ), glow, 0, 0, glow );
+                draw->AddRectFilledMultiColor( ImVec2( x40 - gs, y0 ), ImVec2( x40, y1 ), 0, glow, glow, 0 );
+            }
         }
 
         if( selJumpStart != 0 )

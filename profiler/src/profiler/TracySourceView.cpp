@@ -2775,7 +2775,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
         const auto x60 = round( rect.Min.x + rect.GetWidth() * 0.6f );
         for( size_t i=0; i<buckets.size(); i++ )
         {
-            if( buckets[i] < 0 ) continue;
+            if( buckets[i] <= 0 ) continue;
             const auto y0 = round( rect.Min.y + float( i ) / bucketNum * rect.GetHeight() );
             const auto y1 = round( rect.Min.y + float( i + 1 ) / bucketNum * rect.GetHeight() );
             const auto color = GetHotnessColor( buckets[i], m_childCalls ? (as.ipMaxAsm.local + as.ipMaxAsm.ext) : as.ipMaxAsm.local );

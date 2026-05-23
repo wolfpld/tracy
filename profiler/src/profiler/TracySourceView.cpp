@@ -1820,6 +1820,7 @@ void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker,
             const auto bucketStart = int( float( v.first - 1 ) / lines.size() * bucketNum );
             auto bucketEnd = int( float( v.first ) / lines.size() * bucketNum );
             if( bucketEnd == bucketStart ) bucketEnd++;
+            bucketEnd = std::min( bucketEnd, bucketNum - 1 );
             for( auto idx = bucketStart; idx<bucketEnd; idx++ )
             {
                 if( m_childCalls )
@@ -2757,6 +2758,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
             const auto bucketStart = int( float( v.first ) / m_asm.size() * bucketNum );
             auto bucketEnd = int( float( v.first + 1 ) / m_asm.size() * bucketNum );
             if( bucketEnd == bucketStart ) bucketEnd++;
+            bucketEnd = std::min( bucketEnd, bucketNum - 1 );
             for( auto idx = bucketStart; idx<bucketEnd; idx++ )
             {
                 if( m_childCalls )

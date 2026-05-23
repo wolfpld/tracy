@@ -1812,31 +1812,36 @@ void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker,
         }
         pdqsort_branchless( ipData.begin(), ipData.end(), []( const auto& l, const auto& r ) { return l.first < r.first; } );
 
-        const auto step = uint32_t( lines.size() * 2 / rect.GetHeight() );
-        const auto x14 = round( rect.Min.x + rect.GetWidth() * 0.4f );
-        const auto x34 = round( rect.Min.x + rect.GetWidth() * 0.6f );
-
-        auto it = ipData.begin();
-        while( it != ipData.end() )
+        const auto bucketHeight = std::max( 1, int( round( 3 * scale ) ) );
+        const auto bucketNum = std::max( 1, int( ceil( rect.GetHeight() / bucketHeight ) ) );
+        std::vector<int64_t> buckets( bucketNum, -1 );
+        for( auto& v : ipData )
         {
-            const auto firstLine = it->first;
-            AddrStat ipSum = {};
-            while( it != ipData.end() && it->first <= firstLine + step )
+            const auto bucketStart = int( float( v.first - 1 ) / lines.size() * bucketNum );
+            auto bucketEnd = int( float( v.first ) / lines.size() * bucketNum );
+            if( bucketEnd == bucketStart ) bucketEnd++;
+            for( auto idx = bucketStart; idx<bucketEnd; idx++ )
             {
-                ipSum += it->second;
-                ++it;
+                if( m_childCalls )
+                {
+                    buckets[idx] = std::max( buckets[idx], int64_t( v.second.local + v.second.ext ) );
+                }
+                else
+                {
+                    buckets[idx] = std::max( buckets[idx], int64_t( v.second.local ) );
+                }
             }
-            const auto ly = round( rect.Min.y + float( firstLine ) / lines.size() * rect.GetHeight() );
-            if( m_childCalls )
-            {
-                const auto color = ( ipSum.local + ipSum.ext == 0 ) ? 0x22FFFFFF : GetHotnessColor( ipSum.local + ipSum.ext, as.ipMaxSrc.local + as.ipMaxSrc.ext );
-                draw->AddRectFilled( ImVec2( x14, ly ), ImVec2( x34, ly+3*scale ), color );
-            }
-            else
-            {
-                const auto color = ipSum.local == 0 ? 0x22FFFFFF : GetHotnessColor( ipSum.local, as.ipMaxSrc.local );
-                draw->AddRectFilled( ImVec2( x14, ly ), ImVec2( x34, ly+3*scale ), color );
-            }
+        }
+
+        const auto x40 = round( rect.Min.x + rect.GetWidth() * 0.4f );
+        const auto x60 = round( rect.Min.x + rect.GetWidth() * 0.6f );
+        for( size_t i=0; i<buckets.size(); i++ )
+        {
+            if( buckets[i] < 0 ) continue;
+            const auto y0 = round( rect.Min.y + float( i ) / bucketNum * rect.GetHeight() );
+            const auto y1 = round( rect.Min.y + float( i + 1 ) / bucketNum * rect.GetHeight() );
+            const auto color = buckets[i] == 0 ? 0x22FFFFFF : ( GetHotnessColor( buckets[i], m_childCalls ? (as.ipMaxSrc.local + as.ipMaxSrc.ext) : as.ipMaxSrc.local ) );
+            draw->AddRectFilled( ImVec2( x40, y0 ), ImVec2( x60, y1 ), color );
         }
 
         ImGui::PopClipRect();
@@ -2737,31 +2742,36 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
         }
         pdqsort_branchless( ipData.begin(), ipData.end(), []( const auto& l, const auto& r ) { return l.first < r.first; } );
 
-        const auto step = uint32_t( m_asm.size() * 2 / rect.GetHeight() );
+        const auto bucketHeight = std::max( 1, int( round( 3 * scale ) ) );
+        const auto bucketNum = std::max( 1, int( ceil( rect.GetHeight() / bucketHeight ) ) );
+        std::vector<int64_t> buckets( bucketNum, -1 );
+        for( auto& v : ipData )
+        {
+            const auto bucketStart = int( float( v.first ) / m_asm.size() * bucketNum );
+            auto bucketEnd = int( float( v.first + 1 ) / m_asm.size() * bucketNum );
+            if( bucketEnd == bucketStart ) bucketEnd++;
+            for( auto idx = bucketStart; idx<bucketEnd; idx++ )
+            {
+                if( m_childCalls )
+                {
+                    buckets[idx] = std::max( buckets[idx], int64_t( v.second.local + v.second.ext ) );
+                }
+                else
+                {
+                    buckets[idx] = std::max( buckets[idx], int64_t( v.second.local ) );
+                }
+            }
+        }
+
         const auto x40 = round( rect.Min.x + rect.GetWidth() * 0.4f );
         const auto x60 = round( rect.Min.x + rect.GetWidth() * 0.6f );
-
-        auto it = ipData.begin();
-        while( it != ipData.end() )
+        for( size_t i=0; i<buckets.size(); i++ )
         {
-            const auto firstLine = it->first;
-            AddrStat ipSum = {};
-            while( it != ipData.end() && it->first <= firstLine + step )
-            {
-                ipSum += it->second;
-                ++it;
-            }
-            const auto ly = round( rect.Min.y + float( firstLine ) / m_asm.size() * rect.GetHeight() );
-            if( m_childCalls )
-            {
-                const auto color = GetHotnessColor( ipSum.local + ipSum.ext, as.ipMaxAsm.local + as.ipMaxAsm.ext );
-                draw->AddRectFilled( ImVec2( x40, ly ), ImVec2( x60, ly+3*scale ), color );
-            }
-            else if( as.ipMaxAsm.local != 0 )
-            {
-                const auto color = GetHotnessColor( ipSum.local, as.ipMaxAsm.local );
-                draw->AddRectFilled( ImVec2( x40, ly ), ImVec2( x60, ly+3*scale ), color );
-            }
+            if( buckets[i] < 0 ) continue;
+            const auto y0 = round( rect.Min.y + float( i ) / bucketNum * rect.GetHeight() );
+            const auto y1 = round( rect.Min.y + float( i + 1 ) / bucketNum * rect.GetHeight() );
+            const auto color = GetHotnessColor( buckets[i], m_childCalls ? (as.ipMaxAsm.local + as.ipMaxAsm.ext) : as.ipMaxAsm.local );
+            draw->AddRectFilled( ImVec2( x40, y0 ), ImVec2( x60, y1 ), color );
         }
 
         if( selJumpStart != 0 )

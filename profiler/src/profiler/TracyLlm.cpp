@@ -183,6 +183,7 @@ void TracyLlm::Draw()
         m_apiInput[sz] = 0;
         ImGui::SetNextItemWidth( ImGui::GetContentRegionAvail().x - ImGui::GetFrameHeight() - ImGui::GetStyle().ItemSpacing.x );
         bool changed = ImGui::InputTextWithHint( "##api", "http://localhost:1234", m_apiInput, InputBufferSize );
+        bool commit = ImGui::IsItemDeactivatedAfterEdit();
         ImGui::SameLine();
         if( ImGui::BeginCombo( "##presets", nullptr, ImGuiComboFlags_NoPreview ) )
         {
@@ -201,13 +202,14 @@ void TracyLlm::Draw()
                 {
                     memcpy( m_apiInput, preset.address, strlen( preset.address ) + 1 );
                     changed = true;
+                    commit = true;
                 }
             }
             ImGui::EndCombo();
         }
-        if( changed )
+        if( changed ) s_config.llmAddress = m_apiInput;
+        if( commit )
         {
-            s_config.llmAddress = m_apiInput;
             SaveConfig();
             std::lock_guard lock( m_jobsLock );
             QueueConnect();

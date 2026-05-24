@@ -399,10 +399,8 @@ private:
     const char* GetFrameSetName( const FrameData& fd ) const;
     static const char* GetFrameSetName( const FrameData& fd, const Worker& worker );
 
-#ifndef TRACY_NO_STATISTICS
     void FindZones();
     void FindZonesCompare();
-#endif
 
     std::vector<MemoryPage> GetMemoryPages() const;
 

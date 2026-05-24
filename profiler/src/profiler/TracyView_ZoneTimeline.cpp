@@ -409,7 +409,6 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
             }
             break;
         }
-#ifndef TRACY_NO_STATISTICS
         case TimelineDrawType::GhostFolded:
         {
             auto& ev = *(const GhostZone*)v.ev.get();
@@ -597,7 +596,6 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
             }
             break;
         }
-#endif
         default:
             assert( false );
             break;

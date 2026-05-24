@@ -41,10 +41,6 @@ void View::DrawStatistics()
     ImGui::SetNextWindowSize( ImVec2( 1400 * scale, 600 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Statistics", &m_showStatistics, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
-#ifdef TRACY_NO_STATISTICS
-    ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
-    ImGui::TextWrapped( "Rebuild without the TRACY_NO_STATISTICS macro to enable statistics view." );
-#else
     if( !m_worker.AreSourceLocationZonesReady() && ( !m_worker.AreCallstackSamplesReady() || m_worker.GetCallstackSampleCount() == 0 ) )
     {
         const auto ty = ImGui::GetTextLineHeight();
@@ -1002,7 +998,6 @@ void View::DrawStatistics()
 
         DrawSamplesStatistics( data, timeRange, m_statAccumulationMode );
     }
-#endif
     ImGui::End();
 }
 

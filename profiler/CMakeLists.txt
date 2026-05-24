@@ -5,9 +5,10 @@ include(${CMAKE_CURRENT_LIST_DIR}/../cmake/options.cmake)
 set_option(NO_FILESELECTOR "Disable the file selector" OFF)
 set_option(GTK_FILESELECTOR "Use the GTK file selector on Linux instead of the xdg-portal one" OFF)
 set_option(LEGACY "Instead of Wayland, use the legacy X11 backend on Linux" OFF)
-set_option(NO_STATISTICS "Disable calculation of statistics" OFF)
 set_option(SELF_PROFILE "Enable self-profiling" OFF)
 set_option_value(SANITIZE "Sanitizer parameters" "")
+
+set(NO_STATISTICS OFF)
 
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/version.cmake)
 

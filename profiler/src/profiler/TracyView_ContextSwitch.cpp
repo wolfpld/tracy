@@ -393,9 +393,6 @@ void View::DrawWaitStacks()
     ImGui::SetNextWindowSize( ImVec2( 1400 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Wait stacks", &m_showWaitStacks );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
-#ifdef TRACY_NO_STATISTICS
-    ImGui::TextWrapped( "Rebuild without the TRACY_NO_STATISTICS macro to enable wait stacks." );
-#else
     uint64_t totalCount = 0;
     unordered_flat_map<uint32_t, uint64_t> stacks;
     for( auto& t : m_threadOrder )
@@ -657,7 +654,6 @@ void View::DrawWaitStacks()
             break;
         }
     }
-#endif
     ImGui::EndChild();
     ImGui::End();
 }

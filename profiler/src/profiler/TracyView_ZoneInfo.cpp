@@ -197,7 +197,6 @@ void View::DrawZoneInfoWindow()
                 ShowZoneInfo( *parent );
             }
         }
-#ifndef TRACY_NO_STATISTICS
         if( m_worker.AreSourceLocationZonesReady() )
         {
             const auto sl = ev.SrcLoc();
@@ -211,7 +210,6 @@ void View::DrawZoneInfoWindow()
                 }
             }
         }
-#endif
         if( m_worker.HasZoneExtra( ev ) && m_worker.GetZoneExtra( ev ).callstack.Val() != 0 )
         {
             const auto& extra = m_worker.GetZoneExtra( ev );
@@ -346,7 +344,6 @@ void View::DrawZoneInfoWindow()
         const std::time_t ts = m_worker.GetCaptureTime() + ev.Start() / 1000000000;
         TextFocused( "Wall clock time:", std::asctime( std::localtime( &ts ) ) );
         TextFocused( "Execution time:", TimeToString( ztime ) );
-#ifndef TRACY_NO_STATISTICS
         if( m_worker.AreSourceLocationZonesReady() )
         {
             auto& zoneData = m_worker.GetZonesForSourceLocation( ev.SrcLoc() );
@@ -356,7 +353,6 @@ void View::DrawZoneInfoWindow()
                 ImGui::TextDisabled( "(%.2f%% of mean time)", float( ztime ) / zoneData.total * zoneData.zones.size() * 100 );
             }
         }
-#endif
         TextFocused( "Self time:", TimeToString( selftime ) );
         if( ztime != 0 )
         {
@@ -1865,7 +1861,6 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     }
     ImGui::Separator();
     TextFocused( "Execution time:", TimeToString( ztime ) );
-#ifndef TRACY_NO_STATISTICS
     if( m_worker.AreSourceLocationZonesReady() )
     {
         auto& zoneData = m_worker.GetZonesForSourceLocation( ev.SrcLoc() );
@@ -1875,7 +1870,6 @@ void View::ZoneTooltip( const ZoneEvent& ev )
             ImGui::TextDisabled( "(%.2f%% of mean time)", float( ztime ) / zoneData.total * zoneData.zones.size() * 100 );
         }
     }
-#endif
     TextFocused( "Self time:", TimeToString( selftime ) );
     if( ztime != 0 )
     {

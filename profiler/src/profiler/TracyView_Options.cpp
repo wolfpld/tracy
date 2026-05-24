@@ -233,7 +233,6 @@ void View::DrawOptions()
     ImGui::Indent();
     m_vd.drawZones = val;
 
-#ifndef TRACY_NO_STATISTICS
     if( m_worker.AreGhostZonesReady() && m_worker.GetGhostZonesCount() != 0 )
     {
         val = m_vd.ghostZones;
@@ -241,7 +240,6 @@ void View::DrawOptions()
         m_vd.ghostZones = val;
         DefaultMarker(default_markers_active);
     }
-#endif
 
     int ival = m_vd.dynamicColors;
     ImGui::TextUnformatted( ICON_FA_PALETTE " Zone colors" );

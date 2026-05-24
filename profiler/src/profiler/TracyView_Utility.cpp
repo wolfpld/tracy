@@ -220,7 +220,6 @@ const ZoneEvent* View::GetZoneChild( const ZoneEvent& zone, int64_t time ) const
 
 const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone ) const
 {
-#ifndef TRACY_NO_STATISTICS
     if( m_worker.AreSourceLocationZonesReady() )
     {
         auto& slz = m_worker.GetZonesForSourceLocation( zone.SrcLoc() );
@@ -233,7 +232,6 @@ const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone ) const
             }
         }
     }
-#endif
 
     for( const auto& thread : m_worker.GetThreadData() )
     {
@@ -303,7 +301,6 @@ const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone, uint64_t tid ) cons
 
 bool View::IsZoneReentry( const ZoneEvent& zone ) const
 {
-#ifndef TRACY_NO_STATISTICS
     if( m_worker.AreSourceLocationZonesReady() )
     {
         auto& slz = m_worker.GetZonesForSourceLocation( zone.SrcLoc() );
@@ -316,7 +313,6 @@ bool View::IsZoneReentry( const ZoneEvent& zone ) const
             }
         }
     }
-#endif
 
     for( const auto& thread : m_worker.GetThreadData() )
     {
@@ -428,7 +424,6 @@ const GpuEvent* View::GetZoneParent( const GpuEvent& zone ) const
 
 const ThreadData* View::GetZoneThreadData( const ZoneEvent& zone ) const
 {
-#ifndef TRACY_NO_STATISTICS
     if( m_worker.AreSourceLocationZonesReady() )
     {
         auto& slz = m_worker.GetZonesForSourceLocation( zone.SrcLoc() );
@@ -441,7 +436,6 @@ const ThreadData* View::GetZoneThreadData( const ZoneEvent& zone ) const
             }
         }
     }
-#endif
 
     for( const auto& thread : m_worker.GetThreadData() )
     {
@@ -954,11 +948,7 @@ nlohmann::json View::GetCallstackJson( const CallstackFrameId* data, size_t size
     while( data < end )
     {
         auto& entry = *data++;
-#ifdef TRACY_NO_STATISTICS
-        auto frameData = m_worker.GetCallstackFrame( entry );
-#else
         auto frameData = entry.custom ? m_worker.GetParentCallstackFrame( entry ) : m_worker.GetCallstackFrame( entry );
-#endif
         if( !frameData )
         {
             frames.push_back( { "pointer", m_worker.GetCanonicalPointer( entry ) } );

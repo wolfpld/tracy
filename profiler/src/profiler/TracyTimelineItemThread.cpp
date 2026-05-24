@@ -237,7 +237,6 @@ void TimelineItemThread::HeaderExtraContents( const TimelineContext& ctx, int of
 {
     m_view.DrawThreadMessagesList( ctx, m_msgDraw, offset, m_thread->id );
 
-#ifndef TRACY_NO_STATISTICS
     const bool hasGhostZones = m_worker.AreGhostZonesReady() && !m_thread->ghostZones.empty();
     if( hasGhostZones && !m_thread->timeline.empty() )
     {
@@ -256,7 +255,6 @@ void TimelineItemThread::HeaderExtraContents( const TimelineContext& ctx, int of
             }
         }
     }
-#endif
 }
 
 bool TimelineItemThread::DrawContents( const TimelineContext& ctx, int& offset )
@@ -308,13 +306,11 @@ void TimelineItemThread::Preprocess( const TimelineContext& ctx, TaskDispatch& t
     assert( m_lockDraw.empty() );
 
     td.Queue( [this, &ctx, visible] {
-#ifndef TRACY_NO_STATISTICS
         if( m_worker.AreGhostZonesReady() && ( m_ghost || ( m_view.GetViewData().ghostZones && m_thread->timeline.empty() ) ) )
         {
             m_depth = PreprocessGhostLevel( ctx, m_thread->ghostZones, 0, visible );
         }
         else
-#endif
         {
             m_depth = PreprocessZoneLevel( ctx, m_thread->timeline, 0, visible, 0 );
         }
@@ -359,7 +355,6 @@ void TimelineItemThread::Preprocess( const TimelineContext& ctx, TaskDispatch& t
     }
 }
 
-#ifndef TRACY_NO_STATISTICS
 int TimelineItemThread::PreprocessGhostLevel( const TimelineContext& ctx, const Vector<GhostZone>& vec, int depth, bool visible )
 {
     const auto nspx = ctx.nspx;
@@ -413,7 +408,6 @@ int TimelineItemThread::PreprocessGhostLevel( const TimelineContext& ctx, const 
 
     return maxdepth;
 }
-#endif
 
 int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const Vector<short_ptr<ZoneEvent>>& vec, int depth, bool visible, const uint32_t inheritedColor )
 {

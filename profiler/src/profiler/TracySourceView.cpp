@@ -1066,8 +1066,8 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                 ImGui::PushStyleVar( ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f );
                 m_childCalls = false;
                 m_childCallList = false;
-                m_propagateInlines = false;
             }
+            if( !samplesReady ) m_propagateInlines = false;
             SmallCheckbox( ICON_FA_RIGHT_FROM_BRACKET " Child calls", &m_childCalls );
             if( !samplesReady )
             {

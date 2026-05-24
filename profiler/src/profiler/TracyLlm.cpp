@@ -93,11 +93,17 @@ void TracyLlm::Draw()
     if( IsBusy() )
     {
         ImGui::PushFont( g_fonts.normal, FontBig );
-        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
+        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 4 ) * 0.5f ) );
         TextCentered( ICON_FA_HOURGLASS );
         TextCentered( "Please wait…" );
         DrawWaitingDotsCentered( s_time );
         ImGui::PopFont();
+        ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() ) );
+        ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );
+        char tmp[InputBufferSize + 32];
+        snprintf( tmp, sizeof( tmp ), "Connecting to %s", s_config.llmAddress.c_str() );
+        TextCentered( tmp );
+        ImGui::PopStyleColor();
         ImGui::End();
         return;
     }

@@ -22,6 +22,10 @@
 #include "../common/TracyMutex.hpp"
 #include "../common/TracyProtocol.hpp"
 
+#ifdef TRACY_PLATFORM_HEADER
+#  include TRACY_PLATFORM_HEADER
+#endif
+
 #if defined _WIN32
 #  include <intrin.h>
 #endif
@@ -1122,7 +1126,7 @@ private:
 
 #if defined _WIN32
     void* m_prevHandler;
-#else
+#elif !defined TRACY_HAS_CUSTOM_SAFE_COPY
     int m_pipe[2];
     int m_pipeBufSize;
 #endif

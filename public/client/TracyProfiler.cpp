@@ -71,7 +71,6 @@
 #include "../common/TracySystem.hpp"
 #include "../common/TracyYield.hpp"
 #include "../common/tracy_lz4.hpp"
-#include "tracy_rpmalloc.hpp"
 #include "TracyCallstack.hpp"
 #include "TracyDebug.hpp"
 #include "TracyDxt1.hpp"
@@ -605,7 +604,11 @@ static const char* GetHostInfo()
 
     const char* user = GetUserLogin();
     char hostname[512] = {};
+#if defined TRACY_HAS_CUSTOM_USER_INFO
+    PlatformGetHostname( hostname, sizeof( hostname ) );
+#else
     gethostname( hostname, sizeof( hostname ) );
+#endif
     ptr += sprintf( ptr, "User: %s@%s", user, hostname );
 
     const char* fullName = GetUserFullName();
@@ -1284,7 +1287,11 @@ TRACY_API void ShutdownProfiler()
     s_profilerData->~ProfilerData();
     tracy_free( s_profilerData );
     s_profilerData = nullptr;
+#if defined TRACY_HAS_CUSTOM_ALLOCATOR
+    PlatformAllocatorFinalize();
+#elif defined TRACY_USE_RPMALLOC
     rpmalloc_finalize();
+#endif
     RpThreadInitDone = false;
     RpInitDone.store( 0, std::memory_order_release );
 }
@@ -1531,7 +1538,7 @@ Profiler::Profiler()
 
     m_safeSendBuffer = (char*)tracy_malloc( SafeSendBufferSize );
 
-#ifndef _WIN32
+#if !defined _WIN32 && !defined TRACY_HAS_CUSTOM_SAFE_COPY
     pipe(m_pipe);
 #  if defined __APPLE__ || defined __FreeBSD__ || defined __NetBSD__ || defined __OpenBSD__ || defined __DragonFly__
     // FreeBSD/XNU don't have F_SETPIPE_SZ, so use the default
@@ -1675,7 +1682,7 @@ Profiler::~Profiler()
     tracy_free( m_kcore );
 #endif
 
-#ifndef _WIN32
+#if !defined _WIN32 && !defined TRACY_HAS_CUSTOM_SAFE_COPY
     close( m_pipe[0] );
     close( m_pipe[1] );
 #endif
@@ -3349,7 +3356,9 @@ char* Profiler::SafeCopyProlog( const char* data, size_t size )
 
     if( size > SafeSendBufferSize ) buf = (char*)tracy_malloc( size );
 
-#ifdef _WIN32
+#if defined TRACY_HAS_CUSTOM_SAFE_COPY
+    success = PlatformSafeMemcpy( buf, data, size );
+#elif defined _WIN32
 #  ifdef _MSC_VER
     __try
     {

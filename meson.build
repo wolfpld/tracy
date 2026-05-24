@@ -21,6 +21,10 @@ if get_option('callstack') > 0
   tracy_common_args += ['-DTRACY_CALLSTACK='+get_option('callstack').to_string()]
 endif
 
+if get_option('platform_header') != ''
+  tracy_common_args += ['-DTRACY_PLATFORM_HEADER="'+get_option('platform_header')+'"']
+endif
+
 if get_option('no_callstack')
   tracy_common_args += ['-DTRACY_NO_CALLSTACK']
 endif

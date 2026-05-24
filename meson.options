@@ -1,6 +1,7 @@
 option('tracy_enable', type : 'boolean', value : false, description : 'Enable profiling', yield: true)
 option('on_demand', type : 'boolean', value : false, description : 'On-demand profiling')
 option('callstack', type : 'integer', value : 0, description : 'Enforce callstack collection for tracy zones x frames deep')
+option('platform_header', type : 'string', value : '', description : 'Path to a header providing TRACY_HAS_CUSTOM_* hooks for an unsupported platform')
 option('no_callstack', type : 'boolean', value : false, description : 'Disable all callstack related functionality')
 option('no_callstack_inlines', type : 'boolean', value : false, description : 'Disables the inline functions in callstacks')
 option('only_localhost', type : 'boolean', value : false, description : 'Only listen on the localhost interface')

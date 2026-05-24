@@ -3,17 +3,23 @@
 
 #include <stdlib.h>
 
+#ifdef TRACY_PLATFORM_HEADER
+#  include TRACY_PLATFORM_HEADER
+#endif
+
 #if defined TRACY_ENABLE && !defined __EMSCRIPTEN__
 #  include "TracyApi.h"
 #  include "TracyForceInline.hpp"
-#  include "../client/tracy_rpmalloc.hpp"
-#  define TRACY_USE_RPMALLOC
+#  if !defined TRACY_HAS_CUSTOM_ALLOCATOR
+#    include "../client/tracy_rpmalloc.hpp"
+#    define TRACY_USE_RPMALLOC
+#  endif
 #endif
 
 namespace tracy
 {
 
-#ifdef TRACY_USE_RPMALLOC
+#if defined TRACY_USE_RPMALLOC || defined TRACY_HAS_CUSTOM_ALLOCATOR
 TRACY_API void InitAllocator();
 #else
 static inline void InitAllocator() {}
@@ -21,7 +27,10 @@ static inline void InitAllocator() {}
 
 static inline void* tracy_malloc( size_t size )
 {
-#ifdef TRACY_USE_RPMALLOC
+#if defined TRACY_HAS_CUSTOM_ALLOCATOR
+    InitAllocator();
+    return PlatformMalloc( size );
+#elif defined TRACY_USE_RPMALLOC
     InitAllocator();
     return rpmalloc( size );
 #else
@@ -31,7 +40,9 @@ static inline void* tracy_malloc( size_t size )
 
 static inline void* tracy_malloc_fast( size_t size )
 {
-#ifdef TRACY_USE_RPMALLOC
+#if defined TRACY_HAS_CUSTOM_ALLOCATOR
+    return PlatformMalloc( size );
+#elif defined TRACY_USE_RPMALLOC
     return rpmalloc( size );
 #else
     return malloc( size );
@@ -40,7 +51,10 @@ static inline void* tracy_malloc_fast( size_t size )
 
 static inline void tracy_free( void* ptr )
 {
-#ifdef TRACY_USE_RPMALLOC
+#if defined TRACY_HAS_CUSTOM_ALLOCATOR
+    InitAllocator();
+    PlatformFree( ptr );
+#elif defined TRACY_USE_RPMALLOC
     InitAllocator();
     rpfree( ptr );
 #else
@@ -50,7 +64,9 @@ static inline void tracy_free( void* ptr )
 
 static inline void tracy_free_fast( void* ptr )
 {
-#ifdef TRACY_USE_RPMALLOC
+#if defined TRACY_HAS_CUSTOM_ALLOCATOR
+    PlatformFree( ptr );
+#elif defined TRACY_USE_RPMALLOC
     rpfree( ptr );
 #else
     free( ptr );
@@ -59,7 +75,10 @@ static inline void tracy_free_fast( void* ptr )
 
 static inline void* tracy_realloc( void* ptr, size_t size )
 {
-#ifdef TRACY_USE_RPMALLOC
+#if defined TRACY_HAS_CUSTOM_ALLOCATOR
+    InitAllocator();
+    return PlatformRealloc( ptr, size );
+#elif defined TRACY_USE_RPMALLOC
     InitAllocator();
     return rprealloc( ptr, size );
 #else

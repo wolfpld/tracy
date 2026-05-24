@@ -1,6 +1,6 @@
 #include "../common/TracyAlloc.hpp"
 
-#ifdef TRACY_USE_RPMALLOC
+#if defined TRACY_USE_RPMALLOC || defined TRACY_HAS_CUSTOM_ALLOCATOR
 
 #include <atomic>
 
@@ -24,12 +24,20 @@ tracy_no_inline static void InitAllocatorPlumbing()
         const auto done = RpInitDone.load( std::memory_order_acquire );
         if( !done )
         {
+#if defined TRACY_HAS_CUSTOM_ALLOCATOR
+            PlatformAllocatorInit();
+#else
             rpmalloc_initialize();
+#endif
             RpInitDone.store( 1, std::memory_order_release );
         }
         RpInitLock.store( 0, std::memory_order_release );
     }
+#if defined TRACY_HAS_CUSTOM_ALLOCATOR
+    PlatformAllocatorThreadInit();
+#else
     rpmalloc_thread_initialize();
+#endif
     RpThreadInitDone = true;
 }
 

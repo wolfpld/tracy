@@ -141,7 +141,7 @@ There's much more Tracy can do, which can be explored by carefully reading this 
 \section{A quick look at Tracy Profiler}
 \label{quicklook}
 
-Tracy is a real-time, nanosecond resolution \emph{hybrid frame and sampling profiler} that you can use for remote or embedded telemetry of games and other applications. It can profile CPU\footnote{Direct support is provided for C, C++, Lua, Python and Fortran integration. At the same time, third-party bindings to many other languages exist on the internet, such as Rust, Zig, C\#, OCaml, Odin, etc.}, GPU\footnote{All major graphic APIs: OpenGL, Vulkan, Direct3D 11/12, Metal, OpenCL.}, memory allocations, locks, context switches, automatically attribute screenshots to captured frames, and much more.
+Tracy is a real-time, nanosecond resolution \emph{hybrid frame and sampling profiler} that you can use for remote or embedded telemetry of games and other applications. It can profile CPU\footnote{Direct support is provided for C, C++, Lua, Python and Fortran integration. At the same time, third-party bindings to many other languages exist on the internet, such as Rust, Zig, C\#, OCaml, Odin, etc.}, GPU\footnote{All major graphics/compute APIs: OpenGL, Vulkan, Direct3D 11/12, Metal, OpenCL, CUDA, WebGPU.}, memory allocations, locks, context switches, automatically attribute screenshots to captured frames, and much more.
 
 While Tracy can perform statistical analysis of sampled call stack data, just like other \emph{statistical profilers} (such as VTune, perf, or Very Sleepy), it mainly focuses on manual markup of the source code. Such markup allows frame-by-frame inspection of the program execution. For example, you will be able to see exactly which functions are called, how much time they require, and how they interact with each other in a multi-threaded environment. In contrast, the statistical analysis may show you the hot spots in your code, but it cannot accurately pinpoint the underlying cause for semi-random frame stutter that may occur every couple of seconds.
 
@@ -1050,6 +1050,8 @@ Memory & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faXm
 GPU zones (OpenGL) & \faCheck & \faCheck & \faCheck & \faPoo & \faPoo & & \faXmark \\
 GPU zones (Vulkan) & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & & \faXmark \\
 GPU zones (Metal) & \faXmark & \faXmark & \faXmark & \faCheck\textsuperscript{\emph{b}} & \faCheck\textsuperscript{\emph{b}} & \faXmark & \faXmark \\
+GPU zones (CUDA) & \faCheck & \faCheck & \faXmark & \faXmark & \faXmark & \faQuestion & \faXmark \\
+GPU zones (WebGPU) & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faQuestion & \faQuestion \\
 Call stacks & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faXmark \\
 Symbol resolution & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
 Crash handling & \faCheck & \faCheck & \faCheck & \faXmark & \faXmark & \faXmark & \faXmark \\
@@ -1645,7 +1647,7 @@ To mark that a separate memory pool is to be tracked you should use the named ve
 \subsection{GPU profiling}
 \label{gpuprofiling}
 
-Tracy provides bindings for profiling OpenGL, Vulkan, Direct3D 11, Direct3D 12, Metal, OpenCL and CUDA execution time on GPU.
+Tracy provides bindings for profiling OpenGL, Vulkan, Direct3D 11, Direct3D 12, Metal, OpenCL, CUDA and WebGPU execution time on GPU.
 
 Note that the CPU and GPU timers may be unsynchronized unless you create a calibrated context, but the availability of calibrated contexts is limited. You can try to correct the desynchronization of uncalibrated contexts in the profiler's options (section~\ref{options}).
 
@@ -1791,6 +1793,16 @@ Unlike other GPU backends in Tracy, there is no need to call \texttt{TracyCUDACo
 
 To stop profiling, call the \texttt{TracyCUDAStopProfiling(ctx)} macro.
 
+\subsubsection{WebGPU}
+
+WebGPU support is enabled by including the \texttt{public/tracy/TracyWebGPU.hpp} header file. Both major implementations of WebGPU (Dawn and wgpu-native) are supported.
+
+Before creating the WebGPU device, make sure to call \texttt{TracyWebGPUSetupDevice()} to let Tracy request the necessary device features and extensions necessary for profiling. After the device is created, use the \texttt{TracyWebGPUContext()} macro to instantiate the necessary \texttt{WebGPUQueueCtx} object required for GPU instrumentation. The object should later be cleaned up with the \texttt{TracyWebGPUDestroy()} macro. To set a custom name for the context, use the \texttt{TracyWebGPUContextName()} macro.
+
+To instrument a GPU zone, use the various \texttt{TracyWebGPU*Zone*()} macros. Note that WebGPU only offers command instrumentation at the "pass"-level. While command-level granularity is possible through implementation-specific WebGPU extensions, Tracy does not support it at the moment. Supply the corresponding WebGPU pass descriptor to the instrumentation macro \textit{before} creating the WebGPU pass encoder.
+
+You are required to periodically collect the GPU events using the \texttt{TracyWebGPUCollect()} macro. Good places for collection are: after synchronous waits, after event processing \texttt{wgpuInstanceProcessEvents}, after present drawable calls (\texttt{wgpuSurfacePresent}), and inside the completion callback of command queues (\texttt{wgpuQueueOnSubmittedWorkDone}).
+
 \subsubsection{ROCm}
 
 On Linux, if rocprofiler-sdk is installed, tracy can automatically trace GPU dispatches and collect
@@ -1824,13 +1836,13 @@ sudo amd-smi set -g 0 -l stable_std
 
 Putting more than one GPU zone macro in a single scope features the same issue as with the \texttt{ZoneScoped} macros, described in section~\ref{multizone} (but this time the variable name is \texttt{\_\_\_tracy\_gpu\_zone}).
 
-To solve this problem, in case of OpenGL use the \texttt{TracyGpuNamedZone} macro in place of \texttt{TracyGpuZone} (or the color variant). The same applies to Vulkan, Direct3D 11/12 and Metal -- replace \texttt{TracyVkZone} with \texttt{TracyVkNamedZone}, \texttt{TracyD3D11Zone}/\texttt{TracyD3D12Zone} with \texttt{TracyD3D11NamedZone}/\texttt{TracyD3D12NamedZone}, and \texttt{TracyMetalZone} with \texttt{TracyMetalNamedZone}.
+To solve this problem, in case of OpenGL use the \texttt{TracyGpuNamedZone} macro in place of \texttt{TracyGpuZone} (or the color variant). The same applies to Vulkan, Direct3D 11/12, Metal and WebGPU -- replace \texttt{TracyVkZone} with \texttt{TracyVkNamedZone}, \texttt{TracyD3D11Zone}/\texttt{TracyD3D12Zone} with \texttt{TracyD3D11NamedZone}/\texttt{TracyD3D12NamedZone}, \texttt{TracyMetalZone} with \texttt{TracyMetalNamedZone}, and \texttt{TracyWebGPUZone} with \texttt{TracyWebGPUNamedZone}.
 
 Remember to provide your name for the created stack variable as the first parameter to the macros.
 
 \subsubsection{Transient GPU zones}
 
-Transient zones (see section~\ref{transientzones} for details) are available in OpenGL, Vulkan, and Direct3D 11/12 macros. Transient zones are not available for Metal at this moment.
+Transient zones (see section~\ref{transientzones} for details) are available in OpenGL, Vulkan, Direct3D 11/12 and WebGPU macros. Transient zones are not available for Metal at this moment.
 
 \subsection{Fibers}
 \label{fibers}
@@ -3877,7 +3889,7 @@ You will find the zones with locks and their associated threads on this combined
 The left-hand side \emph{index area} of the timeline view displays various labels (threads, locks), which can be categorized in the following way:
 
 \begin{itemize}
-\item \emph{Light blue label} -- GPU context. Multi-threaded Vulkan, OpenCL, Direct3D 12 and Metal contexts are additionally split into separate threads.
+\item \emph{Light blue label} -- GPU context. Multi-threaded Vulkan, OpenCL, Direct3D 12, Metal and WebGPU contexts are additionally split into separate threads.
 \item \emph{Pink label} -- CPU data graph.
 \item \emph{White label} -- A CPU thread. It will be replaced by a bright red label in a thread that has crashed (section~\ref{crashhandling}). If automated sampling was performed, clicking the~\LMB{}~left mouse button on the \emph{\faGhost{}~ghost zones} button will switch zone display mode between 'instrumented' and 'ghost.'
 \item \emph{Green label} -- Fiber, coroutine, or any other sort of cooperative multitasking 'green thread.'
@@ -3899,7 +3911,7 @@ In an example in figure~\ref{zoneslocks} you can see that there are two threads:
 
 Meanwhile, the \emph{Streaming thread} is performing some \emph{Streaming jobs}. The first \emph{Streaming job} sent a message (section~\ref{messagelog}). In addition to being listed in the message log, it is indicated by a triangle over the thread separator. When multiple messages are in one place, the triangle outline shape changes to a filled triangle.
 
-The GPU zones are displayed just like CPU zones, with an OpenGL/Vulkan/Direct3D/Metal/OpenCL context in place of a thread name.
+The GPU zones are displayed just like CPU zones, with an OpenGL/Vulkan/Direct3D/Metal/OpenCL/CUDA/WebGPU context in place of a thread name.
 
 Hovering the \faArrowPointer{} mouse pointer over a zone will highlight all other zones that have the exact source location with a white outline. Clicking the \LMB{}~left mouse button on a zone will open the zone information window (section~\ref{zoneinfo}). Holding the \keys{\ctrl} key and clicking the \LMB{}~left mouse button on a zone will open the zone statistics window (section~\ref{findzone}). Clicking the \MMB{}~middle mouse button on a zone will zoom the view to the extent of the zone.
 
@@ -4108,7 +4120,7 @@ In this window, you can set various trace-related options. For example, the time
 \begin{itemize}
 \item \emph{\faSignature{} Draw CPU usage graph} -- You can disable drawing of the CPU usage graph here.
 \end{itemize}
-\item \emph{\faEye{} Draw GPU zones} -- Allows disabling display of OpenGL/Vulkan/Metal/Direct3D/OpenCL zones. The \emph{GPU zones} drop-down allows disabling individual GPU contexts and setting CPU/GPU drift offsets of uncalibrated contexts (see section~\ref{gpuprofiling} for more information). The \emph{\faRobot~Auto} button automatically measures the GPU drift value\footnote{There is an assumption that drift is linear. Automated measurement calculates and removes change over time in delay-to-execution of GPU zones. Resulting value may still be incorrect.}.
+\item \emph{\faEye{} Draw GPU zones} -- Allows disabling display of OpenGL/Vulkan/Metal/Direct3D/OpenCL/CUDA/WebGPU zones. The \emph{GPU zones} drop-down allows disabling individual GPU contexts and setting CPU/GPU drift offsets of uncalibrated contexts (see section~\ref{gpuprofiling} for more information). The \emph{\faRobot~Auto} button automatically measures the GPU drift value\footnote{There is an assumption that drift is linear. Automated measurement calculates and removes change over time in delay-to-execution of GPU zones. Resulting value may still be incorrect.}.
 \item \emph{\faMicrochip{} Draw CPU zones} -- Determines whether CPU zones are displayed.
 \begin{itemize}
 \item \emph{\faGhost{} Draw ghost zones} -- Controls if ghost zones should be displayed in threads which don't have any instrumented zones available.

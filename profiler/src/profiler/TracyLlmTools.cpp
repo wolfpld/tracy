@@ -1039,7 +1039,9 @@ std::string TracyLlmTools::SymbolDisasm( const std::string& address ) const
 {
     uint64_t symaddr = strtoull( address.c_str(), nullptr, 16 );
     auto json = JsonDisassembly( symaddr, m_worker, m_view );
-    return json.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
+    auto ret = json.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
+    if( ret.size() > CalcMaxSize() ) return "Too much data.";
+    return ret;
 }
 
 std::string TracyLlmTools::SymbolParents( const std::string& address, uint32_t limit ) const

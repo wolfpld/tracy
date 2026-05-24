@@ -32,6 +32,7 @@ static tracy_force_inline T* GetFrameTreeItemGroup( unordered_flat_map<uint64_t,
     {
         it = tree.emplace( fidx, T( idx ) ).first;
     }
+    it->second.group.emplace( idx.data );
     return &it->second;
 }
 
@@ -50,6 +51,7 @@ static tracy_force_inline T* GetParentFrameTreeItemGroup( unordered_flat_map<uin
     {
         it = tree.emplace( fidx, T( idx ) ).first;
     }
+    it->second.group.emplace( idx.data );
     return &it->second;
 }
 
@@ -517,6 +519,12 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, MemCallstackFr
                 ImGui::EndTooltip();
             }
 
+            if( v.group.size() > 1 )
+            {
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(\xc3\x97%s)", RealToString( v.group.size() ) );
+            }
+
             if( m_callstackTreeBuzzAnim.Match( idx ) )
             {
                 const auto time = m_callstackTreeBuzzAnim.Time();
@@ -666,6 +674,12 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrame
                 ImGui::PopID();
             }
 
+            if( v.group.size() > 1 )
+            {
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(\xc3\x97%s)", RealToString( v.group.size() ) );
+            }
+
             if( m_callstackTreeBuzzAnim.Match( idx ) )
             {
                 const auto time = m_callstackTreeBuzzAnim.Time();
@@ -808,6 +822,12 @@ void View::DrawParentsFrameTreeLevel( const unordered_flat_map<uint64_t, Callsta
                 }
                 if( isKernel || frameName[0] == '[' ) ImGui::PopStyleColor();
                 ImGui::PopID();
+            }
+
+            if( v.group.size() > 1 )
+            {
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(\xc3\x97%s)", RealToString( v.group.size() ) );
             }
 
             if( m_callstackTreeBuzzAnim.Match( idx ) )

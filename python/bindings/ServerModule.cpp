@@ -1034,13 +1034,14 @@ PYBIND11_MODULE( TracyServerBindings, m )
         .def( "get_gpu_contexts", []( const Worker& w ) {
         static const char* gpuTypeStr[] = {
             "Invalid", "OpenGL", "Vulkan", "OpenCL", "Direct3D12", "Direct3D11", "Metal", "Custom", "CUDA", "Rocprof", "WebGPU" };
+        static size_t numTypes = sizeof(gpuTypeStr) / sizeof(gpuTypeStr[0]);
         std::vector<GpuContextSummary> result;
         for( const auto* ctx : w.GetGpuData() )
         {
             if( !ctx ) continue;
             const std::string name = ctx->name.Active() ? w.GetString( ctx->name ) : "";
             const uint8_t typeIdx = (uint8_t)ctx->type;
-            const char* typeStr = typeIdx < 11 ? gpuTypeStr[typeIdx] : "Unknown";
+            const char* typeStr = typeIdx < numTypes ? gpuTypeStr[typeIdx] : "Unknown";
             result.push_back( GpuContextSummary{
                 name, ctx->count, std::string( typeStr ), ctx->thread } );
         }

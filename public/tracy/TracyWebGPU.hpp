@@ -11,6 +11,8 @@
 
 #ifndef TRACY_ENABLE
 
+#define TracyWebGPUSetupDevice(deviceDescriptor)
+
 #define TracyWebGPUContext(instance, device, queue) nullptr
 #define TracyWebGPUDestroy(ctx)
 #define TracyWebGPUContextName(ctx, name, size)
@@ -224,7 +226,7 @@ namespace tracy
                 // incremental regression:
                 cpuToGpuModel.Update(tcpu, tgpu);
                 wallToGpuModel.Update(twall, tgpu);
-                fprintf(stderr, "----- (sample accepted! period = %f)\n", Period());
+                fprintf(stderr, "----- (sample accepted! wall = %lld | cpu = %lld | gpu = %lld | period = %f)\n", twall, tcpu, tgpu, Period());
                 return true;
             }
         } m_calibration;
@@ -354,7 +356,8 @@ namespace tracy
                 gpu[1] = gpuTimestamps[1];
                 wgpuBufferUnmap(readBackBuffer);
                 TracyWebGPUDebug(
-                    fprintf(stdout, "[%03d] CalibrateClocks() -> %llu | %llu | %lld /// %lld\n", i, gpu[0], gpu[1], gpu[1]-gpu[0], cpu[1]-cpu[0]);
+                    fprintf(stdout, "[%03d] CalibrateClocks() [CPU] %16lld | %16lld | /// %lld\n", i, cpu[0], cpu[1], cpu[1]-cpu[0]);
+                    fprintf(stdout,  "----------------------- [GPU] %16llu | %16llu | /// %lld\n",    gpu[0], gpu[1], gpu[1]-gpu[0]);
                     uint64_t cpuTimeRef, gpuTimeRef;
                     m_calibration.GetReferenceTime(cpuTimeRef, gpuTimeRef);
                     if (gpu[0] < gpuTimeRef)
@@ -367,6 +370,14 @@ namespace tracy
 
                 m_calibration.Update(wall[0], wall[1], cpu[0], cpu[1], gpu[0]);
             };
+
+            TracyWebGPUDebug(
+                fprintf(stdout, "##### CalibrateClocks() WALL = %lld | CPU = %lld | GPU = %lld | period = %f\n",
+                    m_calibration.wallToGpuModel.mean_x,
+                    m_calibration.cpuToGpuModel.mean_x,
+                    m_calibration.cpuToGpuModel.mean_y,
+                    m_calibration.Period());
+            );
 
             wgpuRenderPipelineRelease(calibPipeline);
             wgpuShaderModuleRelease(calibShader);
@@ -899,6 +910,8 @@ namespace tracy
 #undef TRACY_WEBGPU_DEBUG_LEVEL
 
 using TracyWebGPUCtx = tracy::WebGPUQueueCtx*;
+
+#define TracyWebGPUSetupDevice(deviceDescriptor) tracy::WebGPUQueueCtx::SetupDevice(deviceDescriptor)
 
 #define TracyWebGPUContext(instance, device, queue) tracy::CreateWebGPUContext(instance, device, queue);
 #define TracyWebGPUDestroy(ctx) tracy::DestroyWebGPUContext(ctx);

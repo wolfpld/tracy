@@ -182,7 +182,7 @@ void TracyLlm::Draw()
         memcpy( m_apiInput, s_config.llmAddress.c_str(), sz );
         m_apiInput[sz] = 0;
         ImGui::SetNextItemWidth( ImGui::GetContentRegionAvail().x - ImGui::GetFrameHeight() - ImGui::GetStyle().ItemSpacing.x );
-        bool changed = ImGui::InputTextWithHint( "##api", "http://localhost:1234", m_apiInput, InputBufferSize );
+        bool changed = ImGui::InputTextWithHint( "##api", "http://localhost:8080", m_apiInput, InputBufferSize );
         bool commit = ImGui::IsItemDeactivatedAfterEdit();
         ImGui::SameLine();
         if( ImGui::BeginCombo( "##presets", nullptr, ImGuiComboFlags_NoPreview ) )

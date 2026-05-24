@@ -1020,7 +1020,9 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         {
             SmallCheckbox( ICON_FA_HAMMER " HW", &m_hwSamples );
             ImGui::SameLine();
+            if( !m_hwSamples ) ImGui::BeginDisabled();
             SmallCheckbox( ICON_FA_CAR_BURST " Impact", &m_hwSamplesRelative );
+            if( !m_hwSamples ) ImGui::EndDisabled();
             ImGui::SameLine();
             ImGui::Spacing();
             ImGui::SameLine();

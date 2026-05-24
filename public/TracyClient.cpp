@@ -26,7 +26,9 @@
 #include "client/TracySysTime.cpp"
 #include "client/TracySysTrace.cpp"
 #include "common/TracySocket.cpp"
+#ifndef TRACY_HAS_CUSTOM_ALLOCATOR
 #include "client/tracy_rpmalloc.cpp"
+#endif
 #include "client/TracyDxt1.cpp"
 #include "client/TracyAlloc.cpp"
 #include "client/TracyOverride.cpp"

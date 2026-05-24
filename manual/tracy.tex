@@ -669,6 +669,40 @@ Although the basic features will work without them, you'll have to grant elevate
     \item \texttt{-{}-pid=host}
 \end{itemize}
 
+\subsubsection{Porting to unsupported platforms}
+\label{customplatform}
+
+When Tracy is built for a platform that is not among the supported set, some of the platform-specific code paths it relies on may fail to compile or have undesired behavior. Rather than patching the \texttt{\#if} chains in Tracy itself, you can point Tracy at a \emph{platform header} that provides your own implementations of these primitives.
+
+Define \texttt{TRACY\_PLATFORM\_HEADER} at build time to the path of a header that Tracy will include from its internal translation units:
+
+\begin{lstlisting}
+-DTRACY_PLATFORM_HEADER="\"my_platform.h\""
+\end{lstlisting}
+
+Inside that header, enable any subset of the hooks you need by defining the corresponding \texttt{TRACY\_HAS\_CUSTOM\_*} macro and declaring the matching \texttt{tracy::Platform*} function. Provide the implementations in a separate translation unit that is linked into your final binary.
+
+The available hooks are:
+
+\begin{itemize}
+\item \texttt{TRACY\_HAS\_CUSTOM\_THREAD\_ID} $\rightarrow$ \texttt{tracy::PlatformGetThreadId()}. Required.
+\item \texttt{TRACY\_HAS\_CUSTOM\_USER\_INFO} $\rightarrow$ \texttt{tracy::PlatformGetHostname()}, \texttt{tracy::PlatformGetUserLogin()}, \texttt{tracy::PlatformGetUserFullName()}.
+\item \texttt{TRACY\_HAS\_CUSTOM\_SAFE\_COPY} $\rightarrow$ \texttt{tracy::PlatformSafeMemcpy()}.
+\item \texttt{TRACY\_HAS\_CUSTOM\_ALLOCATOR} $\rightarrow$ \texttt{tracy::PlatformMalloc()}, \texttt{tracy::PlatformFree()}, \texttt{tracy::PlatformRealloc()}, \texttt{tracy::PlatformAllocatorInit()}, \texttt{tracy::PlatformAllocatorThreadInit()}, \texttt{tracy::PlatformAllocatorFinalize()}, \texttt{tracy::PlatformAllocatorThreadFinalize()}.
+\end{itemize}
+
+Template files are provided in the repository ( \texttt{examples/CustomPlatform/CustomPlatform(.h|.cpp)} ). See \texttt{CustomPlatform.h} for the contract each \texttt{Platform*} function must satisfy (return values, threading guarantees, and footguns to avoid). Copy these files into your project, fill in the bodies for the hooks you enable, and point Tracy at the header.
+
+These are the only categories currently exposed through the custom-platform mechanism. Other platform-specific subsystems (call stack collection, context switch capture, crash handling, system tracing, and so on) are not pluggable this way. If your platform cannot support one of them, disable it at build time using the corresponding \texttt{TRACY\_NO\_*} macros rather than trying to stub it out via the platform header.
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcbombe
+]{Important}
+The platform header is intended only for the \texttt{TRACY\_HAS\_CUSTOM\_*} hooks and their matching function declarations. Do not use it to set unrelated \texttt{TRACY\_*} options (such as \texttt{TRACY\_ENABLE} or \texttt{TRACY\_ON\_DEMAND}). Some of those are checked in \texttt{Tracy.hpp} before the platform header is included, so the results would be inconsistent depending on which translation unit consults them. Set those options at the build system level instead, as described in section~\ref{initialsetup}.
+\end{bclogo}
+
 \subsubsection{Troubleshooting}
 
 By default, Tracy's diagnostics will be sent as Message logs (section~\ref{messagelog}) to the server.

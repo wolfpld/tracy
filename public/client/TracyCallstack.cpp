@@ -918,7 +918,7 @@ ModuleNameAndBaseAddress GetModuleNameAndPrepareSymbols( uint64_t addr )
     constexpr DWORD flag = GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT;
     HMODULE mod = NULL;
 
-    InitRpmalloc();
+    InitAllocator();
     if( GetModuleHandleExA( flag, (char*)addr, &mod ) != 0 )
     {
         MODULEINFO info;
@@ -997,7 +997,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     DBGHELP_LOCK;
 #endif
 
-    InitRpmalloc();
+    InitAllocator();
 
     const ModuleNameAndBaseAddress moduleNameAndAddress = GetModuleNameAndPrepareSymbols( ptr );
 
@@ -1314,7 +1314,7 @@ void InitCallstackCritical()
 
 void InitCallstack()
 {
-    InitRpmalloc();
+    InitAllocator();
 
 #ifdef TRACY_HAS_DL_ITERATE_PHDR_TO_REFRESH_IMAGE_CACHE
     CreateImageCaches();
@@ -1780,7 +1780,7 @@ CallstackEntryData DecodeCallstackPtrExternal( uint64_t ptr )
 
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
-    InitRpmalloc();
+    InitAllocator();
     if( !IsKernelAddress( ptr ) )
     {
 #ifdef __linux__

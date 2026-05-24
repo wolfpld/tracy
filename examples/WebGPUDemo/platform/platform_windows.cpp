@@ -15,10 +15,14 @@
 #endif
 #include <windows.h>
 #include <webgpu/webgpu.h>
+#include <stdio.h>
 #include "platform.h"
 
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "gdi32.lib")
+#pragma comment(lib, "dxguid.lib")    // Dawn: WKPDID_D3DDebugObjectName
+#pragma comment(lib, "OneCore")       // Dawn: CompareObjectHandles
+#pragma comment(lib, "ntdll.lib")     // wgpu-native: NtReadFile et al.
 
 static HWND   sHwnd      = nullptr;
 static bool   sRunning   = false;

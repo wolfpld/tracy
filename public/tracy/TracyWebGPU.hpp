@@ -74,6 +74,7 @@ using TracyWebGPUCtx = void*;
 #if TRACY_WEBGPU_DEBUG_LEVEL
 #define TracyWebGPUDebug(...) __VA_ARGS__;
 #if defined(_MSC_VER)
+extern "C" int32_t IsDebuggerPresent(void);
 #define TracyWebGPUBreak() if (IsDebuggerPresent()) __debugbreak()
 #else
 #define TracyWebGPUBreak() ((void)0)
@@ -226,7 +227,7 @@ namespace tracy
                 // incremental regression:
                 cpuToGpuModel.Update(tcpu, tgpu);
                 wallToGpuModel.Update(twall, tgpu);
-                fprintf(stderr, "----- (sample accepted! wall = %lld | cpu = %lld | gpu = %lld | period = %f)\n", twall, tcpu, tgpu, Period());
+                TracyWebGPUDebug( fprintf(stderr, "----- (sample accepted! wall = %lld | cpu = %lld | gpu = %lld | period = %f)\n", twall, tcpu, tgpu, Period()) );
                 return true;
             }
         } m_calibration;

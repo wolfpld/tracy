@@ -2371,7 +2371,7 @@ static void FreeAssociatedMemory( const QueueItem& item )
 #ifdef TRACY_HAS_CALLSTACK
     case QueueType::CallstackFrameSize:
     {
-        InitRpmalloc();
+        InitAllocator();
         auto size = MemRead<uint8_t>( &item.callstackFrameSizeFat.size );
         auto data = (const CallstackEntry*)MemRead<uint64_t>( &item.callstackFrameSizeFat.data );
         for( uint8_t i=0; i<size; i++ )
@@ -2479,7 +2479,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
         [this, &connectionLost] ( QueueItem* item, size_t sz )
         {
             if( connectionLost ) return;
-            InitRpmalloc();
+            InitAllocator();
             assert( sz > 0 );
             int64_t refThread = m_refTimeThread;
             int64_t refCtx = m_refTimeCtx;
@@ -2944,7 +2944,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
     {
         dequeueStatus = DequeueStatus::DataDequeued;
 
-        InitRpmalloc();
+        InitAllocator();
         int64_t refSerial = m_refTimeSerial;
         int64_t refGpu = m_refTimeGpu;
 #ifdef TRACY_FIBERS
@@ -3758,9 +3758,7 @@ void Profiler::SymbolWorker()
 
     ThreadExitHandler threadExitHandler;
     SetThreadName( "Tracy Symbol Worker" );
-#ifdef TRACY_USE_RPMALLOC
-    InitRpmalloc();
-#endif
+    InitAllocator();
     InitCallstack();
     while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 

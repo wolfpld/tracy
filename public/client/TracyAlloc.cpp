@@ -14,7 +14,7 @@ extern thread_local bool RpThreadInitDone;
 extern std::atomic<int> RpInitDone;
 extern std::atomic<int> RpInitLock;
 
-tracy_no_inline static void InitRpmallocPlumbing()
+tracy_no_inline static void InitAllocatorPlumbing()
 {
     const auto done = RpInitDone.load( std::memory_order_acquire );
     if( !done )
@@ -33,9 +33,9 @@ tracy_no_inline static void InitRpmallocPlumbing()
     RpThreadInitDone = true;
 }
 
-TRACY_API void InitRpmalloc()
+TRACY_API void InitAllocator()
 {
-    if( !RpThreadInitDone ) InitRpmallocPlumbing();
+    if( !RpThreadInitDone ) InitAllocatorPlumbing();
 }
 
 }

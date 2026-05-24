@@ -197,7 +197,7 @@ void SysTraceWorker( void* )
 {
     ThreadExitHandler threadExitHandler;
     SetThreadName( "Tracy Mach Watchdog" );
-    InitRpmalloc();
+    InitAllocator();
     SysTraceWatch();
 }
 

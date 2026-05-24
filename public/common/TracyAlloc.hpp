@@ -14,15 +14,15 @@ namespace tracy
 {
 
 #ifdef TRACY_USE_RPMALLOC
-TRACY_API void InitRpmalloc();
+TRACY_API void InitAllocator();
 #else
-static inline void InitRpmalloc() {}
+static inline void InitAllocator() {}
 #endif
 
 static inline void* tracy_malloc( size_t size )
 {
 #ifdef TRACY_USE_RPMALLOC
-    InitRpmalloc();
+    InitAllocator();
     return rpmalloc( size );
 #else
     return malloc( size );
@@ -41,7 +41,7 @@ static inline void* tracy_malloc_fast( size_t size )
 static inline void tracy_free( void* ptr )
 {
 #ifdef TRACY_USE_RPMALLOC
-    InitRpmalloc();
+    InitAllocator();
     rpfree( ptr );
 #else
     free( ptr );
@@ -60,7 +60,7 @@ static inline void tracy_free_fast( void* ptr )
 static inline void* tracy_realloc( void* ptr, size_t size )
 {
 #ifdef TRACY_USE_RPMALLOC
-    InitRpmalloc();
+    InitAllocator();
     return rprealloc( ptr, size );
 #else
     return realloc( ptr, size );

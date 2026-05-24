@@ -20,7 +20,7 @@
 #         -lwayland-client -o spinning_triangle
 
 cmake_minimum_required(VERSION 3.16)
-project(spinning_triangle LANGUAGES CXX)
+project(spinning_triangle LANGUAGES C CXX)
 
 # ---------------------------------------------------------------------------
 # WebGPU backend — set WGPU_PATH to your wgpu-native or Dawn installation.
@@ -77,7 +77,7 @@ else()
     # Linux / Wayland — also needs the generated xdg-shell protocol glue.
     set(PLATFORM_SOURCES
         platform/platform_wayland.cpp
-        xdg-shell-protocol.c
+        platform/xdg-shell-protocol.c
     )
     set(PLATFORM_LIBS wayland-client)
 endif()

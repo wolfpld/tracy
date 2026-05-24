@@ -1209,7 +1209,8 @@ std::string TracyLlmTools::SamplingStats( const std::string& query, uint32_t lim
             { "location", loc },
             { "image", m_worker.GetString( sit->second.imageName ) },
             { "time", TimeToString( v.excl * period ) },
-            { "code_size", MemSizeToString( sit->second.size.Val() ) }
+            { "code_size", MemSizeToString( sit->second.size.Val() ) },
+            { "external", m_worker.IsFrameExternal( sit->second.file, sit->second.imageName ) }
         } );
     }
 

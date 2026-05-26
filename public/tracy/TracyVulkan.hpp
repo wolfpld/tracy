@@ -360,8 +360,8 @@ private:
             return tCpu;
 #       else
             assert( false );
+            return 0;
 #       endif
-        return 0;
     }
     tracy_force_inline bool GetCalibratedTimestamps( int64_t& tCpu, int64_t& tGpu, uint64_t& tDeviation )
     {

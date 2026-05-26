@@ -365,7 +365,7 @@ private:
         constexpr int limit = 10;
         for( int i = 0; i <= limit; i++ )
         {
-            m_vkGetCalibratedTimestampsEXT( device, 2, spec, ts, &deviation );
+            if( m_vkGetCalibratedTimestampsEXT( device, 2, spec, ts, &deviation ) != VK_SUCCESS ) return;
             if( deviation <= m_deviation ) break;
             if( i == limit ) return;
         }

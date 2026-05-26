@@ -359,13 +359,16 @@ private:
             { VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT, nullptr, VK_TIME_DOMAIN_DEVICE_EXT },
             { VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT, nullptr, m_timeDomain },
         };
+
         uint64_t ts[2];
         uint64_t deviation;
-        do
+        constexpr int limit = 10;
+        for( int i = 0; i <= limit; i++ )
         {
             m_vkGetCalibratedTimestampsEXT( device, 2, spec, ts, &deviation );
+            if( deviation <= m_deviation ) break;
+            if( i == limit ) return;
         }
-        while( deviation > m_deviation );
 
 #if defined _WIN32
         tGpu = ts[0];

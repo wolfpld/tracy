@@ -318,7 +318,7 @@ private:
     void DrawWaitStacks();
     void DrawManual();
     void DrawFlameGraph();
-    void DrawFlameGraphHeader( uint64_t timespan );
+    void DrawFlameGraphHeader( int64_t vStart, int64_t vEnd, uint64_t period );
     void DrawFlameGraphLevel( const std::vector<FlameGraphItem>& data, FlameGraphContext& ctx, int depth, bool samples );
     void DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ctx, int depth, bool samples );
     void BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& data, const Vector<short_ptr<ZoneEvent>>& zones );
@@ -991,6 +991,8 @@ private:
 
     TaskDispatch m_td;
     std::vector<FlameGraphItem> m_flameGraphData;
+    int64_t m_flameGraphViewStart = 0;
+    int64_t m_flameGraphViewEnd = 0;
     struct
     {
         uint64_t count = 0;

@@ -22,5 +22,18 @@ sed -i -e 's@\\nameref{csvexport}@Exporting zone statistics to CSV@g' _tmp.tex
 sed -i -e 's@\\nameref{importingdata}@Importing external profiling data@g' _tmp.tex
 sed -i -e 's@\\nameref{configurationfiles}@Configuration files@g' _tmp.tex
 
+awk -f bclogo2quote.awk _tmp.tex > _tmp_quoted.tex
+mv _tmp_quoted.tex _tmp.tex
+
 pandoc --wrap=none --reference-location=block --number-sections -L filter.lua -s _tmp.tex -o tracy.md
+
+sed -i -e 's/^> \*\*IMPORTANT:\([^*]*\)\*\*/> [!IMPORTANT]\
+> **\1**/' tracy.md
+sed -i -e 's/^> \*\*TIP:\([^*]*\)\*\*/> [!TIP]\
+> **\1**/' tracy.md
+sed -i -e 's/^> \*\*CAUTION:\([^*]*\)\*\*/> [!CAUTION]\
+> **\1**/' tracy.md
+sed -i -e 's/^> \*\*NOTE:\([^*]*\)\*\*/> [!NOTE]\
+> **\1**/' tracy.md
+
 rm -f _tmp.tex

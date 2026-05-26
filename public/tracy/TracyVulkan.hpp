@@ -164,7 +164,7 @@ public:
         else
         {
             FindCalibratedTimestampDeviation();
-            Calibrate( device, m_prevCalibration, tgpu );
+            Calibrate( m_prevCalibration, tgpu );
             tcpu = Profiler::GetTime();
         }
 
@@ -211,7 +211,7 @@ public:
         // We require a host time domain to be available to properly calibrate.
         FindCalibratedTimestampDeviation();
         int64_t tgpu;
-        Calibrate( device, m_prevCalibration, tgpu );
+        Calibrate( m_prevCalibration, tgpu );
         int64_t tcpu = Profiler::GetTime();
 
         CreateQueryPool();
@@ -263,7 +263,7 @@ public:
             m_tail = head;
             m_oldCnt = 0;
             int64_t tgpu;
-            if( m_timeDomain != VK_TIME_DOMAIN_DEVICE_EXT ) Calibrate( m_device, m_prevCalibration, tgpu );
+            if( m_timeDomain != VK_TIME_DOMAIN_DEVICE_EXT ) Calibrate( m_prevCalibration, tgpu, 10 );
             return;
         }
 #endif
@@ -311,8 +311,8 @@ public:
 
         if( m_timeDomain != VK_TIME_DOMAIN_DEVICE_EXT )
         {
-            int64_t tgpu, tcpu;
-            Calibrate( m_device, tcpu, tgpu );
+            int64_t tgpu, tcpu = m_prevCalibration;
+            Calibrate( tcpu, tgpu, 10 );
             const auto refCpu = Profiler::GetTime();
             const auto delta = tcpu - m_prevCalibration;
             if( delta > 0 )
@@ -352,33 +352,47 @@ public:
     }
 
 private:
-    tracy_force_inline void Calibrate( VkDevice device, int64_t& tCpu, int64_t& tGpu )
+    tracy_force_inline int64_t VulkanTimeToPlatformTime(uint64_t tCpu)
     {
+#       if defined _WIN32
+            return tCpu * m_qpcToNs;
+#       elif defined __linux__ && defined CLOCK_MONOTONIC_RAW
+            return tCpu;
+#       else
+            assert( false );
+#       endif
+        return 0;
+    }
+    tracy_force_inline bool GetCalibratedTimestamps( int64_t& tCpu, int64_t& tGpu, uint64_t& tDeviation )
+    {
+        assert( m_device );
         assert( m_timeDomain != VK_TIME_DOMAIN_DEVICE_EXT );
         VkCalibratedTimestampInfoEXT spec[2] = {
             { VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT, nullptr, VK_TIME_DOMAIN_DEVICE_EXT },
             { VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT, nullptr, m_timeDomain },
         };
-
         uint64_t ts[2];
         uint64_t deviation;
-        constexpr int limit = 10;
-        for( int i = 0; i <= limit; i++ )
+        VkResult result = m_vkGetCalibratedTimestampsEXT( m_device, 2, spec, ts, &deviation );
+        if ( result != VK_SUCCESS ) return false;
+        tGpu = ts[0];
+        tCpu = VulkanTimeToPlatformTime(ts[1]);
+        tDeviation = deviation;
+        return true;
+    }
+    tracy_force_inline bool Calibrate( int64_t& tCpu, int64_t& tGpu, uint64_t maxSamples = ~uint64_t(0) )
+    {
+        for ( uint64_t i = 0; i < maxSamples; ++i )
         {
-            if( m_vkGetCalibratedTimestampsEXT( device, 2, spec, ts, &deviation ) != VK_SUCCESS ) return;
-            if( deviation <= m_deviation ) break;
-            if( i == limit ) return;
+            int64_t cpu, gpu;
+            uint64_t deviation;
+            if( !GetCalibratedTimestamps( cpu, gpu, deviation ) ) continue;
+            if( deviation > m_deviation ) continue;
+            tCpu = cpu;
+            tGpu = gpu;
+            return true;
         }
-
-#if defined _WIN32
-        tGpu = ts[0];
-        tCpu = ts[1] * m_qpcToNs;
-#elif defined __linux__ && defined CLOCK_MONOTONIC_RAW
-        tGpu = ts[0];
-        tCpu = ts[1];
-#else
-        assert( false );
-#endif
+        return false;
     }
 
     tracy_force_inline void CreateQueryPool()
@@ -417,28 +431,25 @@ private:
 
     tracy_force_inline void FindCalibratedTimestampDeviation()
     {
-        assert( m_timeDomain != VK_TIME_DOMAIN_DEVICE_EXT );
+#       if defined _WIN32
+            m_qpcToNs = int64_t( 1000000000. / GetFrequencyQpc() );
+#       endif
+
         constexpr size_t NumProbes = 32;
-        VkCalibratedTimestampInfoEXT spec[2] = {
-            { VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT, nullptr, VK_TIME_DOMAIN_DEVICE_EXT },
-            { VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT, nullptr, m_timeDomain },
-        };
-        uint64_t ts[2];
         uint64_t deviation[NumProbes];
         for( size_t i=0; i<NumProbes; i++ ) {
-            m_vkGetCalibratedTimestampsEXT( m_device, 2, spec, ts, deviation + i );
+            int64_t cpu, gpu;
+            deviation[i] = ~uint64_t(0);
+            GetCalibratedTimestamps( cpu, gpu, deviation[i] );
         }
+
         uint64_t minDeviation = deviation[0];
         for( size_t i=1; i<NumProbes; i++ ) {
             if ( minDeviation > deviation[i] ) {
                 minDeviation = deviation[i];
             }
         }
-        m_deviation = minDeviation * 3 / 2;
-
-#if defined _WIN32
-        m_qpcToNs = int64_t( 1000000000. / GetFrequencyQpc() );
-#endif
+        m_deviation = minDeviation * 3 / 2; // i.e., 1.5x minDeviation
     }
 
     tracy_force_inline void WriteInitialItem( VkPhysicalDevice physdev, int64_t tcpu, int64_t tgpu )

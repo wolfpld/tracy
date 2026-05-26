@@ -99,7 +99,10 @@ void View::DrawManual()
     ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.25f ) );
     ImGui::PopFont();
 
-    m_markdown.Print( chunk.text.c_str(), chunk.text.size() );
+    const auto separator = chunk.text.find( "-----" );
+    const auto size = separator == std::string::npos ? chunk.text.size() : separator;
+
+    m_markdown.Print( chunk.text.c_str(), size );
 
     ImGui::EndChild();
     ImGui::EndColumns();

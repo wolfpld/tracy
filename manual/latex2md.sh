@@ -36,4 +36,6 @@ sed -i -e 's/^> \*\*CAUTION:\([^*]*\)\*\*/> [!CAUTION]\
 sed -i -e 's/^> \*\*NOTE:\([^*]*\)\*\*/> [!NOTE]\
 > **\1**/' tracy.md
 
+python3 icon-explain.py ../profiler/src/profiler/IconsFontAwesome6.h tracy.md
+
 rm -f _tmp.tex

@@ -62,6 +62,20 @@ void View::DrawManual()
             level--;
         }
 
+        if( m_manualPositionReset && i < m_activeManualChunk && chunk.level < chunks[m_activeManualChunk].level )
+        {
+            bool ancestor = true;
+            for( size_t j = i+1; j < m_activeManualChunk; j++ )
+            {
+                if( chunks[j].level <= chunk.level )
+                {
+                    ancestor = false;
+                    break;
+                }
+            }
+            if( ancestor ) ImGui::SetNextItemOpen( true, ImGuiCond_Always );
+        }
+
         ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
         const bool isLeaf = i == ( chunks.size() - 1 ) || chunks[i+1].level <= chunk.level;
         if( isLeaf ) flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
@@ -70,6 +84,7 @@ void View::DrawManual()
         {
             if( !isLeaf ) level++;
         }
+        if( m_manualPositionReset && i == m_activeManualChunk ) ImGui::SetScrollHereY();
         if( ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen() )
         {
             m_activeManualChunk = i;

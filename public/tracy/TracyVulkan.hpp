@@ -354,14 +354,14 @@ public:
 private:
     tracy_force_inline int64_t VulkanTimeToPlatformTime(uint64_t tCpu)
     {
-#       if defined _WIN32
-            return tCpu * m_qpcToNs;
-#       elif defined __linux__ && defined CLOCK_MONOTONIC_RAW
-            return tCpu;
-#       else
-            assert( false );
-            return 0;
-#       endif
+#if defined _WIN32
+        return tCpu * m_qpcToNs;
+#elif defined __linux__ && defined CLOCK_MONOTONIC_RAW
+        return tCpu;
+#else
+        assert( false );
+        return 0;
+#endif
     }
 
     tracy_force_inline bool GetCalibratedTimestamps( int64_t& tCpu, int64_t& tGpu, uint64_t& tDeviation )
@@ -433,9 +433,9 @@ private:
 
     tracy_force_inline void FindCalibratedTimestampDeviation()
     {
-#       if defined _WIN32
-            m_qpcToNs = int64_t( 1000000000. / GetFrequencyQpc() );
-#       endif
+#if defined _WIN32
+        m_qpcToNs = int64_t( 1000000000. / GetFrequencyQpc() );
+#endif
 
         constexpr size_t NumProbes = 32;
         uint64_t deviation[NumProbes];

@@ -15,6 +15,7 @@ void View::DrawManual()
 {
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 1200 * scale, 800 * scale ), ImGuiCond_FirstUseEver );
+    if( m_manualPositionReset ) ImGui::SetNextWindowFocus();
     ImGui::Begin( "User manual", &m_showManual );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
 

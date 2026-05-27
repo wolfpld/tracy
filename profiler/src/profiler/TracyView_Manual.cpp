@@ -5,6 +5,7 @@
 #include "TracyManualData.hpp"
 #include "TracyMarkdown.hpp"
 #include "TracyView.hpp"
+#include "TracyWeb.hpp"
 #include "../Fonts.hpp"
 
 namespace tracy
@@ -87,22 +88,49 @@ void View::DrawManual()
 
     auto& chunk = chunks[m_activeManualChunk];
 
-    ImGui::PushFont( g_fonts.normal, FontBig );
-    if( chunk.section.empty() )
+    if( m_activeManualChunk == 0 )
     {
-        ImGui::TextUnformatted( chunk.title.c_str() );
+        ImageCentered( GetProfilerIconTexture(), ImVec2( 80 * scale, 80 * scale ) );
+        ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.5f ) );
+        ImGui::PushFont( g_fonts.bold, FontNormal * 2.f );
+        TextCentered( "Tracy Profiler" );
+        ImGui::PopFont();
+        ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.25f ) );
+        ImGui::PushFont( g_fonts.normal, FontNormal * 1.25f );
+        TextCentered( "The user manual" );
+        ImGui::PopFont();
+        ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 2 ) );
+        TextCentered( "Bartosz Taudul <wolf@nereid.pl>" );
+        ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.5f ) );
+        TextCentered( "https://github.com/wolfpld/tracy" );
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::SetMouseCursor( ImGuiMouseCursor_Hand );
+            if( ImGui::IsItemClicked() )
+            {
+                OpenWebpage( "https://github.com/wolfpld/tracy" );
+            }
+        }
     }
     else
     {
-        ImGui::Text( "%s. %s", chunk.section.c_str(), chunk.title.c_str() );
+        ImGui::PushFont( g_fonts.normal, FontBig );
+        if( chunk.section.empty() )
+        {
+            ImGui::TextUnformatted( chunk.title.c_str() );
+        }
+        else
+        {
+            ImGui::Text( "%s. %s", chunk.section.c_str(), chunk.title.c_str() );
+        }
+        ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.25f ) );
+        ImGui::PopFont();
+
+        const auto separator = chunk.text.find( "-----" );
+        const auto size = separator == std::string::npos ? chunk.text.size() : separator;
+
+        m_markdown.Print( chunk.text.c_str(), size );
     }
-    ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.25f ) );
-    ImGui::PopFont();
-
-    const auto separator = chunk.text.find( "-----" );
-    const auto size = separator == std::string::npos ? chunk.text.size() : separator;
-
-    m_markdown.Print( chunk.text.c_str(), size );
 
     ImGui::EndChild();
     ImGui::EndColumns();

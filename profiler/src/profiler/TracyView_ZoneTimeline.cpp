@@ -354,6 +354,13 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
             const auto pr1 = ( end - vStart ) * pxns;
             const auto zsz = std::max( pr1 - pr0, pxns * 0.5 );
 
+            const auto& seqRefMap = m_worker.GetZoneSeqRef();
+            const auto seqIt = seqRefMap.find( &ev );
+            if( seqIt != seqRefMap.end() )
+            {
+                m_seqZoneYPos[&ev] = wpos.y + offset + ty * 0.5f;
+            }
+
             const auto zoneColor = GetZoneColorData( ev, tid, v.depth, v.inheritedColor );
             const char* zoneName = m_worker.GetZoneName( ev );
 
@@ -409,6 +416,29 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
 
                 m_zoneSrcLocHighlight = ev.SrcLoc();
                 m_zoneHover = &ev;
+
+                if( seqIt != seqRefMap.end() )
+                {
+                    const auto& seqMap = m_worker.GetSequences();
+                    const auto sit = seqMap.find( seqIt->second.seqId );
+                    if( sit != seqMap.end() )
+                    {
+                        const auto& conts = sit->second->continuations;
+                        const auto idx = seqIt->second.continuationIdx;
+                        if( idx > 0 )
+                        {
+                            m_seqArrowDraw.push_back( {
+                                conts[idx-1].suspendTime, (const ZoneEvent*)conts[idx-1].zone,
+                                conts[idx].resumeTime,    (const ZoneEvent*)conts[idx].zone } );
+                        }
+                        if( idx + 1 < conts.size() )
+                        {
+                            m_seqArrowDraw.push_back( {
+                                conts[idx].suspendTime,   (const ZoneEvent*)conts[idx].zone,
+                                conts[idx+1].resumeTime,  (const ZoneEvent*)conts[idx+1].zone } );
+                        }
+                    }
+                }
             }
             break;
         }
@@ -668,6 +698,48 @@ void View::DrawThreadCropper( const int depth, const uint64_t tid, const float x
             color = 0xFF888888;
         }
         draw->AddCircleFilled( center, circleRadius, color );
+    }
+}
+
+void View::DrawSeqArrows( double pxns, const ImVec2& wpos )
+{
+    if( m_seqArrowDraw.empty() ) return;
+
+    auto draw = ImGui::GetWindowDrawList();
+    const auto vStart = m_vd.zvStart;
+    const auto scale = GetScale();
+    const auto lineThickness = std::max( 1.5f * scale, 1.0f );
+    const auto dotRadius = 2.5f * scale;
+    const auto arrowSize = 5.0f * scale;
+    constexpr ImU32 color = 0xFFFFFFFF;
+    constexpr ImU32 shadow = 0xFF000000;
+
+    for( const auto& a : m_seqArrowDraw )
+    {
+        const auto fromIt = m_seqZoneYPos.find( a.fromZone );
+        const auto toIt = m_seqZoneYPos.find( a.toZone );
+        if( fromIt == m_seqZoneYPos.end() || toIt == m_seqZoneYPos.end() ) continue;
+
+        const ImVec2 p0( wpos.x + ( a.fromTime - vStart ) * pxns, fromIt->second );
+        const ImVec2 p1( wpos.x + ( a.toTime   - vStart ) * pxns, toIt->second   );
+
+        draw->AddLine( p0 + ImVec2( 1, 1 ), p1 + ImVec2( 1, 1 ), shadow, lineThickness );
+        draw->AddLine( p0, p1, color, lineThickness );
+        draw->AddCircleFilled( p0, dotRadius, color );
+
+        // Arrowhead at p1
+        const auto dx = p1.x - p0.x;
+        const auto dy = p1.y - p0.y;
+        const auto len = std::sqrt( dx * dx + dy * dy );
+        if( len > 1.0f )
+        {
+            const auto nx = dx / len;
+            const auto ny = dy / len;
+            const ImVec2 base( p1.x - nx * arrowSize, p1.y - ny * arrowSize );
+            const ImVec2 left ( base.x - ny * arrowSize * 0.5f, base.y + nx * arrowSize * 0.5f );
+            const ImVec2 right( base.x + ny * arrowSize * 0.5f, base.y - nx * arrowSize * 0.5f );
+            draw->AddTriangleFilled( p1, left, right, color );
+        }
     }
 }
 

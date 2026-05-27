@@ -132,6 +132,11 @@ typedef const void* TracyCLockCtx;
 #  define TracyCFiberLeave
 #endif
 
+#define TracyCSeqCreate() ((uint64_t)0)
+#define TracyCSeqResume(id) ((void)(id))
+#define TracyCSeqSuspend(id) ((void)(id))
+#define TracyCSeqRetire(id) ((void)(id))
+
 #else
 
 #ifndef TracyConcat
@@ -391,6 +396,16 @@ TRACY_API void ___tracy_fiber_leave( void );
 #  define TracyCFiberEnter( fiber ) ___tracy_fiber_enter( fiber );
 #  define TracyCFiberLeave ___tracy_fiber_leave();
 #endif
+
+TRACY_API uint64_t ___tracy_seq_create( void );
+TRACY_API void ___tracy_seq_resume( uint64_t id );
+TRACY_API void ___tracy_seq_suspend( uint64_t id );
+TRACY_API void ___tracy_seq_retire( uint64_t id );
+
+#define TracyCSeqCreate() ___tracy_seq_create()
+#define TracyCSeqResume( id ) ___tracy_seq_resume( id )
+#define TracyCSeqSuspend( id ) ___tracy_seq_suspend( id )
+#define TracyCSeqRetire( id ) ___tracy_seq_retire( id )
 
 TRACY_API int64_t ___tracy_get_time();
 

@@ -792,6 +792,56 @@ public:
     }
 #endif
 
+    static tracy_force_inline uint64_t CreateSequence()
+    {
+        const auto id = GetProfiler().m_seqCounter.fetch_add( 1, std::memory_order_relaxed );
+#ifdef TRACY_ON_DEMAND
+        if( !GetProfiler().IsConnected() ) return id;
+#endif
+        TracyQueuePrepare( QueueType::SeqCreate );
+        MemWrite( &item->seqEvent.time, GetTime() );
+        MemWrite( &item->seqEvent.id, id );
+        MemWrite( &item->seqEvent.thread, GetThreadHandle() );
+        TracyQueueCommit( seqEvent );
+        return id;
+    }
+
+    static tracy_force_inline void ResumeSequence( uint64_t id )
+    {
+#ifdef TRACY_ON_DEMAND
+        if( !GetProfiler().IsConnected() ) return;
+#endif
+        TracyQueuePrepare( QueueType::SeqResume );
+        MemWrite( &item->seqEvent.time, GetTime() );
+        MemWrite( &item->seqEvent.id, id );
+        MemWrite( &item->seqEvent.thread, GetThreadHandle() );
+        TracyQueueCommit( seqEvent );
+    }
+
+    static tracy_force_inline void SuspendSequence( uint64_t id )
+    {
+#ifdef TRACY_ON_DEMAND
+        if( !GetProfiler().IsConnected() ) return;
+#endif
+        TracyQueuePrepare( QueueType::SeqSuspend );
+        MemWrite( &item->seqEvent.time, GetTime() );
+        MemWrite( &item->seqEvent.id, id );
+        MemWrite( &item->seqEvent.thread, GetThreadHandle() );
+        TracyQueueCommit( seqEvent );
+    }
+
+    static tracy_force_inline void RetireSequence( uint64_t id )
+    {
+#ifdef TRACY_ON_DEMAND
+        if( !GetProfiler().IsConnected() ) return;
+#endif
+        TracyQueuePrepare( QueueType::SeqRetire );
+        MemWrite( &item->seqEvent.time, GetTime() );
+        MemWrite( &item->seqEvent.id, id );
+        MemWrite( &item->seqEvent.thread, GetThreadHandle() );
+        TracyQueueCommit( seqEvent );
+    }
+
     void SendCallstack( int32_t depth, const char** skipBefore );
     static void CutCallstack( void* callstack, const char** skipBefore );
 
@@ -1087,6 +1137,7 @@ private:
     std::mutex m_symbolQueueMutex;
 
     std::atomic<uint64_t> m_frameCount;
+    std::atomic<uint64_t> m_seqCounter{ 1 };
     std::atomic<bool> m_isConnected;
 #ifdef TRACY_ON_DEMAND
     std::atomic<uint64_t> m_connectionId;

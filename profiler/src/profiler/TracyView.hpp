@@ -281,6 +281,7 @@ private:
     void DrawTimeline();
     void DrawSampleList( const TimelineContext& ctx, const std::vector<SamplesDraw>& drawList, const Vector<SampleData>& vec, int offset, uint64_t tid );
     void DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineDraw>& drawList, int offset, uint64_t tid, int maxDepth, double margin );
+    void DrawSeqArrows( double pxns, const ImVec2& wpos );
     void DrawThreadCropper( const int depth, const uint64_t tid, const float xPos, const float yPos, const float ostep, const float cropperWidth, const bool hasCtxSwitches );
     void DrawContextSwitchList( const TimelineContext& ctx, const std::vector<ContextSwitchDraw>& drawList, const Vector<ContextSwitchData>& ctxSwitch, int offset, int endOffset, bool isFiber );
     int DispatchGpuZoneLevel( const Vector<short_ptr<GpuEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift );
@@ -527,6 +528,16 @@ private:
     uint32_t m_lockInfoWindow = InvalidId;
     const ZoneEvent* m_zoneHover = nullptr;
     DecayValue<const ZoneEvent*> m_zoneHover2 = nullptr;
+
+    struct SeqArrowDraw
+    {
+        int64_t fromTime;
+        const ZoneEvent* fromZone;
+        int64_t toTime;
+        const ZoneEvent* toZone;
+    };
+    std::vector<SeqArrowDraw> m_seqArrowDraw;
+    unordered_flat_map<const ZoneEvent*, float> m_seqZoneYPos;
     int m_frameHover = -1;
     bool m_messagesScrollBottom;
 

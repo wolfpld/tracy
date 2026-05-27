@@ -363,6 +363,7 @@ private:
             return 0;
 #       endif
     }
+
     tracy_force_inline bool GetCalibratedTimestamps( int64_t& tCpu, int64_t& tGpu, uint64_t& tDeviation )
     {
         assert( m_device );
@@ -380,6 +381,7 @@ private:
         tDeviation = deviation;
         return true;
     }
+
     tracy_force_inline bool Calibrate( int64_t& tCpu, int64_t& tGpu, uint64_t maxSamples = ~uint64_t(0) )
     {
         for ( uint64_t i = 0; i < maxSamples; ++i )

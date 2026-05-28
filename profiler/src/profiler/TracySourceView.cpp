@@ -2624,9 +2624,13 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                 const auto normalized = view.GetShortenName() != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, symName ) : symName;
                 const auto fn = worker.GetString( lcs->data[i].file );
                 const auto srcline = lcs->data[i].line;
+                const auto external = worker.IsFrameExternal( lcs->data[i].file, lcs->imageName );
                 if( srcline != 0 )
                 {
-                    if( ImGui::BeginMenu( normalized ) )
+                    if( external ) ImGui::PushStyleColor( ImGuiCol_Text, ImGui::GetStyle().Colors[ImGuiCol_TextDisabled] );
+                    const auto extend = ImGui::BeginMenu( normalized );
+                    if( external ) ImGui::PopStyleColor();
+                    if( extend )
                     {
                         if( SourceFileValid( fn, worker.GetCaptureTime(), view, worker ) )
                         {
@@ -2666,7 +2670,14 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                 }
                 else
                 {
-                    ImGui::TextDisabled( "%s", normalized );
+                    if( external )
+                    {
+                        TextDisabledUnformatted( normalized );
+                    }
+                    else
+                    {
+                        ImGui::TextUnformatted( normalized );
+                    }
                 }
                 ImGui::PopID();
             }

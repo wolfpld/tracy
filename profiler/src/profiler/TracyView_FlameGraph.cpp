@@ -998,6 +998,16 @@ void View::DrawFlameGraph()
         ToggleButton( ICON_FA_RULER " Limits", m_showRanges );
     }
 
+    ImGui::SameLine();
+    ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
+    ImGui::SameLine();
+
+    if( ImGui::SmallButton( "Reset view" ) )
+    {
+        m_flameGraphViewStart = 0;
+        m_flameGraphViewEnd = 0;
+    }
+
     auto& td = m_worker.GetThreadData();
     auto expand = ImGui::TreeNode( ICON_FA_SHUFFLE " Visible threads:" );
     ImGui::SameLine();

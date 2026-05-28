@@ -318,7 +318,7 @@ private:
     void DrawWaitStacks();
     void DrawManual();
     void DrawFlameGraph();
-    void DrawFlameGraphHeader( uint64_t timespan );
+    void DrawFlameGraphHeader( int64_t vStart, int64_t vEnd, uint64_t period );
     void DrawFlameGraphLevel( const std::vector<FlameGraphItem>& data, FlameGraphContext& ctx, int depth, bool samples );
     void DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ctx, int depth, bool samples );
     void BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& data, const Vector<short_ptr<ZoneEvent>>& zones );
@@ -372,6 +372,7 @@ private:
     void ZoomToPrevFrame();
     void ZoomToNextFrame();
     void CenterAtTime( int64_t t );
+    void UpdateZoomAnimation( Animation& anim, int64_t& start, int64_t& end, float deltaTime );
 
     void ShowZoneInfo( const ZoneEvent& ev );
     void ShowZoneInfo( const GpuEvent& ev, uint64_t thread );
@@ -991,6 +992,10 @@ private:
 
     TaskDispatch m_td;
     std::vector<FlameGraphItem> m_flameGraphData;
+    int64_t m_flameGraphViewStart = 0;
+    int64_t m_flameGraphViewEnd = 0;
+    double m_flameGraphPan = 0;
+    Animation m_flameGraphZoomAnim;
     struct
     {
         uint64_t count = 0;

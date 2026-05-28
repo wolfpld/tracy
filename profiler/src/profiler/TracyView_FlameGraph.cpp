@@ -740,7 +740,19 @@ void View::DrawFlameGraphHeader( int64_t vStart, int64_t vEnd, uint64_t period )
     }
 }
 
-static void DrawFlameGraphHorizontalPosition( int64_t& vStart, int64_t& vEnd, int64_t totalSpan, uint64_t period )
+static bool ApplyFlameGraphPan( int64_t& start, int64_t& end, double& pan, double delta )
+{
+    pan += delta;
+    const auto d = int64_t( pan );
+    if( d == 0 ) return false;
+
+    start += d;
+    end += d;
+    pan -= d;
+    return true;
+}
+
+static void DrawFlameGraphHorizontalPosition( int64_t& vStart, int64_t& vEnd, double& pan, int64_t totalSpan, uint64_t period )
 {
     assert( vStart < vEnd );
     assert( totalSpan > 0 );
@@ -800,12 +812,7 @@ static void DrawFlameGraphHorizontalPosition( int64_t& vStart, int64_t& vEnd, in
     if( active && ImGui::IsMouseDragging( 0 ) )
     {
         const auto delta = ImGui::GetIO().MouseDelta.x;
-        const auto d = int64_t( delta * totalSpan / w );
-        if( d != 0 )
-        {
-            vStart += d;
-            vEnd += d;
-        }
+        ApplyFlameGraphPan( vStart, vEnd, pan, delta * totalSpan / w );
     }
 }
 
@@ -909,6 +916,7 @@ void View::DrawFlameGraph()
         m_flameGraphInvariant.Reset();
         m_flameGraphViewStart = 0;
         m_flameGraphViewEnd = 0;
+        m_flameGraphPan = 0;
     }
 
     if( m_worker.AreCallstackSamplesReady() && m_worker.GetCallstackSampleCount() > 0 )
@@ -919,6 +927,7 @@ void View::DrawFlameGraph()
             m_flameGraphInvariant.Reset();
             m_flameGraphViewStart = 0;
             m_flameGraphViewEnd = 0;
+            m_flameGraphPan = 0;
         }
     }
 
@@ -931,6 +940,7 @@ void View::DrawFlameGraph()
         m_flameGraphInvariant.Reset();
         m_flameGraphViewStart = 0;
         m_flameGraphViewEnd = 0;
+        m_flameGraphPan = 0;
     }
 
     if( m_flameMode == 0 )
@@ -943,6 +953,7 @@ void View::DrawFlameGraph()
                 m_flameGraphInvariant.Reset();
                 m_flameGraphViewStart = 0;
                 m_flameGraphViewEnd = 0;
+                m_flameGraphPan = 0;
             }
         }
         else
@@ -962,6 +973,7 @@ void View::DrawFlameGraph()
             m_flameGraphInvariant.Reset();
             m_flameGraphViewStart = 0;
             m_flameGraphViewEnd = 0;
+            m_flameGraphPan = 0;
         }
         ImGui::SameLine();
         if( m_flameExternal ) ImGui::BeginDisabled();
@@ -970,6 +982,7 @@ void View::DrawFlameGraph()
             m_flameGraphInvariant.Reset();
             m_flameGraphViewStart = 0;
             m_flameGraphViewEnd = 0;
+            m_flameGraphPan = 0;
         }
         if( m_flameExternal ) ImGui::EndDisabled();
     }
@@ -989,6 +1002,7 @@ void View::DrawFlameGraph()
         m_flameGraphInvariant.Reset();
         m_flameGraphViewStart = 0;
         m_flameGraphViewEnd = 0;
+        m_flameGraphPan = 0;
     }
     if( m_flameRange.active )
     {
@@ -1006,6 +1020,7 @@ void View::DrawFlameGraph()
     {
         m_flameGraphViewStart = 0;
         m_flameGraphViewEnd = 0;
+        m_flameGraphPan = 0;
     }
 
     auto& td = m_worker.GetThreadData();
@@ -1038,6 +1053,7 @@ void View::DrawFlameGraph()
             m_flameGraphInvariant.Reset();
             m_flameGraphViewStart = 0;
             m_flameGraphViewEnd = 0;
+            m_flameGraphPan = 0;
         }
         ImGui::SameLine();
         if( ImGui::SmallButton( "Unselect all" ) )
@@ -1049,6 +1065,7 @@ void View::DrawFlameGraph()
             m_flameGraphInvariant.Reset();
             m_flameGraphViewStart = 0;
             m_flameGraphViewEnd = 0;
+            m_flameGraphPan = 0;
         }
 
         const auto& style = ImGui::GetStyle();
@@ -1081,6 +1098,7 @@ void View::DrawFlameGraph()
                 m_flameGraphInvariant.Reset();
                 m_flameGraphViewStart = 0;
                 m_flameGraphViewEnd = 0;
+                m_flameGraphPan = 0;
             }
             ImGui::PopID();
             if( t->isFiber )
@@ -1108,6 +1126,7 @@ void View::DrawFlameGraph()
         {
             m_flameGraphViewStart = 0;
             m_flameGraphViewEnd = 0;
+            m_flameGraphPan = 0;
         }
         m_flameGraphInvariant.range = m_flameRange;
 
@@ -1199,15 +1218,17 @@ void View::DrawFlameGraph()
         {
             m_flameGraphViewStart = 0;
             m_flameGraphViewEnd = zsz;
+            m_flameGraphPan = 0;
         }
         else if( flameDataRebuilt && oldZsz > 0 && m_flameGraphViewStart == 0 && m_flameGraphViewEnd == oldZsz )
         {
             m_flameGraphViewEnd = zsz;
+            m_flameGraphPan = 0;
         }
 
         const auto period = m_flameMode == 0 ? 1 : m_worker.GetSamplingPeriod();
         DrawFlameGraphHeader( m_flameGraphViewStart, m_flameGraphViewEnd, period );
-        DrawFlameGraphHorizontalPosition( m_flameGraphViewStart, m_flameGraphViewEnd, zsz, period );
+        DrawFlameGraphHorizontalPosition( m_flameGraphViewStart, m_flameGraphViewEnd, m_flameGraphPan, zsz, period );
         ClampFlameGraphViewport( m_flameGraphViewStart, m_flameGraphViewEnd, zsz );
 
         ImGui::BeginChild( "##flameGraphBody", ImVec2( 0, 0 ), false, ImGuiWindowFlags_NoScrollWithMouse );
@@ -1235,13 +1256,14 @@ void View::DrawFlameGraph()
         {
             const auto delta = GetMouseDragDelta( 1 );
             const auto hwheel_delta = io.MouseWheelH * 50.f * m_horizontalScrollMultiplier;
-            const auto dpx = int64_t( delta.x * nspx + hwheel_delta * nspx );
-            if( dpx != 0 )
+            if( delta.x != 0 || hwheel_delta != 0 )
             {
-                m_flameGraphViewStart -= dpx;
-                m_flameGraphViewEnd -= dpx;
+                const auto changed = ApplyFlameGraphPan( m_flameGraphViewStart, m_flameGraphViewEnd, m_flameGraphPan, -( delta.x + hwheel_delta ) * nspx );
                 io.MouseClickedPos[1].x = io.MousePos.x;
-                ClampFlameGraphViewport( m_flameGraphViewStart, m_flameGraphViewEnd, zsz );
+                if( changed )
+                {
+                    ClampFlameGraphViewport( m_flameGraphViewStart, m_flameGraphViewEnd, zsz );
+                }
             }
 
             if( delta.y != 0 )
@@ -1254,6 +1276,7 @@ void View::DrawFlameGraph()
         const bool wheel_zoom = fabs( io.MouseWheel ) > fabs( io.MouseWheelH );
         if( hover && wheel_zoom )
         {
+            m_flameGraphPan = 0;
             const auto wheel = io.MouseWheel;
             const auto mouse = io.MousePos.x - wpos.x;
             const auto p = mouse / w;

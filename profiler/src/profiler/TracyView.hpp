@@ -993,6 +993,7 @@ private:
     std::vector<FlameGraphItem> m_flameGraphData;
     int64_t m_flameGraphViewStart = 0;
     int64_t m_flameGraphViewEnd = 0;
+    double m_flameGraphPan = 0;
     struct
     {
         uint64_t count = 0;

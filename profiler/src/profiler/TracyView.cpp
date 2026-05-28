@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <assert.h>
 #include <inttypes.h>
-#include <math.h>
 #include <mutex>
 
 #include "imgui.h"
@@ -28,10 +27,6 @@
 
 #include "imgui_internal.h"
 #include "IconsFontAwesome6.h"
-
-#ifndef M_PI_2
-#define M_PI_2 1.57079632679489661923
-#endif
 
 namespace tracy
 {
@@ -1251,19 +1246,7 @@ bool View::DrawImpl()
                 m_zoomAnim.end1 += delta;
             }
         }
-        m_zoomAnim.progress += io.DeltaTime * 3.33f;
-        if( m_zoomAnim.progress >= 1.f )
-        {
-            m_zoomAnim.active = false;
-            m_vd.zvStart = m_zoomAnim.start1;
-            m_vd.zvEnd = m_zoomAnim.end1;
-        }
-        else
-        {
-            const auto v = sqrt( sin( M_PI_2 * m_zoomAnim.progress ) );
-            m_vd.zvStart = int64_t( m_zoomAnim.start0 + ( m_zoomAnim.start1 - m_zoomAnim.start0 ) * v );
-            m_vd.zvEnd = int64_t( m_zoomAnim.end0 + ( m_zoomAnim.end1 - m_zoomAnim.end0 ) * v );
-        }
+        UpdateZoomAnimation( m_zoomAnim, m_vd.zvStart, m_vd.zvEnd, io.DeltaTime );
     }
 
     bool active = m_wasActive.load( std::memory_order_acquire );

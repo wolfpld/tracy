@@ -372,6 +372,7 @@ private:
     void ZoomToPrevFrame();
     void ZoomToNextFrame();
     void CenterAtTime( int64_t t );
+    void UpdateZoomAnimation( Animation& anim, int64_t& start, int64_t& end, float deltaTime );
 
     void ShowZoneInfo( const ZoneEvent& ev );
     void ShowZoneInfo( const GpuEvent& ev, uint64_t thread );

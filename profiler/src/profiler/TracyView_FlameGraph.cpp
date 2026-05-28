@@ -740,6 +740,75 @@ void View::DrawFlameGraphHeader( int64_t vStart, int64_t vEnd, uint64_t period )
     }
 }
 
+static void DrawFlameGraphHorizontalPosition( int64_t& vStart, int64_t& vEnd, int64_t totalSpan, uint64_t period )
+{
+    assert( vStart < vEnd );
+    assert( totalSpan > 0 );
+    assert( period > 0 );
+
+    const auto wpos = ImGui::GetCursorScreenPos();
+    const auto w = ImGui::GetContentRegionAvail().x;
+    const auto scale = GetScale();
+    const auto h = std::max( 8.f * scale, 8.f );
+
+    if( w <= 0 )
+    {
+        ImGui::Dummy( ImVec2( 0, h ) );
+        return;
+    }
+
+    ImGui::InvisibleButton( "##flameHorizontalPosition", ImVec2( w, h ) );
+    const auto hover = ImGui::IsItemHovered();
+    const auto active = ImGui::IsItemActive();
+    auto draw = ImGui::GetWindowDrawList();
+
+    const auto fullSpan = float( totalSpan );
+    const auto x0 = wpos.x + w * ( float( vStart ) / fullSpan );
+    const auto x1 = wpos.x + w * ( float( vEnd ) / fullSpan );
+    auto thumbX0 = std::max( wpos.x, std::min( wpos.x + w, x0 ) );
+    auto thumbX1 = std::max( thumbX0, std::min( wpos.x + w, x1 ) );
+    const auto minThumbWidth = std::max( 9.f * scale, 9.f );
+    if( thumbX1 - thumbX0 < minThumbWidth )
+    {
+        const auto center = ( thumbX0 + thumbX1 ) * 0.5f;
+        thumbX0 = center - ( minThumbWidth * 0.5f );
+        thumbX1 = center + ( minThumbWidth * 0.5f );
+        if( thumbX0 < wpos.x )
+        {
+            thumbX0 = wpos.x;
+            thumbX1 = thumbX0 + minThumbWidth;
+        }
+        else if( thumbX1 > wpos.x + w )
+        {
+            thumbX1 = wpos.x + w;
+            thumbX0 = thumbX1 - minThumbWidth;
+        }
+    }
+    const auto y0 = wpos.y + floor( h * 0.25f );
+    const auto y1 = wpos.y + ceil( h * 0.75f );
+
+    draw->AddRectFilled( ImVec2( wpos.x, y0 ), ImVec2( wpos.x + w, y1 ), 0x33888888 );
+    draw->AddRectFilled( ImVec2( thumbX0, y0 ), ImVec2( thumbX1, y1 ), active ? 0xCCFFFFFF : hover ? 0xAAFFFFFF : 0x66FFFFFF );
+
+    if( hover )
+    {
+        ImGui::BeginTooltip();
+        TextFocused( "View span:", TimeToString( ( vEnd - vStart ) * period ) );
+        ImGui::EndTooltip();
+    }
+
+    if( active && ImGui::IsMouseDragging( 0 ) )
+    {
+        const auto delta = ImGui::GetIO().MouseDelta.x;
+        const auto d = int64_t( delta * totalSpan / w );
+        if( d != 0 )
+        {
+            vStart += d;
+            vEnd += d;
+        }
+    }
+}
+
 static void MergeFlameGraph( std::vector<FlameGraphItem>& dst, std::vector<FlameGraphItem>&& src )
 {
     for( auto& v : src )
@@ -1125,13 +1194,11 @@ void View::DrawFlameGraph()
         {
             m_flameGraphViewEnd = zsz;
         }
-        else
-        {
-            ClampFlameGraphViewport( m_flameGraphViewStart, m_flameGraphViewEnd, zsz, ImGui::GetContentRegionAvail().x );
-        }
 
         const auto period = m_flameMode == 0 ? 1 : m_worker.GetSamplingPeriod();
         DrawFlameGraphHeader( m_flameGraphViewStart, m_flameGraphViewEnd, period );
+        DrawFlameGraphHorizontalPosition( m_flameGraphViewStart, m_flameGraphViewEnd, zsz, period );
+        ClampFlameGraphViewport( m_flameGraphViewStart, m_flameGraphViewEnd, zsz, ImGui::GetContentRegionAvail().x );
 
         ImGui::BeginChild( "##flameGraphBody", ImVec2( 0, 0 ), false, ImGuiWindowFlags_NoScrollWithMouse );
         const auto region = ImGui::GetContentRegionAvail();

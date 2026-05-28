@@ -856,13 +856,13 @@ static int GetFlameGraphDepth( const std::vector<FlameGraphItem>& data, int64_t 
     return maxDepth;
 }
 
-static void ClampFlameGraphViewport( int64_t& start, int64_t& end, int64_t totalSpan, float width )
+static void ClampFlameGraphViewport( int64_t& start, int64_t& end, int64_t totalSpan )
 {
     assert( totalSpan > 0 );
 
     if( end < start ) std::swap( start, end );
 
-    const auto minSpan = std::max<int64_t>( 1, int64_t( ceil( width ) ) );
+    const int64_t minSpan = 5;
     auto span = end - start;
     if( span < minSpan )
     {
@@ -1208,7 +1208,7 @@ void View::DrawFlameGraph()
         const auto period = m_flameMode == 0 ? 1 : m_worker.GetSamplingPeriod();
         DrawFlameGraphHeader( m_flameGraphViewStart, m_flameGraphViewEnd, period );
         DrawFlameGraphHorizontalPosition( m_flameGraphViewStart, m_flameGraphViewEnd, zsz, period );
-        ClampFlameGraphViewport( m_flameGraphViewStart, m_flameGraphViewEnd, zsz, ImGui::GetContentRegionAvail().x );
+        ClampFlameGraphViewport( m_flameGraphViewStart, m_flameGraphViewEnd, zsz );
 
         ImGui::BeginChild( "##flameGraphBody", ImVec2( 0, 0 ), false, ImGuiWindowFlags_NoScrollWithMouse );
         const auto region = ImGui::GetContentRegionAvail();
@@ -1241,7 +1241,7 @@ void View::DrawFlameGraph()
                 m_flameGraphViewStart -= dpx;
                 m_flameGraphViewEnd -= dpx;
                 io.MouseClickedPos[1].x = io.MousePos.x;
-                ClampFlameGraphViewport( m_flameGraphViewStart, m_flameGraphViewEnd, zsz, w );
+                ClampFlameGraphViewport( m_flameGraphViewStart, m_flameGraphViewEnd, zsz );
             }
 
             if( delta.y != 0 )
@@ -1277,7 +1277,7 @@ void View::DrawFlameGraph()
                 m_flameGraphViewStart -= std::max<int64_t>( 1, int64_t( p1 * mod ) );
                 m_flameGraphViewEnd += std::max<int64_t>( 1, int64_t( p2 * mod ) );
             }
-            ClampFlameGraphViewport( m_flameGraphViewStart, m_flameGraphViewEnd, zsz, w );
+            ClampFlameGraphViewport( m_flameGraphViewStart, m_flameGraphViewEnd, zsz );
         }
 
         FlameGraphContext ctx;

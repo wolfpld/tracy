@@ -762,6 +762,13 @@ static void FixupTime( std::vector<FlameGraphItem>& data, uint64_t t = 0 )
     }
 }
 
+static int64_t GetFlameGraphTime( const std::vector<FlameGraphItem>& data )
+{
+    int64_t time = 0;
+    for( const auto& v : data ) time += v.time;
+    return time;
+}
+
 static int GetFlameGraphDepth( const std::vector<FlameGraphItem>& data, int64_t minVisNs )
 {
     int maxDepth = 1;
@@ -845,14 +852,24 @@ void View::DrawFlameGraph()
     ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
     ImGui::SameLine();
 
-    if( ImGui::Checkbox( ICON_FA_ARROW_UP_WIDE_SHORT " Sort by time", &m_flameSort ) ) m_flameGraphInvariant.Reset();
+    if( ImGui::Checkbox( ICON_FA_ARROW_UP_WIDE_SHORT " Sort by time", &m_flameSort ) )
+    {
+        m_flameGraphInvariant.Reset();
+        m_flameGraphViewStart = 0;
+        m_flameGraphViewEnd = 0;
+    }
 
     if( m_flameMode == 0 )
     {
         if( m_worker.HasContextSwitches() )
         {
             ImGui::SameLine();
-            if( ImGui::Checkbox( "Running time", &m_flameRunningTime ) ) m_flameGraphInvariant.Reset();
+            if( ImGui::Checkbox( "Running time", &m_flameRunningTime ) )
+            {
+                m_flameGraphInvariant.Reset();
+                m_flameGraphViewStart = 0;
+                m_flameGraphViewEnd = 0;
+            }
         }
         else
         {
@@ -866,10 +883,20 @@ void View::DrawFlameGraph()
         ImGui::SameLine();
         ImGui::Text( ICON_FA_SHIELD_HALVED "External" );
         ImGui::SameLine();
-        if( ImGui::Checkbox( "Frames", &m_flameExternal ) ) m_flameGraphInvariant.Reset();
+        if( ImGui::Checkbox( "Frames", &m_flameExternal ) )
+        {
+            m_flameGraphInvariant.Reset();
+            m_flameGraphViewStart = 0;
+            m_flameGraphViewEnd = 0;
+        }
         ImGui::SameLine();
         if( m_flameExternal ) ImGui::BeginDisabled();
-        if( ImGui::Checkbox( "Tails", &m_flameExternalTail ) ) m_flameGraphInvariant.Reset();
+        if( ImGui::Checkbox( "Tails", &m_flameExternalTail ) )
+        {
+            m_flameGraphInvariant.Reset();
+            m_flameGraphViewStart = 0;
+            m_flameGraphViewEnd = 0;
+        }
         if( m_flameExternal ) ImGui::EndDisabled();
     }
 
@@ -886,6 +913,8 @@ void View::DrawFlameGraph()
         }
 
         m_flameGraphInvariant.Reset();
+        m_flameGraphViewStart = 0;
+        m_flameGraphViewEnd = 0;
     }
     if( m_flameRange.active )
     {
@@ -923,6 +952,8 @@ void View::DrawFlameGraph()
                 FlameGraphThread( t->id ) = true;
             }
             m_flameGraphInvariant.Reset();
+            m_flameGraphViewStart = 0;
+            m_flameGraphViewEnd = 0;
         }
         ImGui::SameLine();
         if( ImGui::SmallButton( "Unselect all" ) )
@@ -932,6 +963,8 @@ void View::DrawFlameGraph()
                 FlameGraphThread( t->id ) = false;
             }
             m_flameGraphInvariant.Reset();
+            m_flameGraphViewStart = 0;
+            m_flameGraphViewEnd = 0;
         }
 
         const auto& style = ImGui::GetStyle();
@@ -959,7 +992,12 @@ void View::DrawFlameGraph()
             const auto threadColor = GetThreadColor( t->id, 0 );
             SmallColorBox( threadColor );
             ImGui::SameLine();
-            if( SmallCheckbox( m_worker.GetThreadName( t->id ), &FlameGraphThread( t->id ) ) ) m_flameGraphInvariant.Reset();
+            if( SmallCheckbox( m_worker.GetThreadName( t->id ), &FlameGraphThread( t->id ) ) )
+            {
+                m_flameGraphInvariant.Reset();
+                m_flameGraphViewStart = 0;
+                m_flameGraphViewEnd = 0;
+            }
             ImGui::PopID();
             if( t->isFiber )
             {
@@ -976,10 +1014,17 @@ void View::DrawFlameGraph()
     ImGui::PopStyleVar();
 
     bool flameDataRebuilt = false;
+    const auto oldZsz = GetFlameGraphTime( m_flameGraphData );
+    const auto flameRangeChanged = m_flameGraphInvariant.range != m_flameRange;
     if( m_flameMode == 0 && ( m_flameGraphInvariant.count != m_worker.GetZoneCount() || m_flameGraphInvariant.lastTime != m_worker.GetLastTime() ) ||
         m_flameMode == 1 && ( m_flameGraphInvariant.count != m_worker.GetCallstackSampleCount() ) ||
-        m_flameGraphInvariant.range != m_flameRange )
+        flameRangeChanged )
     {
+        if( flameRangeChanged )
+        {
+            m_flameGraphViewStart = 0;
+            m_flameGraphViewEnd = 0;
+        }
         m_flameGraphInvariant.range = m_flameRange;
 
         size_t sz = 0;
@@ -1053,8 +1098,7 @@ void View::DrawFlameGraph()
         flameDataRebuilt = true;
     }
 
-    int64_t zsz = 0;
-    for( auto& v : m_flameGraphData ) zsz += v.time;
+    const auto zsz = GetFlameGraphTime( m_flameGraphData );
 
     if( m_flameGraphData.empty() || zsz <= 0 )
     {
@@ -1067,10 +1111,18 @@ void View::DrawFlameGraph()
     }
     else
     {
-        if( flameDataRebuilt || m_flameGraphViewEnd <= m_flameGraphViewStart || m_flameGraphViewStart < 0 || m_flameGraphViewEnd > zsz )
+        if( m_flameGraphViewEnd <= m_flameGraphViewStart || m_flameGraphViewStart < 0 )
         {
             m_flameGraphViewStart = 0;
             m_flameGraphViewEnd = zsz;
+        }
+        else if( flameDataRebuilt && oldZsz > 0 && m_flameGraphViewStart == 0 && m_flameGraphViewEnd == oldZsz )
+        {
+            m_flameGraphViewEnd = zsz;
+        }
+        else
+        {
+            ClampFlameGraphViewport( m_flameGraphViewStart, m_flameGraphViewEnd, zsz, ImGui::GetContentRegionAvail().x );
         }
 
         const auto period = m_flameMode == 0 ? 1 : m_worker.GetSamplingPeriod();

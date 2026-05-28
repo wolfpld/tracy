@@ -696,20 +696,25 @@ void View::DrawFlameGraphHeader( int64_t vStart, int64_t vEnd, uint64_t period )
     const auto nspx = 1.0 / pxns;
     const auto scale = std::max( 0.0, round( log10( nspx ) + 2 ) );
     const auto step = pow( 10, scale );
-    const auto startNs = double( vStart ) * period;
 
     ImGui::InvisibleButton( "##flameHeader", ImVec2( w, ty * 1.5f ) );
-    TooltipIfHovered( TimeToStringExact( startNs + ( ImGui::GetIO().MousePos.x - wpos.x ) * nspx ) );
+    TooltipIfHovered( TimeToStringExact( ( ImGui::GetIO().MousePos.x - wpos.x ) * nspx ) );
 
     const auto dx = step * pxns;
-    auto tt = int64_t( floor( startNs / step ) * step );
-    double x = ( double( tt ) - startNs ) / nspx;
+    double x = 0;
     int tw = 0;
     int tx = 0;
-    while( x < w + 1 )
+    int64_t tt = 0;
+    while( x < w )
     {
         DrawLine( draw, dpos + ImVec2( x, 0 ), dpos + ImVec2( x, ty05 ), 0x66FFFFFF );
-        if( tw == 0 || x > tx + tw + ty * 2 )
+        if( tw == 0 )
+        {
+            auto txt = "0";
+            draw->AddText( wpos + ImVec2( x, ty05 ), 0x66FFFFFF, txt );
+            tw = ImGui::CalcTextSize( txt ).x;
+        }
+        else if( x > tx + tw + ty * 2 )
         {
             tx = x;
             auto txt = TimeToString( tt );

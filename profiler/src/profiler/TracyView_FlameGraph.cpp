@@ -752,7 +752,7 @@ static bool ApplyFlameGraphPan( int64_t& start, int64_t& end, double& pan, doubl
     return true;
 }
 
-static void DrawFlameGraphHorizontalPosition( int64_t& vStart, int64_t& vEnd, double& pan, int64_t totalSpan, uint64_t period )
+static bool DrawFlameGraphHorizontalPosition( int64_t& vStart, int64_t& vEnd, double& pan, int64_t totalSpan, uint64_t period )
 {
     assert( vStart < vEnd );
     assert( totalSpan > 0 );
@@ -766,7 +766,7 @@ static void DrawFlameGraphHorizontalPosition( int64_t& vStart, int64_t& vEnd, do
     if( w <= 0 )
     {
         ImGui::Dummy( ImVec2( 0, h ) );
-        return;
+        return false;
     }
 
     ImGui::InvisibleButton( "##flameHorizontalPosition", ImVec2( w, h ) );
@@ -813,7 +813,10 @@ static void DrawFlameGraphHorizontalPosition( int64_t& vStart, int64_t& vEnd, do
     {
         const auto delta = ImGui::GetIO().MouseDelta.x;
         ApplyFlameGraphPan( vStart, vEnd, pan, delta * totalSpan / w );
+        return delta != 0;
     }
+
+    return false;
 }
 
 static void MergeFlameGraph( std::vector<FlameGraphItem>& dst, std::vector<FlameGraphItem>&& src )
@@ -1205,6 +1208,8 @@ void View::DrawFlameGraph()
 
     if( m_flameGraphData.empty() || zsz <= 0 )
     {
+        m_flameGraphZoomAnim.active = false;
+
         const auto region = ImGui::GetContentRegionAvail();
         ImGui::PushFont( g_fonts.normal, FontBig );
         ImGui::Dummy( ImVec2( 0, ( region.y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
@@ -1214,22 +1219,36 @@ void View::DrawFlameGraph()
     }
     else
     {
+        const auto viewStart = m_flameGraphZoomAnim.active ? m_flameGraphZoomAnim.start1 : m_flameGraphViewStart;
+        const auto viewEnd = m_flameGraphZoomAnim.active ? m_flameGraphZoomAnim.end1 : m_flameGraphViewEnd;
         if( m_flameGraphViewEnd <= m_flameGraphViewStart || m_flameGraphViewStart < 0 )
         {
             m_flameGraphViewStart = 0;
             m_flameGraphViewEnd = zsz;
             m_flameGraphPan = 0;
+            m_flameGraphZoomAnim.active = false;
         }
-        else if( flameDataRebuilt && oldZsz > 0 && m_flameGraphViewStart == 0 && m_flameGraphViewEnd == oldZsz )
+        else if( flameDataRebuilt && oldZsz > 0 && viewStart == 0 && viewEnd == oldZsz )
         {
             m_flameGraphViewEnd = zsz;
             m_flameGraphPan = 0;
+            m_flameGraphZoomAnim.active = false;
         }
+        else if( flameDataRebuilt && m_flameGraphZoomAnim.active )
+        {
+            ClampFlameGraphViewport( m_flameGraphZoomAnim.start1, m_flameGraphZoomAnim.end1, zsz );
+        }
+
+        UpdateZoomAnimation( m_flameGraphZoomAnim, m_flameGraphViewStart, m_flameGraphViewEnd, ImGui::GetIO().DeltaTime );
+        ClampFlameGraphViewport( m_flameGraphViewStart, m_flameGraphViewEnd, zsz );
 
         const auto period = m_flameMode == 0 ? 1 : m_worker.GetSamplingPeriod();
         DrawFlameGraphHeader( m_flameGraphViewStart, m_flameGraphViewEnd, period );
-        DrawFlameGraphHorizontalPosition( m_flameGraphViewStart, m_flameGraphViewEnd, m_flameGraphPan, zsz, period );
-        ClampFlameGraphViewport( m_flameGraphViewStart, m_flameGraphViewEnd, zsz );
+        if( DrawFlameGraphHorizontalPosition( m_flameGraphViewStart, m_flameGraphViewEnd, m_flameGraphPan, zsz, period ) )
+        {
+            m_flameGraphZoomAnim.active = false;
+            ClampFlameGraphViewport( m_flameGraphViewStart, m_flameGraphViewEnd, zsz );
+        }
 
         ImGui::BeginChild( "##flameGraphBody", ImVec2( 0, 0 ), false, ImGuiWindowFlags_NoScrollWithMouse );
         const auto region = ImGui::GetContentRegionAvail();
@@ -1258,6 +1277,7 @@ void View::DrawFlameGraph()
             const auto hwheel_delta = io.MouseWheelH * 50.f * m_horizontalScrollMultiplier;
             if( delta.x != 0 || hwheel_delta != 0 )
             {
+                m_flameGraphZoomAnim.active = false;
                 const auto changed = ApplyFlameGraphPan( m_flameGraphViewStart, m_flameGraphViewEnd, m_flameGraphPan, -( delta.x + hwheel_delta ) * nspx );
                 io.MouseClickedPos[1].x = io.MousePos.x;
                 if( changed )
@@ -1280,8 +1300,20 @@ void View::DrawFlameGraph()
             const auto wheel = io.MouseWheel;
             const auto mouse = io.MousePos.x - wpos.x;
             const auto p = mouse / w;
-            const auto p1 = timespan * p;
-            const auto p2 = timespan - p1;
+            int64_t vStart, vEnd;
+            if( m_flameGraphZoomAnim.active )
+            {
+                vStart = m_flameGraphZoomAnim.start1;
+                vEnd = m_flameGraphZoomAnim.end1;
+            }
+            else
+            {
+                vStart = m_flameGraphViewStart;
+                vEnd = m_flameGraphViewEnd;
+            }
+            const auto zoomSpan = vEnd - vStart;
+            const auto p1 = zoomSpan * p;
+            const auto p2 = zoomSpan - p1;
             double mod = 0.25;
             if( io.KeyCtrl ) mod = 0.05;
             else if( io.KeyShift ) mod = 0.5;
@@ -1292,15 +1324,21 @@ void View::DrawFlameGraph()
 
             if( wheel > 0 )
             {
-                m_flameGraphViewStart += int64_t( p1 * mod );
-                m_flameGraphViewEnd -= int64_t( p2 * mod );
+                vStart += int64_t( p1 * mod );
+                vEnd -= int64_t( p2 * mod );
             }
             else
             {
-                m_flameGraphViewStart -= std::max<int64_t>( 1, int64_t( p1 * mod ) );
-                m_flameGraphViewEnd += std::max<int64_t>( 1, int64_t( p2 * mod ) );
+                vStart -= std::max<int64_t>( 1, int64_t( p1 * mod ) );
+                vEnd += std::max<int64_t>( 1, int64_t( p2 * mod ) );
             }
-            ClampFlameGraphViewport( m_flameGraphViewStart, m_flameGraphViewEnd, zsz );
+            ClampFlameGraphViewport( vStart, vEnd, zsz );
+            m_flameGraphZoomAnim.active = true;
+            m_flameGraphZoomAnim.start0 = m_flameGraphViewStart;
+            m_flameGraphZoomAnim.start1 = vStart;
+            m_flameGraphZoomAnim.end0 = m_flameGraphViewEnd;
+            m_flameGraphZoomAnim.end1 = vEnd;
+            m_flameGraphZoomAnim.progress = 0;
         }
 
         FlameGraphContext ctx;

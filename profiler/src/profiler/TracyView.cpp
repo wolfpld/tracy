@@ -1499,6 +1499,7 @@ bool View::WasActive() const
 {
     return m_wasActive.load( std::memory_order_acquire ) ||
         m_zoomAnim.active ||
+        ( m_showFlameGraph && m_flameGraphZoomAnim.active ) ||
         m_notificationTime > 0 ||
         !m_playback.pause ||
         m_worker.IsConnected() ||

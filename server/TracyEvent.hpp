@@ -706,6 +706,7 @@ struct ThreadData
     Vector<SampleData> ctxSwitchSamples;
     uint64_t kernelSampleCnt;
     uint8_t isFiber;
+    uint8_t isFlatView = 0;
     ThreadData* fiber;
     uint8_t* stackCount;
     int32_t groupHint;

@@ -261,6 +261,12 @@ void View::DrawTimeline()
     m_zoneHover2.Decay( nullptr );
     m_seqArrowDraw.clear();
     m_seqZoneYPos.clear();
+
+    for( auto seqId : m_flattenViewDestroyQueue )
+    {
+        DestroyFlattenView( seqId );
+    }
+    m_flattenViewDestroyQueue.clear();
     m_findZone.range.StartFrame();
     m_statRange.StartFrame();
     m_flameRange.StartFrame();
@@ -397,6 +403,10 @@ void View::DrawTimeline()
                 m_threadOrder.insert( it, td );
             }
             m_threadReinsert.clear();
+        }
+        for( const auto& fv : m_flattenViews )
+        {
+            m_tc.AddItem<TimelineItemThread>( fv.td.get() );
         }
         for( const auto& v : m_threadOrder )
         {

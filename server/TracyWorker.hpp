@@ -614,6 +614,8 @@ public:
     const char* GetString( const StringRef& ref ) const;
     const char* GetString( const StringIdx& idx ) const;
     const char* GetThreadName( uint64_t id ) const;
+    void RegisterFlattenThreadName( uint64_t tid, const char* name, size_t sz );
+    void UnregisterFlattenThreadName( uint64_t tid );
     bool IsThreadLocal( uint64_t id ) { return IsThreadLocal( id, m_data.threadDataLast ); }
     bool IsThreadLocal( uint64_t id, ThreadCache& cache );
     bool IsThreadFiber( uint64_t id );

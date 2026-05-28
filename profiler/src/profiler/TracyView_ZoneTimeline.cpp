@@ -76,7 +76,7 @@ void View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
     if( !draw.empty() && yPos <= yMax && yPos + ostep * croppedDepth >= yMin )
     {
         // Only apply margin when croppingActive to avoid text moving around when mouse is getting close to the cropper widget
-        DrawZoneList( ctx, draw, offset, thread.id, croppedDepth, croppingActive ? cropperAdditionalMargin + GetScale() /* Ensure text has a bit of space for text */ : 0.f );
+        DrawZoneList( ctx, draw, offset, thread.id, croppedDepth, croppingActive ? cropperAdditionalMargin + GetScale() /* Ensure text has a bit of space for text */ : 0.f, thread.isFlatView != 0 );
     }
     offset += ostep * croppedDepth;
 
@@ -230,7 +230,7 @@ void View::DrawThreadOverlays( const ThreadData& thread, const ImVec2& ul, const
 }
 
 
-void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineDraw>& drawList, int _offset, uint64_t tid, int maxDepth, double margin )
+void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineDraw>& drawList, int _offset, uint64_t tid, int maxDepth, double margin, bool isFlatView )
 {
     auto draw = ImGui::GetWindowDrawList();
     const auto w = ctx.w;
@@ -356,12 +356,23 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
 
             const auto& seqRefMap = m_worker.GetZoneSeqRef();
             const auto seqIt = seqRefMap.find( &ev );
-            if( seqIt != seqRefMap.end() )
+            if( !isFlatView && seqIt != seqRefMap.end() )
             {
                 m_seqZoneYPos[&ev] = wpos.y + offset + ty * 0.5f;
             }
 
-            const auto zoneColor = GetZoneColorData( ev, tid, v.depth, v.inheritedColor );
+            // Preserve original-thread coloring when rendered on a flat view.
+            uint64_t colorTid = tid;
+            if( isFlatView && seqIt != seqRefMap.end() )
+            {
+                const auto& seqMap = m_worker.GetSequences();
+                auto sit = seqMap.find( seqIt->second.seqId );
+                if( sit != seqMap.end() && seqIt->second.continuationIdx < sit->second->continuations.size() )
+                {
+                    colorTid = sit->second->continuations[seqIt->second.continuationIdx].tid;
+                }
+            }
+            const auto zoneColor = GetZoneColorData( ev, colorTid, v.depth, v.inheritedColor );
             const char* zoneName = m_worker.GetZoneName( ev );
 
             auto tsz = ImGui::CalcTextSize( zoneName );
@@ -395,7 +406,11 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y + 1 ) ) )
             {
                 ZoneTooltip( ev );
-                if( IsMouseClickReleased( 1 ) ) m_setRangePopup = RangeSlim { ev.Start(), m_worker.GetZoneEnd( ev ), true };
+                if( IsMouseClickReleased( 1 ) )
+                {
+                    m_setRangePopup = RangeSlim { ev.Start(), m_worker.GetZoneEnd( ev ), true };
+                    m_seqFlattenPopupSeqId = ( !isFlatView && seqIt != seqRefMap.end() ) ? seqIt->second.seqId : 0;
+                }
 
                 if( !m_zoomAnim.active && IsMouseClicked( 2 ) )
                 {
@@ -417,7 +432,7 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
                 m_zoneSrcLocHighlight = ev.SrcLoc();
                 m_zoneHover = &ev;
 
-                if( seqIt != seqRefMap.end() )
+                if( !isFlatView && seqIt != seqRefMap.end() )
                 {
                     const auto& seqMap = m_worker.GetSequences();
                     const auto sit = seqMap.find( seqIt->second.seqId );
@@ -438,6 +453,7 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
                                 conts[idx+1].resumeTime,  (const ZoneEvent*)conts[idx+1].zone } );
                         }
                     }
+
                 }
             }
             break;
@@ -698,6 +714,72 @@ void View::DrawThreadCropper( const int depth, const uint64_t tid, const float x
             color = 0xFF888888;
         }
         draw->AddCircleFilled( center, circleRadius, color );
+    }
+}
+
+void View::MakeFlattenView( uint64_t seqId )
+{
+    for( const auto& fv : m_flattenViews )
+    {
+        if( fv.seqId == seqId ) return;     // idempotent
+    }
+    const auto& seqMap = m_worker.GetSequences();
+    auto sit = seqMap.find( seqId );
+    if( sit == seqMap.end() || sit->second->continuations.empty() ) return;
+    const auto& conts = sit->second->continuations;
+
+    const uint64_t synthTid = ( uint64_t(2) << 32 ) | m_nextFlattenTid++;
+
+    auto td = std::make_unique<ThreadData>();
+    td->id = synthTid;
+    td->count = 0;
+    td->nextZoneId = 0;
+    td->kernelSampleCnt = 0;
+    td->isFiber = 0;
+    td->isFlatView = 1;
+    td->fiber = nullptr;
+    td->stackCount = nullptr;
+    td->groupHint = 0;
+#ifndef TRACY_NO_STATISTICS
+    td->ghostIdx = 0;
+#endif
+
+    for( const auto& c : conts )
+    {
+        td->timeline.push_back( c.zone );
+    }
+
+    char name[128];
+    const auto* firstZone = (const ZoneEvent*)conts[0].zone;
+    const char* zName = m_worker.GetZoneName( *firstZone );
+    std::snprintf( name, sizeof( name ), "flat: %s", zName ? zName : "?" );
+    m_worker.RegisterFlattenThreadName( synthTid, name, strlen( name ) );
+
+    m_flattenViews.push_back( FlattenView{ std::move( td ), seqId } );
+}
+
+void View::DestroyFlattenView( uint64_t seqId )
+{
+    for( auto it = m_flattenViews.begin(); it != m_flattenViews.end(); ++it )
+    {
+        if( it->seqId == seqId )
+        {
+            m_worker.UnregisterFlattenThreadName( it->td->id );
+            m_flattenViews.erase( it );
+            return;
+        }
+    }
+}
+
+void View::QueueDestroyFlattenViewByTid( uint64_t tid )
+{
+    for( const auto& fv : m_flattenViews )
+    {
+        if( fv.td->id == tid )
+        {
+            m_flattenViewDestroyQueue.push_back( fv.seqId );
+            return;
+        }
     }
 }
 

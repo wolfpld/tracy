@@ -3695,6 +3695,18 @@ void Worker::CheckFiberName( uint64_t id, uint64_t tid )
     if( m_sock.IsValid() ) Query( ServerQueryFiberName, id );
 }
 
+void Worker::RegisterFlattenThreadName( uint64_t tid, const char* name, size_t sz )
+{
+    if( m_data.threadNames.find( tid ) != m_data.threadNames.end() ) return;
+    const auto sl = StoreString( name, sz );
+    m_data.threadNames.emplace( tid, sl.ptr );
+}
+
+void Worker::UnregisterFlattenThreadName( uint64_t tid )
+{
+    m_data.threadNames.erase( tid );
+}
+
 void Worker::CheckExternalName( uint64_t id )
 {
     if( m_data.externalNames.find( id ) != m_data.externalNames.end() ) return;

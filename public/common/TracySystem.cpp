@@ -374,9 +374,11 @@ TRACY_API const char* GetUserFullName()
 #if defined TRACY_HAS_CUSTOM_USER_INFO
     return PlatformGetUserFullName();
 #elif defined _WIN32
+#  if !defined TRACY_WIN32_NO_DESKTOP
     static char buf[1024];
     ULONG size = sizeof( buf );
     if( GetUserNameExA( NameDisplay, buf, &size ) ) return buf;
+#  endif
     return nullptr;
 #elif defined __ANDROID__
     const auto passwd = getpwuid( getuid() );

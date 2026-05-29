@@ -918,7 +918,14 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                 const auto normalized = shortenName != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, symName ) : symName;
                 const auto selected = ImGui::Selectable( "", v.first == m_symAddr, ImGuiSelectableFlags_SpanAllColumns );
                 ImGui::SameLine( 0, 0 );
-                ImGui::TextUnformatted( normalized );
+                if( worker.IsFrameExternal( isym->file, isym->imageName ) )
+                {
+                    TextDisabledUnformatted( normalized );
+                }
+                else
+                {
+                    ImGui::TextUnformatted( normalized );
+                }
                 TooltipNormalizedName( symName, normalized );
                 if( selected )
                 {

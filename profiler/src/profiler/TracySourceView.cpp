@@ -875,7 +875,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                     widthSet = true;
                     const auto w = ImGui::GetWindowWidth();
                     const auto c0 = ImGui::CalcTextSize( "12345678901234567890" ).x;
-                    const auto c2 = ImGui::CalcTextSize( "0xeeeeeeeeeeeeee" ).x;
+                    const auto c2 = ImGui::CalcTextSize( "0x0123456789abcdef" ).x;
                     ImGui::SetColumnWidth( 0, c0 );
                     ImGui::SetColumnWidth( 1, w - c0 - c2 );
                     ImGui::SetColumnWidth( 2, c2 );

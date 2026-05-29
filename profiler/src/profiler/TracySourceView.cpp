@@ -3172,10 +3172,10 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
             const auto ds = scale * 3;
             if( glow )
             {
-                draw->AddRectFilledMultiColor( dpos + ImVec2( ds * 0.5f, 1 ), dpos + ImVec2( ds * 2.5f, ty-2 ), glow, 0, 0, glow );
-                draw->AddRectFilledMultiColor( dpos + ImVec2( -ds * 2.5f, 1 ), dpos + ImVec2( -ds * 0.5f, ty-2 ), 0, glow, glow, 0 );
+                draw->AddRectFilledMultiColor( wpos + ImVec2( 0.5f + ds * 0.5f, 2 ), wpos + ImVec2( 0.5f + ds * 2.5f, ty-1 ), glow, 0, 0, glow );
+                draw->AddRectFilledMultiColor( wpos + ImVec2( 0.5f - ds * 2.5f, 2 ), wpos + ImVec2( 0.5f - ds * 0.5f, ty-1 ), 0, glow, glow, 0 );
             }
-            DrawLine( draw, dpos + ImVec2( 0, 1 ), dpos + ImVec2( 0, ty-2 ), col, ds );
+            DrawLine( draw, wpos + ImVec2( 0.5f, 2 ), wpos + ImVec2( 0.5f, ty-1 ), col, ds );
         }
         ImGui::SameLine( 0, ty );
     }
@@ -3526,10 +3526,10 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             const auto ds = scale * 3;
             if( glow )
             {
-                draw->AddRectFilledMultiColor( dpos + ImVec2( ds * 0.5f, 1 ), dpos + ImVec2( ds * 2.5f, ty-2 ), glow, 0, 0, glow );
-                draw->AddRectFilledMultiColor( dpos + ImVec2( -ds * 2.5f, 1 ), dpos + ImVec2( -ds * 0.5f, ty-2 ), 0, glow, glow, 0 );
+                draw->AddRectFilledMultiColor( wpos + ImVec2( 0.5f + ds * 0.5f, 2 ), wpos + ImVec2( 0.5f + ds * 2.5f, ty-1 ), glow, 0, 0, glow );
+                draw->AddRectFilledMultiColor( wpos + ImVec2( 0.5f - ds * 2.5f, 2 ), wpos + ImVec2( 0.5f - ds * 0.5f, ty-1 ), 0, glow, glow, 0 );
             }
-            DrawLine( draw, dpos + ImVec2( 0, 1 ), dpos + ImVec2( 0, ty-2 ), col, ds );
+            DrawLine( draw, wpos + ImVec2( 0.5f, 2 ), wpos + ImVec2( 0.5f, ty-1 ), col, ds );
         }
         ImGui::SameLine( 0, ty );
     }

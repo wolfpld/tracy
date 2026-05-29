@@ -10,7 +10,9 @@
 #  include <inttypes.h>
 #  include <intrin.h>
 #  include "../common/TracyWinFamily.hpp"
-#  ifndef _MSC_VER
+#  if defined(_MSC_VER) // https://devblogs.microsoft.com/oldnewthing/20200730-00/?p=104021/
+#    define fileno _fileno
+#  else
 #    include <excpt.h>
 #  endif
 #else

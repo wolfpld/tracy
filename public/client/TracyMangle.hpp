@@ -43,8 +43,14 @@
 #define TRACY_TIMER_FALLBACK_MANGLE _TF0
 #endif
 
+#ifdef TRACY_PLATFORM_HEADER
+#define TRACY_PLATFORM_HEADER_MANGLE _PH1
+#else
+#define TRACY_PLATFORM_HEADER_MANGLE _PH0
+#endif
+
 #define MANGLED_NAME_BASED_ON_CONFIG(base) \
-    TracyConcat(TracyConcat(TracyConcat(TracyConcat(TracyConcat(TracyConcat(TracyConcat( \
+    TracyConcat(TracyConcat(TracyConcat(TracyConcat(TracyConcat(TracyConcat(TracyConcat(TracyConcat( \
     base##_CFG, \
     TRACY_ENABLE_MANGLE), \
     TRACY_ON_DEMAND_MANGLE), \
@@ -52,6 +58,7 @@
     TRACY_MANUAL_LIFETIME_MANGLE), \
     TRACY_FIBERS_MANGLE), \
     TRACY_DISALLOW_HW_TIMER_MANGLE), \
-    TRACY_TIMER_FALLBACK_MANGLE)
+    TRACY_TIMER_FALLBACK_MANGLE), \
+    TRACY_PLATFORM_HEADER_MANGLE)
 
 #endif // __TRACYMANGLE_HPP__

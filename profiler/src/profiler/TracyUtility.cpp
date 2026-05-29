@@ -223,7 +223,14 @@ void PrintLocalStack( const CallstackFrameData* frame, const Worker& worker, con
         ImGui::SameLine();
         const auto symName = worker.GetString( frame->data[i].name );
         const auto normalized = view.GetShortenName() != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, symName ) : symName;
-        ImGui::Text( "%s", normalized );
+        if( worker.IsFrameExternal( frame->data[i].file, frame->imageName ) )
+        {
+            TextDisabledUnformatted( normalized );
+        }
+        else
+        {
+            ImGui::TextUnformatted( normalized );
+        }
         ImGui::SameLine();
         ImGui::PushFont( g_fonts.normal, FontSmall );
         ImGui::AlignTextToFramePadding();

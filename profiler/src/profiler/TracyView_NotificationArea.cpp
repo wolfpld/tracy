@@ -168,7 +168,6 @@ void View::DrawNotificationArea()
             if( IsMouseClicked( 0 ) ) m_vd.drawZones = true;
         }
     }
-#ifndef TRACY_NO_STATISTICS
     if( !m_vd.ghostZones )
     {
         ImGui::SameLine();
@@ -181,7 +180,6 @@ void View::DrawNotificationArea()
             if( IsMouseClicked( 0 ) ) m_vd.ghostZones = true;
         }
     }
-#endif
     if( !m_vd.drawLocks )
     {
         ImGui::SameLine();

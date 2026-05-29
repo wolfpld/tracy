@@ -68,20 +68,14 @@ void TimelineItemCpuData::Preprocess( const TimelineContext& ctx, TaskDispatch& 
     bool hasCpuData = false;
     auto pos = yPos + ostep;
 
-#ifdef TRACY_NO_STATISTICS
-    if( m_view.GetViewData().drawCpuUsageGraph )
-#else
     if( m_view.GetViewData().drawCpuUsageGraph && m_worker.IsCpuUsageReady() )
-#endif
     {
-#ifndef TRACY_NO_STATISTICS
         auto& ctxUsage = m_worker.GetCpuUsage();
         if( !ctxUsage.empty() )
         {
             hasCpuData = true;
         }
         else
-#endif
         {
             const auto cpuDataCount = m_worker.GetCpuDataCpuCount();
             const auto cpuData = m_worker.GetCpuData();
@@ -180,7 +174,6 @@ void TimelineItemCpuData::PreprocessCpuUsage( const TimelineContext& ctx )
 
     const auto lastTime = m_worker.GetLastTime();
 
-#ifndef TRACY_NO_STATISTICS
     auto& ctxUsage = m_worker.GetCpuUsage();
     if( !ctxUsage.empty() )
     {
@@ -212,7 +205,6 @@ void TimelineItemCpuData::PreprocessCpuUsage( const TimelineContext& ctx )
         }
     }
     else
-#endif
     {
         m_cpuDraw.resize( num );
         memset( m_cpuDraw.data(), 0, sizeof( CpuUsageDraw ) * num );

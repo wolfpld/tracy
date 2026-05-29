@@ -17,7 +17,6 @@ namespace tracy
 
 extern double s_time;
 
-#ifndef TRACY_NO_STATISTICS
 void View::FindZones()
 {
     m_findZone.hasResults = true;
@@ -37,7 +36,6 @@ void View::FindZones()
         }
     }
 }
-#endif
 
 uint64_t View::GetSelectionTarget( const Worker::ZoneThreadData& ev, FindZone::GroupBy groupBy ) const
 {
@@ -258,10 +256,6 @@ void View::DrawFindZone()
     ImGui::SetNextWindowSize( ImVec2( 520 * scale, 800 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Find zone", &m_findZone.show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
-#ifdef TRACY_NO_STATISTICS
-    ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
-    ImGui::TextWrapped( "Rebuild without the TRACY_NO_STATISTICS macro to enable zone search." );
-#else
     if( !m_worker.AreSourceLocationZonesReady() )
     {
         const auto ty = ImGui::GetTextLineHeight();
@@ -2156,8 +2150,6 @@ void View::DrawFindZone()
         }
     }
     ImGui::EndChild();
-#endif
-
     ImGui::End();
 }
 

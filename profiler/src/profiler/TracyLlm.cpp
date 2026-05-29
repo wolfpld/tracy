@@ -93,11 +93,17 @@ void TracyLlm::Draw()
     if( IsBusy() )
     {
         ImGui::PushFont( g_fonts.normal, FontBig );
-        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
+        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 4 ) * 0.5f ) );
         TextCentered( ICON_FA_HOURGLASS );
         TextCentered( "Please wait…" );
         DrawWaitingDotsCentered( s_time );
         ImGui::PopFont();
+        ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() ) );
+        ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );
+        char tmp[InputBufferSize + 32];
+        snprintf( tmp, sizeof( tmp ), "Connecting to %s", s_config.llmAddress.c_str() );
+        TextCentered( tmp );
+        ImGui::PopStyleColor();
         ImGui::End();
         return;
     }
@@ -182,7 +188,8 @@ void TracyLlm::Draw()
         memcpy( m_apiInput, s_config.llmAddress.c_str(), sz );
         m_apiInput[sz] = 0;
         ImGui::SetNextItemWidth( ImGui::GetContentRegionAvail().x - ImGui::GetFrameHeight() - ImGui::GetStyle().ItemSpacing.x );
-        bool changed = ImGui::InputTextWithHint( "##api", "http://localhost:1234", m_apiInput, InputBufferSize );
+        bool changed = ImGui::InputTextWithHint( "##api", "http://localhost:8080", m_apiInput, InputBufferSize );
+        bool commit = ImGui::IsItemDeactivatedAfterEdit();
         ImGui::SameLine();
         if( ImGui::BeginCombo( "##presets", nullptr, ImGuiComboFlags_NoPreview ) )
         {
@@ -201,13 +208,14 @@ void TracyLlm::Draw()
                 {
                     memcpy( m_apiInput, preset.address, strlen( preset.address ) + 1 );
                     changed = true;
+                    commit = true;
                 }
             }
             ImGui::EndCombo();
         }
-        if( changed )
+        if( changed ) s_config.llmAddress = m_apiInput;
+        if( commit )
         {
-            s_config.llmAddress = m_apiInput;
             SaveConfig();
             std::lock_guard lock( m_jobsLock );
             QueueConnect();

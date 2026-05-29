@@ -10,7 +10,9 @@
 #  include <inttypes.h>
 #  include <intrin.h>
 #  include "../common/TracyWinFamily.hpp"
-#  ifndef _MSC_VER
+#  if defined(_MSC_VER) // https://devblogs.microsoft.com/oldnewthing/20200730-00/?p=104021/
+#    define fileno _fileno
+#  else
 #    include <excpt.h>
 #  endif
 #else
@@ -71,7 +73,6 @@
 #include "../common/TracySystem.hpp"
 #include "../common/TracyYield.hpp"
 #include "../common/tracy_lz4.hpp"
-#include "tracy_rpmalloc.hpp"
 #include "TracyCallstack.hpp"
 #include "TracyDebug.hpp"
 #include "TracyDxt1.hpp"
@@ -605,7 +606,11 @@ static const char* GetHostInfo()
 
     const char* user = GetUserLogin();
     char hostname[512] = {};
+#if defined TRACY_HAS_CUSTOM_USER_INFO
+    PlatformGetHostname( hostname, sizeof( hostname ) );
+#else
     gethostname( hostname, sizeof( hostname ) );
+#endif
     ptr += sprintf( ptr, "User: %s@%s", user, hostname );
 
     const char* fullName = GetUserFullName();
@@ -1284,7 +1289,11 @@ TRACY_API void ShutdownProfiler()
     s_profilerData->~ProfilerData();
     tracy_free( s_profilerData );
     s_profilerData = nullptr;
+#if defined TRACY_HAS_CUSTOM_ALLOCATOR
+    PlatformAllocatorFinalize();
+#elif defined TRACY_USE_RPMALLOC
     rpmalloc_finalize();
+#endif
     RpThreadInitDone = false;
     RpInitDone.store( 0, std::memory_order_release );
 }
@@ -1531,7 +1540,7 @@ Profiler::Profiler()
 
     m_safeSendBuffer = (char*)tracy_malloc( SafeSendBufferSize );
 
-#ifndef _WIN32
+#if !defined _WIN32 && !defined TRACY_HAS_CUSTOM_SAFE_COPY
     pipe(m_pipe);
 #  if defined __APPLE__ || defined __FreeBSD__ || defined __NetBSD__ || defined __OpenBSD__ || defined __DragonFly__
     // FreeBSD/XNU don't have F_SETPIPE_SZ, so use the default
@@ -1675,7 +1684,7 @@ Profiler::~Profiler()
     tracy_free( m_kcore );
 #endif
 
-#ifndef _WIN32
+#if !defined _WIN32 && !defined TRACY_HAS_CUSTOM_SAFE_COPY
     close( m_pipe[0] );
     close( m_pipe[1] );
 #endif
@@ -2371,7 +2380,7 @@ static void FreeAssociatedMemory( const QueueItem& item )
 #ifdef TRACY_HAS_CALLSTACK
     case QueueType::CallstackFrameSize:
     {
-        InitRpmalloc();
+        InitAllocator();
         auto size = MemRead<uint8_t>( &item.callstackFrameSizeFat.size );
         auto data = (const CallstackEntry*)MemRead<uint64_t>( &item.callstackFrameSizeFat.data );
         for( uint8_t i=0; i<size; i++ )
@@ -2479,7 +2488,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
         [this, &connectionLost] ( QueueItem* item, size_t sz )
         {
             if( connectionLost ) return;
-            InitRpmalloc();
+            InitAllocator();
             assert( sz > 0 );
             int64_t refThread = m_refTimeThread;
             int64_t refCtx = m_refTimeCtx;
@@ -2944,7 +2953,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
     {
         dequeueStatus = DequeueStatus::DataDequeued;
 
-        InitRpmalloc();
+        InitAllocator();
         int64_t refSerial = m_refTimeSerial;
         int64_t refGpu = m_refTimeGpu;
 #ifdef TRACY_FIBERS
@@ -3349,7 +3358,9 @@ char* Profiler::SafeCopyProlog( const char* data, size_t size )
 
     if( size > SafeSendBufferSize ) buf = (char*)tracy_malloc( size );
 
-#ifdef _WIN32
+#if defined TRACY_HAS_CUSTOM_SAFE_COPY
+    success = PlatformSafeMemcpy( buf, data, size );
+#elif defined _WIN32
 #  ifdef _MSC_VER
     __try
     {
@@ -3758,9 +3769,7 @@ void Profiler::SymbolWorker()
 
     ThreadExitHandler threadExitHandler;
     SetThreadName( "Tracy Symbol Worker" );
-#ifdef TRACY_USE_RPMALLOC
-    InitRpmalloc();
-#endif
+    InitAllocator();
     InitCallstack();
     while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 

@@ -199,7 +199,6 @@ std::string TracyLlmTools::HandleToolCalls( const std::string& tool, const nlohm
         {
             return SymbolDisasm( Param( "address" ) );
         }
-#ifndef TRACY_NO_STATISTICS
         else if( tool == "symbol_parents" )
         {
             return SymbolParents( Param( "address" ), ParamOptU32( "limit", 10 ) );
@@ -209,7 +208,6 @@ std::string TracyLlmTools::HandleToolCalls( const std::string& tool, const nlohm
             std::string empty;
             return SamplingStats( ParamOptString( "query", empty ), ParamOptU32( "limit", 30 ) );
         }
-#endif
         return "Unknown tool call: " + tool;
     }
     catch( const std::exception& e )
@@ -1041,10 +1039,11 @@ std::string TracyLlmTools::SymbolDisasm( const std::string& address ) const
 {
     uint64_t symaddr = strtoull( address.c_str(), nullptr, 16 );
     auto json = JsonDisassembly( symaddr, m_worker, m_view );
-    return json.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
+    auto ret = json.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
+    if( ret.size() > CalcMaxSize() ) return "Too much data.";
+    return ret;
 }
 
-#ifndef TRACY_NO_STATISTICS
 std::string TracyLlmTools::SymbolParents( const std::string& address, uint32_t limit ) const
 {
     uint64_t symAddr = strtoull( address.c_str(), nullptr, 16 );
@@ -1212,12 +1211,12 @@ std::string TracyLlmTools::SamplingStats( const std::string& query, uint32_t lim
             { "location", loc },
             { "image", m_worker.GetString( sit->second.imageName ) },
             { "time", TimeToString( v.excl * period ) },
-            { "code_size", MemSizeToString( sit->second.size.Val() ) }
+            { "code_size", MemSizeToString( sit->second.size.Val() ) },
+            { "external", m_worker.IsFrameExternal( sit->second.file, sit->second.imageName ) }
         } );
     }
 
     return result.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
 }
-#endif
 
 }

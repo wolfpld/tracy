@@ -261,7 +261,7 @@ SourceView::SourceView()
     , m_asmBytes( false )
     , m_asmShowSourceLocation( true )
     , m_calcInlineStats( true )
-    , m_hwSamples( true )
+    , m_hwSamples( false )
     , m_hwSamplesRelative( true )
     , m_childCalls( false )
     , m_childCallList( false )
@@ -1020,7 +1020,9 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         {
             SmallCheckbox( ICON_FA_HAMMER " HW", &m_hwSamples );
             ImGui::SameLine();
+            if( !m_hwSamples ) ImGui::BeginDisabled();
             SmallCheckbox( ICON_FA_CAR_BURST " Impact", &m_hwSamplesRelative );
+            if( !m_hwSamples ) ImGui::EndDisabled();
             ImGui::SameLine();
             ImGui::Spacing();
             ImGui::SameLine();
@@ -1066,8 +1068,8 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                 ImGui::PushStyleVar( ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f );
                 m_childCalls = false;
                 m_childCallList = false;
-                m_propagateInlines = false;
             }
+            if( !samplesReady ) m_propagateInlines = false;
             SmallCheckbox( ICON_FA_RIGHT_FROM_BRACKET " Child calls", &m_childCalls );
             if( !samplesReady )
             {
@@ -2622,9 +2624,13 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                 const auto normalized = view.GetShortenName() != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, symName ) : symName;
                 const auto fn = worker.GetString( lcs->data[i].file );
                 const auto srcline = lcs->data[i].line;
+                const auto external = worker.IsFrameExternal( lcs->data[i].file, lcs->imageName );
                 if( srcline != 0 )
                 {
-                    if( ImGui::BeginMenu( normalized ) )
+                    if( external ) ImGui::PushStyleColor( ImGuiCol_Text, ImGui::GetStyle().Colors[ImGuiCol_TextDisabled] );
+                    const auto extend = ImGui::BeginMenu( normalized );
+                    if( external ) ImGui::PopStyleColor();
+                    if( extend )
                     {
                         if( SourceFileValid( fn, worker.GetCaptureTime(), view, worker ) )
                         {
@@ -2664,7 +2670,14 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                 }
                 else
                 {
-                    ImGui::TextDisabled( "%s", normalized );
+                    if( external )
+                    {
+                        TextDisabledUnformatted( normalized );
+                    }
+                    else
+                    {
+                        ImGui::TextUnformatted( normalized );
+                    }
                 }
                 ImGui::PopID();
             }
@@ -3159,10 +3172,10 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
             const auto ds = scale * 3;
             if( glow )
             {
-                draw->AddRectFilledMultiColor( dpos + ImVec2( ds * 0.5f, 1 ), dpos + ImVec2( ds * 2.5f, ty-2 ), glow, 0, 0, glow );
-                draw->AddRectFilledMultiColor( dpos + ImVec2( -ds * 2.5f, 1 ), dpos + ImVec2( -ds * 0.5f, ty-2 ), 0, glow, glow, 0 );
+                draw->AddRectFilledMultiColor( wpos + ImVec2( 0.5f + ds * 0.5f, 2 ), wpos + ImVec2( 0.5f + ds * 2.5f, ty-1 ), glow, 0, 0, glow );
+                draw->AddRectFilledMultiColor( wpos + ImVec2( 0.5f - ds * 2.5f, 2 ), wpos + ImVec2( 0.5f - ds * 0.5f, ty-1 ), 0, glow, glow, 0 );
             }
-            DrawLine( draw, dpos + ImVec2( 0, 1 ), dpos + ImVec2( 0, ty-2 ), col, ds );
+            DrawLine( draw, wpos + ImVec2( 0.5f, 2 ), wpos + ImVec2( 0.5f, ty-1 ), col, ds );
         }
         ImGui::SameLine( 0, ty );
     }
@@ -3513,10 +3526,10 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             const auto ds = scale * 3;
             if( glow )
             {
-                draw->AddRectFilledMultiColor( dpos + ImVec2( ds * 0.5f, 1 ), dpos + ImVec2( ds * 2.5f, ty-2 ), glow, 0, 0, glow );
-                draw->AddRectFilledMultiColor( dpos + ImVec2( -ds * 2.5f, 1 ), dpos + ImVec2( -ds * 0.5f, ty-2 ), 0, glow, glow, 0 );
+                draw->AddRectFilledMultiColor( wpos + ImVec2( 0.5f + ds * 0.5f, 2 ), wpos + ImVec2( 0.5f + ds * 2.5f, ty-1 ), glow, 0, 0, glow );
+                draw->AddRectFilledMultiColor( wpos + ImVec2( 0.5f - ds * 2.5f, 2 ), wpos + ImVec2( 0.5f - ds * 0.5f, ty-1 ), 0, glow, glow, 0 );
             }
-            DrawLine( draw, dpos + ImVec2( 0, 1 ), dpos + ImVec2( 0, ty-2 ), col, ds );
+            DrawLine( draw, wpos + ImVec2( 0.5f, 2 ), wpos + ImVec2( 0.5f, ty-1 ), col, ds );
         }
         ImGui::SameLine( 0, ty );
     }

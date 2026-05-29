@@ -124,6 +124,8 @@ tracy::AchievementsMgr* s_achievements;
 static const tracy::data::AchievementItem* s_achievementItem = nullptr;
 static bool s_switchAchievementCategory = false;
 
+ImTextureID GetProfilerIconTexture() { return iconTex; }
+
 static float smoothstep( float x )
 {
     return x * x * ( 3.0f - 2.0f * x );

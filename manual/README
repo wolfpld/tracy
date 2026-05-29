@@ -1,0 +1,1 @@
+The LaTeX source file (tracy.tex) and the resulting PDF file (tracy.pdf) are the only authorative version of the user manual. Do NOT modify the Markdown user manual (tracy.md) by hand. It is only meant to be updated via the latex2md.sh script.

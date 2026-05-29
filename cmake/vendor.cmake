@@ -26,7 +26,7 @@ else()
     CPMAddPackage(
         NAME capstone
         GITHUB_REPOSITORY capstone-engine/capstone
-        GIT_TAG 6.0.0-Alpha7
+        GIT_TAG 6.0.0-Alpha9
         OPTIONS
             "CAPSTONE_X86_ATT_DISABLE ON"
             "CAPSTONE_ALPHA_SUPPORT OFF"
@@ -217,7 +217,7 @@ CPMAddPackage(
 CPMAddPackage(
     NAME md4c
     GITHUB_REPOSITORY mity/md4c
-    GIT_TAG release-0.5.2
+    GIT_TAG release-0.5.3
     EXCLUDE_FROM_ALL TRUE
 )
 
@@ -254,7 +254,7 @@ if(NOT EMSCRIPTEN)
     CPMAddPackage(
         NAME usearch
         GITHUB_REPOSITORY unum-cloud/usearch
-        GIT_TAG v2.23.0
+        GIT_TAG v2.25.2
         EXCLUDE_FROM_ALL TRUE
     )
 
@@ -287,7 +287,7 @@ if(NOT EMSCRIPTEN)
         CPMAddPackage(
             NAME libcurl
             GITHUB_REPOSITORY curl/curl
-            GIT_TAG curl-8_19_0
+            GIT_TAG curl-8_20_0
             OPTIONS
                 "BUILD_STATIC_LIBS ON"
                 "BUILD_SHARED_LIBS OFF"

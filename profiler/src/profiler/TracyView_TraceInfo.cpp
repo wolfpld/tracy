@@ -117,7 +117,6 @@ void View::DrawInfo()
         }
         TextFocused( "Call stack samples:", RealToString( m_worker.GetCallstackSampleCount() ) );
         TextFocused( "Ghost zones:", RealToString( m_worker.GetGhostZonesCount() ) );
-#ifndef TRACY_NO_STATISTICS
         TextFocused( "Child sample symbols:", RealToString( m_worker.GetChildSamplesCountSyms() ) );
         if( ImGui::IsItemHovered() )
         {
@@ -126,7 +125,6 @@ void View::DrawInfo()
             ImGui::EndTooltip();
         }
         TextFocused( "Context switch samples:", RealToString( m_worker.GetContextSwitchSampleCount() ) );
-#endif
         TextFocused( "Hardware samples:", RealToString( m_worker.GetHwSampleCount() ) );
         if( ImGui::IsItemHovered() )
         {

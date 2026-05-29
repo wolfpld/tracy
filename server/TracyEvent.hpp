@@ -484,6 +484,7 @@ struct MemCallstackFrameTree
     uint32_t count;
     unordered_flat_map<uint64_t, MemCallstackFrameTree> children;
     unordered_flat_set<uint32_t> callstacks;
+    unordered_flat_set<uint64_t> group;
 };
 
 
@@ -494,6 +495,7 @@ struct CallstackFrameTree
     CallstackFrameId frame;
     uint32_t count;
     unordered_flat_map<uint64_t, CallstackFrameTree> children;
+    unordered_flat_set<uint64_t> group;
 };
 
 

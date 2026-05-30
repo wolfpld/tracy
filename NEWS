@@ -15,7 +15,7 @@ vx.xx.x (2026-xx-xx)
   - Flame graph window.
   - Call stack window.
   - Statistics window (sampling mode).
-- External frames are now dimmed out in call stacks.
+- External frames are now dimmed out in call stacks in various parts of UI.
 - Single-line call stacks now have ellipsis at the end, if there are frames
   remaining.
 - System tracing on Windows has been refactored to be more robust.
@@ -42,10 +42,15 @@ vx.xx.x (2026-xx-xx)
   - The protocol has been updated to use model templates. As a result, tools
     are now specified in a common way and the reasoning is performed in a
     separate content stream.
+  - Several new tools were added, which in concert enable the assistant to
+    answer very general questions, such as "how to optimize this program?".
   - Smaller models are now viable to use. Models as small as 4B parameters do
     now work really well. You can run such models on virtually all hardware.
   - Added horizontal scroll bars to code segments.
   - LLM thinking regions are now hidden by default.
+    - The assistant may notify the user about its current findings, then
+      resume thinking, after which it may give a more complete answer. In
+      such cases, the initial part of the reply will be faded out.
   - Sampled execution costs are now included in assembly attachments.
   - Source code retrieval now has an optional line context parameter.
   - Added ability to search the code for keywords.
@@ -138,7 +143,12 @@ vx.xx.x (2026-xx-xx)
     options for the entire program.
 - Message windows will now properly show full message in a tooltip for
   multi-line messages.
-- The in-profiler user manual now properly handles links to chapters.
+- Greatly improved the in-profiler user manual.
+  - There is now chapter tree and the manual contents are displayed section
+    by section.
+  - Links to chapters are now properly working.
+  - The "bclogo" blocks are now correctly processed.
+  - The font awesome icons now show as in the rest of the UI.
 - Call stack window will now show the thread viewed call stack originates
   from (if possible).
 - "Visible threads" checkboxes in messages, flame graph and wait stacks
@@ -153,6 +163,15 @@ vx.xx.x (2026-xx-xx)
 - Prototype implementation of system tracing on Apple devices.
 - Local (inline) call stack printouts were added to tooltips in statistics
   window, in sampling mode.
+- Ironed out some code corners to make integration of closed gaming console
+  platforms easier. Added support for custom platform headers.
+- Bottom and top sample trees (in wait stacks, or in entry call stacks)
+  now display aggregation counts if "group by function name" is enabled.
+- HW sample view in symbol view are now disabled by default.
+- The profiler can no longer be built with the statistics disabled.
+- Fixed NVCC builds.
+- Fixed possible lockups in Vulkan timer calibration loop.
+- The flame graph view now supports zooming in and panning with the mouse.
 
 
 v0.13.1 (2025-12-11)

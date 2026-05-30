@@ -1038,7 +1038,8 @@ void View::DrawSampleParents()
                     {
                         const auto& frame = frameData->data[f];
 
-                        if( m_worker.IsFrameExternal( frame.file, frameData->imageName ) )
+                        const auto isExternal = m_worker.IsFrameExternal( frame.file, frameData->imageName );
+                        if( isExternal )
                         {
                             if( !m_showExternalFrames )
                             {
@@ -1090,6 +1091,10 @@ void View::DrawSampleParents()
                             else if( m_worker.GetCanonicalPointer( entry ) >> 63 != 0 )
                             {
                                 TextColoredUnformatted( 0xFF8888FF, txt );
+                            }
+                            else if( isExternal )
+                            {
+                                TextDisabledUnformatted( txt );
                             }
                             else if( m_vd.shortenName == ShortenName::Never )
                             {

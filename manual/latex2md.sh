@@ -18,6 +18,7 @@ sed -i -e 's@\\nameref{firststeps}@First steps@g' _tmp.tex
 sed -i -e 's@\\nameref{client}@Client markup@g' _tmp.tex
 sed -i -e 's@\\nameref{capturing}@Capturing the data@g' _tmp.tex
 sed -i -e 's@\\nameref{analyzingdata}@Analyzing captured data@g' _tmp.tex
+sed -i -e 's@\\nameref{tracyassist}@Tracy Assist@g' _tmp.tex
 sed -i -e 's@\\nameref{csvexport}@Exporting zone statistics to CSV@g' _tmp.tex
 sed -i -e 's@\\nameref{importingdata}@Importing external profiling data@g' _tmp.tex
 sed -i -e 's@\\nameref{configurationfiles}@Configuration files@g' _tmp.tex

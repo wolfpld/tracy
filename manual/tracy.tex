@@ -106,6 +106,7 @@ Hello and welcome to the Tracy Profiler user manual! Here you will find all the 
 \item Chapter~\ref{client}, \emph{\nameref{client}}, provides information on how to instrument your application, in order to retrieve useful profiling data. This includes a description of the C API (section~\ref{capi}), which enables usage of Tracy in any programming language.
 \item Chapter~\ref{capturing}, \emph{\nameref{capturing}}, goes into more detail on how the profiling information can be captured and stored on disk.
 \item Chapter~\ref{analyzingdata}, \emph{\nameref{analyzingdata}}, guides you through the graphical user interface of the profiler.
+\item Chapter~\ref{tracyassist}, \emph{\nameref{tracyassist}}, describes how to use the built-in AI assistant.
 \item Chapter~\ref{csvexport}, \emph{\nameref{csvexport}}, explains how to export some zone timing statistics into a CSV format.
 \item Chapter~\ref{importingdata}, \emph{\nameref{importingdata}}, documents how to import data from other profilers.
 \item Chapter~\ref{configurationfiles}, \emph{\nameref{configurationfiles}}, gives information on the profiler settings.
@@ -4916,7 +4917,7 @@ This window displays information about time range limits (section~\ref{timerange
 
 Note that ranges displayed in the window have color hints that match the color of the striped regions on the timeline.
 
-\subsection{Tracy Assist}
+\section{Tracy Assist}
 \label{tracyassist}
 
 With Tracy Profiler, you can use GenAI features to get help using the profiler or analyzing the code you're profiling.
@@ -4943,7 +4944,7 @@ You do not. Tracy is not a money funnel for Silicon Valley tech bros to get rich
 The only way to access the assistant is to run everything locally on your system. This ensures that everything you do stays private and that you won't be subject to forced changes in features or terms and conditions. You should own the tools you work with instead of renting them from someone else.
 \end{bclogo}
 
-\subsubsection{Service provider}
+\subsection{Service provider}
 
 To get started, you will need to install an LLM\footnote{Large Language Model.} provider on your system. Any service that's compatible with the standard API should work, but some may work better than others. The LLM field is advancing quickly, with new models frequently being released that often require specific support from provider services to deliver the best experience.
 
@@ -4957,13 +4958,13 @@ There are no ideal LLM providers, but here are some options:
 \item \emph{LM Studio} (\url{https://lmstudio.ai/}) -- It is easy to install on all platforms and has a GUI. But it is overwhelming when it comes to the number of options it offers. Some people may question the licensing. Its features lag a behind llama.cpp. Manual configuration of each model is required. To get it to work properly, go to it settings (using the gear icon in the bottom right corner of the program window), then select the Developer tab and enable "When applicable, separate \texttt{reasoning\_content} and \texttt{content} in API responses".
 \end{itemize}
 
-\subsubsection{Model selection}
+\subsection{Model selection}
 
 Once you have installed the service provider, you will need to download the model files. The exact process depends on the provider you chose. LM Studio, for example, has a built-in downloader with an easy-to-use UI. For llama.cpp, you can follow their documentation or download the model file via your web browser. Tracy will not issue commands to download any model on its own.
 
 There are three different model types that Tracy expects to have available. Ideally all three models would be loaded and ready to go at the same time.
 
-\paragraph{Chat model}
+\subsubsection{Chat model}
 
 This is the model used for conversation purposes. You should strive to maximize its capabilities and context size. This model should support reasoning and tool usage.
 
@@ -4999,7 +5000,7 @@ Each token present in the context window may require a fairly large amount of me
 The bare minimum required context size for Tracy to run the assistant is 8K, but don't expect things to run smoothly. Using 16K provides more room to operate, but it's still tight. To get things working well you should not go less than 32K or 64K for the context size.
 \end{bclogo}
 
-\paragraph{Fast model}
+\subsubsection{Fast model}
 
 Sometimes Tracy needs to do some language processing where speed is more important than the smarts. For this kind of model, choose a small amount of parameters (that still work well), and no reasoning (also referred to as "thinking").
 
@@ -5007,13 +5008,13 @@ A good starting point here is \textbf{Qwen3 4B Instruct 2507}. Using a 16K conte
 
 To save the precious GPU resources for the chat model, you may want to keep this model entirely in system RAM (set \texttt{-ngl 0} for llama.cpp, or set "GPU offload" to 0 in LM Studio) and disable the KV cache offload to GPU (set \texttt{-nkvo} for llama.cpp, or disable "Offload KV Cache to GPU Memory" in LM Studio). The slowdown is not significant.
 
-\paragraph{Embedding model}
+\subsubsection{Embedding model}
 
 This is a small model used for semantic search in the user manual. This should be \textbf{nomic-embed-text-1.5}, which is provided by default by LM Studio, or which you can download on your own for llama.cpp.
 
 LM Studio properly labels the model's capabilities. This is not the case with the llama.cpp/llama-swap setup. To make it work, your embedding model's name must contain the word \texttt{embed}.
 
-\paragraph{Hardware resources}
+\subsubsection{Hardware resources}
 
 Ideally, you want to keep both the model and the context cache in your GPU's VRAM. This will provide the fastest possible speed. However, this won't be possible in many configurations.
 
@@ -5027,7 +5028,7 @@ Another option is to disable KV cache offload to GPU, as was already mentioned e
 
 Yet another option is to use a "Mixture of Experts" model, where the active portion of the model is small compared to its overall size. For example, you may see notation such as 30B-A3B. This means that the model size is 30B, but only 3B are actively used in computations. You can use the \texttt{-{}-cpu-moe} option in llama.cpp or the "Force Model Expert Weights onto CPU" option in LM Studio to keep the model in RAM, and the active portion in VRAM, which largely reduces the resource requirements of such models, while still being reasonably fast. Alternatively, there's llama.cpp \texttt{-{}-n-cpu-moe} option, similar to the \texttt{-ngl} GPU offload option. You may experiment with it to see what works best for you.
 
-\paragraph{In practice}
+\subsubsection{In practice}
 
 So, which model should you run and what hardware you need to be able to do so? Let's take look at some example systems.
 
@@ -5040,7 +5041,7 @@ As a rule of thumb, the specified number of parameters is how much total memory 
 
 To make this practical, the 35B-A3B model at 2 bit quantization requires $35 * 2 / 8 = 8.75$~GB, which fits into the 4 + 16 GB budget in the example above. The 3B active parameters similarly calculate to 0.75~GB, with additional 1~GB or so needed for computation buffer and another 1~GB for the 50K context, which is less than the 4~GB of VRAM available, making everything fit.
 
-\subsubsection{Usage}
+\subsection{Usage}
 \label{llmusage}
 
 The automated assistant can be accessed via the various \emph{\faRobot{}~Tracy Assist} buttons in the UI. The button in the control menu (section~\ref{controlmenu}) gives quick access to the chat. Buttons in other profiler windows open the chat window and add context related to the program you are profiling.
@@ -5080,7 +5081,7 @@ The chat section contains the conversation with the automated assistant.
 
 Clicking on the~\emph{\faUser{}~User} role icon removes the chat content up to the selected question. Similarly, clicking on the~\emph{\faRobot{}~Assistant} role icon removes the conversation content up to this point and generates another response from the assistant.
 
-\subsubsection{Tools}
+\subsection{Tools}
 
 The automated assistant has access to a set of tools that allow it to gather information. These tools are used automatically when needed to answer your questions. The following tools are available:
 
@@ -5096,7 +5097,7 @@ The automated assistant has access to a set of tools that allow it to gather inf
 
 Note that Wikipedia, dictionary, web search, and webpage retrieval tools require the \emph{Internet access} option to be enabled.
 
-\subsubsection{Attachments}
+\subsection{Attachments}
 
 You can provide context to the assistant by attaching relevant data from the profiler. The following types of attachments are available:
 

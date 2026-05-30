@@ -2944,7 +2944,7 @@ By default, sampling is performed at 8 kHz frequency on Windows (the maximum pos
 
 Call stack sampling may be disabled by using the \texttt{TRACY\_NO\_SAMPLING} define.
 
-When enabled, by default, sampling starts at the beginning of the application and ends with it. You can instead have programmatic (manual) control over when sampling should begin and end by defining \texttt{TRACY\_SAMPLING\_PROFILER\_MANUAL\_START} when compiling \texttt{TracyClient.cpp}. Use \texttt{tracy::BeginSamplingProfiling()} and \texttt{tracy::EndSamplingProfiling()} to control it. There are C interfaces for it as well: \texttt{TracyCBeginSamplingProfiling()} and \texttt{TracyCEndSamplingProfiling()}.
+When enabled, by default, sampling starts at the beginning of the application and ends with it. You can instead have programmatic (manual) control over when sampling should begin and end by defining \texttt{TRACY\_SAMPLING\_PROFILER\_MANUAL\_START} when compiling \texttt{TracyClient.cpp}. You can then use \texttt{tracy::BeginSamplingProfiling()} and \texttt{tracy::EndSamplingProfiling()} to control it. There are C interfaces for it as well: \texttt{TracyCBeginSamplingProfiling()} and \texttt{TracyCEndSamplingProfiling()}.
 
 \begin{bclogo}[
 noborder=true,
@@ -3585,7 +3585,7 @@ The following three items show the \emph{\faEye{}~view time range}, the \emph{\f
 
 \paragraph{Notification area}
 
-The notification area displays informational notices, for example, how long it took to load a trace from the disk. The three pulsing dots indicator shows that some background tasks are being performed that may need to be completed before full capabilities of the profiler are available. If a crash was captured during profiling (section~\ref{crashhandling}), a \emph{\faSkull{}~crash} icon will be displayed. The red \faSatelliteDish{}~icon indicates that queries are currently being backlogged, while the same yellow icon indicates that some queries are currently in-flight (see chapter~\ref{connectionpopup} for more information).
+The notification area displays informational notices, for example, how long it took to load a trace from the disk. The three pulsing dots indicator shows that some background tasks are being performed that may need to be completed before full capabilities of the profiler are available. If a crash was captured during profiling (section~\ref{crashhandling}), a \emph{\faSkull{}~crash} icon will be displayed. You can click this icon to see the crash call stack. The red \faSatelliteDish{}~icon indicates that queries are currently being backlogged, while the same yellow icon indicates that some queries are currently in-flight (see chapter~\ref{connectionpopup} for more information).
 
 If the drawing of timeline elements was disabled in the options menu (section~\ref{options}), the profiler will use the following orange icons to remind you about that fact. Click on the icons to enable drawing of the selected elements. Note that collapsed labels (section~\ref{zoneslocksplots}) are not taken into account here.
 
@@ -4010,7 +4010,7 @@ To define a time range, drag the \LMB{}~left mouse button over the timeline view
 \item \emph{\faMagnifyingGlass{}~Limit find zone time range} -- this will limit find zone results. See chapter~\ref{findzone} for more details.
 \item \emph{\faArrowUpWideShort{}~Limit statistics time range} -- selecting this option will limit statistics results. See chapter~\ref{statistics} for more details.
 \item \emph{\faFire{}~Limit flame graph time range} -- limits flame graph results. Refer to chapter~\ref{flamegraph}.
-\item \emph{\faHourglassHalf{}~Limit wait stacks time range} -- limits wait stacks results. Refer to chapter~\ref{waitstackswindow}.
+\item \emph{\faHourglassHalf{}~Limit wait stacks time range} -- limits wait stacks results. Refer to chapter~\ref{stackwindows}.
 \item \emph{\faMemory{}~Limit memory time range} -- limits memory results. Read more about this in chapter~\ref{memorywindow}.
 \item \emph{\faNoteSticky{}~Add annotation} -- use to annotate regions of interest, as described in chapter~\ref{annotatingtrace}.
 \end{itemize}
@@ -4114,8 +4114,8 @@ You can filter the message list in the following ways:
 \begin{itemize}
 \item By the originating thread in the \emph{\faShuffle{} Visible threads} drop-down.
 \item By matching the message text to the expression in the \emph{\faFilter{}~Filter messages} entry field. Multiple filter expressions can be comma-separated (e.g. 'warn, info' will match messages containing strings 'warn' \emph{or} 'info'). You can exclude matches by preceding the term with a minus character (e.g., '-debug' will hide all messages containing the string 'debug').
-\item By message source, distinguishing between user messages and internal Tracy diagnostics.
-\item By severity level: \emph{Trace}, \emph{Debug}, \emph{Info}, \emph{Warning}, \emph{Error}, or \emph{Fatal}.
+\item By message source, distinguishing between \emph{\faUser{}~User} messages and internal \emph{\faMicroscope{}~Tracy} diagnostics.
+\item By severity level: \emph{\faShoePrints{}~Trace}, \emph{\faBug{}~Debug}, \emph{\faInfo{}~Info}, \emph{\faTriangleExclamation{}~Warning}, \emph{\faCircleXmark{}~Error}, or \emph{\faSkullCrossbones{}~Fatal}.
 \end{itemize}
 
 \subsection{Statistics window}
@@ -4146,9 +4146,9 @@ Data displayed in this mode is, in essence, very similar to the instrumentation 
 
 First and foremost, the presented information is constructed from many call stack samples, which represent real addresses in the application's binary code, mapped to the line numbers in the source files. This reverse mapping may not always be possible or could be erroneous. Furthermore, due to the nature of the sampling process, it is impossible to obtain exact time measurements. Instead, time values are guesstimated by multiplying the number of sample counts by mean time between two different samples.
 
-The sample statistics list symbols, not functions. These terms are similar, but not exactly the same. A symbol always has a base function that gives it its name. In most cases, a symbol will also contain a number of inlined functions. In some cases, the same function may be inlined more than once within the same symbol.
+The sample statistics list symbols, not functions. These terms are similar but not exactly the same. A symbol always has a base function that gives it its name. In most cases, a symbol will also contain a number of inlined functions. In some cases, the same function may be inlined more than once within the same symbol. Inspecting the local call stacks displayed in tooltips will show the specific paths by which these inlines were called within the symbol. See section~\ref{assemblymode} for more detail.
 
-The \emph{Name} column contains name of the symbol in which the sampling was done. Kernel-mode symbol samples are distinguished with the red color. Symbols containing inlined functions are listed with the number of inlined functions in parentheses and can be expanded to show all inlined functions (some functions may be hidden if the \emph{\faPuzzlePiece{}~Show all} option is disabled due to lack of sampling data). Clicking the \LMB{}~left mouse button on a function name will open a popup with options to select: you can either open the symbol view window (section~\ref{symbolview}), or the sample entry stacks window (see chapter~\ref{sampleparents})\footnote{Note that if inclusive times are displayed, listed functions will be partially or completely coming from mid-stack frames, preventing, or limiting the capability to display the data.}.
+The \emph{Name} column contains name of the symbol in which the sampling was done. Kernel-mode symbol samples are distinguished with the red color. Symbols containing inlined functions are listed with the number of inlined functions in parentheses and can be expanded to show all inlined functions (some functions may be hidden if the \emph{\faPuzzlePiece{}~Show all} option is disabled due to lack of sampling data). Clicking the \LMB{}~left mouse button on a function name will open a popup with options to select: you can either open the symbol view window (section~\ref{symbolview}), or the sample entry stacks window (see chapter~\ref{stackwindows})\footnote{Note that if inclusive times are displayed, listed functions will be partially or completely coming from mid-stack frames, preventing, or limiting the capability to display the data.}.
 
 By default, each inlining of a function is listed separately. If you prefer to combine the measurements for functions that are inlined multiple times within a function, you can do so by enabling the \emph{\faLayerGroup{}~Aggregate} option. You cannot view sample entry stacks of inlined functions when this grouping method is enabled.
 
@@ -4504,13 +4504,13 @@ This view may help assess the general memory behavior of the application or in d
 \subsubsection{Bottom-up call stack tree}
 \label{callstacktree}
 
-The \emph{\faTree{}~Bottom-up call stack tree} pane is only available, if the memory events were collecting the call stack data (section~\ref{collectingcallstacks}). In this view, you are presented with a tree of memory allocations, starting at the call stack entry point and going up to the allocation's pinpointed place. Each tree level is sorted according to the number of bytes allocated in the given branch.
+The \emph{\faTree\faArrowUp{}~Bottom-up call stack tree} pane is only available, if the memory events were collecting the call stack data (section~\ref{collectingcallstacks}). In this view, you are presented with a tree of memory allocations, starting at the call stack entry point and going up to the allocation's pinpointed place. Each tree level is sorted according to the number of bytes allocated in the given branch.
 
 Each tree node consists of the function name, the source file location, and the memory allocation data. The memory allocation data is either yellow \emph{inclusive} events count (allocations performed by children) or the cyan \emph{exclusive} events count (allocations that took place in the node)\footnote{Due to the way call stacks work, there is no possibility for an entry to have both inclusive and exclusive counts, in an adequately instrumented program.}. Two values are counted: total memory size and number of allocations.
 
-The \emph{\faLayerGroup{}~Group by function name} option controls how tree nodes are grouped. If it is disabled, the grouping is performed at a machine instruction-level granularity. This may result in a very verbose output, but the displayed source locations are precise. To make the tree more readable, you may opt to perform grouping at the function name level, which will result in less valid source file locations, as multiple entries are collapsed into one.
+See chapter~\ref{stackwindows} for description of the \emph{\faLayerGroup{}~Group by function name} option.
 
-Enabling the \emph{Only active allocations} option will limit the call stack tree only to display active allocations. Enabling \emph{Only inactive allocations} option will have similar effect for inactive allocations. Both are mutually exclusive, enabling one disables the other. Displaing inactive allocations, when combined with \emph{Limit range}, will show short lived allocatios highlighting potentially unwanted behavior in the code.
+Enabling the \emph{Only active allocations} option will limit the call stack tree only to display active allocations. Enabling \emph{Only inactive allocations} option will have similar effect for inactive allocations. Both are mutually exclusive, enabling one disables the other. Displaying inactive allocations, when combined with \emph{Limit range}, will show short lived allocations highlighting potentially unwanted behavior in the code.
 
 Clicking the \RMB{}~right mouse button on the function name will open the allocations list window (see section \ref{alloclist}), which lists all the allocations included at the current call stack tree level. Likewise, clicking the \RMB{}~right mouse button on the source file location will open the source file view window (if applicable, see section~\ref{sourceview}).
 
@@ -4518,7 +4518,7 @@ Some function names may be too long to correctly display, with the events count 
 
 \subsubsection{Top-down call stack tree}
 
-This pane is identical in functionality to the \emph{Bottom-up call stack tree}, but the call stack order is reversed when the tree is built. This means that the tree starts at the memory allocation functions and goes down to the call stack entry point.
+The \emph{\faTree\faArrowDown{}~Top-down call stack tree} pane is identical in functionality to the \emph{Bottom-up call stack tree}, but the call stack order is reversed when the tree is built. This means that the tree starts at the memory allocation functions and goes down to the call stack entry point.
 
 \subsubsection{Looking back at the memory history}
 
@@ -4609,9 +4609,11 @@ Clicking on the \emph{\faClipboard{}~Copy to clipboard} buttons will copy the ap
 \subsection{Call stack window}
 \label{callstackwindow}
 
-This window shows the frames contained in the selected call stack. Each frame is described by a function name, source file location, and originating image\footnote{Executable images are called \emph{modules} by Microsoft.} name. Function frames originating from the kernel are marked with a red color. Clicking the \LMB{}~left mouse button on either the function name of source file location will copy the name to the clipboard. Clicking the \RMB{}~right mouse button on the source file location will open the source file view window (if applicable, see section~\ref{sourceview}).
+This window shows the frames contained in the selected call stack. Information about the originating thread is included. Each frame is described by a function name, source file location, and originating image\footnote{Executable images are called \emph{modules} by Microsoft.} name. Function frames originating from the kernel are marked with a red color. Clicking the \LMB{}~left mouse button on either the function name of source file location will copy the name to the clipboard. Clicking the \RMB{}~right mouse button on the source file location will open the source file view window (if applicable, see section~\ref{sourceview}).
 
 A single stack frame may have multiple function call places associated with it. This happens in the case of inlined function calls. Such entries will be displayed in the call stack window, with \emph{inline} in place of frame number\footnote{Or '\faCaretRight{}'~icon in case of call stack tooltips.}.
+
+If the call stack shows a crash (see section~\ref{crashhandling}), a red \emph{\faSkull{}~Crash} label will be displayed. Clicking it will center the timeline on the crash. Note that the crash stack may contain OS or Tracy frames where the crash was intercepted and processed.
 
 Stack frame location may be displayed in the following number of ways, depending on the \emph{Frame~at} option selection:
 
@@ -4628,7 +4630,7 @@ External frames from system libraries are hidden by default. Enabling the \emph{
 
 The \emph{\faScissors{}~Short images} option shortens the displayed executable image name to only the file name. The full path is available in the tooltip.
 
-If the displayed call stack is a sampled call stack (chapter~\ref{sampling}), an additional button will be available, \emph{\faDoorOpen{}~Entry stacks}. Clicking it will open the sample entry stacks window (chapter~\ref{sampleparents}) for the current call stack.
+If the displayed call stack is a sampled call stack (chapter~\ref{sampling}), an additional button may be available, \emph{\faDoorOpen{}~Entry stacks}. Clicking it will open the sample entry stacks window (chapter~\ref{stackwindows}) for the current call stack.
 
 Clicking on the \emph{\faClipboard{}~Copy to clipboard} button will copy call stack to the clipboard.
 
@@ -4664,13 +4666,6 @@ At the first glance it may look like \texttt{unique\_ptr::reset} was the \emph{c
 
 Moreover, the linker may determine in some rare cases that any two functions in your program are identical\footnote{For example, if all they do is zero-initialize a region of memory. As some constructors would do.}. As a result, only one copy of the binary code will be provided in the executable for both functions to share. While this optimization produces more compact programs, it also means that there's no way to distinguish the two functions apart in the resulting machine code. In effect, some call stacks may look nonsensical until you perform a small investigation.
 
-\subsection{Sample entry stacks window}
-\label{sampleparents}
-
-This window displays statistical information about the selected symbol. All sampled call stacks (chapter~\ref{sampling}) leading to the symbol are counted and displayed in descending order. You can choose the displayed call stack using the \emph{entry call stack} controls, which also display time spent in the selected call stack. Alternatively, sample counts may be shown by disabling the \emph{\faStopwatch{}~Show time} option, which is described in more detail in chapter~\ref{statisticssampling}.
-
-The layout of frame list and the \emph{\faAt{}~Frame location} option selection is similar to the call stack window, described in chapter~\ref{callstackwindow}.
-
 \subsection{Source view window}
 \label{sourceview}
 
@@ -4703,7 +4698,7 @@ Nevertheless, \textbf{the displayed source files might still not reflect the cod
 
 A much more capable symbol view mode is available if the inspected source location has an associated symbol context (i.e., if it comes from a call stack capture, from call stack sampling, etc.). A symbol is a unit of machine code, basically a callable function. It may be generated using multiple source files and may consist of numerous inlined functions. A list of all captured symbols is available in the statistics window, as described in chapter~\ref{statisticssampling}.
 
-The header of symbol view window contains a name of the selected \emph{\faPuzzlePiece{}~symbol}, a list of \emph{\faSitemap{}~functions} that contribute to the symbol, and information such as count of probed \emph{\faEyeDropper{}~Samples}. The entry stacks (section~\ref{sampleparents}) of the symbol can be viewed by clicking on the \emph{Entry stacks} button.
+The header of symbol view window contains a name of the selected \emph{\faPuzzlePiece{}~symbol}, a list of \emph{\faSitemap{}~functions} that contribute to the symbol, and information such as count of probed \emph{\faEyeDropper{}~Samples}. The entry stacks (section~\ref{stackwindows}) of the symbol can be viewed by clicking on the \emph{Entry stacks} button.
 
 Additionally, you may use the \emph{Mode} selector to decide what content should be displayed in the panels below:
 
@@ -4722,6 +4717,7 @@ This is pretty much the source file view window, but with the ability to select 
 The \emph{Propagate inlines} option, available when sample data is present, will enable propagation of the instruction costs down the local call stack. For example, suppose a base function in the symbol issues a call to an inlined function (which may not be readily visible due to being contained in another source file). In that case, any cost attributed to the inlined function will be visible in the base function. Because the cost information is added to all the entries in the local call stacks, it is possible to see seemingly nonsense total cost values when this feature is enabled. To quickly toggle this on or off, you may also press the \keys{X} key.
 
 \paragraph{Assembly mode}
+\label{assemblymode}
 
 This mode shows the disassembly of the symbol machine code. If only one inline function is selected through the \emph{\faSitemap{}~Function} selector, assembly instructions outside of this function will be dimmed out. Each assembly instruction is displayed listed with its location in the program memory during execution. If the \emph{\faMagnifyingGlassLocation{}~Relative address} option is selected, the profiler will print an offset from the symbol beginning instead. Clicking the \LMB{}~left mouse button on the address/offset will switch to counting line numbers, using the selected one as the origin (i.e., zero value). Line numbers are displayed inside \texttt{[]} brackets. This display mode can be useful to correlate lines with the output of external tools, such as \texttt{llvm-mca}. To disable line numbering click the \RMB{}~right mouse button on a line number.
 
@@ -4787,11 +4783,13 @@ In this mode, the source and assembly panes will be displayed together, providin
 
 If automated call stack sampling (see chapter~\ref{sampling}) was performed, additional profiling information will be available. The first column of source and assembly views will contain percentage counts of collected instruction pointer samples for each displayed line, both in numerical and graphical bar form. You can use this information to determine which function line takes the most time. The displayed percentage values are heat map color-coded, with the lowest values mapped to dark red and the highest to bright yellow. The color code will appear next to the percentage value and on the scroll bar so that you can identify 'hot' places in the code at a glance.
 
-By default, samples are displayed only within the selected symbol, in isolation. In some cases, you may, however, want to include samples from functions that the selected symbol called. To do so, enable the \emph{\faRightFromBracket{}~Child calls} option, which you may also temporarily toggle by holding the \keys{Z} key. You can also click the~\faCaretDown{}~drop down control to display a child call distribution list, which shows each known function\footnote{You should remember that these are results of random sampling. Some function calls may be missing here.} that the symbol called. Make sure to familiarize yourself with section~\ref{readingcallstacks} to be able to read the results correctly.
+By default, samples are displayed only within the selected symbol, in isolation. In some cases, you may, however, want to include samples from functions that the selected symbol called. To do so, enable the \emph{\faRightFromBracket{}~Child calls} option, which you may also temporarily toggle by holding the \keys{Z} key. You can also click the~\faCaretDown{}~drop down control to display a child call distribution list\footnote{The height of the list can be changed by dragging the separator bar.}, which shows each known function\footnote{You should remember that these are results of random sampling. Some function calls may be missing here.} that the symbol called. Make sure to familiarize yourself with section~\ref{readingcallstacks} to be able to read the results correctly. Each child call on the list has an attributed time cost, which is also displayed as a percentage of the child calls ("\%~Calls") and the percentage of the total symbol time ("\%~Total").
+
+The total number of collected samples is displayed in the UI under the~\emph{\faEyeDropper~Samples} label and converted to a time approximation at the~\emph{\faStopwatch~Time} label. The displayed values show the local count if child calls are disabled and the total count if the option is enabled. In either case, the number of samples attributed only to the child calls is displayed in parentheses with the + or - symbol and as a percentage of the total symbol time.
 
 Instruction timings can be viewed as a group. To begin constructing such a group, click the \LMB{}~left mouse button on the percentage value. Additional instructions can be added using the \keys{\ctrl}~key while holding the \keys{\shift}~key will allow selection of a range. To cancel the selection, click the \RMB{}~right mouse button on a percentage value. Group statistics can be seen at the bottom of the pane.
 
-Clicking the \MMB{}~middle mouse button on the percentage value of an assembly instruction will display entry call stacks of the selected sample (see chapter~\ref{sampleparents}). This functionality is only available for instructions that have collected sampling data and only in the assembly view, as the source code may be inlined multiple times, which would result in ambiguous location data. Note that number of entry call stacks is displayed in a tooltip for a quick reference.
+Clicking the \MMB{}~middle mouse button on the percentage value of an assembly instruction will display entry call stacks of the selected sample (see chapter~\ref{stackwindows}). This functionality is only available for instructions that have collected sampling data and only in the assembly view, as the source code may be inlined multiple times, which would result in ambiguous location data. Note that number of entry call stacks is displayed in a tooltip for a quick reference.
 
 The sample data source is controlled by the \emph{\faSitemap{}~Function} control in the window header. If this option should be disabled, sample data will represent the whole symbol. If it is enabled, then the sample data will only include the selected function. You can change the currently selected function by opening the drop-down box, which includes time statistics. The time percentage values of each contributing function are calculated relative to the total number of samples collected within the symbol.
 
@@ -4829,18 +4827,25 @@ logo=\bcattention
 The percentage values when \emph{\faCarBurst{}~Impact} option is not selected will not take into account the relative count of events. For example, you may see a 100\% cache miss rate when some instruction missed 10 out of 10 cache accesses. While not ideal, this is not as important as a seemingly better 50\% cache miss rate instruction, which actually has missed 1000 out of 2000 accesses. Therefore, you should always cross-check the presented information with the respective event counts. To help with this, Tracy will dim statistically unimportant values.
 \end{bclogo}
 
-\subsection{Wait stacks window}
-\label{waitstackswindow}
+\subsection{Stacks windows}
+\label{stackwindows}
 
-If wait stack information has been captured (chapter~\ref{waitstacks}), here you will be able to inspect the collected data. There are three different views available:
+The profiler can group call stacks leading to certain events and display the resulting information in a variety of ways. In essence, this shows the code paths that lead to these events and the distribution of these paths. At this moment, these events include:
 
 \begin{itemize}
-\item \emph{\faTable{}~List} -- shows all unique wait stacks, sorted by the number of times they were observed.
-\item \emph{\faTree{}~Bottom-up tree} -- displays wait stacks in the form of a collapsible tree, which starts at the bottom of the call stack.
-\item \emph{\faTree{}~Top-down tree} -- displays wait stacks in the form of a collapsible tree, which starts at the top of the call stack.
+\item \textbf{Sample entry stacks} -- this window shows all the paths that lead to execution of the selected symbol. Requires sampling (chapter~\ref{sampling}) to be active.
+\item \textbf{Wait stacks} -- this windows shows all the places where the application was sleeping. See chapter~\ref{waitstacks} for more information.
 \end{itemize}
 
-Displayed data may be narrowed down to a specific time range or to include only selected threads.
+The call stack paths may be displayed in the following ways:
+
+\begin{itemize}
+\item \emph{\faTable{}~List} -- shows all unique stacks, sorted by the number of times they were observed. The frame list is similar to the call stack window, described in chapter~\ref{callstackwindow}.
+\item \emph{\faTree\faArrowUp{}~Bottom-up tree} -- displays stacks in the form of a collapsible tree, which starts at the bottom of the call stack.
+\item \emph{\faTree\faArrowDown{}~Top-down tree} -- displays stacks in the form of a collapsible tree, which starts at the top of the call stack.
+\end{itemize}
+
+The \emph{\faLayerGroup{}~Group by function name} option controls how tree nodes are grouped. If it is disabled, the grouping is performed at machine-instruction-level granularity. This may result in very verbose output, but the displayed source locations are precise. To make the tree more readable, you may opt to group at the function-name level, which will result in fewer valid source file locations, as multiple entries are collapsed into one. The number of aggregated entries is displayed next to function names.
 
 \subsection{Lock information window}
 \label{lockwindow}
@@ -4902,7 +4907,7 @@ A new view-sized annotation can be added in this window by pressing the \emph{\f
 \subsection{Time range limits}
 \label{timerangelimits}
 
-This window displays information about time range limits (section~\ref{timeranges}) for find zone (section~\ref{findzone}), statistics (section~\ref{statistics}), flame graph (section~\ref{flamegraph}), memory (section~\ref{memorywindow}) and wait stacks (section~\ref{waitstackswindow}) results. Each limit can be enabled or disabled and adjusted through the following options:
+This window displays information about time range limits (section~\ref{timeranges}) for find zone (section~\ref{findzone}), statistics (section~\ref{statistics}), flame graph (section~\ref{flamegraph}), memory (section~\ref{memorywindow}) and wait stacks (section~\ref{stackwindows}) results. Each limit can be enabled or disabled and adjusted through the following options:
 
 \begin{itemize}
 \item \emph{Limit to view} -- Set the time range limit to current view.
@@ -4922,7 +4927,7 @@ Note that ranges displayed in the window have color hints that match the color o
 
 With Tracy Profiler, you can use GenAI features to get help using the profiler or analyzing the code you're profiling.
 
-The automated assistant can search the user manual to answer your questions about the profiler. It can also read the source code when you ask about program performance or algorithms. It has the capacity for access to Wikipedia, the ability to search the web, and the capability to access web pages in response to general questions.
+The automated assistant can search the user manual to answer your questions about the profiler. It can also read the source code or analyze captured profile data when you ask about program performance or algorithms. It has the capacity for access to Wikipedia, the ability to search the web, and the capability to access web pages in response to general questions.
 
 This feature can be completely disabled in the \emph{Global settings}, as described in section~\ref{aboutwindow}.
 
@@ -4953,14 +4958,14 @@ The ideal LLM provider should be a system service that loads and unloads models 
 There are no ideal LLM providers, but here are some options:
 
 \begin{itemize}
-\item \emph{llama.cpp} (\url{https://github.com/ggml-org/llama.cpp}) -- Recommended as the easiest to use. Clone from git and build it yourself. By default it fits the model automatically to available memory. It is rapidly advancing with new features and model support. Most other providers use it to do the actual work, and they typically use an outdated release.
+\item \emph{llama.cpp} (\url{https://github.com/ggml-org/llama.cpp}) -- Recommended as the easiest to use. Clone from git and build it yourself. By default it fits the model automatically to available memory. It is rapidly advancing with new features and model support. Most other providers use it to do the actual work, and they typically use an outdated release. The \url{https://llama.app/} site might provide easy way to install llama.
 \item \emph{llama-swap} (\url{https://github.com/mostlygeek/llama-swap}) -- Wrapper for llama.cpp that allows model selection. Recommended to augment the above.
 \item \emph{LM Studio} (\url{https://lmstudio.ai/}) -- It is easy to install on all platforms and has a GUI. But it is overwhelming when it comes to the number of options it offers. Some people may question the licensing. Its features lag a behind llama.cpp. Manual configuration of each model is required. To get it to work properly, go to it settings (using the gear icon in the bottom right corner of the program window), then select the Developer tab and enable "When applicable, separate \texttt{reasoning\_content} and \texttt{content} in API responses".
 \end{itemize}
 
 \subsection{Model selection}
 
-Once you have installed the service provider, you will need to download the model files. The exact process depends on the provider you chose. LM Studio, for example, has a built-in downloader with an easy-to-use UI. For llama.cpp, you can follow their documentation or download the model file via your web browser. Tracy will not issue commands to download any model on its own.
+Once you have installed the service provider, you will need to download the model files. The exact process depends on the provider you chose. LM Studio, for example, has a built-in downloader with an easy-to-use UI. For llama.cpp, you can follow their documentation (e.g., the \texttt{-hf} parameter) or download the model file via your web browser. Tracy will not issue commands to download any model on its own.
 
 There are three different model types that Tracy expects to have available. Ideally all three models would be loaded and ready to go at the same time.
 
@@ -4968,7 +4973,7 @@ There are three different model types that Tracy expects to have available. Idea
 
 This is the model used for conversation purposes. You should strive to maximize its capabilities and context size. This model should support reasoning and tool usage.
 
-A good starting point that will work fairly well on almost any hardware is \textbf{Qwen3 4B Thinking 2507}.
+A good \emph{starting} point that will work fairly well on almost any hardware is the \textbf{most recent} 4B model from the \textbf{Qwen} family. For real use, you will want to choose a larger model that fits your hardware, though.
 
 \begin{bclogo}[
 noborder=true,
@@ -4976,8 +4981,6 @@ couleur=black!5,
 logo=\bclampe
 ]{Model quantization}
 Running a model with full 32-bit floating-point weights is not feasible due to memory requirements. Instead, the model parameters are quantized, for which 4 bits is typically the sweet spot. In general, the lower the parameter precision, the more "dumbed down" the model becomes. However, the loss of model coherence due to quantization is less than the benefit of being able to run a larger model.
-
-There are different ways of doing quantization that give the same bit size. It's best to follow the recommendations provided by LM Studio, for example.
 \end{bclogo}
 
 \begin{bclogo}[
@@ -4986,6 +4989,8 @@ couleur=black!5,
 logo=\bclampe
 ]{Model size}
 Another thing to consider when selecting a model is its size, which is typically measured in billions of parameters (weights) and written as 4B, for example. The model size determines how much memory, computation, and time are required to run it. Generally, the larger the model, the "smarter" its responses will be.
+
+Most modern models will be "Mixture of Experts", or MoE, and their size will be denoted, for example, 35B-A3B. This means that the model size is 35B, but only 3B parameters are active and used to compute the next token. In practice, this means that the model has knowledge closer to the full, dense 35B model but speed and GPU memory requirements closer to the fast 3B model.
 \end{bclogo}
 
 \begin{bclogo}[
@@ -4997,36 +5002,20 @@ The model size only indicates the minimum memory requirement. For the model to o
 
 Each token present in the context window may require a fairly large amount of memory, and that can quickly add up to gigabytes. Some modern models use solutions that greatly reduce context memory requirements, but that varies from model to model. If needed, the KV cache used for context can be quantized, just like model parameters. In this case, the recommended size per weight is 8 bits.
 
-The bare minimum required context size for Tracy to run the assistant is 8K, but don't expect things to run smoothly. Using 16K provides more room to operate, but it's still tight. To get things working well you should not go less than 32K or 64K for the context size.
+The realistic minimum required context size for Tracy to run the assistant is 100K tokens, but feel free to experiment.
 \end{bclogo}
 
 \subsubsection{Fast model}
 
-Sometimes Tracy needs to do some language processing where speed is more important than the smarts. For this kind of model, choose a small amount of parameters (that still work well), and no reasoning (also referred to as "thinking").
+Sometimes Tracy needs to do some language processing where speed is more important than the smarts. The default setting is to use the chat model with the reasoning disabled, which is fine for most applications.
 
-A good starting point here is \textbf{Qwen3 4B Instruct 2507}. Using a 16K context should be enough for most applications.
-
-To save the precious GPU resources for the chat model, you may want to keep this model entirely in system RAM (set \texttt{-ngl 0} for llama.cpp, or set "GPU offload" to 0 in LM Studio) and disable the KV cache offload to GPU (set \texttt{-nkvo} for llama.cpp, or disable "Offload KV Cache to GPU Memory" in LM Studio). The slowdown is not significant.
+It may be more convenient to use a small, quick model instead, in which case enable the \emph{Fast model} checkbox and choose the second model. To save precious GPU resources for the chat model, you may want to keep this model entirely in system RAM (set \texttt{-ngl 0} for llama.cpp or set "GPU offload" to 0 in LM Studio) and disable the KV cache offload to GPU (set \texttt{-nkvo} for llama.cpp or disable "Offload KV Cache to GPU Memory" in LM Studio).
 
 \subsubsection{Embedding model}
 
 This is a small model used for semantic search in the user manual. This should be \textbf{nomic-embed-text-1.5}, which is provided by default by LM Studio, or which you can download on your own for llama.cpp.
 
 LM Studio properly labels the model's capabilities. This is not the case with the llama.cpp/llama-swap setup. To make it work, your embedding model's name must contain the word \texttt{embed}.
-
-\subsubsection{Hardware resources}
-
-Ideally, you want to keep both the model and the context cache in your GPU's VRAM. This will provide the fastest possible speed. However, this won't be possible in many configurations.
-
-LLM providers solve this problem by storing part of the model on the GPU and running the rest on the CPU. The more you can run on the GPU, the faster it goes.
-
-If you use llama.cpp, it will automatically fit the model into the available memory. A short report will be displayed when the program is started, with information about memory use. If there's a deficit, the model will still run, but at a severely reduced speed. Use a smaller context or quantization in that case. If there's a memory surplus, it will be used to make the model run faster.
-
-Older versions of llama.cpp, typically still provided by the GUI wrappers, require determining how much of the model can be run on the GPU by experimentation. Other programs running on the system may affect or be affected by this setting. Generally, GPU offload capability is measured by the number of neural network layers.
-
-Another option is to disable KV cache offload to GPU, as was already mentioned earlier. The KV cache is a configurable parameter that typically requires a lot of memory, and it may be better to keep in the system RAM than in limited VRAM.
-
-Yet another option is to use a "Mixture of Experts" model, where the active portion of the model is small compared to its overall size. For example, you may see notation such as 30B-A3B. This means that the model size is 30B, but only 3B are actively used in computations. You can use the \texttt{-{}-cpu-moe} option in llama.cpp or the "Force Model Expert Weights onto CPU" option in LM Studio to keep the model in RAM, and the active portion in VRAM, which largely reduces the resource requirements of such models, while still being reasonably fast. Alternatively, there's llama.cpp \texttt{-{}-n-cpu-moe} option, similar to the \texttt{-ngl} GPU offload option. You may experiment with it to see what works best for you.
 
 \subsubsection{In practice}
 
@@ -5058,16 +5047,18 @@ The control section allows you to clear the chat contents, reconnect to the LLM 
 
 \begin{itemize}
 \item \emph{API} -- Enter the endpoint URL of the LLM provider here. A drop-down list is provided as a convenient way to select the default configuration of various providers. Note that the drop-down list is only used to fill in the endpoint URL. While Tracy does adapt to different ways each provider behaves, the feature detection is performed based on the endpoint conversation, not the drop-down selection.
-\item \emph{Chat model} -- Here you can select one of the models you have configured in the LLM provider for chat.
-\item \emph{Fast model} -- Select the fast model.
-\item \emph{Embeddings model} -- Select the vector embeddings model.
-\item \emph{Internet access} -- Determines whether the model can access network resources such as Wikipedia queries, web searches, and web page retrievals.
-\item \emph{Annotate call stacks} -- Enables automatic annotation of call stacks (see section~\ref{callstackwindow}). Disabled by default, as it requires proper configuration of the fast model.
-\item \emph{Tool reply size limit} -- Configurable maximum size for tool responses.
+\item \emph{\faComments{}~Chat model} -- Here you can select one of the models you have configured in the LLM provider for chat.
+\item \emph{\faBoltLightning{}~Fast model} -- Select the fast model.
+\item \emph{\faBookBookmark{}~Embeddings model} -- Select the vector embeddings model.
+\item \emph{\faEarthAmericas{}~Internet access} -- Determines whether the model can access network resources such as Wikipedia queries, web searches, and web page retrievals.
+\item \emph{\faTag{}~Annotate call stacks} -- Enables automatic annotation of call stacks (see section~\ref{callstackwindow}). Disabled by default, as it requires proper configuration of the fast model.
+\item \emph{\faHandPointRight{}~Show summary} -- Shows a short conversation topic after the initial question is asked.
+\item \emph{\faCommentDots{}~Chat suggestions} -- Suggests the next question the user may want to ask.
 \item \emph{Advanced} -- More advanced options are hidden here.
 \begin{itemize}
-\item \emph{Temperature} -- Allows changing default model temperature setting.
-\item \emph{Show all thinking regions} -- Always shows all reasoning sections and all tool calls made by model.
+\item \emph{\faTemperatureHalf{}~Temperature} -- Allows changing default model temperature setting.
+\item \emph{\faLightbulb{}~Show all thinking regions} -- Always shows all reasoning sections and all tool calls made by model.
+\item \emph{Tool reply size limit} -- Configurable maximum size for tool responses.
 \item \emph{User agent} -- Allows changing the user agent parameter in web queries.
 \item \emph{Google Search Engine} and \emph{API Key} -- Enables use of Google search. If this is not set, searches will fall back to Brave search, and then to DuckDuckGo, which is very rate limited.
 \end{itemize}
@@ -5077,9 +5068,13 @@ The \emph{\faBook{}~Learn manual} button is used to build the search index for t
 
 The horizontal meter directly below shows how much of the context size has been used. Tracy uses various techniques to manage context size, such as limiting the amount of data provided to the model or removing older data. However, the context will eventually be fully utilized during an extended conversation, resulting in a significant degradation of the quality of model responses.
 
-The chat section contains the conversation with the automated assistant.
+The chat section contains the conversation with the automated assistant with alternating user and assistant turns. Clicking on the~\emph{\faUser{}~User} role icon removes the chat content up to the selected question. Similarly, clicking on the~\emph{\faRobot{}~Assistant} role icon removes the conversation content up to this point and generates another response from the assistant.
 
-Clicking on the~\emph{\faUser{}~User} role icon removes the chat content up to the selected question. Similarly, clicking on the~\emph{\faRobot{}~Assistant} role icon removes the conversation content up to this point and generates another response from the assistant.
+The assistant may give preliminary replies to the user, for example, \emph{"I will now check the source of function foobar"}, followed by performing the actual check, then a continuation of the reply, such as \emph{"Now I can see that..."}. To make reading these tiered replies easier, only the most recent reply is printed in normal text, while the preliminary responses are dimmed out.
+
+Each assistant reply contains a note about the language model that was used and the time it took to generate the text.
+
+The chat entry at the bottom is composed of the text input box and the \emph{\faPaperPlane{}~Send} button. When the assistant is writing a reply, this section is replaced with the~\emph{\faStop{}~Stop} button. If the~\emph{\faCommentDots{}~Chat suggestions} option is enabled, the writing prompt for the subsequent questions will be provided by a proposed question prepended with the~\faCommentDots{}~icon. This suggestion can be simply accepted by pressing \keys{Enter}.
 
 \subsection{Tools}
 
@@ -5093,6 +5088,9 @@ The automated assistant has access to a set of tools that allow it to gather inf
 \item \emph{Manual search} -- Perform semantic search in this user manual. Requires an embeddings model to be selected and the \emph{Learn manual} button to be clicked.
 \item \emph{Source file} -- Retrieve source file contents from the captured trace.
 \item \emph{Source search} -- Search within the captured source files using regular expressions.
+\item \emph{Symbol disassembly} -- Retrieve the disassembly and the captured profiling data of the symbol.
+\item \emph{Symbol parents} -- Get the entry call stacks for the symbol.
+\item \emph{Sampling statistics} -- List the functions that took the most program execution time.
 \end{itemize}
 
 Note that Wikipedia, dictionary, web search, and webpage retrieval tools require the \emph{Internet access} option to be enabled.
@@ -5111,6 +5109,8 @@ You can provide context to the assistant by attaching relevant data from the pro
 \end{itemize}
 
 Attachments can be added through the \emph{\faRobot{}~Tracy Assist} buttons available in various profiler windows, such as the call stack window or the symbol view.
+
+Contents of some attachments can be viewed by clicking the \emph{\faEye{}~View} button next to the attachment.
 
 \section{Exporting zone statistics to CSV}
 \label{csvexport}

@@ -743,8 +743,16 @@ void TracyLlm::Draw()
         buttonSize.x += ImGui::GetStyle().FramePadding.x * 2.0f + ImGui::GetStyle().ItemSpacing.x;
         ImGui::PushItemWidth( ImGui::GetContentRegionAvail().x - buttonSize.x );
         if( inputChanged ) ImGui::GetInputTextState( ImGui::GetCurrentWindow()->GetID( "##chat_input" ) )->ReloadUserBufAndMoveToEnd();
-        const char* hint = m_suggestion.empty() ? "Write your question here…" : m_suggestion.c_str();
-        bool send = ImGui::InputTextWithHint( "##chat_input", hint, m_input, InputBufferSize, ImGuiInputTextFlags_EnterReturnsTrue );
+        bool send;
+        if( m_suggestion.empty() )
+        {
+            send = ImGui::InputTextWithHint( "##chat_input", "Write your question here…", m_input, InputBufferSize, ImGuiInputTextFlags_EnterReturnsTrue );
+        }
+        else
+        {
+            std::string hint = ICON_FA_COMMENT_DOTS " " + m_suggestion;
+            send = ImGui::InputTextWithHint( "##chat_input", hint.c_str(), m_input, InputBufferSize, ImGuiInputTextFlags_EnterReturnsTrue );
+        }
         ImGui::SameLine();
         const bool inputEmpty = *m_input == 0;
         const bool hasSuggestion = !m_suggestion.empty();

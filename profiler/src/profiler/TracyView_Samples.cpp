@@ -919,11 +919,11 @@ void View::DrawSampleParents()
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        if( ImGui::RadioButton( ICON_FA_TREE " Bottom-up tree", m_sampleParents.mode == 1 ) ) m_sampleParents.mode = 1;
+        if( ImGui::RadioButton( ICON_FA_TREE ICON_FA_ARROW_UP " Bottom-up tree", m_sampleParents.mode == 1 ) ) m_sampleParents.mode = 1;
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        if( ImGui::RadioButton( ICON_FA_TREE " Top-down tree", m_sampleParents.mode == 2 ) ) m_sampleParents.mode = 2;
+        if( ImGui::RadioButton( ICON_FA_TREE ICON_FA_ARROW_DOWN " Top-down tree", m_sampleParents.mode == 2 ) ) m_sampleParents.mode = 2;
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();

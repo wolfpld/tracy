@@ -429,11 +429,11 @@ void View::DrawWaitStacks()
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
-    if( ImGui::RadioButton( ICON_FA_TREE " Bottom-up tree", m_waitStackMode == 1 ) ) m_waitStackMode = 1;
+    if( ImGui::RadioButton( ICON_FA_TREE ICON_FA_ARROW_UP " Bottom-up tree", m_waitStackMode == 1 ) ) m_waitStackMode = 1;
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
-    if( ImGui::RadioButton( ICON_FA_TREE " Top-down tree", m_waitStackMode == 2 ) ) m_waitStackMode = 2;
+    if( ImGui::RadioButton( ICON_FA_TREE ICON_FA_ARROW_DOWN " Top-down tree", m_waitStackMode == 2 ) ) m_waitStackMode = 2;
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();

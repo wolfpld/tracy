@@ -190,7 +190,15 @@ void View::DrawCallstackTable( const CallstackFrameId* data, size_t size, uint64
         ImGui::Spacing();
         ImGui::SameLine();
         TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Crash" );
-        if( ImGui::IsItemHovered() ) CrashTooltip();
+        if( ImGui::IsItemHovered() )
+        {
+            CrashTooltip();
+            if( ImGui::IsItemClicked() )
+            {
+                auto& crash = m_worker.GetCrashEvent();
+                CenterAtTime( crash.time );
+            }
+        }
     }
 
     if( globalEntriesButton && m_worker.AreCallstackSamplesReady() )

@@ -190,7 +190,10 @@ void View::DrawThreadMessagesList( const TimelineContext& ctx, const std::vector
             CrashTooltip();
             if( IsMouseClicked( 0 ) )
             {
-                m_showInfo = true;
+                m_callstackView = {
+                    .id = crash.callstack,
+                    .thread = crash.thread
+                };
             }
             if( IsMouseClicked( 2 ) )
             {

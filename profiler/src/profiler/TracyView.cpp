@@ -104,7 +104,8 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f
     m_userData.StateShouldBePreserved();
     m_userData.LoadState( m_vd );
     m_userData.LoadAnnotations( m_annotations );
-    m_sourceRegexValid = m_userData.LoadSourceSubstitutions( m_sourceSubstitutions );
+    m_userData.LoadSourceSubstitutions( m_sourceSubstitutions );
+    ValidateSourceRegex();
 
     if( m_worker.GetCallstackSampleCount() == 0 ) m_showAllSymbols = true;
 

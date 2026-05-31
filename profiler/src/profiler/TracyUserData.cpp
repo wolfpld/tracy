@@ -243,10 +243,9 @@ void UserData::SaveAnnotations( const std::vector<std::unique_ptr<Annotation>>& 
     }
 }
 
-bool UserData::LoadSourceSubstitutions( std::vector<SourceRegex>& data )
+void UserData::LoadSourceSubstitutions( std::vector<SourceRegex>& data )
 {
     assert( Valid() );
-    bool regexValid = true;
     FILE* f = OpenFile( FileSourceSubstitutions, false );
     if( f )
     {
@@ -276,21 +275,11 @@ bool UserData::LoadSourceSubstitutions( std::vector<SourceRegex>& data )
                     fread( buf, 1, tsz, f );
                     target.assign( buf, tsz );
                 }
-                std::regex regex;
-                try
-                {
-                    regex.assign( pattern );
-                }
-                catch( std::regex_error& )
-                {
-                    regexValid = false;
-                }
-                data.emplace_back( SourceRegex { std::move( pattern ), std::move( target ), std::move( regex ) } );
+                data.emplace_back( SourceRegex { std::move( pattern ), std::move( target ) } );
             }
         }
         fclose( f );
     }
-    return regexValid;
 }
 
 void UserData::SaveSourceSubstitutions( const std::vector<SourceRegex>& data )

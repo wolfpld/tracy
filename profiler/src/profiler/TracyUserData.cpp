@@ -94,63 +94,32 @@ void UserData::LoadState( ViewData& data )
         fclose( f );
     }
 
-    f = OpenFile( FileOptions, false );
-    if( f )
+    const auto path = GetSavePath( m_program.c_str(), m_time, FileOptions, false );
+    assert( path );
+    auto ini = ini_load( path );
+    if( ini )
     {
-        uint32_t ver;
-        fread( &ver, 1, sizeof( ver ), f );
-        // TODO: remove in future
-        if( ver == VersionOptions )
-        {
-            fread( &data.drawGpuZones, 1, sizeof( data.drawGpuZones ), f );
-            fread( &data.drawZones, 1, sizeof( data.drawZones ), f );
-            fread( &data.drawLocks, 1, sizeof( data.drawLocks ), f );
-            fread( &data.drawPlots, 1, sizeof( data.drawPlots ), f );
-            fread( &data.onlyContendedLocks, 1, sizeof( data.onlyContendedLocks ), f );
-            fread( &data.drawEmptyLabels, 1, sizeof( data.drawEmptyLabels ), f );
-            fread( &data.drawFrameTargets, 1, sizeof( data.drawFrameTargets ), f );
-            fread( &data.drawContextSwitches, 1, sizeof( data.drawContextSwitches ), f );
-            fread( &data.darkenContextSwitches, 1, sizeof( data.darkenContextSwitches ), f );
-            fread( &data.drawCpuData, 1, sizeof( data.drawCpuData ), f );
-            fread( &data.drawCpuUsageGraph, 1, sizeof( data.drawCpuUsageGraph ), f );
-            fread( &data.drawSamples, 1, sizeof( data.drawSamples ), f );
-            fread( &data.dynamicColors, 1, sizeof( data.dynamicColors ), f );
-            fread( &data.forceColors, 1, sizeof( data.forceColors ), f );
-            fread( &data.ghostZones, 1, sizeof( data.ghostZones ), f );
-            fread( &data.frameTarget, 1, sizeof( data.frameTarget ), f );
-            fclose( f );
-        }
-        else
-        {
-            fclose( f );
-            const auto path = GetSavePath( m_program.c_str(), m_time, FileOptions, false );
-            assert( path );
-            auto ini = ini_load( path );
-            if( ini )
-            {
-                int v;
-                if( ini_sget( ini, "options", "drawGpuZones", "%d", &v ) ) data.drawGpuZones = v;
-                if( ini_sget( ini, "options", "drawZones", "%d", &v ) ) data.drawZones = v;
-                if( ini_sget( ini, "options", "drawLocks", "%d", &v ) ) data.drawLocks = v;
-                if( ini_sget( ini, "options", "drawPlots", "%d", &v ) ) data.drawPlots = v;
-                if( ini_sget( ini, "options", "onlyContendedLocks", "%d", &v ) ) data.onlyContendedLocks = v;
-                if( ini_sget( ini, "options", "drawEmptyLabels", "%d", &v ) ) data.drawEmptyLabels = v;
-                if( ini_sget( ini, "options", "drawFrameTargets", "%d", &v ) ) data.drawFrameTargets = v;
-                if( ini_sget( ini, "options", "drawContextSwitches", "%d", &v ) ) data.drawContextSwitches = v;
-                if( ini_sget( ini, "options", "darkenContextSwitches", "%d", &v ) ) data.darkenContextSwitches = v;
-                if( ini_sget( ini, "options", "drawCpuData", "%d", &v ) ) data.drawCpuData = v;
-                if( ini_sget( ini, "options", "drawCpuUsageGraph", "%d", &v ) ) data.drawCpuUsageGraph = v;
-                if( ini_sget( ini, "options", "drawSamples", "%d", &v ) ) data.drawSamples = v;
-                if( ini_sget( ini, "options", "dynamicColors", "%d", &v ) ) data.dynamicColors = v;
-                if( ini_sget( ini, "options", "inheritParentColors", "%d", &v ) ) data.inheritParentColors = v;
-                if( ini_sget( ini, "options", "forceColors", "%d", &v ) ) data.forceColors = v;
-                if( ini_sget( ini, "options", "ghostZones", "%d", &v ) ) data.ghostZones = v;
-                if( ini_sget( ini, "options", "frameTarget", "%d", &v ) ) data.frameTarget = v;
-                if( ini_sget( ini, "options", "shortenName", "%d", &v ) ) data.shortenName = (ShortenName)v;
-                if( ini_sget( ini, "options", "plotHeight", "%d", &v ) ) data.plotHeight = v;
-                ini_free( ini );
-            }
-        }
+        int v;
+        if( ini_sget( ini, "options", "drawGpuZones", "%d", &v ) ) data.drawGpuZones = v;
+        if( ini_sget( ini, "options", "drawZones", "%d", &v ) ) data.drawZones = v;
+        if( ini_sget( ini, "options", "drawLocks", "%d", &v ) ) data.drawLocks = v;
+        if( ini_sget( ini, "options", "drawPlots", "%d", &v ) ) data.drawPlots = v;
+        if( ini_sget( ini, "options", "onlyContendedLocks", "%d", &v ) ) data.onlyContendedLocks = v;
+        if( ini_sget( ini, "options", "drawEmptyLabels", "%d", &v ) ) data.drawEmptyLabels = v;
+        if( ini_sget( ini, "options", "drawFrameTargets", "%d", &v ) ) data.drawFrameTargets = v;
+        if( ini_sget( ini, "options", "drawContextSwitches", "%d", &v ) ) data.drawContextSwitches = v;
+        if( ini_sget( ini, "options", "darkenContextSwitches", "%d", &v ) ) data.darkenContextSwitches = v;
+        if( ini_sget( ini, "options", "drawCpuData", "%d", &v ) ) data.drawCpuData = v;
+        if( ini_sget( ini, "options", "drawCpuUsageGraph", "%d", &v ) ) data.drawCpuUsageGraph = v;
+        if( ini_sget( ini, "options", "drawSamples", "%d", &v ) ) data.drawSamples = v;
+        if( ini_sget( ini, "options", "dynamicColors", "%d", &v ) ) data.dynamicColors = v;
+        if( ini_sget( ini, "options", "inheritParentColors", "%d", &v ) ) data.inheritParentColors = v;
+        if( ini_sget( ini, "options", "forceColors", "%d", &v ) ) data.forceColors = v;
+        if( ini_sget( ini, "options", "ghostZones", "%d", &v ) ) data.ghostZones = v;
+        if( ini_sget( ini, "options", "frameTarget", "%d", &v ) ) data.frameTarget = v;
+        if( ini_sget( ini, "options", "shortenName", "%d", &v ) ) data.shortenName = (ShortenName)v;
+        if( ini_sget( ini, "options", "plotHeight", "%d", &v ) ) data.plotHeight = v;
+        ini_free( ini );
     }
 }
 

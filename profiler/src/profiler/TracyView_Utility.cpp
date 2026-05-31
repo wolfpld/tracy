@@ -1167,4 +1167,22 @@ bool View::CallstackHasLocals( const CallstackFrameId* data, size_t size ) const
     return false;
 }
 
+void View::ValidateSourceRegex()
+{
+    bool regexValid = true;
+    for( auto& v : m_sourceSubstitutions )
+    {
+        try
+        {
+            v.regex.assign( v.pattern );
+        }
+        catch( std::regex_error& )
+        {
+            regexValid = false;
+            break;
+        }
+    }
+    m_sourceRegexValid = regexValid;
+}
+
 }

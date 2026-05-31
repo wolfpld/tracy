@@ -434,6 +434,8 @@ private:
     void Attention( bool& alreadyDone );
     void UpdateTitle();
 
+    void ValidateSourceRegex();
+
     unordered_flat_map<uint64_t, int> m_threadDepthLimit;
     unordered_flat_map<uint64_t, bool> m_visibleMsgThread;
     unordered_flat_map<uint64_t, bool> m_waitStackThread;

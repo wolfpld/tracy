@@ -863,24 +863,7 @@ void View::DrawInfo()
             m_sourceSubstitutions.erase( m_sourceSubstitutions.begin() + remove );
             changed = true;
         }
-
-        if( changed )
-        {
-            bool regexValid = true;
-            for( auto& v : m_sourceSubstitutions )
-            {
-                try
-                {
-                    v.regex.assign( v.pattern );
-                }
-                catch( std::regex_error& )
-                {
-                    regexValid = false;
-                    break;
-                }
-            }
-            m_sourceRegexValid = regexValid;
-        }
+        if( changed ) ValidateSourceRegex();
 
         ImGui::Checkbox("Enforce source file modification time older than trace capture time", &m_validateSourceAge);
 

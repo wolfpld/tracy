@@ -19,6 +19,10 @@ using CUDACtx = std::nullptr_t;
 #else
 #include <cupti.h>
 
+#if CUDA_VERSION < 12080
+#error "CUDA v12.8 (or later) is required by TracyCUDA.hpp"
+#endif
+
 #include <cassert>
 #include <cmath>
 #include <string>

@@ -372,7 +372,7 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                         }
                         else
                         {
-                            pdqsort_branchless( inSymList.begin(), inSymList.end(), []( const auto& l, const auto& r ) { return l.incl != l.incl ? l.incl > r.incl : l.symAddr < r.symAddr; } );
+                            pdqsort_branchless( inSymList.begin(), inSymList.end(), []( const auto& l, const auto& r ) { return l.incl != r.incl ? l.incl > r.incl : l.symAddr < r.symAddr; } );
                         }
                     }
 

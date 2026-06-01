@@ -9,7 +9,7 @@ namespace tracy
 
 void View::AddAnnotation( int64_t start, int64_t end )
 {
-    auto ann = std::make_unique<Annotation>();
+    auto ann = std::make_shared<Annotation>();
     ann->range.active = true;
     ann->range.min = start;
     ann->range.max = end;

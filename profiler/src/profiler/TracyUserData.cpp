@@ -174,7 +174,7 @@ void UserData::StateShouldBePreserved()
     m_preserveState = true;
 }
 
-void UserData::LoadAnnotations( std::vector<std::unique_ptr<Annotation>>& data )
+void UserData::LoadAnnotations( std::vector<std::shared_ptr<Annotation>>& data )
 {
     assert( Valid() );
     FILE* f = OpenFile( FileAnnotations, false );
@@ -211,7 +211,7 @@ void UserData::LoadAnnotations( std::vector<std::unique_ptr<Annotation>>& data )
     }
 }
 
-void UserData::StoreAnnotations( const std::vector<std::unique_ptr<Annotation>>& data )
+void UserData::StoreAnnotations( const std::vector<std::shared_ptr<Annotation>>& data )
 {
     if( !m_preserveState ) return;
     if( data.empty() )

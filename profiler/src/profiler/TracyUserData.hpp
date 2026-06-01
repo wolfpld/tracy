@@ -30,8 +30,8 @@ public:
     void StoreState( const ViewData& data );
     void StateShouldBePreserved();
 
-    void LoadAnnotations( std::vector<std::unique_ptr<Annotation>>& data );
-    void StoreAnnotations( const std::vector<std::unique_ptr<Annotation>>& data );
+    void LoadAnnotations( std::vector<std::shared_ptr<Annotation>>& data );
+    void StoreAnnotations( const std::vector<std::shared_ptr<Annotation>>& data );
 
     void LoadSourceSubstitutions( std::vector<SourceRegex>& data );
     void StoreSourceSubstitutions( const std::vector<SourceRegex>& data );

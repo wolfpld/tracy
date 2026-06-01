@@ -680,7 +680,7 @@ private:
     FrameImageCache m_FrameTextureCache;
     FrameImageCache m_FrameTextureCacheConnection;
 
-    std::vector<std::unique_ptr<Annotation>> m_annotations;
+    std::vector<std::shared_ptr<Annotation>> m_annotations;
     UserData m_userData;
 
     alignas(64) std::atomic<bool> m_wasActive { false };

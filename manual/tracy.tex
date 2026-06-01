@@ -1773,7 +1773,7 @@ Similar to Vulkan and OpenGL, you also need to periodically collect the OpenCL e
 
 \subsubsection{CUDA}
 
-CUDA support is enabled by including the \texttt{public/tracy/TracyCUDA.hpp} header file. To use it, make sure you have the NVIDIA CUDA Toolkit v12.8 (or later) installed, and that the NVIDIA CUPTI library is available in the tooklkit (located at \texttt{CUDA\_INSTALLATION\_PATH/extras/CUPTI}).
+CUDA support is enabled by including the \texttt{public/tracy/TracyCUDA.hpp} header file. To use it, make sure you have the NVIDIA CUDA Toolkit v12.8 (or later) installed, and that the NVIDIA CUPTI library is available in the toolkit (located at \texttt{CUDA\_INSTALLATION\_PATH/extras/CUPTI}).
 
 Tracing CUDA requires the creation of a Tracy CUDA context using the macro \texttt{TracyCUDAContext()}, which returns an instance of a \texttt{tracy::CUDACtx} object. TracyCUDA allows only a single \texttt{tracy::CUDACtx} object at any given time. Subsequent calls to \texttt{TracyCUDAContext()} will return the same reference-counted object. There is no need for clients to instantiate multiple \texttt{tracy::CUDACtx} objects, as a single context is capable of instrumenting all CUDA contexts and streams.
 

@@ -27,14 +27,14 @@ public:
     bool SetDescription( const char* description );
 
     void LoadState( ViewData& data );
-    void SaveState( const ViewData& data );
+    void StoreState( const ViewData& data );
     void StateShouldBePreserved();
 
     void LoadAnnotations( std::vector<std::unique_ptr<Annotation>>& data );
-    void SaveAnnotations( const std::vector<std::unique_ptr<Annotation>>& data );
+    void StoreAnnotations( const std::vector<std::unique_ptr<Annotation>>& data );
 
     void LoadSourceSubstitutions( std::vector<SourceRegex>& data );
-    void SaveSourceSubstitutions( const std::vector<SourceRegex>& data );
+    void StoreSourceSubstitutions( const std::vector<SourceRegex>& data );
 
     const char* GetConfigLocation() const;
 

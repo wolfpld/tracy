@@ -123,7 +123,7 @@ void UserData::LoadState( ViewData& data )
     }
 }
 
-void UserData::SaveState( const ViewData& data )
+void UserData::StoreState( const ViewData& data )
 {
     if( !m_preserveState ) return;
     assert( Valid() );
@@ -211,7 +211,7 @@ void UserData::LoadAnnotations( std::vector<std::unique_ptr<Annotation>>& data )
     }
 }
 
-void UserData::SaveAnnotations( const std::vector<std::unique_ptr<Annotation>>& data )
+void UserData::StoreAnnotations( const std::vector<std::unique_ptr<Annotation>>& data )
 {
     if( !m_preserveState ) return;
     if( data.empty() )
@@ -282,7 +282,7 @@ void UserData::LoadSourceSubstitutions( std::vector<SourceRegex>& data )
     }
 }
 
-void UserData::SaveSourceSubstitutions( const std::vector<SourceRegex>& data )
+void UserData::StoreSourceSubstitutions( const std::vector<SourceRegex>& data )
 {
     if( !m_preserveState ) return;
     if( data.empty() )

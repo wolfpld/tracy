@@ -35,9 +35,213 @@ UserData::UserData()
 UserData::UserData( const char* program, uint64_t time )
     : m_program( program )
     , m_time( time )
+    , m_preserveState( false )
 {
     if( m_program.empty() ) m_program = "_";
 
+    LoadLegacyDescription();
+    LoadLegacyState();
+    LoadLegacyAnnotations();
+    LoadLegacySourceSubstitutions();
+}
+
+void UserData::Init( const char* program, uint64_t time )
+{
+    assert( !Valid() );
+    m_program = program;
+    m_time = time;
+
+    if( m_program.empty() ) m_program = "_";
+}
+
+void UserData::SetDescription( const char* description )
+{
+    m_description = description;
+}
+
+void UserData::LoadState( ViewData& data )
+{
+    assert( m_preserveState );
+    assert( Valid() );
+
+    if( m_viewData.zvStart == 0 && m_viewData.zvEnd == 0 ) return;
+    data = m_viewData;
+}
+
+void UserData::StoreState( const ViewData& data )
+{
+    m_viewData = data;
+}
+
+void UserData::StateShouldBePreserved()
+{
+    m_preserveState = true;
+}
+
+void UserData::LoadAnnotations( std::vector<std::shared_ptr<Annotation>>& data )
+{
+    assert( m_preserveState );
+    assert( Valid() );
+    data = m_annotations;
+}
+
+void UserData::StoreAnnotations( const std::vector<std::shared_ptr<Annotation>>& data )
+{
+    m_annotations = data;
+}
+
+void UserData::LoadSourceSubstitutions( std::vector<SourceRegex>& data )
+{
+    assert( m_preserveState );
+    assert( Valid() );
+    data = m_sourceSubstitutions;
+}
+
+void UserData::StoreSourceSubstitutions( const std::vector<SourceRegex>& data )
+{
+    m_sourceSubstitutions = data;
+}
+
+void UserData::Save()
+{
+    if( !m_preserveState ) return;
+    assert( Valid() );
+
+    FILE* f;
+
+    f = OpenFile( FileDescription, true );
+    if( f )
+    {
+        fwrite( m_description.c_str(), 1, m_description.size(), f );
+        fclose( f );
+    }
+
+    f = OpenFile( FileTimeline, true );
+    if( f )
+    {
+        uint32_t ver = VersionTimeline;
+        fwrite( &ver, 1, sizeof( ver ), f );
+        fwrite( &m_viewData.zvStart, 1, sizeof( m_viewData.zvStart ), f );
+        fwrite( &m_viewData.zvEnd, 1, sizeof( m_viewData.zvEnd ), f );
+        float zero = 0;
+        fwrite( &zero, 1, sizeof( zero ), f );
+        fwrite( &zero, 1, sizeof( zero ), f );
+        fwrite( &m_viewData.frameScale, 1, sizeof( m_viewData.frameScale ), f );
+        fwrite( &m_viewData.frameStart, 1, sizeof( m_viewData.frameStart ), f );
+        fclose( f );
+    }
+
+    f = OpenFile( FileOptions, true );
+    if( f )
+    {
+        fprintf( f, "[options]\n" );
+        fprintf( f, "drawGpuZones = %d\n", m_viewData.drawGpuZones );
+        fprintf( f, "drawZones = %d\n", m_viewData.drawZones );
+        fprintf( f, "drawLocks = %d\n", m_viewData.drawLocks );
+        fprintf( f, "drawPlots = %d\n", m_viewData.drawPlots );
+        fprintf( f, "onlyContendedLocks = %d\n", m_viewData.onlyContendedLocks );
+        fprintf( f, "drawEmptyLabels = %d\n", m_viewData.drawEmptyLabels );
+        fprintf( f, "drawFrameTargets = %d\n", m_viewData.drawFrameTargets );
+        fprintf( f, "drawContextSwitches = %d\n", m_viewData.drawContextSwitches );
+        fprintf( f, "darkenContextSwitches = %d\n", m_viewData.darkenContextSwitches );
+        fprintf( f, "drawCpuData = %d\n", m_viewData.drawCpuData );
+        fprintf( f, "drawCpuUsageGraph = %d\n", m_viewData.drawCpuUsageGraph );
+        fprintf( f, "drawSamples = %d\n", m_viewData.drawSamples );
+        fprintf( f, "dynamicColors = %d\n", m_viewData.dynamicColors );
+        fprintf( f, "inheritParentColors = %d\n", m_viewData.inheritParentColors );
+        fprintf( f, "forceColors = %d\n", m_viewData.forceColors );
+        fprintf( f, "ghostZones = %d\n", m_viewData.ghostZones );
+        fprintf( f, "frameTarget = %d\n", m_viewData.frameTarget );
+        fprintf( f, "shortenName = %d\n", (int)m_viewData.shortenName );
+        fprintf( f, "plotHeight = %d\n", m_viewData.plotHeight );
+        fclose( f );
+    }
+
+    if( m_sourceSubstitutions.empty() )
+    {
+        Remove( FileSourceSubstitutions );
+    }
+    else
+    {
+        f = OpenFile( FileSourceSubstitutions, true );
+        if( f )
+        {
+            uint32_t ver = VersionSourceSubstitutions;
+            fwrite( &ver, 1, sizeof( ver ), f );
+            uint32_t sz = uint32_t( m_sourceSubstitutions.size() );
+            fwrite( &sz, 1, sizeof( sz ), f );
+            for( auto& v : m_sourceSubstitutions )
+            {
+                sz = uint32_t( v.pattern.size() );
+                fwrite( &sz, 1, sizeof( sz ), f );
+                if( sz != 0 )
+                {
+                    fwrite( v.pattern.c_str(), 1, sz, f );
+                }
+                sz = uint32_t( v.target.size() );
+                fwrite( &sz, 1, sizeof( sz ), f );
+                if( sz != 0 )
+                {
+                    fwrite( v.target.c_str(), 1, sz, f );
+                }
+            }
+            fclose( f );
+        }
+    }
+
+    if( m_annotations.empty() )
+    {
+        Remove( FileAnnotations );
+    }
+    else
+    {
+        f = OpenFile( FileAnnotations, true );
+        if( f )
+        {
+            uint32_t ver = VersionAnnotations;
+            fwrite( &ver, 1, sizeof( ver ), f );
+            uint32_t sz = uint32_t( m_annotations.size() );
+            fwrite( &sz, 1, sizeof( sz ), f );
+            for( auto& ann : m_annotations )
+            {
+                sz = uint32_t( ann->text.size() );
+                fwrite( &sz, 1, sizeof( sz ), f );
+                if( sz != 0 )
+                {
+                    fwrite( ann->text.c_str(), 1, sz, f );
+                }
+                fwrite( &ann->range.min, 1, sizeof( ann->range.min ), f );
+                fwrite( &ann->range.max, 1, sizeof( ann->range.max ), f );
+                fwrite( &ann->color, 1, sizeof( ann->color ), f );
+            }
+            fclose( f );
+        }
+    }
+}
+
+FILE* UserData::OpenFile( const char* filename, bool write )
+{
+    const auto path = GetSavePath( m_program.c_str(), m_time, filename, write );
+    if( !path ) return nullptr;
+    FILE* f = fopen( path, write ? "wb" : "rb" );
+    return f;
+}
+
+void UserData::Remove( const char* filename )
+{
+    const auto path = GetSavePath( m_program.c_str(), m_time, filename, false );
+    if( !path ) return;
+    unlink( path );
+}
+
+const char* UserData::GetConfigLocation() const
+{
+    assert( Valid() );
+    return GetSavePath( m_program.c_str(), m_time, nullptr, false );
+}
+
+void UserData::LoadLegacyDescription()
+{
     FILE* f = OpenFile( FileDescription, false );
     if( f )
     {
@@ -51,33 +255,8 @@ UserData::UserData( const char* program, uint64_t time )
     }
 }
 
-void UserData::Init( const char* program, uint64_t time )
+void UserData::LoadLegacyState()
 {
-    assert( !Valid() );
-    m_program = program;
-    m_time = time;
-
-    if( m_program.empty() ) m_program = "_";
-}
-
-bool UserData::SetDescription( const char* description )
-{
-    assert( Valid() );
-
-    m_description = description;
-    const auto sz = m_description.size();
-
-    FILE* f = OpenFile( FileDescription, true );
-    if( !f ) return false;
-
-    fwrite( description, 1, sz, f );
-    fclose( f );
-    return true;
-}
-
-void UserData::LoadState( ViewData& data )
-{
-    assert( Valid() );
     FILE* f = OpenFile( FileTimeline, false );
     if( f )
     {
@@ -85,11 +264,11 @@ void UserData::LoadState( ViewData& data )
         fread( &ver, 1, sizeof( ver ), f );
         if( ver == VersionTimeline )
         {
-            fread( &data.zvStart, 1, sizeof( data.zvStart ), f );
-            fread( &data.zvEnd, 1, sizeof( data.zvEnd ), f );
+            fread( &m_viewData.zvStart, 1, sizeof( m_viewData.zvStart ), f );
+            fread( &m_viewData.zvEnd, 1, sizeof( m_viewData.zvEnd ), f );
             fseek( f, sizeof( float ) * 2, SEEK_CUR );
-            fread( &data.frameScale, 1, sizeof( data.frameScale ), f );
-            fread( &data.frameStart, 1, sizeof( data.frameStart ), f );
+            fread( &m_viewData.frameScale, 1, sizeof( m_viewData.frameScale ), f );
+            fread( &m_viewData.frameStart, 1, sizeof( m_viewData.frameStart ), f );
         }
         fclose( f );
     }
@@ -100,83 +279,31 @@ void UserData::LoadState( ViewData& data )
     if( ini )
     {
         int v;
-        if( ini_sget( ini, "options", "drawGpuZones", "%d", &v ) ) data.drawGpuZones = v;
-        if( ini_sget( ini, "options", "drawZones", "%d", &v ) ) data.drawZones = v;
-        if( ini_sget( ini, "options", "drawLocks", "%d", &v ) ) data.drawLocks = v;
-        if( ini_sget( ini, "options", "drawPlots", "%d", &v ) ) data.drawPlots = v;
-        if( ini_sget( ini, "options", "onlyContendedLocks", "%d", &v ) ) data.onlyContendedLocks = v;
-        if( ini_sget( ini, "options", "drawEmptyLabels", "%d", &v ) ) data.drawEmptyLabels = v;
-        if( ini_sget( ini, "options", "drawFrameTargets", "%d", &v ) ) data.drawFrameTargets = v;
-        if( ini_sget( ini, "options", "drawContextSwitches", "%d", &v ) ) data.drawContextSwitches = v;
-        if( ini_sget( ini, "options", "darkenContextSwitches", "%d", &v ) ) data.darkenContextSwitches = v;
-        if( ini_sget( ini, "options", "drawCpuData", "%d", &v ) ) data.drawCpuData = v;
-        if( ini_sget( ini, "options", "drawCpuUsageGraph", "%d", &v ) ) data.drawCpuUsageGraph = v;
-        if( ini_sget( ini, "options", "drawSamples", "%d", &v ) ) data.drawSamples = v;
-        if( ini_sget( ini, "options", "dynamicColors", "%d", &v ) ) data.dynamicColors = v;
-        if( ini_sget( ini, "options", "inheritParentColors", "%d", &v ) ) data.inheritParentColors = v;
-        if( ini_sget( ini, "options", "forceColors", "%d", &v ) ) data.forceColors = v;
-        if( ini_sget( ini, "options", "ghostZones", "%d", &v ) ) data.ghostZones = v;
-        if( ini_sget( ini, "options", "frameTarget", "%d", &v ) ) data.frameTarget = v;
-        if( ini_sget( ini, "options", "shortenName", "%d", &v ) ) data.shortenName = (ShortenName)v;
-        if( ini_sget( ini, "options", "plotHeight", "%d", &v ) ) data.plotHeight = v;
+        if( ini_sget( ini, "options", "drawGpuZones", "%d", &v ) ) m_viewData.drawGpuZones = v;
+        if( ini_sget( ini, "options", "drawZones", "%d", &v ) ) m_viewData.drawZones = v;
+        if( ini_sget( ini, "options", "drawLocks", "%d", &v ) ) m_viewData.drawLocks = v;
+        if( ini_sget( ini, "options", "drawPlots", "%d", &v ) ) m_viewData.drawPlots = v;
+        if( ini_sget( ini, "options", "onlyContendedLocks", "%d", &v ) ) m_viewData.onlyContendedLocks = v;
+        if( ini_sget( ini, "options", "drawEmptyLabels", "%d", &v ) ) m_viewData.drawEmptyLabels = v;
+        if( ini_sget( ini, "options", "drawFrameTargets", "%d", &v ) ) m_viewData.drawFrameTargets = v;
+        if( ini_sget( ini, "options", "drawContextSwitches", "%d", &v ) ) m_viewData.drawContextSwitches = v;
+        if( ini_sget( ini, "options", "darkenContextSwitches", "%d", &v ) ) m_viewData.darkenContextSwitches = v;
+        if( ini_sget( ini, "options", "drawCpuData", "%d", &v ) ) m_viewData.drawCpuData = v;
+        if( ini_sget( ini, "options", "drawCpuUsageGraph", "%d", &v ) ) m_viewData.drawCpuUsageGraph = v;
+        if( ini_sget( ini, "options", "drawSamples", "%d", &v ) ) m_viewData.drawSamples = v;
+        if( ini_sget( ini, "options", "dynamicColors", "%d", &v ) ) m_viewData.dynamicColors = v;
+        if( ini_sget( ini, "options", "inheritParentColors", "%d", &v ) ) m_viewData.inheritParentColors = v;
+        if( ini_sget( ini, "options", "forceColors", "%d", &v ) ) m_viewData.forceColors = v;
+        if( ini_sget( ini, "options", "ghostZones", "%d", &v ) ) m_viewData.ghostZones = v;
+        if( ini_sget( ini, "options", "frameTarget", "%d", &v ) ) m_viewData.frameTarget = v;
+        if( ini_sget( ini, "options", "shortenName", "%d", &v ) ) m_viewData.shortenName = (ShortenName)v;
+        if( ini_sget( ini, "options", "plotHeight", "%d", &v ) ) m_viewData.plotHeight = v;
         ini_free( ini );
     }
 }
 
-void UserData::StoreState( const ViewData& data )
+void UserData::LoadLegacyAnnotations()
 {
-    if( !m_preserveState ) return;
-    assert( Valid() );
-    FILE* f = OpenFile( FileTimeline, true );
-    if( f )
-    {
-        uint32_t ver = VersionTimeline;
-        fwrite( &ver, 1, sizeof( ver ), f );
-        fwrite( &data.zvStart, 1, sizeof( data.zvStart ), f );
-        fwrite( &data.zvEnd, 1, sizeof( data.zvEnd ), f );
-        float zero = 0;
-        fwrite( &zero, 1, sizeof( zero ), f );
-        fwrite( &zero, 1, sizeof( zero ), f );
-        fwrite( &data.frameScale, 1, sizeof( data.frameScale ), f );
-        fwrite( &data.frameStart, 1, sizeof( data.frameStart ), f );
-        fclose( f );
-    }
-
-    f = OpenFile( FileOptions, true );
-    if( f )
-    {
-        fprintf( f, "[options]\n" );
-        fprintf( f, "drawGpuZones = %d\n", data.drawGpuZones );
-        fprintf( f, "drawZones = %d\n", data.drawZones );
-        fprintf( f, "drawLocks = %d\n", data.drawLocks );
-        fprintf( f, "drawPlots = %d\n", data.drawPlots );
-        fprintf( f, "onlyContendedLocks = %d\n", data.onlyContendedLocks );
-        fprintf( f, "drawEmptyLabels = %d\n", data.drawEmptyLabels );
-        fprintf( f, "drawFrameTargets = %d\n", data.drawFrameTargets );
-        fprintf( f, "drawContextSwitches = %d\n", data.drawContextSwitches );
-        fprintf( f, "darkenContextSwitches = %d\n", data.darkenContextSwitches );
-        fprintf( f, "drawCpuData = %d\n", data.drawCpuData );
-        fprintf( f, "drawCpuUsageGraph = %d\n", data.drawCpuUsageGraph );
-        fprintf( f, "drawSamples = %d\n", data.drawSamples );
-        fprintf( f, "dynamicColors = %d\n", data.dynamicColors );
-        fprintf( f, "inheritParentColors = %d\n", data.inheritParentColors );
-        fprintf( f, "forceColors = %d\n", data.forceColors );
-        fprintf( f, "ghostZones = %d\n", data.ghostZones );
-        fprintf( f, "frameTarget = %d\n", data.frameTarget );
-        fprintf( f, "shortenName = %d\n", (int)data.shortenName );
-        fprintf( f, "plotHeight = %d\n", data.plotHeight );
-        fclose( f );
-    }
-}
-
-void UserData::StateShouldBePreserved()
-{
-    m_preserveState = true;
-}
-
-void UserData::LoadAnnotations( std::vector<std::shared_ptr<Annotation>>& data )
-{
-    assert( Valid() );
     FILE* f = OpenFile( FileAnnotations, false );
     if( f )
     {
@@ -204,48 +331,15 @@ void UserData::LoadAnnotations( std::vector<std::shared_ptr<Annotation>>& data )
                 fread( &ann->color, 1, sizeof( ann->color ), f );
                 ann->range.active = true;
 
-                data.emplace_back( std::move( ann ) );
+                m_annotations.emplace_back( std::move( ann ) );
             }
         }
         fclose( f );
     }
 }
 
-void UserData::StoreAnnotations( const std::vector<std::shared_ptr<Annotation>>& data )
+void UserData::LoadLegacySourceSubstitutions()
 {
-    if( !m_preserveState ) return;
-    if( data.empty() )
-    {
-        Remove( FileAnnotations );
-        return;
-    }
-    assert( Valid() );
-    FILE* f = OpenFile( FileAnnotations, true );
-    if( f )
-    {
-        uint32_t ver = VersionAnnotations;
-        fwrite( &ver, 1, sizeof( ver ), f );
-        uint32_t sz = uint32_t( data.size() );
-        fwrite( &sz, 1, sizeof( sz ), f );
-        for( auto& ann : data )
-        {
-            sz = uint32_t( ann->text.size() );
-            fwrite( &sz, 1, sizeof( sz ), f );
-            if( sz != 0 )
-            {
-                fwrite( ann->text.c_str(), 1, sz, f );
-            }
-            fwrite( &ann->range.min, 1, sizeof( ann->range.min ), f );
-            fwrite( &ann->range.max, 1, sizeof( ann->range.max ), f );
-            fwrite( &ann->color, 1, sizeof( ann->color ), f );
-        }
-        fclose( f );
-    }
-}
-
-void UserData::LoadSourceSubstitutions( std::vector<SourceRegex>& data )
-{
-    assert( Valid() );
     FILE* f = OpenFile( FileSourceSubstitutions, false );
     if( f )
     {
@@ -275,68 +369,11 @@ void UserData::LoadSourceSubstitutions( std::vector<SourceRegex>& data )
                     fread( buf, 1, tsz, f );
                     target.assign( buf, tsz );
                 }
-                data.emplace_back( SourceRegex { std::move( pattern ), std::move( target ) } );
+                m_sourceSubstitutions.emplace_back( SourceRegex { std::move( pattern ), std::move( target ) } );
             }
         }
         fclose( f );
     }
-}
-
-void UserData::StoreSourceSubstitutions( const std::vector<SourceRegex>& data )
-{
-    if( !m_preserveState ) return;
-    if( data.empty() )
-    {
-        Remove( FileSourceSubstitutions );
-        return;
-    }
-    assert( Valid() );
-    FILE* f = OpenFile( FileSourceSubstitutions, true );
-    if( f )
-    {
-        uint32_t ver = VersionSourceSubstitutions;
-        fwrite( &ver, 1, sizeof( ver ), f );
-        uint32_t sz = uint32_t( data.size() );
-        fwrite( &sz, 1, sizeof( sz ), f );
-        for( auto& v : data )
-        {
-            sz = uint32_t( v.pattern.size() );
-            fwrite( &sz, 1, sizeof( sz ), f );
-            if( sz != 0 )
-            {
-                fwrite( v.pattern.c_str(), 1, sz, f );
-            }
-            sz = uint32_t( v.target.size() );
-            fwrite( &sz, 1, sizeof( sz ), f );
-            if( sz != 0 )
-            {
-                fwrite( v.target.c_str(), 1, sz, f );
-            }
-        }
-        fclose( f );
-    }
-}
-
-
-FILE* UserData::OpenFile( const char* filename, bool write )
-{
-    const auto path = GetSavePath( m_program.c_str(), m_time, filename, write );
-    if( !path ) return nullptr;
-    FILE* f = fopen( path, write ? "wb" : "rb" );
-    return f;
-}
-
-void UserData::Remove( const char* filename )
-{
-    const auto path = GetSavePath( m_program.c_str(), m_time, filename, false );
-    if( !path ) return;
-    unlink( path );
-}
-
-const char* UserData::GetConfigLocation() const
-{
-    assert( Valid() );
-    return GetSavePath( m_program.c_str(), m_time, nullptr, false );
 }
 
 }

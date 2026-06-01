@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#include "TracyViewData.hpp"
+
 namespace tracy
 {
 
@@ -24,7 +26,7 @@ public:
     void Init( const char* program, uint64_t time );
 
     const std::string& GetDescription() const { return m_description; }
-    bool SetDescription( const char* description );
+    void SetDescription( const char* description );
 
     void LoadState( ViewData& data );
     void StoreState( const ViewData& data );
@@ -36,16 +38,26 @@ public:
     void LoadSourceSubstitutions( std::vector<SourceRegex>& data );
     void StoreSourceSubstitutions( const std::vector<SourceRegex>& data );
 
+    void Save();
+
     const char* GetConfigLocation() const;
 
 private:
     FILE* OpenFile( const char* filename, bool write );
     void Remove( const char* filename );
 
+    void LoadLegacyDescription();
+    void LoadLegacyState();
+    void LoadLegacyAnnotations();
+    void LoadLegacySourceSubstitutions();
+
     std::string m_program;
     uint64_t m_time;
 
     std::string m_description;
+    ViewData m_viewData;
+    std::vector<std::shared_ptr<Annotation>> m_annotations;
+    std::vector<SourceRegex> m_sourceSubstitutions;
 
     bool m_preserveState;
 };

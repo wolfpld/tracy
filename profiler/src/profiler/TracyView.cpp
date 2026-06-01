@@ -119,6 +119,7 @@ View::~View()
     m_userData.StoreState( m_vd );
     m_userData.StoreAnnotations( m_annotations );
     m_userData.StoreSourceSubstitutions( m_sourceSubstitutions );
+    m_userData.Save();
 
     if( m_compare.loadThread.joinable() ) m_compare.loadThread.join();
     if( m_saveThread.joinable() ) m_saveThread.join();

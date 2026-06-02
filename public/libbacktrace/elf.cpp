@@ -4638,6 +4638,11 @@ elf_zstd_decompress_frame (const unsigned char **ppin,
 		pin += 2;
 	      }
 
+	    pback = NULL;
+	    bits = 0;
+	    literal_state = 0;
+	    offset_state = 0;
+	    match_state = 0;
 	    if (seq_count > 0)
 	      {
 		int (*pfn)(const struct elf_zstd_fse_entry *,
@@ -4677,27 +4682,27 @@ elf_zstd_decompress_frame (const unsigned char **ppin,
 						 match_fse_table, 9, pfn,
 						 &match_decode))
 		  return 0;
+
+		pback = pblockend - 1;
+		if (!elf_fetch_backward_init (&pback, pin, &val, &bits))
+		  return 0;
+
+		bits -= literal_decode.table_bits;
+		literal_state = ((val >> bits)
+				 & ((1U << literal_decode.table_bits) - 1));
+
+		if (!elf_fetch_bits_backward (&pback, pin, &val, &bits))
+		  return 0;
+		bits -= offset_decode.table_bits;
+		offset_state = ((val >> bits)
+				& ((1U << offset_decode.table_bits) - 1));
+
+		if (!elf_fetch_bits_backward (&pback, pin, &val, &bits))
+		  return 0;
+		bits -= match_decode.table_bits;
+		match_state = ((val >> bits)
+			       & ((1U << match_decode.table_bits) - 1));
 	      }
-
-	    pback = pblockend - 1;
-	    if (!elf_fetch_backward_init (&pback, pin, &val, &bits))
-	      return 0;
-
-	    bits -= literal_decode.table_bits;
-	    literal_state = ((val >> bits)
-			     & ((1U << literal_decode.table_bits) - 1));
-
-	    if (!elf_fetch_bits_backward (&pback, pin, &val, &bits))
-	      return 0;
-	    bits -= offset_decode.table_bits;
-	    offset_state = ((val >> bits)
-			    & ((1U << offset_decode.table_bits) - 1));
-
-	    if (!elf_fetch_bits_backward (&pback, pin, &val, &bits))
-	      return 0;
-	    bits -= match_decode.table_bits;
-	    match_state = ((val >> bits)
-			   & ((1U << match_decode.table_bits) - 1));
 
 	    seq = 0;
 	    while (1)
@@ -4718,6 +4723,40 @@ elf_zstd_decompress_frame (const unsigned char **ppin,
 		uint32_t literal;
 		uint32_t need;
 		uint32_t add;
+
+		if (unlikely (seq >= seq_count))
+		  {
+		    /* Copy remaining literals.  */
+		    if (literal_count > 0 && plit != pout)
+		      {
+			if (unlikely ((size_t)(poutend - pout)
+				      < literal_count))
+			  {
+			    elf_uncompress_failed ();
+			    return 0;
+			  }
+
+			if ((size_t)(plit - pout) < literal_count)
+			  {
+			    uint32_t move;
+
+			    move = plit - pout;
+			    while (literal_count > move)
+			      {
+				memcpy (pout, plit, move);
+				pout += move;
+				plit += move;
+				literal_count -= move;
+			      }
+			  }
+
+			memcpy (pout, plit, literal_count);
+		      }
+
+		    pout += literal_count;
+
+		    break;
+		  }
 
 		pt = &offset_decode.table[offset_state];
 		offset_basebits = pt->basebits;
@@ -4955,40 +4994,6 @@ elf_zstd_decompress_frame (const unsigned char **ppin,
 			    pout += copy;
 			  }
 		      }
-		  }
-
-		if (unlikely (seq >= seq_count))
-		  {
-		    /* Copy remaining literals.  */
-		    if (literal_count > 0 && plit != pout)
-		      {
-			if (unlikely ((size_t)(poutend - pout)
-				      < literal_count))
-			  {
-			    elf_uncompress_failed ();
-			    return 0;
-			  }
-
-			if ((size_t)(plit - pout) < literal_count)
-			  {
-			    uint32_t move;
-
-			    move = plit - pout;
-			    while (literal_count > move)
-			      {
-				memcpy (pout, plit, move);
-				pout += move;
-				plit += move;
-				literal_count -= move;
-			      }
-			  }
-
-			memcpy (pout, plit, literal_count);
-		      }
-
-		    pout += literal_count;
-
-		    break;
 		  }
 	      }
 

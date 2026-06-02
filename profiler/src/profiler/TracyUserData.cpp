@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <memory>
+#include <nlohmann/json.hpp>
 
 #ifdef _WIN32
 #  include <stdio.h>
@@ -16,17 +17,6 @@
 namespace tracy
 {
 
-constexpr auto FileDescription = "description";
-constexpr auto FileTimeline = "timeline";
-constexpr auto FileOptions = "options";
-constexpr auto FileAnnotations = "annotations";
-constexpr auto FileSourceSubstitutions = "srcsub";
-
-constexpr uint32_t VersionTimeline = 0;
-constexpr uint32_t VersionOptions = 7;
-constexpr uint32_t VersionAnnotations = 0;
-constexpr uint32_t VersionSourceSubstitutions = 0;
-
 UserData::UserData()
     : m_preserveState( false )
 {
@@ -39,10 +29,13 @@ UserData::UserData( const char* program, uint64_t time )
 {
     if( m_program.empty() ) m_program = "_";
 
-    LoadLegacyDescription();
-    LoadLegacyState();
-    LoadLegacyAnnotations();
-    LoadLegacySourceSubstitutions();
+    if( !Load() )
+    {
+        LoadLegacyDescription();
+        LoadLegacyState();
+        LoadLegacyAnnotations();
+        LoadLegacySourceSubstitutions();
+    }
 }
 
 void UserData::Init( const char* program, uint64_t time )
@@ -107,142 +100,193 @@ void UserData::Save()
     if( !m_preserveState ) return;
     assert( Valid() );
 
-    FILE* f;
+    nlohmann::json json = {
+        { "description", m_description },
+        { "viewData", {
+            { "zvStart", m_viewData.zvStart },
+            { "zvEnd", m_viewData.zvEnd },
+            { "frameScale", m_viewData.frameScale },
+            { "frameStart", m_viewData.frameStart }
+        } },
+        { "options", {
+            { "drawGpuZones", m_viewData.drawGpuZones },
+            { "drawZones", m_viewData.drawZones },
+            { "drawLocks", m_viewData.drawLocks },
+            { "drawPlots", m_viewData.drawPlots },
+            { "onlyContendedLocks", m_viewData.onlyContendedLocks },
+            { "drawEmptyLabels", m_viewData.drawEmptyLabels },
+            { "drawFrameTargets", m_viewData.drawFrameTargets },
+            { "drawContextSwitches", m_viewData.drawContextSwitches },
+            { "darkenContextSwitches", m_viewData.darkenContextSwitches },
+            { "drawCpuData", m_viewData.drawCpuData },
+            { "drawCpuUsageGraph", m_viewData.drawCpuUsageGraph },
+            { "drawSamples", m_viewData.drawSamples },
+            { "dynamicColors", m_viewData.dynamicColors },
+            { "inheritParentColors", m_viewData.inheritParentColors },
+            { "forceColors", m_viewData.forceColors },
+            { "ghostZones", m_viewData.ghostZones },
+            { "frameTarget", m_viewData.frameTarget },
+            { "shortenName", (int)m_viewData.shortenName },
+            { "plotHeight", m_viewData.plotHeight },
+        } },
+    };
 
-    f = OpenFile( FileDescription, true );
-    if( f )
+    if( !m_sourceSubstitutions.empty() )
     {
-        fwrite( m_description.c_str(), 1, m_description.size(), f );
-        fclose( f );
-    }
-
-    f = OpenFile( FileTimeline, true );
-    if( f )
-    {
-        uint32_t ver = VersionTimeline;
-        fwrite( &ver, 1, sizeof( ver ), f );
-        fwrite( &m_viewData.zvStart, 1, sizeof( m_viewData.zvStart ), f );
-        fwrite( &m_viewData.zvEnd, 1, sizeof( m_viewData.zvEnd ), f );
-        float zero = 0;
-        fwrite( &zero, 1, sizeof( zero ), f );
-        fwrite( &zero, 1, sizeof( zero ), f );
-        fwrite( &m_viewData.frameScale, 1, sizeof( m_viewData.frameScale ), f );
-        fwrite( &m_viewData.frameStart, 1, sizeof( m_viewData.frameStart ), f );
-        fclose( f );
-    }
-
-    f = OpenFile( FileOptions, true );
-    if( f )
-    {
-        fprintf( f, "[options]\n" );
-        fprintf( f, "drawGpuZones = %d\n", m_viewData.drawGpuZones );
-        fprintf( f, "drawZones = %d\n", m_viewData.drawZones );
-        fprintf( f, "drawLocks = %d\n", m_viewData.drawLocks );
-        fprintf( f, "drawPlots = %d\n", m_viewData.drawPlots );
-        fprintf( f, "onlyContendedLocks = %d\n", m_viewData.onlyContendedLocks );
-        fprintf( f, "drawEmptyLabels = %d\n", m_viewData.drawEmptyLabels );
-        fprintf( f, "drawFrameTargets = %d\n", m_viewData.drawFrameTargets );
-        fprintf( f, "drawContextSwitches = %d\n", m_viewData.drawContextSwitches );
-        fprintf( f, "darkenContextSwitches = %d\n", m_viewData.darkenContextSwitches );
-        fprintf( f, "drawCpuData = %d\n", m_viewData.drawCpuData );
-        fprintf( f, "drawCpuUsageGraph = %d\n", m_viewData.drawCpuUsageGraph );
-        fprintf( f, "drawSamples = %d\n", m_viewData.drawSamples );
-        fprintf( f, "dynamicColors = %d\n", m_viewData.dynamicColors );
-        fprintf( f, "inheritParentColors = %d\n", m_viewData.inheritParentColors );
-        fprintf( f, "forceColors = %d\n", m_viewData.forceColors );
-        fprintf( f, "ghostZones = %d\n", m_viewData.ghostZones );
-        fprintf( f, "frameTarget = %d\n", m_viewData.frameTarget );
-        fprintf( f, "shortenName = %d\n", (int)m_viewData.shortenName );
-        fprintf( f, "plotHeight = %d\n", m_viewData.plotHeight );
-        fclose( f );
-    }
-
-    if( m_sourceSubstitutions.empty() )
-    {
-        Remove( FileSourceSubstitutions );
-    }
-    else
-    {
-        f = OpenFile( FileSourceSubstitutions, true );
-        if( f )
+        json["sourceSubstitutions"] = nlohmann::json::array();
+        for( auto& v : m_sourceSubstitutions )
         {
-            uint32_t ver = VersionSourceSubstitutions;
-            fwrite( &ver, 1, sizeof( ver ), f );
-            uint32_t sz = uint32_t( m_sourceSubstitutions.size() );
-            fwrite( &sz, 1, sizeof( sz ), f );
-            for( auto& v : m_sourceSubstitutions )
-            {
-                sz = uint32_t( v.pattern.size() );
-                fwrite( &sz, 1, sizeof( sz ), f );
-                if( sz != 0 )
-                {
-                    fwrite( v.pattern.c_str(), 1, sz, f );
-                }
-                sz = uint32_t( v.target.size() );
-                fwrite( &sz, 1, sizeof( sz ), f );
-                if( sz != 0 )
-                {
-                    fwrite( v.target.c_str(), 1, sz, f );
-                }
-            }
-            fclose( f );
+            json["sourceSubstitutions"].push_back( {
+                { "pattern", v.pattern },
+                { "target", v.target }
+            } );
         }
     }
 
-    if( m_annotations.empty() )
+    if( !m_annotations.empty() )
     {
-        Remove( FileAnnotations );
-    }
-    else
-    {
-        f = OpenFile( FileAnnotations, true );
-        if( f )
+        json["annotations"] = nlohmann::json::array();
+        for( auto& v : m_annotations )
         {
-            uint32_t ver = VersionAnnotations;
-            fwrite( &ver, 1, sizeof( ver ), f );
-            uint32_t sz = uint32_t( m_annotations.size() );
-            fwrite( &sz, 1, sizeof( sz ), f );
-            for( auto& ann : m_annotations )
-            {
-                sz = uint32_t( ann->text.size() );
-                fwrite( &sz, 1, sizeof( sz ), f );
-                if( sz != 0 )
-                {
-                    fwrite( ann->text.c_str(), 1, sz, f );
-                }
-                fwrite( &ann->range.min, 1, sizeof( ann->range.min ), f );
-                fwrite( &ann->range.max, 1, sizeof( ann->range.max ), f );
-                fwrite( &ann->color, 1, sizeof( ann->color ), f );
-            }
-            fclose( f );
+            json["annotations"].push_back( {
+                { "text", v->text },
+                { "min", v->range.min },
+                { "max", v->range.max },
+                { "color", v->color }
+            } );
         }
+    }
+
+    auto f = OpenFile( true );
+    if( f )
+    {
+        auto str = json.dump( 2 );
+        fwrite( str.c_str(), 1, str.size(), f );
+        fclose( f );
     }
 }
 
-FILE* UserData::OpenFile( const char* filename, bool write )
+template<typename T>
+static bool LoadValue( const nlohmann::json& json, const char* key, T& value )
 {
-    const auto path = GetSavePath( m_program.c_str(), m_time, filename, write );
+    if( !json.contains( key ) ) return false;
+    value = json[key].get<T>();
+    return true;
+}
+
+template<typename T>
+static bool LoadValueCast( const nlohmann::json& json, const char* key, T& value )
+{
+    if( !json.contains( key ) ) return false;
+    value = (T)json[key].get<int>();
+    return true;
+}
+
+bool UserData::Load()
+{
+    auto f = OpenFile( false );
+    if( !f ) return false;
+
+    try
+    {
+        auto json = nlohmann::json::parse( f );
+
+        LoadValue( json, "description", m_description );
+
+        if( json.contains( "viewData" ) )
+        {
+            const auto& viewData = json["viewData"];
+            LoadValue( viewData, "zvStart", m_viewData.zvStart );
+            LoadValue( viewData, "zvEnd", m_viewData.zvEnd );
+            LoadValue( viewData, "frameScale", m_viewData.frameScale );
+            LoadValue( viewData, "frameStart", m_viewData.frameStart );
+        }
+
+        if( json.contains( "options" ) )
+        {
+            const auto& options = json["options"];
+            LoadValue( options, "drawGpuZones", m_viewData.drawGpuZones );
+            LoadValue( options, "drawZones", m_viewData.drawZones );
+            LoadValue( options, "drawLocks", m_viewData.drawLocks );
+            LoadValue( options, "drawPlots", m_viewData.drawPlots );
+            LoadValue( options, "onlyContendedLocks", m_viewData.onlyContendedLocks );
+            LoadValue( options, "drawEmptyLabels", m_viewData.drawEmptyLabels );
+            LoadValue( options, "drawFrameTargets", m_viewData.drawFrameTargets );
+            LoadValue( options, "drawContextSwitches", m_viewData.drawContextSwitches );
+            LoadValue( options, "darkenContextSwitches", m_viewData.darkenContextSwitches );
+            LoadValue( options, "drawCpuData", m_viewData.drawCpuData );
+            LoadValue( options, "drawCpuUsageGraph", m_viewData.drawCpuUsageGraph );
+            LoadValue( options, "drawSamples", m_viewData.drawSamples );
+            LoadValue( options, "dynamicColors", m_viewData.dynamicColors );
+            LoadValue( options, "inheritParentColors", m_viewData.inheritParentColors );
+            LoadValue( options, "forceColors", m_viewData.forceColors );
+            LoadValue( options, "ghostZones", m_viewData.ghostZones );
+            LoadValue( options, "frameTarget", m_viewData.frameTarget );
+            LoadValueCast( options, "shortenName", m_viewData.shortenName );
+            LoadValue( options, "plotHeight", m_viewData.plotHeight );
+        }
+
+        if( json.contains( "sourceSubstitutions" ) )
+        {
+            for( auto& v : json["sourceSubstitutions"] )
+            {
+                SourceRegex s;
+                LoadValue( v, "pattern", s.pattern );
+                LoadValue( v, "target", s.target );
+                m_sourceSubstitutions.emplace_back( std::move( s ) );
+            }
+        }
+
+        if( json.contains( "annotations" ) )
+        {
+            for( auto& v : json["annotations"] )
+            {
+                auto a = std::make_unique<Annotation>();
+                LoadValue( v, "text", a->text );
+                LoadValue( v, "min", a->range.min );
+                LoadValue( v, "max", a->range.max );
+                LoadValue( v, "color", a->color );
+                m_annotations.emplace_back( std::move( a ) );
+            }
+        }
+    }
+    catch( nlohmann::json::exception& )
+    {
+        fclose( f );
+        return true;
+    }
+
+    fclose( f );
+    return true;
+}
+
+FILE* UserData::OpenFile( bool write )
+{
+    const auto path = GetSavePath( m_program.c_str(), m_time, write );
     if( !path ) return nullptr;
     FILE* f = fopen( path, write ? "wb" : "rb" );
     return f;
 }
 
-void UserData::Remove( const char* filename )
+FILE* UserData::OpenFileLegacy( const char* filename )
 {
-    const auto path = GetSavePath( m_program.c_str(), m_time, filename, false );
-    if( !path ) return;
-    unlink( path );
+    const auto path = GetSavePathLegacy( m_program.c_str(), m_time, filename );
+    if( !path ) return nullptr;
+    FILE* f = fopen( path, "rb" );
+    return f;
 }
 
 const char* UserData::GetConfigLocation() const
 {
     assert( Valid() );
-    return GetSavePath( m_program.c_str(), m_time, nullptr, false );
+    return GetSavePathLegacy( m_program.c_str(), m_time, nullptr );
 }
 
 void UserData::LoadLegacyDescription()
 {
-    FILE* f = OpenFile( FileDescription, false );
+    constexpr auto FileDescription = "description";
+
+    FILE* f = OpenFileLegacy( FileDescription );
     if( f )
     {
         fseek( f, 0, SEEK_END );
@@ -257,12 +301,15 @@ void UserData::LoadLegacyDescription()
 
 void UserData::LoadLegacyState()
 {
-    FILE* f = OpenFile( FileTimeline, false );
+    constexpr auto FileTimeline = "timeline";
+    constexpr auto FileOptions = "options";
+
+    FILE* f = OpenFileLegacy( FileTimeline );
     if( f )
     {
         uint32_t ver;
         fread( &ver, 1, sizeof( ver ), f );
-        if( ver == VersionTimeline )
+        if( ver == 0 )
         {
             fread( &m_viewData.zvStart, 1, sizeof( m_viewData.zvStart ), f );
             fread( &m_viewData.zvEnd, 1, sizeof( m_viewData.zvEnd ), f );
@@ -273,7 +320,7 @@ void UserData::LoadLegacyState()
         fclose( f );
     }
 
-    const auto path = GetSavePath( m_program.c_str(), m_time, FileOptions, false );
+    const auto path = GetSavePathLegacy( m_program.c_str(), m_time, FileOptions );
     assert( path );
     auto ini = ini_load( path );
     if( ini )
@@ -304,12 +351,13 @@ void UserData::LoadLegacyState()
 
 void UserData::LoadLegacyAnnotations()
 {
-    FILE* f = OpenFile( FileAnnotations, false );
+    constexpr auto FileAnnotations = "annotations";
+    FILE* f = OpenFileLegacy( FileAnnotations );
     if( f )
     {
         uint32_t ver;
         fread( &ver, 1, sizeof( ver ), f );
-        if( ver == VersionAnnotations )
+        if( ver == 0 )
         {
             uint32_t sz;
             fread( &sz, 1, sizeof( sz ), f );
@@ -340,12 +388,13 @@ void UserData::LoadLegacyAnnotations()
 
 void UserData::LoadLegacySourceSubstitutions()
 {
-    FILE* f = OpenFile( FileSourceSubstitutions, false );
+    constexpr auto FileSourceSubstitutions = "srcsub";
+    FILE* f = OpenFileLegacy( FileSourceSubstitutions );
     if( f )
     {
         uint32_t ver;
         fread( &ver, 1, sizeof( ver ), f );
-        if( ver == VersionSourceSubstitutions )
+        if( ver == 0 )
         {
             uint32_t sz;
             fread( &sz, 1, sizeof( sz ), f );

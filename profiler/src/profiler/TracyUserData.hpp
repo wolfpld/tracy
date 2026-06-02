@@ -43,8 +43,10 @@ public:
     const char* GetConfigLocation() const;
 
 private:
-    FILE* OpenFile( const char* filename, bool write );
-    void Remove( const char* filename );
+    FILE* OpenFile( bool write );
+    FILE* OpenFileLegacy( const char* filename );
+
+    bool Load();
 
     void LoadLegacyDescription();
     void LoadLegacyState();

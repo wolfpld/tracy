@@ -5,6 +5,7 @@
 #include <inttypes.h>
 #include <string>
 #include <string.h>
+#include <time.h>
 
 #ifdef _WIN32
 #  include <direct.h>
@@ -149,27 +150,11 @@ const char* GetSavePath( const char* file )
     return buf;
 }
 
-const char* GetSavePath( const char* program, uint64_t time, const char* file, bool create )
+static void NormalizeProgramName( char* buf, size_t sz )
 {
-    assert( program && *program );
-
-    constexpr size_t Pool = 8;
-    constexpr size_t MaxPath = 512;
-    static char bufpool[Pool][MaxPath];
-    static int bufsel = 0;
-    char* buf = bufpool[bufsel];
-    bufsel = ( bufsel + 1 ) % Pool;
-
-    size_t sz;
-    GetConfigDirectory( buf, sz );
-
-    const auto psz = strlen( program );
-    assert( psz < 512 );
-    char tmp[512];
-    strcpy( tmp, program );
-    for( size_t i=0; i<psz; i++ )
+    for( size_t i=0; i<sz; i++ )
     {
-        switch( tmp[i] )
+        switch( buf[i] )
         {
         case 1:
         case 2:
@@ -212,21 +197,78 @@ const char* GetSavePath( const char* program, uint64_t time, const char* file, b
         case '|':
         case '?':
         case '*':
-            tmp[i] = '_';
+            buf[i] = '_';
             break;
         default:
             break;
         }
     }
+}
 
-    // 604800 = 7 days
-    sz += sprintf( buf+sz, "/tracy/user/%c/%s/%" PRIu64 "/%" PRIu64 "/", tmp[0], tmp, uint64_t( time / 604800 ), time );
+const char* GetSavePath( const char* program, uint64_t time, bool create )
+{
+    assert( program && *program );
+
+    constexpr size_t Pool = 8;
+    constexpr size_t MaxPath = 512;
+    static char bufpool[Pool][MaxPath];
+    static int bufsel = 0;
+    char* buf = bufpool[bufsel];
+    bufsel = ( bufsel + 1 ) % Pool;
+
+    size_t sz;
+    GetConfigDirectory( buf, sz );
+
+    const auto psz = strlen( program );
+    assert( psz < 512 );
+    char tmp[512];
+    strcpy( tmp, program );
+    NormalizeProgramName( tmp, psz );
+    sz += sprintf( buf+sz, "/tracy/sidecar/%s", tmp );
 
     if( create )
     {
         auto status = CreateDirStruct( buf );
         assert( status );
     }
+
+    time_t _t = time;
+    auto lt = gmtime( &_t );
+    if( lt )
+    {
+        strftime( tmp, sizeof( tmp ), "%Y%m%d-%H%M%S", lt );
+    }
+    else
+    {
+        snprintf( tmp, sizeof( tmp ), "%" PRIu64, time );
+    }
+    sz += sprintf( buf+sz, "/%s.json", tmp );
+
+    return buf;
+}
+
+const char* GetSavePathLegacy( const char* program, uint64_t time, const char* file )
+{
+    assert( program && *program );
+
+    constexpr size_t Pool = 8;
+    constexpr size_t MaxPath = 512;
+    static char bufpool[Pool][MaxPath];
+    static int bufsel = 0;
+    char* buf = bufpool[bufsel];
+    bufsel = ( bufsel + 1 ) % Pool;
+
+    size_t sz;
+    GetConfigDirectory( buf, sz );
+
+    const auto psz = strlen( program );
+    assert( psz < 512 );
+    char tmp[512];
+    strcpy( tmp, program );
+    NormalizeProgramName( tmp, psz );
+
+    // 604800 = 7 days
+    sz += sprintf( buf+sz, "/tracy/user/%c/%s/%" PRIu64 "/%" PRIu64 "/", tmp[0], tmp, uint64_t( time / 604800 ), time );
 
     if( file )
     {

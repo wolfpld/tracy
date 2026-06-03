@@ -2517,11 +2517,11 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         size = MemRead<uint16_t>( &item->messageFat.size );
                         SendSingleString( (const char*)ptr, size );
                         tracy_free_fast( (void*)ptr );
-                        
+
                         const uint8_t metadata = (uint8_t)taggedPtr.GetTag();
                         QueueItem itemWithMetadata;
-                        MemWrite( &itemWithMetadata.hdr, item->hdr );
-                        MemWrite( &itemWithMetadata.messageMetadata, item->message );
+                        MemWrite( &itemWithMetadata.hdr, MemRead( &item->hdr ) );
+                        MemWrite( &itemWithMetadata.messageMetadata, MemRead( &item->message ) );
                         MemWrite( &itemWithMetadata.messageMetadata.metadata, metadata );
                         AppendData( &itemWithMetadata, QueueDataSize[idx] );
                         ++item;
@@ -2538,8 +2538,8 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
 
                         const uint8_t metadata = (uint8_t)taggedPtr.GetTag();
                         QueueItem itemWithMetadata;
-                        MemWrite( &itemWithMetadata.hdr, item->hdr );
-                        MemWrite( &itemWithMetadata.messageColorMetadata, item->messageColor );
+                        MemWrite( &itemWithMetadata.hdr, MemRead( &item->hdr ) );
+                        MemWrite( &itemWithMetadata.messageColorMetadata, MemRead( &item->messageColor ) );
                         MemWrite( &itemWithMetadata.messageColorMetadata.metadata, metadata );
                         AppendData( &itemWithMetadata, QueueDataSize[idx] );
                         ++item;
@@ -3196,8 +3196,8 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
 
                     const uint8_t metadata = taggedPtr.GetTag();
                     QueueItem itemWithMetadata;
-                    MemWrite( &itemWithMetadata.hdr, item->hdr );
-                    MemWrite( &itemWithMetadata.messageMetadata, item->message );
+                    MemWrite( &itemWithMetadata.hdr, MemRead( &item->hdr ) );
+                    MemWrite( &itemWithMetadata.messageMetadata, MemRead( &item->message ) );
                     MemWrite( &itemWithMetadata.messageMetadata.metadata, metadata );
                     AppendData( &itemWithMetadata, QueueDataSize[idx] );
                     item++;
@@ -3215,8 +3215,8 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
 
                     const uint8_t metadata = taggedPtr.GetTag();
                     QueueItem itemWithMetadata;
-                    MemWrite( &itemWithMetadata.hdr, item->hdr );
-                    MemWrite( &itemWithMetadata.messageColorMetadata, item->messageColor );
+                    MemWrite( &itemWithMetadata.hdr, MemRead( &item->hdr ) );
+                    MemWrite( &itemWithMetadata.messageColorMetadata, MemRead( &item->messageColor ) );
                     MemWrite( &itemWithMetadata.messageColorMetadata.metadata, metadata );
                     AppendData( &itemWithMetadata, QueueDataSize[idx] );
                     item++;

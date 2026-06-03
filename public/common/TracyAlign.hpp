@@ -17,9 +17,15 @@ tracy_force_inline T MemRead( const void* ptr )
 }
 
 template<typename T>
-tracy_force_inline void MemWrite( void* ptr, T val )
+tracy_force_inline void MemWrite( T* ptr, const T val )
 {
-    memcpy( ptr, &val, sizeof( T ) );
+    memcpy( (void*)ptr, &val, sizeof( T ) );
+}
+
+template<typename T, typename U>
+tracy_force_inline void MemWrite( T* ptr, U val )
+{
+    static_assert( false, "type mismatch!" );
 }
 
 }

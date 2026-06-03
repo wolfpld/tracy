@@ -2519,7 +2519,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         const uint8_t metadata = (uint8_t)taggedPtr.GetTag();
                         QueueItem itemWithMetadata;
                         MemWrite( &itemWithMetadata.hdr, item->hdr );
-                        MemWrite( &itemWithMetadata.messageMetadata, item->message );
+                        MemWrite( &itemWithMetadata.messageMetadata, item->messageMetadata );
                         MemWrite( &itemWithMetadata.messageMetadata.metadata, metadata );
                         AppendData( &itemWithMetadata, QueueDataSize[idx] );
                         ++item;
@@ -2537,7 +2537,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         const uint8_t metadata = (uint8_t)taggedPtr.GetTag();
                         QueueItem itemWithMetadata;
                         MemWrite( &itemWithMetadata.hdr, item->hdr );
-                        MemWrite( &itemWithMetadata.messageColorMetadata, item->messageColor );
+                        MemWrite( &itemWithMetadata.messageColorMetadata, item->messageColorMetadata );
                         MemWrite( &itemWithMetadata.messageColorMetadata.metadata, metadata );
                         AppendData( &itemWithMetadata, QueueDataSize[idx] );
                         ++item;
@@ -3613,7 +3613,7 @@ void Profiler::QueueSymbolQuery( uint64_t symbol )
         SendSingleString( "<kernel>" );
         QueueItem item;
         MemWrite( &item.hdr.type, QueueType::SymbolInformation );
-        MemWrite( &item.symbolInformation.line, 0 );
+        MemWrite( &item.symbolInformation.line, {0} );
         MemWrite( &item.symbolInformation.symAddr, symbol );
         AppendData( &item, QueueDataSize[(int)QueueType::SymbolInformation] );
     }
@@ -4447,7 +4447,7 @@ void Profiler::HandleSourceCodeQuery( char* data, char* image, uint32_t id )
     if( !ok )
     {
         TracyLfqPrepare( QueueType::AckSourceCodeNotAvailable );
-        MemWrite( &item->sourceCodeNotAvailable, id );
+        MemWrite( &item->sourceCodeNotAvailable, {id} );
         TracyLfqCommit;
     }
 
@@ -4855,8 +4855,8 @@ TRACY_API void ___tracy_emit_gpu_new_context( ___tracy_gpu_new_context_data data
     tracy::MemWrite( &item->gpuNewContext.gpuTime, data.gpuTime );
     tracy::MemWrite( &item->gpuNewContext.period, data.period );
     tracy::MemWrite( &item->gpuNewContext.context, data.context );
-    tracy::MemWrite( &item->gpuNewContext.flags, data.flags );
-    tracy::MemWrite( &item->gpuNewContext.type, data.type );
+    tracy::MemWrite( &item->gpuNewContext.flags, tracy::GpuContextFlags(data.flags) );
+    tracy::MemWrite( &item->gpuNewContext.type, tracy::GpuContextType(data.type) );
 
 #ifdef TRACY_ON_DEMAND
     tracy::GetProfiler().DeferItem( *item );
@@ -4979,8 +4979,8 @@ TRACY_API void ___tracy_emit_gpu_new_context_serial( ___tracy_gpu_new_context_da
     tracy::MemWrite( &item->gpuNewContext.gpuTime, data.gpuTime );
     tracy::MemWrite( &item->gpuNewContext.period, data.period );
     tracy::MemWrite( &item->gpuNewContext.context, data.context );
-    tracy::MemWrite( &item->gpuNewContext.flags, data.flags );
-    tracy::MemWrite( &item->gpuNewContext.type, data.type );
+    tracy::MemWrite( &item->gpuNewContext.flags, tracy::GpuContextFlags(data.flags) );
+    tracy::MemWrite( &item->gpuNewContext.type, tracy::GpuContextType(data.type) );
 
 #ifdef TRACY_ON_DEMAND
     tracy::GetProfiler().DeferItem( *item );

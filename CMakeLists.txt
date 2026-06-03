@@ -283,3 +283,7 @@ if(TRACY_CLIENT_PYTHON)
 
     add_subdirectory(python)
 endif()
+
+if(PROJECT_IS_TOP_LEVEL)
+    set(CMAKE_COLOR_DIAGNOSTICS ON)
+endif()

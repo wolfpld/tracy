@@ -114,7 +114,7 @@ public:
         MemWrite( &item->gpuNewContext.thread, thread );
         MemWrite( &item->gpuNewContext.period, period );
         MemWrite( &item->gpuNewContext.context, m_context );
-        MemWrite( &item->gpuNewContext.flags, uint8_t( 0 ) );
+        MemWrite( &item->gpuNewContext.flags, GpuContextFlags( 0 ) );
         MemWrite( &item->gpuNewContext.type, GpuContextType::OpenGl );
 
 #ifdef TRACY_ON_DEMAND

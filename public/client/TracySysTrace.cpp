@@ -1191,9 +1191,9 @@ void SysTraceWorker( void* ptr )
                             auto trace = GetCallstackBlock( buf.cnt, ring, offset );
 
                             TracyLfqPrepare( QueueType::CallstackSample );
-                            MemWrite( &item->callstackSampleFat.time, buf.t0 );
+                            MemWrite( &item->callstackSampleFat.time, int64_t( buf.t0 ) );
                             MemWrite( &item->callstackSampleFat.thread, buf.tid );
-                            MemWrite( &item->callstackSampleFat.ptr, (uint64_t)trace );
+                            MemWrite( &item->callstackSampleFat.ptr, uint64_t( trace ) );
                             TracyLfqCommit;
                         }
                     }
@@ -1251,7 +1251,7 @@ void SysTraceWorker( void* ptr )
 
                         TracyLfqPrepare( type );
                         MemWrite( &item->hwSample.ip, buf.ip );
-                        MemWrite( &item->hwSample.time, buf.t0 );
+                        MemWrite( &item->hwSample.time, int64_t( buf.t0 ) );
                         TracyLfqCommit;
                     }
                     pos += hdr.size;
@@ -1475,7 +1475,7 @@ void SysTraceWorker( void* ptr )
 #endif
 
                             TracyLfqPrepare( QueueType::FrameVsync );
-                            MemWrite( &item->frameVsync.id, crtc );
+                            MemWrite( &item->frameVsync.id, uint32_t( crtc ) );
                             MemWrite( &item->frameVsync.time, t0 );
                             TracyLfqCommit;
                         }

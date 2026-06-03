@@ -470,7 +470,7 @@ private:
         memset( &item->gpuNewContext.thread, 0, sizeof( item->gpuNewContext.thread ) );
         MemWrite( &item->gpuNewContext.period, period );
         MemWrite( &item->gpuNewContext.context, m_context );
-        MemWrite( &item->gpuNewContext.flags, flags );
+        MemWrite( &item->gpuNewContext.flags, GpuContextFlags( flags ) );
         MemWrite( &item->gpuNewContext.type, GpuContextType::Vulkan );
 
 #ifdef TRACY_ON_DEMAND

@@ -2518,7 +2518,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         SendSingleString( (const char*)ptr, size );
                         tracy_free_fast( (void*)ptr );
 
-                        const uint8_t metadata = (uint8_t)taggedPtr.GetTag();
+                        const auto metadata = taggedPtr.GetTag();
                         QueueItem itemWithMetadata;
                         MemWrite( &itemWithMetadata.hdr, MemRead( &item->hdr ) );
                         MemWrite( &itemWithMetadata.message, MemRead( &item->message ) );
@@ -2536,7 +2536,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         SendSingleString( (const char*)ptr, size );
                         tracy_free_fast( (void*)ptr );
 
-                        const uint8_t metadata = (uint8_t)taggedPtr.GetTag();
+                        const auto metadata = taggedPtr.GetTag();
                         QueueItem itemWithMetadata;
                         MemWrite( &itemWithMetadata.hdr, MemRead( &item->hdr ) );
                         MemWrite( &itemWithMetadata.messageColor, MemRead( &item->messageColor ) );
@@ -3194,7 +3194,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     SendSingleString( (const char*)ptr, size );
                     tracy_free_fast( (void*)ptr );
 
-                    const uint8_t metadata = taggedPtr.GetTag();
+                    const auto metadata = taggedPtr.GetTag();
                     QueueItem itemWithMetadata;
                     MemWrite( &itemWithMetadata.hdr, MemRead( &item->hdr ) );
                     MemWrite( &itemWithMetadata.message, MemRead( &item->message ) );
@@ -3213,7 +3213,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     SendSingleString( (const char*)ptr, size );
                     tracy_free_fast( (void*)ptr );
 
-                    const uint8_t metadata = taggedPtr.GetTag();
+                    const auto metadata = taggedPtr.GetTag();
                     QueueItem itemWithMetadata;
                     MemWrite( &itemWithMetadata.hdr, MemRead( &item->hdr ) );
                     MemWrite( &itemWithMetadata.messageColor, MemRead( &item->messageColor ) );

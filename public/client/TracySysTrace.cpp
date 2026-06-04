@@ -106,8 +106,8 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
             MemWrite( &item->contextSwitch.oldThread, cswitch->oldThreadId );
             MemWrite( &item->contextSwitch.newThread, cswitch->newThreadId );
             MemWrite( &item->contextSwitch.cpu, record->BufferContext.ProcessorNumber );
-            MemWrite( &item->contextSwitch.oldThreadWaitReason, cswitch->oldThreadWaitReason );
-            MemWrite( &item->contextSwitch.oldThreadState, cswitch->oldThreadState );
+            MemWrite( &item->contextSwitch.oldThreadWaitReason, uint8_t( cswitch->oldThreadWaitReason ) );
+            MemWrite( &item->contextSwitch.oldThreadState, uint8_t( cswitch->oldThreadState ) );
             MemWrite( &item->contextSwitch.newThreadPriority, cswitch->newThreadPriority );
             MemWrite( &item->contextSwitch.oldThreadPriority, cswitch->oldThreadPriority );
             MemWrite( &item->contextSwitch.previousCState, cswitch->previousCState );
@@ -151,9 +151,9 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
                     memcpy( trace, &sz, sizeof( uint64_t ) );
                     memcpy( trace+1, sw->stack, sizeof( uint64_t ) * sz );
                     TracyLfqPrepare( QueueType::CallstackSample );
-                    MemWrite( &item->callstackSampleFat.time, sw->eventTimeStamp );
+                    MemWrite( &item->callstackSampleFat.time, int64_t( sw->eventTimeStamp ) );
                     MemWrite( &item->callstackSampleFat.thread, sw->stackThread );
-                    MemWrite( &item->callstackSampleFat.ptr, (uint64_t)trace );
+                    MemWrite( &item->callstackSampleFat.ptr, uint64_t( trace ) );
                     TracyLfqCommit;
                 }
             }

@@ -125,8 +125,8 @@ namespace tracy
 
                 auto* item = Profiler::QueueSerial();
                 MemWrite(&item->hdr.type, QueueType::GpuCalibration);
-                MemWrite(&item->gpuCalibration.gpuTime, gpuTimestamp);
-                MemWrite(&item->gpuCalibration.cpuTime, cpuTimestamp);
+                MemWrite(&item->gpuCalibration.gpuTime, int64_t(gpuTimestamp));
+                MemWrite(&item->gpuCalibration.cpuTime, int64_t(cpuTimestamp));
                 MemWrite(&item->gpuCalibration.cpuDelta, cpuDeltaNS);
                 MemWrite(&item->gpuCalibration.context, GetId());
                 SubmitQueueItem(item);
@@ -249,8 +249,8 @@ namespace tracy
             MemWrite(&item->gpuNewContext.thread, static_cast<uint32_t>(0)); // zero means the context is not associated with a specific thread
             MemWrite(&item->gpuNewContext.period, static_cast<float>(period));
             MemWrite(&item->gpuNewContext.context, static_cast<uint8_t>(GetId()));
-            MemWrite(&item->gpuNewContext.flags, static_cast<uint8_t>(GpuContextCalibration));
-            MemWrite(&item->gpuNewContext.type, static_cast<uint8_t>(GpuContextType::Direct3D12));
+            MemWrite(&item->gpuNewContext.flags, GpuContextCalibration);
+            MemWrite(&item->gpuNewContext.type, GpuContextType::Direct3D12);
             SubmitQueueItem(item);
         }
 

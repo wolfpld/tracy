@@ -132,7 +132,7 @@ public:
         MemWrite( &item->gpuNewContext.thread, uint32_t(0) );   // #TODO: why not GetThreadHandle()?
         MemWrite( &item->gpuNewContext.period, 1.0f );
         MemWrite( &item->gpuNewContext.context, m_contextId);
-        MemWrite( &item->gpuNewContext.flags, uint8_t(0) );
+        MemWrite( &item->gpuNewContext.flags, GpuContextFlags(0) );
         MemWrite( &item->gpuNewContext.type, GpuContextType::Direct3D11 );
 
 #ifdef TRACY_ON_DEMAND

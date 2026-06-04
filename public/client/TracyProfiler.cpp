@@ -2517,15 +2517,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         size = MemRead( &item->messageFat.size );
                         SendSingleString( (const char*)ptr, size );
                         tracy_free_fast( (void*)ptr );
-
-                        const auto metadata = taggedPtr.GetTag();
-                        QueueItem itemWithMetadata;
-                        MemWrite( &itemWithMetadata.hdr, MemRead( &item->hdr ) );
-                        MemWrite( &itemWithMetadata.message, MemRead( &item->message ) );
-                        MemWrite( &itemWithMetadata.messageMetadata.metadata, metadata );
-                        AppendData( &itemWithMetadata, QueueDataSize[idx] );
-                        ++item;
-                        continue; // Next item since we sent it manually
+                        break;
                     }
                     case QueueType::MessageColor:
                     case QueueType::MessageColorCallstack:
@@ -2535,15 +2527,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         size = MemRead( &item->messageColorFat.size );
                         SendSingleString( (const char*)ptr, size );
                         tracy_free_fast( (void*)ptr );
-
-                        const auto metadata = taggedPtr.GetTag();
-                        QueueItem itemWithMetadata;
-                        MemWrite( &itemWithMetadata.hdr, MemRead( &item->hdr ) );
-                        MemWrite( &itemWithMetadata.messageColor, MemRead( &item->messageColor ) );
-                        MemWrite( &itemWithMetadata.messageColorMetadata.metadata, metadata );
-                        AppendData( &itemWithMetadata, QueueDataSize[idx] );
-                        ++item;
-                        continue; // Next item since we sent it manually
+                        break;
                     }
                     case QueueType::MessageAppInfo:
                         ptr = MemRead( &item->messageFat.textAndMetadata ).GetAddress();
@@ -3193,15 +3177,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     uint16_t size = MemRead( &item->messageFat.size );
                     SendSingleString( (const char*)ptr, size );
                     tracy_free_fast( (void*)ptr );
-
-                    const auto metadata = taggedPtr.GetTag();
-                    QueueItem itemWithMetadata;
-                    MemWrite( &itemWithMetadata.hdr, MemRead( &item->hdr ) );
-                    MemWrite( &itemWithMetadata.message, MemRead( &item->message ) );
-                    MemWrite( &itemWithMetadata.messageMetadata.metadata, metadata );
-                    AppendData( &itemWithMetadata, QueueDataSize[idx] );
-                    item++;
-                    continue; // Next item since we sent it manually
+                    break;
                 }
                 case QueueType::MessageColor:
                 case QueueType::MessageColorCallstack:
@@ -3212,15 +3188,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     uint16_t size = MemRead( &item->messageColorFat.size );
                     SendSingleString( (const char*)ptr, size );
                     tracy_free_fast( (void*)ptr );
-
-                    const auto metadata = taggedPtr.GetTag();
-                    QueueItem itemWithMetadata;
-                    MemWrite( &itemWithMetadata.hdr, MemRead( &item->hdr ) );
-                    MemWrite( &itemWithMetadata.messageColor, MemRead( &item->messageColor ) );
-                    MemWrite( &itemWithMetadata.messageColorMetadata.metadata, metadata );
-                    AppendData( &itemWithMetadata, QueueDataSize[idx] );
-                    item++;
-                    continue; // Next item since we sent it manually
+                    break;
                 }
                 case QueueType::Callstack:
                 {

@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <assert.h>
 
+#include "TracyForceInline.hpp"
+
 namespace tracy
 {
 
@@ -17,29 +19,29 @@ class TaggedUserlandAddress
 
 public:
     TaggedUserlandAddress() = default;
-    explicit TaggedUserlandAddress( uint64_t address, uint8_t tag = 0 )
+    tracy_force_inline explicit TaggedUserlandAddress( uint64_t address, uint8_t tag = 0 )
     {
         assert( ( address & kKernelOnlyBitMask ) == 0 );
         assert( ( (uint64_t)tag & ~( kKernelOnlyBitMask >> kUserspaceVABits ) ) == 0 );
         m_storage = address | ( (uint64_t)tag << kUserspaceVABits );
     }
 
-    void SetPackedValue(uint64_t value) { m_storage = value; }
-    uint64_t GetPackedValue() const { return m_storage; }
+    tracy_force_inline void SetPackedValue(uint64_t value) { m_storage = value; }
+    tracy_force_inline uint64_t GetPackedValue() const { return m_storage; }
 
-    void SetAddress( uint64_t address)
+    tracy_force_inline  void SetAddress( uint64_t address)
     {
         assert( ( address & kKernelOnlyBitMask ) == 0 );
         m_storage = ( m_storage & kKernelOnlyBitMask ) | address;
     }
-    uint64_t GetAddress() const { return m_storage & ( ~kKernelOnlyBitMask ); }
+    tracy_force_inline uint64_t GetAddress() const { return m_storage & ( ~kKernelOnlyBitMask ); }
 
-    void SetTag( uint8_t tag )
+    tracy_force_inline void SetTag( uint8_t tag )
     {
         assert( ( (uint64_t)tag & ~( kKernelOnlyBitMask >> kUserspaceVABits ) ) == 0 );
         m_storage = ( (uint64_t)tag << kUserspaceVABits ) | ( m_storage & ( ~kKernelOnlyBitMask ) );
     }
-    uint8_t GetTag() const { return (uint8_t)( ( m_storage & kKernelOnlyBitMask ) >> kUserspaceVABits ); }
+    tracy_force_inline uint8_t GetTag() const { return (uint8_t)( ( m_storage & kKernelOnlyBitMask ) >> kUserspaceVABits ); }
 
 private:
     uint64_t m_storage;

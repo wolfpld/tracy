@@ -11,6 +11,22 @@
 
 #include "OfflineSymbolResolver.h"
 
+bool ResolveSymbols( const std::string& addr2lineToolPath, const std::string& addr2lineArgs,
+                     const std::string& imagePath, const FrameEntryList& inputEntryList,
+                     SymbolEntryList& resolvedEntries )
+{
+#ifdef _WIN32
+    // On Windows the default (no custom tool given) is the DbgHelp backend.
+    if( addr2lineToolPath.empty() )
+    {
+        return ResolveSymbolsDbgHelp( imagePath, inputEntryList, resolvedEntries );
+    }
+#endif
+    // Everywhere else, and whenever a custom tool is given, use the addr2line-compatible backend.
+    // An empty path lets that backend fall back to the 'addr2line' found in PATH.
+    return ResolveSymbolsAddr2Line( addr2lineToolPath, addr2lineArgs, imagePath, inputEntryList, resolvedEntries );
+}
+
 bool ApplyPathSubstitutions( std::string& path, const PathSubstitutionList& pathSubstitutionlist )
 {
     for( const auto& substitution : pathSubstitutionlist )
@@ -31,7 +47,8 @@ tracy::StringIdx AddSymbolString( tracy::Worker& worker, const std::string& str 
     return tracy::StringIdx( location.idx );
 }
 
-bool PatchSymbolsWithRegex( tracy::Worker& worker, const PathSubstitutionList& pathSubstitutionlist, bool verbose )
+bool PatchSymbolsWithRegex( tracy::Worker& worker, const PathSubstitutionList& pathSubstitutionlist,
+                            const std::string& addr2lineToolPath, const std::string& addr2lineArgs, bool verbose )
 {
     uint64_t callstackFrameCount = worker.GetCallstackFrameCount();
     std::string relativeSoNameMatch = "[unresolved]";
@@ -91,7 +108,7 @@ bool PatchSymbolsWithRegex( tracy::Worker& worker, const PathSubstitutionList& p
         }
 
         SymbolEntryList resolvedEntries;
-        ResolveSymbols( imagePath, entries, resolvedEntries );
+        ResolveSymbols( addr2lineToolPath, addr2lineArgs, imagePath, entries, resolvedEntries );
 
         if( resolvedEntries.size() != entries.size() )
         {
@@ -131,7 +148,8 @@ bool PatchSymbolsWithRegex( tracy::Worker& worker, const PathSubstitutionList& p
     return true;
 }
 
-void PatchSymbols( tracy::Worker& worker, const std::vector<std::string>& pathSubstitutionsStrings, bool verbose )
+void PatchSymbols( tracy::Worker& worker, const std::vector<std::string>& pathSubstitutionsStrings,
+                   const std::string& addr2lineToolPath, const std::string& addr2lineArgs, bool verbose )
 {
     std::cout << "Resolving and patching symbols..." << std::endl;
 
@@ -160,7 +178,7 @@ void PatchSymbols( tracy::Worker& worker, const std::vector<std::string>& pathSu
         }
     }
 
-    if ( !PatchSymbolsWithRegex(worker, pathSubstitutionList, verbose) )
+    if ( !PatchSymbolsWithRegex(worker, pathSubstitutionList, addr2lineToolPath, addr2lineArgs, verbose) )
     {
         std::cerr << "Failed to patch symbols" << std::endl;
     }

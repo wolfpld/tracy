@@ -39,6 +39,10 @@ void Usage()
     printf( "  -c: scan for source files missing in cache and add if found\n" );
     printf( "  -r: resolve symbols and patch callstack frames\n");
     printf( "  -p: substitute symbol resolution path with an alternative: \"REGEX_MATCH;REPLACEMENT\"\n");
+    printf( "  -a: path to a custom addr2line-compatible tool to use for symbol resolution\n");
+    printf( "  -A: extra arguments passed verbatim to the symbol resolution tool,\n");
+    printf( "      e.g. \"--relative-address\" for llvm-addr2line on PE/Mach-O images\n");
+    printf( "  -v: verbose output while resolving symbols\n");
     printf( "  -j: number of threads to use for compression (-1 to use all cores)\n" );
 
     exit( 1 );
@@ -62,9 +66,12 @@ int main( int argc, char** argv )
     bool cacheSource = false;
     bool resolveSymbols = false;
     std::vector<std::string> pathSubstitutions;
+    std::string addr2lineToolPath;
+    std::string addr2lineArgs;
+    bool verboseSymbols = false;
 
     int c;
-    while( ( c = getopt( argc, argv, "4hez:ds:crp:j:" ) ) != -1 )
+    while( ( c = getopt( argc, argv, "4hez:ds:crp:a:A:vj:" ) ) != -1 )
     {
         switch( c )
         {
@@ -140,6 +147,15 @@ int main( int argc, char** argv )
         case 'p':
             pathSubstitutions.push_back(optarg);
             break;
+        case 'a':
+            addr2lineToolPath = optarg;
+            break;
+        case 'A':
+            addr2lineArgs = optarg;
+            break;
+        case 'v':
+            verboseSymbols = true;
+            break;
         case 'j':
             streams = atoi( optarg );
             break;
@@ -181,7 +197,7 @@ int main( int argc, char** argv )
             const auto t1 = std::chrono::high_resolution_clock::now();
 
             if( cacheSource ) worker.CacheSourceFiles();
-            if( resolveSymbols ) PatchSymbols( worker, pathSubstitutions );
+            if( resolveSymbols ) PatchSymbols( worker, pathSubstitutions, addr2lineToolPath, addr2lineArgs, verboseSymbols );
 
             auto w = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output, clev, zstdLevel, streams ) );
             if( !w )

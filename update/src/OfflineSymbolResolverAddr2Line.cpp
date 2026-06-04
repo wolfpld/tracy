@@ -1,5 +1,3 @@
-#ifndef _WIN32
-
 #include "OfflineSymbolResolver.h"
 
 #include <fstream>
@@ -9,6 +7,11 @@
 #include <sstream>
 #include <memory>
 #include <stdio.h>
+
+#ifdef _WIN32
+#  define popen _popen
+#  define pclose _pclose
+#endif
 
 std::string ExecShellCommand( const char* cmd )
 {
@@ -29,23 +32,65 @@ std::string ExecShellCommand( const char* cmd )
 class SymbolResolver
 {
 public:
-    SymbolResolver()
+    SymbolResolver( const std::string& addr2lineToolPath, const std::string& addr2lineArgs )
     {
+        // Extra arguments are inserted verbatim into the tool invocation. Tracy records frame
+        // offsets as RVAs; for images with a non-zero preferred image base (PE, Mach-O) the user
+        // can pass "--relative-address" here so llvm-addr2line / llvm-symbolizer add the base back.
+        if( !addr2lineArgs.empty() )
+        {
+            m_addr2LineArgs = " " + addr2lineArgs;
+        }
+
+        if( !addr2lineToolPath.empty() )
+        {
+            // If the value looks like a path (not a bare command name resolved via PATH), verify
+            // it exists so a wrong path fails with an actionable error instead of a cryptic shell one.
+            const bool looksLikePath = addr2lineToolPath.find( '/' ) != std::string::npos ||
+                                       addr2lineToolPath.find( '\\' ) != std::string::npos;
+            if( looksLikePath && !std::ifstream( addr2lineToolPath ).good() )
+            {
+                std::cerr << "Specified symbol resolution tool not found: '" << addr2lineToolPath
+                          << "' (check the path passed to the '-a' option)" << std::endl;
+                return;
+            }
+
+            m_addr2LinePath = addr2lineToolPath;
+            std::cout << "Using user-specified symbol resolution tool: '" << m_addr2LinePath.c_str() << "'" << std::endl;
+            return;
+        }
+
+#ifdef _WIN32
+        std::cerr << "No symbol resolution tool specified (use the '-a' option to provide one)" << std::endl;
+#else
         std::stringstream result( ExecShellCommand("which addr2line") );
         std::getline(result, m_addr2LinePath);
 
         if( !m_addr2LinePath.length() )
         {
-            std::cerr << "'addr2line' was not found in the system, please installed it" << std::endl;
+            std::cerr << "'addr2line' was not found in the system, please install it" << std::endl;
         }
         else
         {
             std::cout << "Using 'addr2line' found at: '" << m_addr2LinePath.c_str() << "'" << std::endl;
         }
+#endif
     }
 
     static void escapeShellParam(std::string const& s, std::string& out)
     {
+#ifdef _WIN32
+        // cmd.exe / the CRT command parser do not understand POSIX backslash escapes, and
+        // backslashes are path separators on Windows. Wrap the parameter in double quotes
+        // (which handles spaces) and drop any embedded quotes, which cannot appear in a path.
+        out.reserve( s.size() + 2 );
+        out.push_back( '"' );
+        for( char c : s )
+        {
+            if( c != '"' ) out.push_back( c );
+        }
+        out.push_back( '"' );
+#else
         out.reserve( s.size() + 2 );
         out.push_back( '"' );
         for( unsigned char c : s )
@@ -73,13 +118,14 @@ public:
             }
         }
         out.push_back( '"' );
+#endif
     }
 
     bool ResolveSymbols( const std::string& imagePath, const FrameEntryList& inputEntryList,
                          SymbolEntryList& resolvedEntries )
     {
         if( !m_addr2LinePath.length() ) return false;
-        
+
         std:: string escapedPath;
         escapeShellParam( imagePath, escapedPath );
 
@@ -93,14 +139,22 @@ public:
 
             // generate a single addr2line cmd line for all addresses in one invocation
             std::stringstream ss;
-            ss << m_addr2LinePath << " -C -f -e " << escapedPath << " -a ";
+            ss << m_addr2LinePath << " -C -f" << m_addr2LineArgs << " -e " << escapedPath << " -a ";
             for( ; entryIdx < batchEndIdx; entryIdx++ )
             {
                 const FrameEntry& entry = inputEntryList[entryIdx];
                 ss << " 0x" << std::hex << entry.symbolOffset;
             }
 
-            std::string resultStr = ExecShellCommand( ss.str().c_str() );
+            std::string cmd = ss.str();
+#ifdef _WIN32
+            // _popen runs the command through 'cmd.exe /c', which strips the outermost pair of
+            // quotes. Wrap the whole command so the quoting around the (possibly spaced) tool
+            // and image paths survives.
+            cmd = "\"" + cmd + "\"";
+#endif
+
+            std::string resultStr = ExecShellCommand( cmd.c_str() );
             std::stringstream result( resultStr );
             
             //printf("executing: '%s' got '%s'\n", ss.str().c_str(), result.str().c_str());
@@ -147,13 +201,13 @@ public:
 
 private:
     std::string m_addr2LinePath;
+    std::string m_addr2LineArgs;
 };
 
-bool ResolveSymbols( const std::string& imagePath, const FrameEntryList& inputEntryList,
-                     SymbolEntryList& resolvedEntries )
+bool ResolveSymbolsAddr2Line( const std::string& addr2lineToolPath, const std::string& addr2lineArgs,
+                              const std::string& imagePath, const FrameEntryList& inputEntryList,
+                              SymbolEntryList& resolvedEntries )
 {
-    static SymbolResolver symbolResolver;
+    static SymbolResolver symbolResolver( addr2lineToolPath, addr2lineArgs );
     return symbolResolver.ResolveSymbols( imagePath, inputEntryList, resolvedEntries );
 }
-
-#endif // #ifndef _WIN32

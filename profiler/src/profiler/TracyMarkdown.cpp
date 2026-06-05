@@ -399,6 +399,7 @@ private:
 
         ImGui::SetMouseCursor( ImGuiMouseCursor_Hand );
         ImGui::BeginTooltip();
+        ImGui::PushFont( g_fonts.normal, FontNormal );
         ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 1.f, 1.f, 1.f ) );
         if( isSource )
         {
@@ -456,6 +457,7 @@ private:
             ImGui::TextUnformatted( link.c_str() );
         }
         ImGui::PopStyleColor();
+        ImGui::PopFont();
         ImGui::EndTooltip();
         if( IsMouseClicked( ImGuiMouseButton_Left ) )
         {

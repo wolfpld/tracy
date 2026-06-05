@@ -41,6 +41,12 @@ void View::DrawInfo()
         TextFocused( "File:", m_filename.c_str() );
         if( m_userData.Valid() )
         {
+            ImGui::SameLine();
+            auto sidecarPublic = m_userData.IsSidecarPublic();
+            if( SmallCheckbox( "Public sidecar", &sidecarPublic ) )
+            {
+                m_userData.SetSidecarPublic( sidecarPublic );
+            }
         }
     }
     {

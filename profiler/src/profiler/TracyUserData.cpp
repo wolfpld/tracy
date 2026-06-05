@@ -4,6 +4,9 @@
 
 #ifdef _WIN32
 #  include <stdio.h>
+#  ifdef _MSC_VER
+#    define unlink _unlink
+#  endif
 #else
 #  include <unistd.h>
 #endif

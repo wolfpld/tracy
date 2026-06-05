@@ -1,9 +1,10 @@
-TRACY_PUBLIC := ../../public
+TRACY_PATH   := ../../../..
 NVCC         := nvcc
 CXX          := g++
 CUPTI_INC    := /usr/local/cuda/include
 CUPTI_LIB    := /usr/local/cuda/lib64
 
+TRACY_PUBLIC := $(TRACY_PATH)/public
 TRACY_SRCS   := $(TRACY_PUBLIC)/TracyClient.cpp
 INCLUDES     := -I$(TRACY_PUBLIC) -I$(CUPTI_INC)
 LIBS         := -L$(CUPTI_LIB) -lcuda -lcupti -lpthread -ldl

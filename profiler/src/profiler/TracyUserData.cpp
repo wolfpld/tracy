@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <memory>
 #include <nlohmann/json.hpp>
+#include <sys/stat.h>
 
 #ifdef _WIN32
 #  include <stdio.h>
@@ -22,6 +23,7 @@ namespace tracy
 
 UserData::UserData()
     : m_preserveState( false )
+    , m_sidecarPublic( false )
 {
 }
 
@@ -29,9 +31,24 @@ UserData::UserData( const char* program, uint64_t time, const char* filePath )
     : m_program( program )
     , m_time( time )
     , m_preserveState( false )
+    , m_sidecarPublic( false )
 {
     if( m_program.empty() ) m_program = "_";
-    if( filePath ) m_filePath = filePath;
+    if( filePath )
+    {
+        m_filePath = filePath;
+        m_sidecarPublic = true;
+        auto sidecar = GetSidecarPath( false );
+        if( sidecar.empty() )
+        {
+            m_sidecarPublic = false;
+        }
+        else
+        {
+            struct stat st;
+            if( stat( sidecar.c_str(), &st ) != 0 ) m_sidecarPublic = false;
+        }
+    }
 
     if( !Load() )
     {
@@ -56,6 +73,7 @@ void UserData::SetFilePath( const char* filePath )
 {
     assert( filePath );
     m_filePath = filePath;
+    if( m_sidecarPublic ) Save();
 }
 
 void UserData::SetDescription( const char* description )
@@ -80,6 +98,24 @@ void UserData::StoreState( const ViewData& data )
 void UserData::StateShouldBePreserved()
 {
     m_preserveState = true;
+}
+
+void UserData::SetSidecarPublic( bool state )
+{
+    assert( Valid() );
+    assert( m_sidecarPublic != state );
+
+    const auto oldFn = GetSidecarPath( false );
+    m_sidecarPublic = state;
+
+    if( Save() )
+    {
+        unlink( oldFn.c_str() );
+    }
+    else
+    {
+        m_sidecarPublic = !state;
+    }
 }
 
 void UserData::LoadAnnotations( std::vector<std::shared_ptr<Annotation>>& data )
@@ -276,8 +312,8 @@ bool UserData::Load()
 FILE* UserData::OpenFile( bool write )
 {
     const auto path = GetSidecarPath( write );
-    if( !path ) return nullptr;
-    FILE* f = fopen( path, write ? "wb" : "rb" );
+    if( path.empty() ) return nullptr;
+    FILE* f = fopen( path.c_str(), write ? "wb" : "rb" );
     return f;
 }
 
@@ -289,9 +325,17 @@ FILE* UserData::OpenFileLegacy( const char* filename )
     return f;
 }
 
-const char* UserData::GetSidecarPath( bool write ) const
+std::string UserData::GetSidecarPath( bool write ) const
 {
-    return GetSavePath( m_program.c_str(), m_time, write );
+    if( m_sidecarPublic )
+    {
+        assert( !m_filePath.empty() );
+        return m_filePath + ".json";
+    }
+
+    auto path = GetSavePath( m_program.c_str(), m_time, write );
+    if( !path ) return {};
+    return path;
 }
 
 void UserData::LoadLegacyDescription()

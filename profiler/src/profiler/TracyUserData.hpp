@@ -41,11 +41,14 @@ public:
 
     bool Save();
 
+    bool IsSidecarPublic() const { return m_sidecarPublic; }
+    void SetSidecarPublic( bool state );
+
 private:
     FILE* OpenFile( bool write );
     FILE* OpenFileLegacy( const char* filename );
 
-    const char* GetSidecarPath( bool write ) const;
+    std::string GetSidecarPath( bool write ) const;
 
     bool Load();
 
@@ -64,6 +67,7 @@ private:
     std::vector<SourceRegex> m_sourceSubstitutions;
 
     bool m_preserveState;
+    bool m_sidecarPublic;
 };
 
 }

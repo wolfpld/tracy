@@ -53,6 +53,8 @@ jobs:
       run: |
         cmake -B merge/build -S merge -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
         cmake --build merge/build --parallel --config Release
+    - name: Test application
+      uses: ./.github/actions/test-tracy
     - name: Package artifacts
       run: |
         mkdir bin

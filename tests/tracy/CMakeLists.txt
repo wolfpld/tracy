@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-include(${CMAKE_CURRENT_LIST_DIR}/../cmake/version.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/../../cmake/version.cmake)
 
 # we target C++11 for the client part
 set(CMAKE_CXX_STANDARD 11)
@@ -18,7 +18,7 @@ option(TRACY_ENABLE "Enable profiling" ON)
 # a bit weird but works: include the client cmake config coming from top-level
 # cmake needs us to specify the build subfolder -> client/ this way we can
 # simply link the test executable against TracyClient
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/.. client/)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../.. client/)
 
 add_executable(tracy-test test.cpp)
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "Windows")

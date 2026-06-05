@@ -12,7 +12,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-05-30 <https://github.com/wolfpld/tracy>
+2026-06-05 <https://github.com/wolfpld/tracy>
 :::
 
 # Quick overview {#quick-overview .unnumbered}
@@ -1585,7 +1585,7 @@ Similar to Vulkan and OpenGL, you also need to periodically collect the OpenCL e
 
 ### CUDA
 
-CUDA support is enabled by including the `public/tracy/TracyCUDA.hpp` header file. To use it, the NVIDIA CUPTI library is required. This library comes with the NVIDIA CUDA Toolkit and is located at `CUDA_INSTALLATION_PATH/extras/CUPTI`.
+CUDA support is enabled by including the `public/tracy/TracyCUDA.hpp` header file. To use it, make sure you have the NVIDIA CUDA Toolkit v12.4 (or later) installed, and that the NVIDIA CUPTI library is available in the toolkit (located at `CUDA_INSTALLATION_PATH/extras/CUPTI`).
 
 Tracing CUDA requires the creation of a Tracy CUDA context using the macro `TracyCUDAContext()`, which returns an instance of a `tracy::CUDACtx` object. TracyCUDA allows only a single `tracy::CUDACtx` object at any given time. Subsequent calls to `TracyCUDAContext()` will return the same reference-counted object. There is no need for clients to instantiate multiple `tracy::CUDACtx` objects, as a single context is capable of instrumenting all CUDA contexts and streams.
 
@@ -3623,7 +3623,7 @@ Annotations are displayed on the timeline, as presented in figure [21](#annotat
 <figcaption>Annotation region.</figcaption>
 </figure>
 
-Please note that while the annotations persist between profiling sessions, they are not saved in the trace but in the user data files, as described in section [9.2](#tracespecific).
+Please note that while the annotations persist between profiling sessions, they are not saved in the trace but in the trace sidecar file, as described in section [9.2](#tracespecific).
 
 
 -----
@@ -4159,6 +4159,8 @@ The information about the selected memory allocation is displayed in this window
 
 This window contains information about the current trace: captured program name, time of the capture, profiler version which performed the capture, and a custom trace description, which you can fill in.
 
+If the * Public sidecar* option is selected, the file containing trace-specific user settings (see section [9.2](#tracespecific)) will be saved on disk next to the trace file.
+
 Open the *Trace statistics* section to see information about the trace, such as achieved timer resolution, number of captured zones, lock events, plot data points, memory allocations, etc.
 
 There's also a section containing the selected frame set timing statistics and histogram[^90]. As a convenience, you can switch the active frame set here and limit the displayed frame statistics to the frame range visible on the screen.
@@ -4180,11 +4182,16 @@ The *Source location substitutions* section allows adapting the source file path
 >
 > - `\\` `/`
 
-By default, all source file modification times need to be older than the cature time of the trace. This can be disabled using the *Enforce source file modification time older than trace capture time* check box, i.e. when the source files are under source control and the file modification time is not relevant.
+By default, all source file modification times need to be older than the capture time of the trace. This can be disabled using the *Enforce source file modification time older than trace capture time* check box, i.e. when the source files are under source control and the file modification time is not relevant.
 
 In this window, you can view the information about the machine on which the profiled application was running. This includes the operating system, used compiler, CPU name, total available RAM, etc. In addition, if application information was provided (see section [3.7.1](#appinfo)), it will also be displayed here.
 
 If an application should crash during profiling (section [2.5](#crashhandling)), the profiler will display the crash information in this window. It provides you information about the thread that has crashed, the crash reason, and the crash call stack (section [5.15](#callstackwindow)).
+
+
+-----
+
+ - User Gear icon
 
 ## Zone information window {#zoneinfo}
 
@@ -4966,9 +4973,9 @@ Various files at the root configuration directory store common profiler state su
 
 Trace files saved on disk are immutable and can't be changed. Still, it may be desirable to store additional per-trace information to be used by the profiler, for example, a custom description of the trace or the timeline view position used in the previous profiling session.
 
-This external data is stored in the `user/[letter]/[program]/[week]/[epoch]` directory, relative to the configuration's root directory. The `program` part is the name of the profiled application (for example `program.exe`). The `letter` part is the first letter of the profiled application's name. The `week` part is a count of weeks since the Unix epoch, and the `epoch` part is a count of seconds since the Unix epoch. This rather unusual convention prevents the creation of directories with hundreds of entries.
+This external sidecar data is stored by default in the `sidecar/[program]/[date].json` file, relative to the configuration root directory. The `program` part is the name of the profiled application (for example `program.exe`). The `date` part is in year-month-day-*dash*-hour-minutes-seconds format.
 
-The profiler never prunes user settings.
+The sidecar file can be made public (see section [5.13](#traceinfo)), in which case it will be placed next to the trace file with the `.json` extension, allowing both files to be easily moved or copied.
 
 ## Cache files
 

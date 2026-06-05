@@ -35,3 +35,22 @@ target_link_libraries(test_corr_reuse PRIVATE CUDA::cupti CUDA::cuda_driver)
 
 add_executable(test_graphid_recycle test_graphid_recycle.cu)
 target_link_libraries(test_graphid_recycle PRIVATE CUDA::cupti CUDA::cuda_driver)
+
+set(_all_targets repro test_corr_reuse test_graphid_recycle)
+
+# On Windows, CUPTI's DLL must be on PATH at runtime.
+# Propagate the DLL directory to both the VS debugger and ctest.
+if(WIN32)
+    set(_cupti_dir "$<TARGET_FILE_DIR:CUDA::cupti>")
+    foreach(_target ${_all_targets})
+        set_target_properties(${_target} PROPERTIES
+            VS_DEBUGGER_ENVIRONMENT "PATH=${_cupti_dir};$ENV{PATH}")
+    endforeach()
+
+    enable_testing()
+    foreach(_target ${_all_targets})
+        add_test(NAME ${_target} COMMAND ${_target})
+        set_tests_properties(${_target} PROPERTIES
+            ENVIRONMENT "PATH=${_cupti_dir};$ENV{PATH}")
+    endforeach()
+endif()

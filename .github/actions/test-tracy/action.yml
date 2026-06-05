@@ -1,0 +1,30 @@
+name: 'Test Tracy'
+description: 'Build the Tracy test application with various cmake flag combinations'
+
+inputs:
+  extra_cmake_flags:
+    description: 'Additional cmake flags appended to each configure command (e.g. cross-compilation flags)'
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Test application
+      shell: bash
+      run: |
+        cmake -B tests/tracy/build -S tests/tracy -DCMAKE_BUILD_TYPE=Release ${{ inputs.extra_cmake_flags }}
+        cmake --build tests/tracy/build --parallel
+        cmake -E rm -rf tests/tracy/build
+
+        cmake -B tests/tracy/build -S tests/tracy -DCMAKE_BUILD_TYPE=Release -DTRACY_ON_DEMAND=ON ${{ inputs.extra_cmake_flags }}
+        cmake --build tests/tracy/build --parallel
+        cmake -E rm -rf tests/tracy/build
+
+        cmake -B tests/tracy/build -S tests/tracy -DCMAKE_BUILD_TYPE=Release -DTRACY_DELAYED_INIT=ON -DTRACY_MANUAL_LIFETIME=ON ${{ inputs.extra_cmake_flags }}
+        cmake --build tests/tracy/build --parallel
+        cmake -E rm -rf tests/tracy/build
+
+        cmake -B tests/tracy/build -S tests/tracy -DCMAKE_BUILD_TYPE=Release -DTRACY_DEMANGLE=ON ${{ inputs.extra_cmake_flags }}
+        cmake --build tests/tracy/build --parallel
+        cmake -E rm -rf tests/tracy/build

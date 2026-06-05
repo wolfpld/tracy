@@ -4042,7 +4042,7 @@ Annotations are displayed on the timeline, as presented in figure~\ref{annotatio
 \label{annotation}
 \end{figure}
 
-Please note that while the annotations persist between profiling sessions, they are not saved in the trace but in the user data files, as described in section~\ref{tracespecific}.
+Please note that while the annotations persist between profiling sessions, they are not saved in the trace but in the trace sidecar file, as described in section~\ref{tracespecific}.
 
 \subsection{Options menu}
 \label{options}
@@ -4539,6 +4539,8 @@ The information about the selected memory allocation is displayed in this window
 
 This window contains information about the current trace: captured program name, time of the capture, profiler version which performed the capture, and a custom trace description, which you can fill in.
 
+If the \emph{\faUserGear{}~Public sidecar} option is selected, the file containing trace-specific user settings (see section~\ref{tracespecific}) will be saved on disk next to the trace file.
+
 Open the \emph{Trace statistics} section to see information about the trace, such as achieved timer resolution, number of captured zones, lock events, plot data points, memory allocations, etc.
 
 There's also a section containing the selected frame set timing statistics and histogram\footnote{See section~\ref{findzone} for a description of the histogram. Note that there are subtle differences in the available functionality.}. As a convenience, you can switch the active frame set here and limit the displayed frame statistics to the frame range visible on the screen.
@@ -4560,7 +4562,7 @@ Let's say we have an Unix-based operating system with program sources in \texttt
 \end{itemize}
 \end{bclogo}
 
-By default, all source file modification times need to be older than the cature time of the trace. This can be disabled using the \emph{Enforce source file modification time older than trace capture time} check box, i.e. when the source files are under source control and the file modification time is not relevant.
+By default, all source file modification times need to be older than the capture time of the trace. This can be disabled using the \emph{Enforce source file modification time older than trace capture time} check box, i.e. when the source files are under source control and the file modification time is not relevant.
 
 In this window, you can view the information about the machine on which the profiled application was running. This includes the operating system, used compiler, CPU name, total available RAM, etc. In addition, if application information was provided (see section~\ref{appinfo}), it will also be displayed here.
 
@@ -5218,9 +5220,9 @@ Various files at the root configuration directory store common profiler state su
 
 Trace files saved on disk are immutable and can't be changed. Still, it may be desirable to store additional per-trace information to be used by the profiler, for example, a custom description of the trace or the timeline view position used in the previous profiling session.
 
-This external data is stored in the \texttt{user/[letter]/[program]/[week]/[epoch]} directory, relative to the configuration's root directory. The \texttt{program} part is the name of the profiled application (for example \texttt{program.exe}). The \texttt{letter} part is the first letter of the profiled application's name. The \texttt{week} part is a count of weeks since the Unix epoch, and the \texttt{epoch} part is a count of seconds since the Unix epoch. This rather unusual convention prevents the creation of directories with hundreds of entries.
+This external sidecar data is stored by default in the \texttt{sidecar/[program]/[date].json} file, relative to the configuration root directory. The \texttt{program} part is the name of the profiled application (for example \texttt{program.exe}). The \texttt{date} part is in year-month-day-\emph{dash}-hour-minutes-seconds format.
 
-The profiler never prunes user settings.
+The sidecar file can be made public (see section~\ref{traceinfo}), in which case it will be placed next to the trace file with the \texttt{.json} extension, allowing both files to be easily moved or copied.
 
 \subsection{Cache files}
 

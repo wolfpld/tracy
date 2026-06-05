@@ -176,23 +176,23 @@ public:
             {
             case 'n':   // note
                 color = 0xFFEB6F1F;
-                TextColoredUnformatted( color, ICON_FA_CIRCLE_INFO " " );
+                TextColoredUnformatted( color, ICON_FA_CIRCLE_INFO "  " );
                 break;
             case 't':   // tip
                 color = 0xFF368623;
-                TextColoredUnformatted( color, ICON_FA_LIGHTBULB " " );
+                TextColoredUnformatted( color, ICON_FA_LIGHTBULB "  " );
                 break;
             case 'i':   // important
                 color = 0xFFE55789;
-                TextColoredUnformatted( color, ICON_FA_MESSAGE " " );
+                TextColoredUnformatted( color, ICON_FA_MESSAGE "  " );
                 break;
             case 'w':   // warning
                 color = 0xFF036A9E;
-                TextColoredUnformatted( color, ICON_FA_TRIANGLE_EXCLAMATION " " );
+                TextColoredUnformatted( color, ICON_FA_TRIANGLE_EXCLAMATION "  " );
                 break;
             case 'c':   // caution
                 color = 0xFF3336DA;
-                TextColoredUnformatted( color, ICON_FA_HAND " " );
+                TextColoredUnformatted( color, ICON_FA_HAND "  " );
                 break;
             default:
                 assert( false );

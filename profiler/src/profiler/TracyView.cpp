@@ -78,7 +78,7 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f
     , m_stcb( stcb )
     , m_sscb( sscb )
     , m_acb( acb )
-    , m_userData( m_worker.GetCaptureProgram().c_str(), m_worker.GetCaptureTime() )
+    , m_userData( m_worker.GetCaptureProgram().c_str(), m_worker.GetCaptureTime(), f.GetFilename().c_str() )
     , m_cbMainThread( cbMainThread )
     , m_achievementsMgr( amgr )
     , m_achievements( s_config.achievements )
@@ -738,7 +738,7 @@ bool View::DrawImpl()
         m_uarchSet = true;
         m_sourceView->SetCpuId( m_worker.GetCpuId() );
     }
-    if( !m_userData.Valid() ) m_userData.Init( m_worker.GetCaptureProgram().c_str(), m_worker.GetCaptureTime() );
+    if( !m_userData.Valid() ) m_userData.Init( m_worker.GetCaptureProgram().c_str(), m_worker.GetCaptureTime(), nullptr );
     if( m_saveThreadState.load( std::memory_order_acquire ) == SaveThreadState::NeedsJoin )
     {
         m_saveThread.join();
@@ -1476,6 +1476,7 @@ bool View::Save( const char* fn, FileCompression comp, int zlevel, bool buildDic
     if( !f ) return false;
 
     m_userData.StateShouldBePreserved();
+    m_userData.SetFilePath( fn );
     m_saveThreadState.store( SaveThreadState::Saving, std::memory_order_relaxed );
     m_saveThread = std::thread( [this, f{std::move( f )}, buildDict] {
         Worker::MainThreadDataLockGuard lock = m_worker.ObtainLockForMainThread();

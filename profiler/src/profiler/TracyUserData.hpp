@@ -20,10 +20,11 @@ class UserData
 {
 public:
     UserData();
-    UserData( const char* program, uint64_t time );
+    UserData( const char* program, uint64_t time, const char* filePath );
 
     bool Valid() const { return !m_program.empty(); }
-    void Init( const char* program, uint64_t time );
+    void Init( const char* program, uint64_t time, const char* filePath );
+    void SetFilePath( const char* filePath );
 
     const std::string& GetDescription() const { return m_description; }
     void SetDescription( const char* description );
@@ -55,6 +56,7 @@ private:
 
     std::string m_program;
     uint64_t m_time;
+    std::string m_filePath;
 
     std::string m_description;
     ViewData m_viewData;

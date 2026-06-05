@@ -25,12 +25,13 @@ UserData::UserData()
 {
 }
 
-UserData::UserData( const char* program, uint64_t time )
+UserData::UserData( const char* program, uint64_t time, const char* filePath )
     : m_program( program )
     , m_time( time )
     , m_preserveState( false )
 {
     if( m_program.empty() ) m_program = "_";
+    if( filePath ) m_filePath = filePath;
 
     if( !Load() )
     {
@@ -41,13 +42,20 @@ UserData::UserData( const char* program, uint64_t time )
     }
 }
 
-void UserData::Init( const char* program, uint64_t time )
+void UserData::Init( const char* program, uint64_t time, const char* filePath )
 {
     assert( !Valid() );
     m_program = program;
     m_time = time;
+    if( filePath ) m_filePath = filePath;
 
     if( m_program.empty() ) m_program = "_";
+}
+
+void UserData::SetFilePath( const char* filePath )
+{
+    assert( filePath );
+    m_filePath = filePath;
 }
 
 void UserData::SetDescription( const char* description )

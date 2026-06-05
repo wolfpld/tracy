@@ -3,7 +3,6 @@ bibliography:
 - tracy.bib
 ---
 
-::: titlepage
 Tracy Profiler
 
 The user manual
@@ -12,8 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-06-05 <https://github.com/wolfpld/tracy>
-:::
+2026-06-06 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -196,14 +194,12 @@ Let's profile an example application to check how much slowdown is introduced by
 
 The results are presented in table [1](#PerformanceImpact). Dividing the average of run time differences (37.7 ms) by the count of captured zones per single image (16777216) shows us that the impact of profiling is only 2.25 ns per zone (this includes two events: start and end of a zone).
 
-::: {#PerformanceImpact}
-   **Mode**   **Zones (total)**   **Zones (single image)**   **Clean run**   **Profiling run**   **Difference**
-  ---------- ------------------- -------------------------- --------------- ------------------- ----------------
-     ETC1         201326592               16777216             110.9 ms          148.2 ms           +37.3 ms
-     ETC2         201326592               16777216             212.4 ms          250.5 ms           +38.1 ms
+| **Mode** | **Zones (total)** | **Zones (single image)** | **Clean run** | **Profiling run** | **Difference** |
+|:--:|:--:|:--:|:--:|:--:|:--:|
+| ETC1 | 201326592 | 16777216 | 110.9 ms | 148.2 ms | +37.3 ms |
+| ETC2 | 201326592 | 16777216 | 212.4 ms | 250.5 ms | +38.1 ms |
 
-  : Zone capture time cost.
-:::
+_Zone capture time cost._
 
 ### Assembly analysis
 
@@ -522,15 +518,13 @@ The best way to run Tracy is on bare metal. Avoid profiling applications in virt
 
 Additionally, you can rebuild your application with the `TRACY_DISALLOW_HW_TIMER` define, which will disable usage of the hardware timer, even if it *appears* to be available. See table [2](#timeroptions) for details.
 
-::: {#timeroptions}
-                      **Scenario**                      **HW timer**    **Fallback timer**
-  ---------------------------------------------------- -------------- -----------------------
-                    Neither defined                         Used          Not compiled in
-              Only `TRACY_TIMER_FALLBACK`                   Used       Compiled in as backup
-   `TRACY_DISALLOW_HW_TIMER` + `TRACY_TIMER_FALLBACK`     Disabled             Used
+| **Scenario** | **HW timer** | **Fallback timer** |
+|:--:|:--:|:--:|
+| Neither defined | Used | Not compiled in |
+| Only `TRACY_TIMER_FALLBACK` | Used | Compiled in as backup |
+| `TRACY_DISALLOW_HW_TIMER` + `TRACY_TIMER_FALLBACK` | Disabled | Used |
 
-  : Timer options interaction
-:::
+_Timer options interaction_
 
 #### Docker on Linux
 
@@ -900,31 +894,29 @@ This is an automatic process, and it doesn't require user interaction. If you ar
 
 Some features of the profiler are only available on selected platforms. Please refer to table [3](#featuretable) for details.
 
-::: {#featuretable}
-         **Feature**          **Windows**   **Linux**   **Android**   **OSX**   **iOS**   **BSD**   **QNX**
-  -------------------------- ------------- ----------- ------------- --------- --------- --------- ---------
-    Profiling program init                                                                       
-          CPU zones                                                                              
-            Locks                                                                                
-            Plots                                                                                
-           Messages                                                                              
-            Memory                                                                               
-      GPU zones (OpenGL)                                                                          
-      GPU zones (Vulkan)                                                                          
-      GPU zones (Metal)                                            ^*b*^    ^*b*^                
-         Call stacks                                                                             
-      Symbol resolution                                                                          
-        Crash handling                                                                           
-      CPU usage probing                                                                          
-       Context switches                                                                          
-         Wait stacks                                                                             
-   CPU topology information                                                                      
-     Call stack sampling                                                                         
-      Hardware sampling         ^*a*^                                                            
-        VSync capture                                                                            
+| **Feature** | **Windows** | **Linux** | **Android** | **OSX** | **iOS** | **BSD** | **QNX** |
+|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| Profiling program init |  |  |  |  |  |  |  |
+| CPU zones |  |  |  |  |  |  |  |
+| Locks |  |  |  |  |  |  |  |
+| Plots |  |  |  |  |  |  |  |
+| Messages |  |  |  |  |  |  |  |
+| Memory |  |  |  |  |  |  |  |
+| GPU zones (OpenGL) |  |  |  |  |  |  |  |
+| GPU zones (Vulkan) |  |  |  |  |  |  |  |
+| GPU zones (Metal) |  |  |  | ^*b*^ | ^*b*^ |  |  |
+| Call stacks |  |  |  |  |  |  |  |
+| Symbol resolution |  |  |  |  |  |  |  |
+| Crash handling |  |  |  |  |  |  |  |
+| CPU usage probing |  |  |  |  |  |  |  |
+| Context switches |  |  |  |  |  |  |  |
+| Wait stacks |  |  |  |  |  |  |  |
+| CPU topology information |  |  |  |  |  |  |  |
+| Call stack sampling |  |  |  |  |  |  |  |
+| Hardware sampling | ^*a*^ |  |  |  |  |  |  |
+| VSync capture |  |  |  |  |  |  |  |
 
-  : Feature support matrix
-:::
+_Feature support matrix_
 
  -- Not possible to support due to platform limitations.\
 ^*a*^Possible through WSL2. ^*b*^Only tested on Apple Silicon M1 series
@@ -1055,18 +1047,16 @@ To further reduce image data size, frame images are internally compressed using 
 
 [^39]: One pixel is stored in a nibble (4 bits) instead of 32 bits.
 
-::: {#EtcSimd}
-   **Implementation**   **Required define**   **Time**
-  -------------------- --------------------- ----------
-     x86 Reference              ---           198.2 μs
-     x86 SSE4.1^a^         `__SSE4_1__`       25.4 μs
-        x86 AVX2            `__AVX2__`        17.4 μs
-     ARM Reference              ---           1.04 ms
-     ARM32 NEON^b^         `__ARM_NEON`        529 μs
-       ARM64 NEON          `__ARM_NEON`        438 μs
+| **Implementation** | **Required define** | **Time** |
+|:------------------:|:-------------------:|:--------:|
+|   x86 Reference    |         ---         | 198.2 μs |
+|   x86 SSE4.1^a^    |    `__SSE4_1__`     | 25.4 μs  |
+|      x86 AVX2      |     `__AVX2__`      | 17.4 μs  |
+|   ARM Reference    |         ---         | 1.04 ms  |
+|   ARM32 NEON^b^    |    `__ARM_NEON`     |  529 μs  |
+|     ARM64 NEON     |    `__ARM_NEON`     |  438 μs  |
 
-  : Client compression time of $320\times180$ image. x86: Ryzen 9 3900X (MSVC); ARM: ODROID-C2 (gcc).
-:::
+_Client compression time of $320\times180$ image. x86: Ryzen 9 3900X (MSVC); ARM: ODROID-C2 (gcc)._
 
 ^a)^ VEX encoding; ^b)^ ARM32 NEON code compiled for ARM64
 
@@ -1179,25 +1169,19 @@ With all this done, you can perform the screen capture as follows:
 While this approach is much more complex than the previously discussed one, the resulting image quality increase makes it worthwhile.
 
 <figure id="highqualityss" data-latex-placement="h">
-<div class="minipage">
 <img src="images/screenshot-lo.png" style="width:90.0%" />
-</div>
-<div class="minipage">
 <img src="images/screenshot-hi.png" style="width:90.0%" />
-</div>
 <figcaption>High-quality screen shot</figcaption>
 </figure>
 
 You can see the performance results you may expect in a simple application in table [5](#asynccapture). The naïve capture performs synchronous retrieval of full-screen image and resizes it using *stb_image_resize*. The proper and high-quality captures do things as described in this chapter.
 
-::: {#asynccapture}
-    **Resolution**    **Naïve capture**   **Proper capture**   **High quality**
-  ------------------ ------------------- -------------------- ------------------
-   $1280\times720$         80 FPS              4200 FPS            2800 FPS
-   $2560\times1440$        23 FPS              3300 FPS            1600 FPS
+|  **Resolution**  | **Naïve capture** | **Proper capture** | **High quality** |
+|:----------------:|:-----------------:|:------------------:|:----------------:|
+| $1280\times720$  |      80 FPS       |      4200 FPS      |     2800 FPS     |
+| $2560\times1440$ |      23 FPS       |      3300 FPS      |     1600 FPS     |
 
-  : Frame capture efficiency
-:::
+_Frame capture efficiency_
 
 ## Marking zones {#markingzones}
 
@@ -1678,28 +1662,26 @@ Capture of true calls stacks can be performed by using macros with the `S` postf
 
 Be aware that call stack collection is a relatively slow operation. Table [6](#CallstackTimes) and figure [6](#CallstackPlot) show how long it took to perform a single capture of varying depth on multiple CPU architectures.
 
-::: {#CallstackTimes}
-   **Depth**   **x86**   **x64**   **ARM**    **ARM64**
-  ----------- --------- --------- ---------- -----------
-       1        34 ns     98 ns    6.62 μs     6.63 μs
-       2        35 ns    150 ns    8.08 μs     8.25 μs
-       3        36 ns    168 ns    9.75 μs      10 μs
-       4        39 ns    190 ns    10.92 μs   11.58 μs
-       5        42 ns    206 ns    12.5 μs    13.33 μs
-      10        52 ns    306 ns    19.62 μs   21.71 μs
-      15        63 ns    415 ns    26.83 μs   30.13 μs
-      20        77 ns    531 ns    34.25 μs   38.71 μs
-      25        89 ns    630 ns    41.17 μs   47.17 μs
-      30       109 ns    735 ns    48.33 μs   55.63 μs
-      35       123 ns    843 ns    55.87 μs   64.09 μs
-      40       142 ns    950 ns    63.12 μs   72.59 μs
-      45       154 ns    1.05 μs   70.54 μs     81 μs
-      50       167 ns    1.16 μs    78 μs      89.5 μs
-      55       179 ns    1.26 μs   85.04 μs     98 μs
-      60       193 ns    1.37 μs   92.75 μs   106.59 μs
+| **Depth** | **x86** | **x64** | **ARM**  | **ARM64** |
+|:---------:|:-------:|:-------:|:--------:|:---------:|
+|     1     |  34 ns  |  98 ns  | 6.62 μs  |  6.63 μs  |
+|     2     |  35 ns  | 150 ns  | 8.08 μs  |  8.25 μs  |
+|     3     |  36 ns  | 168 ns  | 9.75 μs  |   10 μs   |
+|     4     |  39 ns  | 190 ns  | 10.92 μs | 11.58 μs  |
+|     5     |  42 ns  | 206 ns  | 12.5 μs  | 13.33 μs  |
+|    10     |  52 ns  | 306 ns  | 19.62 μs | 21.71 μs  |
+|    15     |  63 ns  | 415 ns  | 26.83 μs | 30.13 μs  |
+|    20     |  77 ns  | 531 ns  | 34.25 μs | 38.71 μs  |
+|    25     |  89 ns  | 630 ns  | 41.17 μs | 47.17 μs  |
+|    30     | 109 ns  | 735 ns  | 48.33 μs | 55.63 μs  |
+|    35     | 123 ns  | 843 ns  | 55.87 μs | 64.09 μs  |
+|    40     | 142 ns  | 950 ns  | 63.12 μs | 72.59 μs  |
+|    45     | 154 ns  | 1.05 μs | 70.54 μs |   81 μs   |
+|    50     | 167 ns  | 1.16 μs |  78 μs   |  89.5 μs  |
+|    55     | 179 ns  | 1.26 μs | 85.04 μs |   98 μs   |
+|    60     | 193 ns  | 1.37 μs | 92.75 μs | 106.59 μs |
 
-  : Median times of zone capture with call stack. x86, x64: i7 8700K; ARM: Banana Pi; ARM64: ODROID-C2. Selected architectures are plotted on figure [6](#CallstackPlot)
-:::
+_Median times of zone capture with call stack. x86, x64: i7 8700K; ARM: Banana Pi; ARM64: ODROID-C2. Selected architectures are plotted on figure [6](#CallstackPlot)_
 
 <figure id="CallstackPlot" data-latex-placement="h">
 
@@ -1851,28 +1833,26 @@ $$\text{Cost}_{\text{total}}(\text{depth}) =
 \text{Cost}_{\text{Lua}}(\text{depth}) + \text{Cost}_{\text{native}}(13) & \text{when depth} > 13
 \end{cases}$$
 
-::: {#CallstackTimesLua}
-   **Depth**   **Time**
-  ----------- ----------
-       1        707 ns
-       2        699 ns
-       3        624 ns
-       4        727 ns
-       5        836 ns
-      10       1.77 μs
-      15       2.44 μs
-      20       2.51 μs
-      25       2.98 μs
-      30        3.6 μs
-      35       4.33 μs
-      40       5.17 μs
-      45       6.01 μs
-      50       6.99 μs
-      55       8.11 μs
-      60       9.17 μs
+| **Depth** | **Time** |
+|:---------:|:--------:|
+|     1     |  707 ns  |
+|     2     |  699 ns  |
+|     3     |  624 ns  |
+|     4     |  727 ns  |
+|     5     |  836 ns  |
+|    10     | 1.77 μs  |
+|    15     | 2.44 μs  |
+|    20     | 2.51 μs  |
+|    25     | 2.98 μs  |
+|    30     |  3.6 μs  |
+|    35     | 4.33 μs  |
+|    40     | 5.17 μs  |
+|    45     | 6.01 μs  |
+|    50     | 6.99 μs  |
+|    55     | 8.11 μs  |
+|    60     | 9.17 μs  |
 
-  : Median times of Lua zone capture with call stack (x64, 13 native frames)
-:::
+_Median times of Lua zone capture with call stack (x64, 13 native frames)_
 
 <figure id="CallstackPlotLua" data-latex-placement="h">
 
@@ -3004,52 +2984,46 @@ The `update` utility supports optional higher levels of data compression, which 
 
 - `-z level` -- selects Zstandard algorithm, with a specified compression level.
 
-::: {#compressiontimes}
-    **Mode**     **Size**    **Ratio**   **Save time**   **Load time**
-  ------------- ----------- ----------- --------------- ---------------
-       lz4       162.48 MB    17.19%        1.91 s          470 ms
-     lz4 hc      77.33 MB      8.18%        39.24 s         401 ms
-   lz4 extreme   72.67 MB      7.68%         4:30           406 ms
-     zstd 1      63.17 MB      6.68%        2.27 s          868 ms
-     zstd 2      63.29 MB      6.69%        2.31 s          884 ms
-     zstd 3      62.94 MB      6.65%        2.43 s          867 ms
-     zstd 4      62.81 MB      6.64%        2.44 s          855 ms
-     zstd 5      61.04 MB      6.45%        3.98 s          855 ms
-     zstd 6      60.27 MB      6.37%        4.19 s          827 ms
-     zstd 7      61.53 MB      6.5%          6.6 s          761 ms
-     zstd 8      60.44 MB      6.39%        7.84 s          746 ms
-     zstd 9      59.58 MB      6.3%          9.6 s          724 ms
-     zstd 10     59.36 MB      6.28%        10.29 s         706 ms
-     zstd 11      59.2 MB      6.26%        11.23 s         717 ms
-     zstd 12     58.51 MB      6.19%        15.43 s         695 ms
-     zstd 13     56.16 MB      5.94%        35.55 s         642 ms
-     zstd 14     55.76 MB      5.89%        37.74 s         627 ms
-     zstd 15     54.65 MB      5.78%         1:01           600 ms
-     zstd 16     50.94 MB      5.38%         1:34           537 ms
-     zstd 17     50.18 MB      5.30%         1:44           542 ms
-     zstd 18     49.91 MB      5.28%         2:17           554 ms
-     zstd 19     46.99 MB      4.97%         7:09           605 ms
-     zstd 20     46.81 MB      4.95%         7:08           608 ms
-     zstd 21     45.77 MB      4.84%         13:01          614 ms
-     zstd 22     45.52 MB      4.81%         15:11          621 ms
+|  **Mode**   | **Size**  | **Ratio** | **Save time** | **Load time** |
+|:-----------:|:---------:|:---------:|:-------------:|:-------------:|
+|     lz4     | 162.48 MB |  17.19%   |    1.91 s     |    470 ms     |
+|   lz4 hc    | 77.33 MB  |   8.18%   |    39.24 s    |    401 ms     |
+| lz4 extreme | 72.67 MB  |   7.68%   |     4:30      |    406 ms     |
+|   zstd 1    | 63.17 MB  |   6.68%   |    2.27 s     |    868 ms     |
+|   zstd 2    | 63.29 MB  |   6.69%   |    2.31 s     |    884 ms     |
+|   zstd 3    | 62.94 MB  |   6.65%   |    2.43 s     |    867 ms     |
+|   zstd 4    | 62.81 MB  |   6.64%   |    2.44 s     |    855 ms     |
+|   zstd 5    | 61.04 MB  |   6.45%   |    3.98 s     |    855 ms     |
+|   zstd 6    | 60.27 MB  |   6.37%   |    4.19 s     |    827 ms     |
+|   zstd 7    | 61.53 MB  |   6.5%    |     6.6 s     |    761 ms     |
+|   zstd 8    | 60.44 MB  |   6.39%   |    7.84 s     |    746 ms     |
+|   zstd 9    | 59.58 MB  |   6.3%    |     9.6 s     |    724 ms     |
+|   zstd 10   | 59.36 MB  |   6.28%   |    10.29 s    |    706 ms     |
+|   zstd 11   |  59.2 MB  |   6.26%   |    11.23 s    |    717 ms     |
+|   zstd 12   | 58.51 MB  |   6.19%   |    15.43 s    |    695 ms     |
+|   zstd 13   | 56.16 MB  |   5.94%   |    35.55 s    |    642 ms     |
+|   zstd 14   | 55.76 MB  |   5.89%   |    37.74 s    |    627 ms     |
+|   zstd 15   | 54.65 MB  |   5.78%   |     1:01      |    600 ms     |
+|   zstd 16   | 50.94 MB  |   5.38%   |     1:34      |    537 ms     |
+|   zstd 17   | 50.18 MB  |   5.30%   |     1:44      |    542 ms     |
+|   zstd 18   | 49.91 MB  |   5.28%   |     2:17      |    554 ms     |
+|   zstd 19   | 46.99 MB  |   4.97%   |     7:09      |    605 ms     |
+|   zstd 20   | 46.81 MB  |   4.95%   |     7:08      |    608 ms     |
+|   zstd 21   | 45.77 MB  |   4.84%   |     13:01     |    614 ms     |
+|   zstd 22   | 45.52 MB  |   4.81%   |     15:11     |    621 ms     |
 
-  : Compression results for an example trace.\
-  Tests performed on Ryzen 9 3900X.
-:::
+_Compression results for an example trace.\
+Tests performed on Ryzen 9 3900X._
 
 <figure id="savetime">
-<div class="minipage">
 <figure id="savesize" data-latex-placement="H">
 
 <figcaption>Plot of trace sizes for different compression modes (see table <a href="#compressiontimes">8</a>).</figcaption>
 </figure>
-</div>
-<div class="minipage">
 <figure id="savetime" data-latex-placement="H">
 
 <figcaption>Logarithmic plot of trace compression times for different compression modes (see table <a href="#compressiontimes">8</a>).</figcaption>
 </figure>
-</div>
 <figcaption>Logarithmic plot of trace compression times for different compression modes (see table <a href="#compressiontimes">8</a>).</figcaption>
 </figure>
 
@@ -3068,37 +3042,33 @@ Saving and loading trace data can be parallelized using the `-j streams` paramet
 
 Going overboard with the number of streams is not recommended, especially with the fast compression modes where it will be difficult to keep each stream busy. Also, complex compression codecs (e.g. zstd at level 22) have significantly worse compression rates when the work is divided. This is a fairly nuanced topic, and you are encouraged to do your own measurements, but for a rough guideline on the behavior, you can refer to tables [9](#streamsize) and [10](#streamspeedup).
 
-::: {#streamsize}
-              **4**     **8**    **16**    **32**
-  --------- --------- --------- --------- ---------
-     lz4     100.30%   100.30%   100.61%   102.73%
-   lz4 hc    100.80%   101.20%   101.61%   102.41%
-   lz4 ext   100.40%   101.21%   101.62%   102.02%
-   zstd 1    100.90%   101.36%   101.81%   102.26%
-   zstd 3    100.51%   101.02%   101.53%   102.04%
-   zstd 6    100.55%   101.10%   101.65%   102.75%
-   zstd 9    101.27%   103.16%   105.06%   108.23%
-   zstd 18   103.08%   106.15%   109.23%   115.38%
-   zstd 22   107.08%   113.27%   122.12%   130.97%
+|         |  **4**  |  **8**  | **16**  | **32**  |
+|:-------:|:-------:|:-------:|:-------:|:-------:|
+|   lz4   | 100.30% | 100.30% | 100.61% | 102.73% |
+| lz4 hc  | 100.80% | 101.20% | 101.61% | 102.41% |
+| lz4 ext | 100.40% | 101.21% | 101.62% | 102.02% |
+| zstd 1  | 100.90% | 101.36% | 101.81% | 102.26% |
+| zstd 3  | 100.51% | 101.02% | 101.53% | 102.04% |
+| zstd 6  | 100.55% | 101.10% | 101.65% | 102.75% |
+| zstd 9  | 101.27% | 103.16% | 105.06% | 108.23% |
+| zstd 18 | 103.08% | 106.15% | 109.23% | 115.38% |
+| zstd 22 | 107.08% | 113.27% | 122.12% | 130.97% |
 
-  : The increase in file size for different compression modes, as compared to a single stream.
-:::
+_The increase in file size for different compression modes, as compared to a single stream._
 
-::: {#streamspeedup}
-             **4**   **8**   **16**   **32**
-  --------- ------- ------- -------- --------
-     lz4     2.04    2.52     2.11     3.24
-   lz4 hc    3.56    6.73     9.49    15.26
-   lz4 ext   3.38    6.53     9.57    17.03
-   zstd 1    2.24    3.68     3.40     3.37
-   zstd 3    3.23    4.13     4.07     4.50
-   zstd 6    3.52    6.00     6.53     6.95
-   zstd 9    3.10    4.26     5.12     5.40
-   zstd 18   3.22    5.41     8.49    14.51
-   zstd 22   3.99    7.47    11.10    18.20
+|         | **4** | **8** | **16** | **32** |
+|:-------:|:-----:|:-----:|:------:|:------:|
+|   lz4   | 2.04  | 2.52  |  2.11  |  3.24  |
+| lz4 hc  | 3.56  | 6.73  |  9.49  | 15.26  |
+| lz4 ext | 3.38  | 6.53  |  9.57  | 17.03  |
+| zstd 1  | 2.24  | 3.68  |  3.40  |  3.37  |
+| zstd 3  | 3.23  | 4.13  |  4.07  |  4.50  |
+| zstd 6  | 3.52  | 6.00  |  6.53  |  6.95  |
+| zstd 9  | 3.10  | 4.26  |  5.12  |  5.40  |
+| zstd 18 | 3.22  | 5.41  |  8.49  | 14.51  |
+| zstd 22 | 3.99  | 7.47  | 11.10  | 18.20  |
 
-  : The speedup (*x* times faster) in saving time for different modes of compression, as compared to a single stream.
-:::
+_The speedup (*x* times faster) in saving time for different modes of compression, as compared to a single stream._
 
 ### Frame images dictionary {#fidict}
 

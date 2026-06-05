@@ -26,7 +26,10 @@ sed -i -e 's@\\nameref{configurationfiles}@Configuration files@g' _tmp.tex
 awk -f bclogo2quote.awk _tmp.tex > _tmp_quoted.tex
 mv _tmp_quoted.tex _tmp.tex
 
-pandoc --wrap=none --reference-location=block --number-sections -L filter.lua -s _tmp.tex -o tracy.md
+pandoc --wrap=none --reference-location=block --number-sections -L filter.lua -t 'markdown-simple_tables-multiline_tables-grid_tables+pipe_tables' -s _tmp.tex -o tracy.md
+
+awk -f tablecaption.awk tracy.md > _tmp_caption.md
+mv _tmp_caption.md tracy.md
 
 sed -i -e 's/^> \*\*IMPORTANT:\([^*]*\)\*\*/> [!IMPORTANT]\
 > **\1**/' tracy.md

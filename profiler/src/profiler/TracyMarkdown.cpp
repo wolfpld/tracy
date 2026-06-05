@@ -32,6 +32,17 @@ void* memmem( const void* haystack, size_t hsize, const char* needle, size_t nsi
 namespace tracy
 {
 
+static constexpr std::array FontSizes = {
+    1.f,    // normal text
+    1.6f,   // h1
+    1.5f,   // h2
+    1.4f,   // h3
+    1.3f,   // h4
+    1.2f,   // h5
+    1.1f,   // h6
+    0.75f,  // footnote
+};
+
 class MarkdownContext
 {
     struct List
@@ -143,11 +154,13 @@ public:
         case MD_BLOCK_FOOTNOTE_DEF_SECTION:
             Separate();
             ImGui::Separator();
+            header = 7;
             break;
         case MD_BLOCK_FOOTNOTE_DEF:
         {
             ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.5f ) );
             auto footnote = ((MD_BLOCK_FOOTNOTE_DEF_DETAIL*)detail);
+            ImGui::PushFont( g_fonts.normal, FontNormal * FontSizes[header] );
             PrintTextExt( footnote->label.text, footnote->label.text + footnote->label.size, false );
             Glue();
             ImGui::TextUnformatted( ". " );
@@ -206,6 +219,9 @@ public:
         case MD_BLOCK_TH:
         case MD_BLOCK_TD:
             glue = false;
+            break;
+        case MD_BLOCK_FOOTNOTE_DEF:
+            ImGui::PopFont();
             break;
         default:
             break;
@@ -267,16 +283,6 @@ public:
 
     int Text( MD_TEXTTYPE type, const MD_CHAR* text, MD_SIZE size )
     {
-        constexpr std::array FontSizes = {
-            1.f,    // normal text
-            1.6f,   // h1
-            1.5f,   // h2
-            1.4f,   // h3
-            1.3f,   // h4
-            1.2f,   // h5
-            1.1f    // h6
-        };
-
         switch( type )
         {
         case MD_TEXT_NORMAL:

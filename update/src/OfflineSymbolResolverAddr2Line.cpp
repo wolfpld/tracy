@@ -129,22 +129,30 @@ public:
         std:: string escapedPath;
         escapeShellParam( imagePath, escapedPath );
 
+        // Command-line length limits: cmd.exe (used by _popen on Windows) allows ~8191 characters;
+        // a single POSIX 'sh -c' argument is capped by MAX_ARG_STRLEN (128 KiB on Linux).
+        // 8000 stays under all of these, so a single conservative budget works on every platform.
+        const size_t maxCmdLength = 8000;
+
         size_t entryIdx = 0;
         while( entryIdx < inputEntryList.size() )
         {
             const size_t startIdx = entryIdx;
-            const size_t batchEndIdx = std::min( inputEntryList.size(), startIdx + (size_t)1024 );
 
-            printf( "Resolving symbols [%zu-%zu]\n", startIdx, batchEndIdx );
-
-            // generate a single addr2line cmd line for all addresses in one invocation
+            // generate a single addr2line cmd line for as many addresses as fit the length budget
             std::stringstream ss;
             ss << m_addr2LinePath << " -C -f" << m_addr2LineArgs << " -e " << escapedPath << " -a ";
-            for( ; entryIdx < batchEndIdx; entryIdx++ )
+            while( entryIdx < inputEntryList.size() )
             {
                 const FrameEntry& entry = inputEntryList[entryIdx];
                 ss << " 0x" << std::hex << entry.symbolOffset;
+                entryIdx++;
+                // always include at least one address, then stop once near the length limit
+                if( static_cast<size_t>( ss.tellp() ) >= maxCmdLength ) break;
             }
+            const size_t batchEndIdx = entryIdx;
+
+            printf( "Resolving symbols [%zu-%zu]\n", startIdx, batchEndIdx );
 
             std::string cmd = ss.str();
 #ifdef _WIN32

@@ -13,7 +13,7 @@
 #include "imgui_internal.h"
 
 #include "../public/common/TracyForceInline.hpp"
-#include "IconsFontAwesome6.h"
+#include "IconsFontAwesome7.h"
 #include "TracySourceTokenizer.hpp"
 
 ImTextureID GetProfilerIconTexture();

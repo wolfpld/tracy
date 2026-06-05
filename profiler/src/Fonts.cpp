@@ -4,7 +4,6 @@
 #include <misc/freetype/imgui_freetype.h>
 
 #include "Fonts.hpp"
-#include "profiler/IconsFontAwesome6.h"
 #include "profiler/TracyEmbed.hpp"
 
 #include "data/FontFixed.hpp"

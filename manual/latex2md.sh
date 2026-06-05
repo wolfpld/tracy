@@ -7,7 +7,7 @@ sed -i -e 's@\\ctrl@Ctrl@g' _tmp.tex
 sed -i -e 's@\\shift@Shift@g' _tmp.tex
 sed -i -e 's@\\Alt@Alt@g' _tmp.tex
 sed -i -e 's@\\del@Delete@g' _tmp.tex
-python3 fa-icons.py ../profiler/src/profiler/IconsFontAwesome6.h _tmp.tex
+python3 fa-icons.py ../profiler/src/profiler/IconsFontAwesome7.h _tmp.tex
 sed -i -e 's@\\LMB{}~@@g' _tmp.tex
 sed -i -e 's@\\MMB{}~@@g' _tmp.tex
 sed -i -e 's@\\RMB{}~@@g' _tmp.tex
@@ -37,6 +37,6 @@ sed -i -e 's/^> \*\*CAUTION:\([^*]*\)\*\*/> [!CAUTION]\
 sed -i -e 's/^> \*\*NOTE:\([^*]*\)\*\*/> [!NOTE]\
 > **\1**/' tracy.md
 
-python3 icon-explain.py ../profiler/src/profiler/IconsFontAwesome6.h tracy.md
+python3 icon-explain.py ../profiler/src/profiler/IconsFontAwesome7.h tracy.md
 
 rm -f _tmp.tex

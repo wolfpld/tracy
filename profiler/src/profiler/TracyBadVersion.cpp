@@ -3,7 +3,7 @@
 #include "imgui.h"
 #include "../Fonts.hpp"
 
-#include "IconsFontAwesome6.h"
+#include "IconsFontAwesome7.h"
 #include "TracyBadVersion.hpp"
 #include "TracyImGui.hpp"
 #include "TracyWeb.hpp"

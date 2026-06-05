@@ -1,4 +1,4 @@
-#include "IconsFontAwesome6.h"
+#include "IconsFontAwesome7.h"
 #include "TracyAchievements.hpp"
 #include "TracyImGui.hpp"
 #include "TracySourceContents.hpp"

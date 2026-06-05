@@ -26,7 +26,7 @@
 #include "../Fonts.hpp"
 
 #include "imgui_internal.h"
-#include "IconsFontAwesome6.h"
+#include "IconsFontAwesome7.h"
 
 namespace tracy
 {

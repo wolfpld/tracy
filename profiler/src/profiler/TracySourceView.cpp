@@ -20,7 +20,7 @@
 #include "tracy_pdqsort.h"
 #include "../Fonts.hpp"
 
-#include "IconsFontAwesome6.h"
+#include "IconsFontAwesome7.h"
 
 namespace tracy
 {

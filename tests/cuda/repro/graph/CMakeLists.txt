@@ -1,9 +1,12 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.18)
 project(CUDAGraphReproTests LANGUAGES CXX CUDA)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CUDA_STANDARD 17)
-set(CMAKE_CUDA_ARCHITECTURES native)
+
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24")
+    set(CMAKE_CUDA_ARCHITECTURES native)
+endif()
 
 set(TRACY_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../../.."
     CACHE PATH "Root of the Tracy repository")

@@ -14,8 +14,9 @@ drops every GPU zone.
 ## Build and run
 
 ```bash
-make
-./repro
+cmake -S . -B ./build
+cmake --build ./build --parallel --config Release
+ctest --test-dir ./build -C Release -R repro
 ```
 
 ## What to expect

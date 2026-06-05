@@ -44,6 +44,8 @@ private:
     FILE* OpenFile( bool write );
     FILE* OpenFileLegacy( const char* filename );
 
+    const char* GetSidecarPath( bool write ) const;
+
     bool Load();
 
     void LoadLegacyDescription();

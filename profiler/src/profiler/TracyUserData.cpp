@@ -262,7 +262,7 @@ bool UserData::Load()
 
 FILE* UserData::OpenFile( bool write )
 {
-    const auto path = GetSavePath( m_program.c_str(), m_time, write );
+    const auto path = GetSidecarPath( write );
     if( !path ) return nullptr;
     FILE* f = fopen( path, write ? "wb" : "rb" );
     return f;
@@ -274,6 +274,11 @@ FILE* UserData::OpenFileLegacy( const char* filename )
     if( !path ) return nullptr;
     FILE* f = fopen( path, "rb" );
     return f;
+}
+
+const char* UserData::GetSidecarPath( bool write ) const
+{
+    return GetSavePath( m_program.c_str(), m_time, write );
 }
 
 void UserData::LoadLegacyDescription()

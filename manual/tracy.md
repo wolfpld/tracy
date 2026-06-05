@@ -93,11 +93,11 @@ The concept of Tracy being a real-time profiler may be explained in a couple of 
 
 It is hard to imagine how long a nanosecond is. One good analogy is to compare it with a measure of length. Let's say that one second is one meter (the average doorknob is at the height of one meter).
 
-One millisecond ($\frac{1}{1000}$ of a second) would be then the length of a millimeter. The average size of a red ant or the width of a pencil is 5 or 6 mm. A modern game running at 60 frames per second has only 16 ms to update the game world and render the entire scene.
+One millisecond (1/1000 of a second) would be then the length of a millimeter. The average size of a red ant or the width of a pencil is 5 or 6 mm. A modern game running at 60 frames per second has only 16 ms to update the game world and render the entire scene.
 
-One microsecond ($\frac{1}{1000}$ of a millisecond) in our comparison equals one micron. The diameter of a typical bacterium ranges from 1 to 10 microns. The diameter of a red blood cell or width of a strand of spider web silk is about 7 μm.
+One microsecond (1/1000 of a millisecond) in our comparison equals one micron. The diameter of a typical bacterium ranges from 1 to 10 microns. The diameter of a red blood cell or width of a strand of spider web silk is about 7 μm.
 
-And finally, one nanosecond ($\frac{1}{1000}$ of a microsecond) would be one nanometer. The modern microprocessor transistor gate, the width of the DNA helix, or the thickness of a cell membrane are in the range of 5 nm. In one ns the light can travel only 30 cm.
+And finally, one nanosecond (1/1000 of a microsecond) would be one nanometer. The modern microprocessor transistor gate, the width of the DNA helix, or the thickness of a cell membrane are in the range of 5 nm. In one ns the light can travel only 30 cm.
 
 Tracy can achieve single-digit nanosecond measurement resolution due to usage of hardware timing mechanisms on the x86 and ARM architectures[^4]. Other profilers may rely on the timers provided by the operating system, which do have significantly reduced resolution (about 300 ns -- 1 μs). This is enough to hide the subtle impact of cache access optimization, etc.
 
@@ -113,7 +113,7 @@ It is wrong to think so. Optimizing a function to execute in 430 ns, instead of
 
 [^6]: This is a real optimization case. The values are median function run times and do not reflect the real execution time, which explains the discrepancy in the total reported time.
 
-You also need to understand how timer precision is reflected in measurement errors. Take a look at figure [1](#timer). There you can see three discrete timer tick events, which increase the value reported by the timer by 300 ns. You can also see four readings of time ranges, marked $A_1$, $A_2$; $B_1$, $B_2$; $C_1$, $C_2$ and $D_1$, $D_2$.
+You also need to understand how timer precision is reflected in measurement errors. Take a look at figure [1](#timer). There you can see three discrete timer tick events, which increase the value reported by the timer by 300 ns. You can also see four readings of time ranges, marked A₁, A₂; B₁, B₂; C₁, C₂ and D₁, D₂.
 
 <figure id="timer" data-latex-placement="h">
 
@@ -122,11 +122,11 @@ You also need to understand how timer precision is reflected in measurement erro
 
 Now let's take a look at the timer readings.
 
-- The $A$ and $D$ ranges both take a very short amount of time (10 ns), but the $A$ range is reported as 300 ns, and the $D$ range is reported as 0 ns.
+- The A and D ranges both take a very short amount of time (10 ns), but the A range is reported as 300 ns, and the D range is reported as 0 ns.
 
-- The $B$ range takes a considerable amount of time (590 ns), but according to the timer readings, it took the same time (300 ns) as the short lived $A$ range.
+- The B range takes a considerable amount of time (590 ns), but according to the timer readings, it took the same time (300 ns) as the short lived A range.
 
-- The $C$ range (610 ns) is only 20 ns longer than the $B$ range, but it is reported as 900 ns, a 600 ns difference!
+- The C range (610 ns) is only 20 ns longer than the B range, but it is reported as 900 ns, a 600 ns difference!
 
 Here, you can see why using a high-precision timer is essential. While there is no escape from the measurement errors, a profiler can reduce their impact by increasing the timer accuracy.
 
@@ -188,7 +188,7 @@ You may wonder why you should use Tracy when so many other profilers are availab
 
 ## Performance impact {#perfimpact}
 
-Let's profile an example application to check how much slowdown is introduced by using Tracy. For this purpose we have used etcpak[^10]. The input data was a $16384 \times 16384$ pixels test image, and the $4 \times 4$ pixel block compression function was selected to be instrumented. The image was compressed on 12 parallel threads, and the timing data represents a mean compression time of a single image.
+Let's profile an example application to check how much slowdown is introduced by using Tracy. For this purpose we have used etcpak[^10]. The input data was a 16384 × 16384 pixels test image, and the 4 × 4 pixel block compression function was selected to be instrumented. The image was compressed on 12 parallel threads, and the timing data represents a mean compression time of a single image.
 
 [^10]: <https://github.com/wolfpld/etcpak>
 
@@ -397,7 +397,7 @@ Here's a sample command to set up a build directory with profiling enabled. The 
 
 ### Short-lived applications
 
-In case you want to profile a short-lived program (for example, a compression utility that finishes its work in one second), set the `TRACY_NO_EXIT` environment variable to $1$. With this option enabled, Tracy will not exit until an incoming connection is made, even if the application has already finished executing. If your platform doesn't support an easy setup of environment variables, you may also add the `TRACY_NO_EXIT` define to your build configuration, which has the same effect.
+In case you want to profile a short-lived program (for example, a compression utility that finishes its work in one second), set the `TRACY_NO_EXIT` environment variable to 1. With this option enabled, Tracy will not exit until an incoming connection is made, even if the application has already finished executing. If your platform doesn't support an easy setup of environment variables, you may also add the `TRACY_NO_EXIT` define to your build configuration, which has the same effect.
 
 ### On-demand profiling {#ondemand}
 
@@ -422,11 +422,11 @@ The program name that is sent out in the broadcast messages can be customized by
 
 ### Client network interface
 
-By default, the Tracy client will listen on all network interfaces. If you want to restrict it to only listening on the localhost interface, define the `TRACY_ONLY_LOCALHOST` macro at compile-time, or set the `TRACY_ONLY_LOCALHOST` environment variable to $1$ at runtime.
+By default, the Tracy client will listen on all network interfaces. If you want to restrict it to only listening on the localhost interface, define the `TRACY_ONLY_LOCALHOST` macro at compile-time, or set the `TRACY_ONLY_LOCALHOST` environment variable to 1 at runtime.
 
 If you need to use a specific Tracy client address, such as QNX requires, define the `TRACY_CLIENT_ADDRESS` macro at compile-time as the desired string address.
 
-By default, the Tracy client will listen on IPv6 interfaces, falling back to IPv4 only if IPv6 is unavailable. If you want to restrict it to only listening on IPv4 interfaces, define the `TRACY_ONLY_IPV4` macro at compile-time, or set the `TRACY_ONLY_IPV4` environment variable to $1$ at runtime.
+By default, the Tracy client will listen on IPv6 interfaces, falling back to IPv4 only if IPv6 is unavailable. If you want to restrict it to only listening on IPv4 interfaces, define the `TRACY_ONLY_IPV4` macro at compile-time, or set the `TRACY_ONLY_IPV4` environment variable to 1 at runtime.
 
 ### Setup for multi-DLL projects
 
@@ -552,13 +552,13 @@ Inside that header, enable any subset of the hooks you need by defining the corr
 
 The available hooks are:
 
-- `TRACY_HAS_CUSTOM_THREAD_ID` $\rightarrow$ `tracy::PlatformGetThreadId()`. Required.
+- `TRACY_HAS_CUSTOM_THREAD_ID` → `tracy::PlatformGetThreadId()`. Required.
 
-- `TRACY_HAS_CUSTOM_USER_INFO` $\rightarrow$ `tracy::PlatformGetHostname()`, `tracy::PlatformGetUserLogin()`, `tracy::PlatformGetUserFullName()`.
+- `TRACY_HAS_CUSTOM_USER_INFO` → `tracy::PlatformGetHostname()`, `tracy::PlatformGetUserLogin()`, `tracy::PlatformGetUserFullName()`.
 
-- `TRACY_HAS_CUSTOM_SAFE_COPY` $\rightarrow$ `tracy::PlatformSafeMemcpy()`.
+- `TRACY_HAS_CUSTOM_SAFE_COPY` → `tracy::PlatformSafeMemcpy()`.
 
-- `TRACY_HAS_CUSTOM_ALLOCATOR` $\rightarrow$ `tracy::PlatformMalloc()`, `tracy::PlatformFree()`, `tracy::PlatformRealloc()`, `tracy::PlatformAllocatorInit()`, `tracy::PlatformAllocatorThreadInit()`, `tracy::PlatformAllocatorFinalize()`, `tracy::PlatformAllocatorThreadFinalize()`.
+- `TRACY_HAS_CUSTOM_ALLOCATOR` → `tracy::PlatformMalloc()`, `tracy::PlatformFree()`, `tracy::PlatformRealloc()`, `tracy::PlatformAllocatorInit()`, `tracy::PlatformAllocatorThreadInit()`, `tracy::PlatformAllocatorFinalize()`, `tracy::PlatformAllocatorThreadFinalize()`.
 
 Template files are provided in the repository ( `examples/CustomPlatform/CustomPlatform(.h|.cpp)` ). See `CustomPlatform.h` for the contract each `Platform*` function must satisfy (return values, threading guarantees, and footguns to avoid). Copy these files into your project, fill in the bodies for the hooks you enable, and point Tracy at the header.
 
@@ -598,11 +598,11 @@ When using Tracy Profiler, keep in mind the following requirements:
 
 - If there are recursive zones at any point in a zone stack, each unique zone source location should not appear more than 255 times.
 
-- Profiling session cannot be longer than 1.6 days ($2^{47}$ ns). This also includes on-demand sessions.
+- Profiling session cannot be longer than 1.6 days (2⁴⁷ ns). This also includes on-demand sessions.
 
-- No more than 4 billion ($2^{32}$) memory free events may be recorded.
+- No more than 4 billion (2³²) memory free events may be recorded.
 
-- No more than 16 million ($2^{24}$) unique call stacks can be captured.
+- No more than 16 million (2²⁴) unique call stacks can be captured.
 
 [^18]: A source location is a place in the code, which is identified by source file name and line number, for example, when you markup a zone.
 
@@ -1037,7 +1037,7 @@ Images are sent using the `FrameImage(image, width, height, offset, flip)` macro
 
 [^36]: For example, OpenGL flips images, but Vulkan does not.
 
-Handling image data requires a lot of memory and bandwidth[^37]. To achieve sane memory usage, you should scale down taken screenshots to a suitable size, e.g., $320\times180$.
+Handling image data requires a lot of memory and bandwidth[^37]. To achieve sane memory usage, you should scale down taken screenshots to a suitable size, e.g., 320×180.
 
 [^37]: One uncompressed 1080p image takes 8 MB.
 
@@ -1056,7 +1056,7 @@ To further reduce image data size, frame images are internally compressed using 
 |   ARM32 NEON^b^    |    `__ARM_NEON`     |  529 μs  |
 |     ARM64 NEON     |    `__ARM_NEON`     |  438 μs  |
 
-_Client compression time of $320\times180$ image. x86: Ryzen 9 3900X (MSVC); ARM: ODROID-C2 (gcc)._
+_Client compression time of 320×180 image. x86: Ryzen 9 3900X (MSVC); ARM: ODROID-C2 (gcc)._
 
 ^a)^ VEX encoding; ^b)^ ARM32 NEON code compiled for ARM64
 
@@ -1067,7 +1067,7 @@ _Client compression time of $320\times180$ image. x86: Ryzen 9 3900X (MSVC); ARM
 >
 > - This second thread will be periodically woken up, even if there are no frame images to compress[^41]. If you are not using the frame image capture functionality and you don't wish this thread to be running, you can define the `TRACY_NO_FRAME_IMAGE` macro.
 >
-> - Due to implementation details of the network buffer, a single frame image cannot be greater than 256 KB after compression. Note that a $960\times540$ image fits in this limit.
+> - Due to implementation details of the network buffer, a single frame image cannot be greater than 256 KB after compression. Note that a 960×540 image fits in this limit.
 
 [^40]: Small part of compression task is offloaded to the server.
 
@@ -1108,7 +1108,7 @@ Everything needs to be correctly initialized (the cleanup is left for the reader
         glBufferData(GL_PIXEL_PACK_BUFFER, 320*180*4, nullptr, GL_STREAM_READ);
     }
 
-We will now set up a screen capture, which will downscale the screen contents to $320\times180$ pixels and copy the resulting image to a buffer accessible by the CPU when the operation is done. This should be placed right before *swap buffers* or *present* call.
+We will now set up a screen capture, which will downscale the screen contents to 320×180 pixels and copy the resulting image to a buffer accessible by the CPU when the operation is done. This should be placed right before *swap buffers* or *present* call.
 
     assert(m_fiQueue.empty() || m_fiQueue.front() != m_fiIdx);  // check for buffer overrun
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fiFramebuffer[m_fiIdx]);
@@ -1176,10 +1176,10 @@ While this approach is much more complex than the previously discussed one, the 
 
 You can see the performance results you may expect in a simple application in table [5](#asynccapture). The naïve capture performs synchronous retrieval of full-screen image and resizes it using *stb_image_resize*. The proper and high-quality captures do things as described in this chapter.
 
-|  **Resolution**  | **Naïve capture** | **Proper capture** | **High quality** |
-|:----------------:|:-----------------:|:------------------:|:----------------:|
-| $1280\times720$  |      80 FPS       |      4200 FPS      |     2800 FPS     |
-| $2560\times1440$ |      23 FPS       |      3300 FPS      |     1600 FPS     |
+| **Resolution** | **Naïve capture** | **Proper capture** | **High quality** |
+|:--------------:|:-----------------:|:------------------:|:----------------:|
+|    1280×720    |      80 FPS       |      4200 FPS      |     2800 FPS     |
+|   2560×1440    |      23 FPS       |      3300 FPS      |     1600 FPS     |
 
 _Frame capture efficiency_
 
@@ -1350,7 +1350,7 @@ To configure how plot values are presented by the profiler, you may use the `Tra
 
 - `tracy::PlotFormatType::Memory` -- treats the values as memory sizes. Will display kilobytes, megabytes, etc.
 
-- `tracy::PlotFormatType::Percentage` -- values will be displayed as percentage (with value $100$ being equal to $100\%$).
+- `tracy::PlotFormatType::Percentage` -- values will be displayed as percentage (with value 100 being equal to 100%).
 
 The `step` parameter determines whether the plot will be displayed as a staircase or will smoothly change between plot points (see figure [5](#plotconfig)). The `fill` parameter can be used to disable filling the area below the plot with a solid color.
 
@@ -1827,11 +1827,9 @@ Be aware that for Lua call stack retrieval to work, you need to be on a platform
 
 Cost of performing Lua call stack capture is presented in table [7](#CallstackTimesLua) and figure [7](#CallstackPlotLua). Lua call stacks include native call stacks, which have a capture cost of their own (table [6](#CallstackTimes)), and the `depth` parameter is applied for both captures. The presented data were captured with full Lua stack depth, but only 13 frames were available on the native call stack. Hence, to explain the non-linearity of the graph, you need to consider what was truly measured:
 
-$$\text{Cost}_{\text{total}}(\text{depth}) =
-\begin{cases}
-\text{Cost}_{\text{Lua}}(\text{depth}) + \text{Cost}_{\text{native}}(\text{depth}) & \text{when depth} \leq 13 \\
-\text{Cost}_{\text{Lua}}(\text{depth}) + \text{Cost}_{\text{native}}(13) & \text{when depth} > 13
-\end{cases}$$
+    Cost_total(depth) =
+        Cost_Lua(depth) + Cost_native(depth)   when depth ≤ 13
+        Cost_Lua(depth) + Cost_native(13)   when depth > 13
 
 | **Depth** | **Time** |
 |:---------:|:--------:|
@@ -2657,11 +2655,11 @@ While the call stack sampling is a generic software-implemented functionality of
 
 Tracy can use these counters to present you the following three statistics, which may help guide you in discovering why your code is not as fast as possible:
 
-1.  *Instructions Per Cycle (IPC)* -- shows how many instructions were executing concurrently within a single core cycle. Higher values are better. The maximum achievable value depends on the design of the CPU, including things such as the number of execution units and their individual capabilities. Calculated as $\frac{\text{\#instructions retired}}{\text{\#cycles}}$. You can disable it with the `TRACY_NO_SAMPLE_RETIREMENT` macro.
+1.  *Instructions Per Cycle (IPC)* -- shows how many instructions were executing concurrently within a single core cycle. Higher values are better. The maximum achievable value depends on the design of the CPU, including things such as the number of execution units and their individual capabilities. Calculated as #instructions retired / #cycles. You can disable it with the `TRACY_NO_SAMPLE_RETIREMENT` macro.
 
-2.  *Branch miss rate* -- shows how frequently the CPU branch predictor makes a wrong choice. Lower values are better. Calculated as $\frac{\text{\#branch misses}}{\text{\#branch instructions}}$. You can disable it with the `TRACY_NO_SAMPLE_BRANCH` macro.
+2.  *Branch miss rate* -- shows how frequently the CPU branch predictor makes a wrong choice. Lower values are better. Calculated as #branch misses / #branch instructions. You can disable it with the `TRACY_NO_SAMPLE_BRANCH` macro.
 
-3.  *Cache miss rate* -- shows how frequently the CPU has to retrieve data from memory. Lower values are better. The specifics of which cache level is taken into account here vary from one implementation to another. Calculated as $\frac{\text{\#cache misses}}{\text{\#cache references}}$. You can disable it with the `TRACY_NO_SAMPLE_CACHE` macro.
+3.  *Cache miss rate* -- shows how frequently the CPU has to retrieve data from memory. Lower values are better. The specifics of which cache level is taken into account here vary from one implementation to another. Calculated as #cache misses / #cache references. You can disable it with the `TRACY_NO_SAMPLE_CACHE` macro.
 
 Each performance counter has to be collected by a dedicated Performance Monitoring Unit (PMU). However, the availability of PMUs is very limited, so you may not be able to capture all the statistics mentioned above at the same time (as each requires capture of two different counters). In such a case, you will need to manually select what needs to be sampled with the macros specified above.
 
@@ -2898,7 +2896,7 @@ You can also adjust some settings that affect global profiler behavior in this w
 
 - *Zone name shortening* -- Sets the default zone name shortening behavior used in new traces. See section [5.4](#options) for more information.
 
-- *Scroll multipliers* -- Allows you to fine-tune the sensitivity of the horizontal and vertical scroll in the timeline. The default values ($1.0$) are an attempt at the best possible settings, but differences in hardware manufacturers, platform implementations, and user expectations may require adjustments.
+- *Scroll multipliers* -- Allows you to fine-tune the sensitivity of the horizontal and vertical scroll in the timeline. The default values (1.0) are an attempt at the best possible settings, but differences in hardware manufacturers, platform implementations, and user expectations may require adjustments.
 
 - *Memory limit* -- When enabled, profiler will stop recording data when memory usage exceeds the specified percentage of the total system memory. This mechanism does not measure the current system memory usage or limits. The upper value is not capped, as you may use swap. See section [4.6](#memoryusage) for more information.
 
@@ -3122,7 +3120,7 @@ The workflow is identical, whether you are viewing a previously saved trace or i
 
 In most cases Tracy will display an approximation of time value, depending on how big it is. For example, a short time range will be displayed as 123 ns, and some longer ones will be shortened to 123.45 μs, 123.45 ms, 12.34 s, 1:23.4, 12:34:56, or even 1d12:34:56 to indicate more than a day has passed.
 
-While such a presentation makes time values easy to read, it is not always appropriate. For example, you may have multiple events happen at a time approximated to 1:23.4, giving you the precision of only $\sfrac{1}{10}$ of a second. And there's certainly a lot that can happen in 100 ms.
+While such a presentation makes time values easy to read, it is not always appropriate. For example, you may have multiple events happen at a time approximated to 1:23.4, giving you the precision of only 1/10 of a second. And there's certainly a lot that can happen in 100 ms.
 
 An alternative time display is used in appropriate places to solve this problem. It combines a day--hour--minute--second value with full nanosecond resolution, resulting in values such as 1:23 456,789,012 ns.
 
@@ -4483,9 +4481,9 @@ As described in chapter [3.17.6](#hardwaresampling), on some platforms, Tracy c
 
 - *Cycles* -- an option very similar to the *sample count*, but the data is collected directly by the CPU hardware counters. This may make the results more reliable.
 
-- *Branch impact* -- indicates places where many branch instructions are issued, and at the same time, incorrectly predicted. Calculated as $\sqrt{\text{\#branch instructions}*\text{\#branch misses}}$. This is more useful than the raw branch miss rate, as it considers the number of events taking place.
+- *Branch impact* -- indicates places where many branch instructions are issued, and at the same time, incorrectly predicted. Calculated as √(#branch instructions\*#branch misses). This is more useful than the raw branch miss rate, as it considers the number of events taking place.
 
-- *Cache impact* -- similar to *branch impact*, but it shows cache miss data instead. These values are calculated as $\sqrt{\text{\#cache references}*\text{\#cache misses}}$ and will highlight places with lots of cache accesses that also miss.
+- *Cache impact* -- similar to *branch impact*, but it shows cache miss data instead. These values are calculated as √(#cache references\*#cache misses) and will highlight places with lots of cache accesses that also miss.
 
 - The rest of the available selections just show raw values gathered from the hardware counters. These are: *Retirements*, *Branches taken*, *Branch miss*, *Cache access* and *Cache miss*.
 
@@ -4540,7 +4538,7 @@ This window presents information and statistics about a lock. The lock events co
 
 You may view a live replay of the profiled application screen captures (see section [3.3.3](#frameimages)) using this window. Playback is controlled by the * Play* and * Pause* buttons and the *Frame image* slider can be used to scrub to the desired timestamp. Alternatively you may use the ** and ** buttons to change single frame back or forward.
 
-If the *Sync timeline* option is selected, the profiler will focus the timeline view on the frame corresponding to the currently displayed screenshot. The *Zoom 2$\times$* option enlarges the image for easier viewing.
+If the *Sync timeline* option is selected, the profiler will focus the timeline view on the frame corresponding to the currently displayed screenshot. The *Zoom 2×* option enlarges the image for easier viewing.
 
 The following parameters also accompany each displayed frame image: *timestamp*, showing at which time the image was captured, *frame*, displaying the numerical value of the corresponding frame, and *ratio*, telling how well the in-memory loss-less compression was able to reduce the image data size.
 
@@ -4718,7 +4716,7 @@ So, which model should you run and what hardware you need to be able to do so? L
 
 As a rule of thumb, the specified number of parameters is how much total memory is needed to run the model with 8-bit quantization. Another way to get a rough estimate is to look at the model file size. Strive to fit the active parameters completely into VRAM, leaving space for computation scratch space and the context.
 
-To make this practical, the 35B-A3B model at 2 bit quantization requires $35 * 2 / 8 = 8.75$ GB, which fits into the 4 + 16 GB budget in the example above. The 3B active parameters similarly calculate to 0.75 GB, with additional 1 GB or so needed for computation buffer and another 1 GB for the 50K context, which is less than the 4 GB of VRAM available, making everything fit.
+To make this practical, the 35B-A3B model at 2 bit quantization requires 35 \* 2 / 8 = 8.75 GB, which fits into the 4 + 16 GB budget in the example above. The 3B active parameters similarly calculate to 0.75 GB, with additional 1 GB or so needed for computation buffer and another 1 GB for the 50K context, which is less than the 4 GB of VRAM available, making everything fit.
 
 ## Usage {#llmusage}
 

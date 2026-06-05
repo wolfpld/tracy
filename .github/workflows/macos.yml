@@ -51,6 +51,8 @@ jobs:
         cmake --build merge/build --parallel --config Release
     - name: Build library
       run: meson setup -Dprefix=$GITHUB_WORKSPACE/bin/lib -Dtracy_enable=true build && meson compile -C build && meson install -C build
+    - name: Test application
+      uses: ./.github/actions/test-tracy
     - name: Package artifacts
       run: |
         mkdir -p bin

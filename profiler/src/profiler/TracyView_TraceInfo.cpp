@@ -43,7 +43,7 @@ void View::DrawInfo()
         {
             ImGui::SameLine();
             auto sidecarPublic = m_userData.IsSidecarPublic();
-            if( SmallCheckbox( "Public sidecar", &sidecarPublic ) )
+            if( SmallCheckbox( ICON_FA_USER_GEAR " Public sidecar", &sidecarPublic ) )
             {
                 m_userData.SetSidecarPublic( sidecarPublic );
             }

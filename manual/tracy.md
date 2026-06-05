@@ -1225,15 +1225,15 @@ Zone objects can't be moved or copied.
 >
 >     {
 >         ZoneNamed(Zone1, true);
->         @\circled{a}@
+>         (a)
 >         {
 >             ZoneNamed(Zone2, true);
->             @\circled{b}@
+>             (b)
 >         }
->         @\circled{c}@
+>         (c)
 >     }
 >
-> It is valid to set the `Zone1` text or name *only* in places or . After `Zone2` is created at you can no longer perform operations on `Zone1`, until `Zone2` is destroyed.
+> It is valid to set the `Zone1` text or name *only* in places (a) or (c). After `Zone2` is created at (b) you can no longer perform operations on `Zone1`, until `Zone2` is destroyed.
 
 ### Filtering zones {#filteringzones}
 
@@ -4282,8 +4282,8 @@ You need to take special care when reading call stacks. Contrary to their name, 
 
 Let's say you are looking at the call stack of some function called within `Application::Run`. This is the result you might get:
 
-    0. @\ldots@
-    1. @\ldots@
+    0. …
+    1. …
     2. Application::Run
     3. std::unique_ptr<Application>::reset
     4. main

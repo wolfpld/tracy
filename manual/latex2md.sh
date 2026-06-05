@@ -13,6 +13,12 @@ sed -i -e 's@\\MMB{}~@@g' _tmp.tex
 sed -i -e 's@\\RMB{}~@@g' _tmp.tex
 sed -i -e 's@\\Scroll{}~@@g' _tmp.tex
 
+# Resolve \circled{} markers and lstlisting escapeinside (@...@) snippets, which
+# pandoc would otherwise emit verbatim or drop, to their Unicode equivalents.
+sed -i -e 's|@\\circled{a}@|(a)|g' -e 's|@\\circled{b}@|(b)|g' -e 's|@\\circled{c}@|(c)|g' _tmp.tex
+sed -i -e 's|\\circled{a}|(a)|g' -e 's|\\circled{b}|(b)|g' -e 's|\\circled{c}|(c)|g' _tmp.tex
+sed -i -e 's|@\\ldots@|…|g' _tmp.tex
+
 sed -i -e 's@\\nameref{quicklook}@A quick look at Tracy Profiler@g' _tmp.tex
 sed -i -e 's@\\nameref{firststeps}@First steps@g' _tmp.tex
 sed -i -e 's@\\nameref{client}@Client markup@g' _tmp.tex

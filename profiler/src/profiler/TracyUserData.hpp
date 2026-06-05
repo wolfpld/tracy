@@ -40,8 +40,6 @@ public:
 
     void Save();
 
-    const char* GetConfigLocation() const;
-
 private:
     FILE* OpenFile( bool write );
     FILE* OpenFileLegacy( const char* filename );

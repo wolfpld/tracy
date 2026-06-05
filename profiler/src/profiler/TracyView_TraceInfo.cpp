@@ -41,16 +41,6 @@ void View::DrawInfo()
         TextFocused( "File:", m_filename.c_str() );
         if( m_userData.Valid() )
         {
-            const auto save = m_userData.GetConfigLocation();
-            if( save )
-            {
-                ImGui::SameLine();
-                if( ImGui::SmallButton( ICON_FA_FOLDER ) )
-                {
-                    ImGui::SetClipboardText( save );
-                }
-                TooltipIfHovered( "Copy user settings location to clipboard." );
-            }
         }
     }
     {

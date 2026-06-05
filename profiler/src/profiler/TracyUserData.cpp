@@ -276,12 +276,6 @@ FILE* UserData::OpenFileLegacy( const char* filename )
     return f;
 }
 
-const char* UserData::GetConfigLocation() const
-{
-    assert( Valid() );
-    return GetSavePathLegacy( m_program.c_str(), m_time, nullptr );
-}
-
 void UserData::LoadLegacyDescription()
 {
     constexpr auto FileDescription = "description";

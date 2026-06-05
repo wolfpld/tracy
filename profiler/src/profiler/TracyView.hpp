@@ -269,6 +269,7 @@ private:
     void InitTextEditor();
     void SetupConfig();
     void Achieve( const char* id );
+    void SaveUserData();
 
     bool DrawImpl();
     void DrawFrameImage( FrameImageCache& cache, const FrameImage& fi, float scale = GetScale() );

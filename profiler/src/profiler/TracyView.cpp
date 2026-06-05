@@ -115,11 +115,7 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f
 View::~View()
 {
     m_worker.Shutdown();
-
-    m_userData.StoreState( m_vd );
-    m_userData.StoreAnnotations( m_annotations );
-    m_userData.StoreSourceSubstitutions( m_sourceSubstitutions );
-    m_userData.Save();
+    SaveUserData();
 
     if( m_compare.loadThread.joinable() ) m_compare.loadThread.join();
     if( m_saveThread.joinable() ) m_saveThread.join();
@@ -154,6 +150,14 @@ void View::Achieve( const char* id )
 {
     if( !m_achievements || !m_achievementsMgr ) return;
     m_achievementsMgr->Achieve( id );
+}
+
+void View::SaveUserData()
+{
+    m_userData.StoreState( m_vd );
+    m_userData.StoreAnnotations( m_annotations );
+    m_userData.StoreSourceSubstitutions( m_sourceSubstitutions );
+    m_userData.Save();
 }
 
 void View::ViewSource( const char* fileName, int line )

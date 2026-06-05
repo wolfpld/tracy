@@ -22,6 +22,10 @@ extern "C"
 #define STBI_ONLY_JPEG
 #include "stb_image.h"
 
+#ifdef TRACY_DEMANGLE
+extern "C" const char* ___tracy_demangle( const char* ) { return nullptr; }
+#endif
+
 struct static_init_test_t
 {
     static_init_test_t()

@@ -166,6 +166,40 @@ public:
             ImGui::TextUnformatted( ". " );
             break;
         }
+        case MD_BLOCK_ADMONITION:
+        {
+            Separate();
+            ImGui::Indent();
+            origin = ImGui::GetCursorScreenPos();
+            auto admonition = ((MD_BLOCK_ADMONITION_DETAIL*)detail);
+            switch( admonition->type.text[0] )
+            {
+            case 'n':   // note
+                color = 0xFFEB6F1F;
+                TextColoredUnformatted( color, ICON_FA_CIRCLE_INFO " " );
+                break;
+            case 't':   // tip
+                color = 0xFF368623;
+                TextColoredUnformatted( color, ICON_FA_LIGHTBULB " " );
+                break;
+            case 'i':   // important
+                color = 0xFFE55789;
+                TextColoredUnformatted( color, ICON_FA_MESSAGE " " );
+                break;
+            case 'w':   // warning
+                color = 0xFF036A9E;
+                TextColoredUnformatted( color, ICON_FA_TRIANGLE_EXCLAMATION " " );
+                break;
+            case 'c':   // caution
+                color = 0xFF3336DA;
+                TextColoredUnformatted( color, ICON_FA_HAND " " );
+                break;
+            default:
+                assert( false );
+            }
+            Glue();
+            break;
+        }
         default:
             break;
         }
@@ -223,6 +257,15 @@ public:
         case MD_BLOCK_FOOTNOTE_DEF:
             ImGui::PopFont();
             break;
+        case MD_BLOCK_ADMONITION:
+        {
+            const auto scale = GetScale();
+            const auto pos = ImGui::GetCursorScreenPos();
+            const auto offset = ImVec2( 8.f * scale, 0 );
+            ImGui::Unindent();
+            ImGui::GetWindowDrawList()->AddLine( origin - offset, pos - offset, color, 2.f * scale );
+            break;
+        }
         default:
             break;
         }
@@ -493,6 +536,9 @@ private:
 
     int idx = 0;
 
+    uint32_t color;
+    ImVec2 origin;
+
     std::vector<List> lists;
     std::string link;
 
@@ -507,7 +553,7 @@ Markdown::Markdown( View* view, Worker* worker )
     , m_worker( worker )
 {
     memset( m_parser, 0, sizeof( MD_PARSER ) );
-    m_parser->flags = MD_FLAG_COLLAPSEWHITESPACE | MD_FLAG_PERMISSIVEAUTOLINKS | MD_FLAG_NOHTML | MD_FLAG_TABLES | MD_FLAG_TASKLISTS | MD_FLAG_STRIKETHROUGH | MD_FLAG_FOOTNOTES;
+    m_parser->flags = MD_FLAG_COLLAPSEWHITESPACE | MD_FLAG_PERMISSIVEAUTOLINKS | MD_FLAG_NOHTML | MD_FLAG_TABLES | MD_FLAG_TASKLISTS | MD_FLAG_STRIKETHROUGH | MD_FLAG_FOOTNOTES | MD_FLAG_ADMONITIONS;
     m_parser->enter_block = []( MD_BLOCKTYPE type, void* detail, void* ud ) -> int { return ((MarkdownContext*)ud)->EnterBlock( type, detail ); };
     m_parser->leave_block = []( MD_BLOCKTYPE type, void* detail, void* ud ) -> int { return ((MarkdownContext*)ud)->LeaveBlock( type, detail ); };
     m_parser->enter_span = []( MD_SPANTYPE type, void* detail, void* ud ) -> int { return ((MarkdownContext*)ud)->EnterSpan( type, detail ); };

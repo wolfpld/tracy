@@ -88,6 +88,7 @@ void View::DrawManual()
         if( ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen() )
         {
             m_activeManualChunk = i;
+            m_manualPositionReset = true;
         }
     }
     while( level-- > 0 ) ImGui::TreePop();

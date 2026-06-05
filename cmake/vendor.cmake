@@ -217,7 +217,7 @@ CPMAddPackage(
 CPMAddPackage(
     NAME md4c
     GITHUB_REPOSITORY mity/md4c
-    GIT_TAG release-0.5.3
+    GIT_TAG 755ce49acdc7cd682d4502b4796db5ed6a1230fb
     EXCLUDE_FROM_ALL TRUE
 )
 

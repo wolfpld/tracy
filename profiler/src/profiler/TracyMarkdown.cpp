@@ -140,6 +140,19 @@ public:
         case MD_BLOCK_TD:
             ImGui::TableNextColumn();
             break;
+        case MD_BLOCK_FOOTNOTE_DEF_SECTION:
+            Separate();
+            ImGui::Separator();
+            break;
+        case MD_BLOCK_FOOTNOTE_DEF:
+        {
+            ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.5f ) );
+            auto footnote = ((MD_BLOCK_FOOTNOTE_DEF_DETAIL*)detail);
+            PrintTextExt( footnote->label.text, footnote->label.text + footnote->label.size, false );
+            Glue();
+            ImGui::TextUnformatted( ". " );
+            break;
+        }
         default:
             break;
         }
@@ -216,6 +229,14 @@ public:
         case MD_SPAN_DEL:
             strikethrough = true;
             break;
+        case MD_SPAN_FOOTNOTE_REF:
+        {
+            auto footnote = ((MD_SPAN_FOOTNOTE_REF_DETAIL*)detail);
+            ImGui::PushFont( g_fonts.normal, FontSmall );
+            Glue();
+            PrintTextExt( footnote->label.text, footnote->label.text + footnote->label.size );
+            break;
+        }
         default:
             break;
         }
@@ -479,7 +500,7 @@ Markdown::Markdown( View* view, Worker* worker )
     , m_worker( worker )
 {
     memset( m_parser, 0, sizeof( MD_PARSER ) );
-    m_parser->flags = MD_FLAG_COLLAPSEWHITESPACE | MD_FLAG_PERMISSIVEAUTOLINKS | MD_FLAG_NOHTML | MD_FLAG_TABLES | MD_FLAG_TASKLISTS | MD_FLAG_STRIKETHROUGH;
+    m_parser->flags = MD_FLAG_COLLAPSEWHITESPACE | MD_FLAG_PERMISSIVEAUTOLINKS | MD_FLAG_NOHTML | MD_FLAG_TABLES | MD_FLAG_TASKLISTS | MD_FLAG_STRIKETHROUGH | MD_FLAG_FOOTNOTES;
     m_parser->enter_block = []( MD_BLOCKTYPE type, void* detail, void* ud ) -> int { return ((MarkdownContext*)ud)->EnterBlock( type, detail ); };
     m_parser->leave_block = []( MD_BLOCKTYPE type, void* detail, void* ud ) -> int { return ((MarkdownContext*)ud)->LeaveBlock( type, detail ); };
     m_parser->enter_span = []( MD_SPANTYPE type, void* detail, void* ud ) -> int { return ((MarkdownContext*)ud)->EnterSpan( type, detail ); };

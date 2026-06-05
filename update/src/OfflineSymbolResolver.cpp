@@ -47,6 +47,33 @@ tracy::StringIdx AddSymbolString( tracy::Worker& worker, const std::string& str 
     return tracy::StringIdx( location.idx );
 }
 
+void ResetSymbols( tracy::Worker& worker )
+{
+    std::cout << "Resetting callstack frame symbols to the unresolved state..." << std::endl;
+
+    const tracy::StringIdx unresolvedName = AddSymbolString( worker, "[unresolved]" );
+    const tracy::StringIdx unknownFile = AddSymbolString( worker, "[unknown]" );
+
+    uint64_t frameCount = 0;
+    auto& callstackFrameMap = worker.GetCallstackFrameMap();
+    for( auto it = callstackFrameMap.begin(); it != callstackFrameMap.end(); ++it )
+    {
+        if( !it->second ) continue;
+
+        tracy::CallstackFrameData& frameData = *it->second;
+        for( uint8_t f = 0; f < frameData.size; f++ )
+        {
+            tracy::CallstackFrame& frame = frameData.data[f];
+            frame.name = unresolvedName;
+            frame.file = unknownFile;
+            frame.line = 0;
+            ++frameCount;
+        }
+    }
+
+    std::cout << "Reset " << frameCount << " callstack frames." << std::endl;
+}
+
 bool PatchSymbolsWithRegex( tracy::Worker& worker, const PathSubstitutionList& pathSubstitutionlist,
                             const std::string& addr2lineToolPath, const std::string& addr2lineArgs, bool verbose )
 {

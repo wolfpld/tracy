@@ -51,6 +51,12 @@ bool ResolveSymbolsDbgHelp( const std::string& imagePath, const FrameEntryList& 
                             SymbolEntryList& resolvedEntries );
 #endif
 
+// Resets all callstack frame symbols back to the unresolved state ("[unresolved]" / "[unknown]"),
+// so a subsequent PatchSymbols pass re-resolves every frame. This is useful to chain several
+// resolution passes with different path substitutions. Only meaningful for traces captured with
+// TRACY_SYMBOL_OFFLINE_RESOLVE, where each frame's symAddr holds the image-relative offset.
+void ResetSymbols( tracy::Worker& worker );
+
 void PatchSymbols( tracy::Worker& worker, const std::vector<std::string>& pathSubstitutionsStrings,
                    const std::string& addr2lineToolPath = std::string(),
                    const std::string& addr2lineArgs = std::string(), bool verbose = false );

@@ -142,8 +142,8 @@ void View::DrawManual()
         ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.25f ) );
         ImGui::PopFont();
 
-        const auto separator = chunk.text.find( "-----" );
-        const auto size = separator == std::string::npos ? chunk.text.size() : separator;
+        const auto separator = chunk.text.find( "\n-----" );
+        const auto size = separator == std::string::npos ? chunk.text.size() : ( separator + 1 );
 
         m_markdown.Print( chunk.text.c_str(), size );
     }

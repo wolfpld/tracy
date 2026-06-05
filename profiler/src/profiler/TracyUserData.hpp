@@ -39,7 +39,7 @@ public:
     void LoadSourceSubstitutions( std::vector<SourceRegex>& data );
     void StoreSourceSubstitutions( const std::vector<SourceRegex>& data );
 
-    void Save();
+    bool Save();
 
 private:
     FILE* OpenFile( bool write );

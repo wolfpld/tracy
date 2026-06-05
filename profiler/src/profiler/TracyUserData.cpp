@@ -106,9 +106,9 @@ void UserData::StoreSourceSubstitutions( const std::vector<SourceRegex>& data )
     m_sourceSubstitutions = data;
 }
 
-void UserData::Save()
+bool UserData::Save()
 {
-    if( !m_preserveState ) return;
+    if( !m_preserveState ) return false;
     assert( Valid() );
 
     nlohmann::json json = {
@@ -169,12 +169,14 @@ void UserData::Save()
     }
 
     auto f = OpenFile( true );
-    if( f )
-    {
-        auto str = json.dump( 2 );
-        fwrite( str.c_str(), 1, str.size(), f );
-        fclose( f );
-    }
+    if( !f ) return false;
+
+    auto str = json.dump( 2 );
+    const auto sz = str.size();
+    const auto wrote = fwrite( str.c_str(), 1, sz, f );
+    fclose( f );
+
+    return sz == wrote;
 }
 
 template<typename T>

@@ -268,14 +268,13 @@ public:
     int Text( MD_TEXTTYPE type, const MD_CHAR* text, MD_SIZE size )
     {
         constexpr std::array FontSizes = {
-            1.f,
-            1.7f,
-            1.6f,
-            1.5f,
-            1.4f,
-            1.3f,
-            1.2f,
-            1.1f
+            1.f,    // normal text
+            1.6f,   // h1
+            1.5f,   // h2
+            1.4f,   // h3
+            1.3f,   // h4
+            1.2f,   // h5
+            1.1f    // h6
         };
 
         switch( type )

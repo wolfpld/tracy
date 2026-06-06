@@ -27,7 +27,8 @@ jobs:
       run: git config --global --add safe.directory '*'
     - name: Build profiler
       run: |
-        cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
+        # NOTE: disabling LTO to speed-up the GitHub macOS build bots (would take 30+ min otherwise)
+        cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }} -DNO_LTO=ON
         cmake --build profiler/build --parallel --config Release
     - name: Build update
       run: |

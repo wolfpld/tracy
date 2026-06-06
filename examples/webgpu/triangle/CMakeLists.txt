@@ -38,7 +38,7 @@ endif()
 # ---------------------------------------------------------------------------
 # Tracy root — defaults to two directories above this CMakeLists.txt.
 # ---------------------------------------------------------------------------
-set(TRACY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../..")
+set(TRACY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../..")
 option(TRACY_ENABLE "Enable Tracy profiling" ON)
 
 # ---------------------------------------------------------------------------

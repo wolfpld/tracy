@@ -55,8 +55,9 @@ public:
                 return;
             }
 
-            m_addr2LinePath = addr2lineToolPath;
-            std::cout << "Using user-specified symbol resolution tool: '" << m_addr2LinePath.c_str() << "'" << std::endl;
+            // A user-provided path may contain spaces or other shell-special characters.
+            escapeShellParam( addr2lineToolPath, m_addr2LinePath );
+            std::cout << "Using user-specified symbol resolution tool: '" << addr2lineToolPath.c_str() << "'" << std::endl;
             return;
         }
 

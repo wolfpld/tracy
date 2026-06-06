@@ -29,10 +29,37 @@ project(spinning_triangle LANGUAGES C CXX)
 #   Dawn         →  webgpu_dawn
 # ---------------------------------------------------------------------------
 set(WGPU_PATH "" CACHE PATH "Root of the WebGPU native installation (contains include/ and lib/)")
-set(WGPU_LIB  "webgpu_dawn" CACHE STRING "WebGPU library name (wgpu_native or webgpu_dawn)")
+set(WGPU_LIB  "" CACHE STRING "WebGPU library name (wgpu_native or webgpu_dawn); auto-detected if empty")
 
 if(NOT WGPU_PATH)
     message(FATAL_ERROR "Set WGPU_PATH to the root of your WebGPU native installation.")
+endif()
+
+# When WGPU_PATH changes, discard any previously auto-detected WGPU_LIB so
+# detection re-runs against the new path.
+if(NOT "${WGPU_PATH}" STREQUAL "${_WGPU_PATH_LAST}" AND _WGPU_LIB_AUTO)
+    unset(WGPU_LIB CACHE)
+    set(WGPU_LIB "" CACHE STRING "WebGPU library name (wgpu_native or webgpu_dawn); auto-detected if empty")
+endif()
+set(_WGPU_PATH_LAST "${WGPU_PATH}" CACHE INTERNAL "")
+
+if(NOT WGPU_LIB)
+    # Always unset the find_library results so they re-probe the current WGPU_PATH.
+    unset(_WGPU_NATIVE_LIB CACHE)
+    unset(_WEBGPU_DAWN_LIB CACHE)
+    find_library(_WGPU_NATIVE_LIB NAMES wgpu_native wgpu_native.dll PATHS "${WGPU_PATH}/lib" NO_DEFAULT_PATH)
+    find_library(_WEBGPU_DAWN_LIB NAMES webgpu_dawn                 PATHS "${WGPU_PATH}/lib" NO_DEFAULT_PATH)
+    if(_WGPU_NATIVE_LIB)
+        set(WGPU_LIB "wgpu_native" CACHE STRING "WebGPU library name (wgpu_native or webgpu_dawn); auto-detected if empty" FORCE)
+    elseif(_WEBGPU_DAWN_LIB)
+        set(WGPU_LIB "webgpu_dawn" CACHE STRING "WebGPU library name (wgpu_native or webgpu_dawn); auto-detected if empty" FORCE)
+    else()
+        message(FATAL_ERROR "Could not detect a WebGPU library in ${WGPU_PATH}/lib. Set WGPU_LIB explicitly (wgpu_native or webgpu_dawn).")
+    endif()
+    set(_WGPU_LIB_AUTO TRUE CACHE INTERNAL "")
+    message(STATUS "WebGPU library auto-detected: ${WGPU_LIB}")
+else()
+    set(_WGPU_LIB_AUTO FALSE CACHE INTERNAL "")
 endif()
 
 # ---------------------------------------------------------------------------

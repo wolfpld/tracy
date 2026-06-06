@@ -25,6 +25,8 @@ void View::DrawManual()
     ImGui::PopStyleColor();
     ImGui::SameLine();
     TextDisabledUnformatted( "This user manual is missing features. See the PDF file for the proper version." );
+    ImGui::SameLine();
+    if( ImGui::Button( ICON_FA_BOOK " PDF Manual" ) ) OpenWebpage( "https://github.com/wolfpld/tracy/releases" );
 
     ImGui::Separator();
     ImGui::BeginChild( "##usermanual" );

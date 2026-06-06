@@ -373,6 +373,9 @@ private:
 
         unordered_flat_map<uint64_t, ContextSwitch*> ctxSwitch;
 
+        unordered_flat_map<uint64_t, SequenceData*> sequences;
+        unordered_flat_map<const ZoneEvent*, SeqRef> zoneSeqRef;
+
         CpuData cpuData[256];
         int cpuDataCount = 0;
         unordered_flat_map<uint64_t, uint64_t> tidToPid;
@@ -565,6 +568,8 @@ public:
     const Vector<PlotData*>& GetPlots() const { return m_data.plots.Data(); }
     const Vector<ThreadData*>& GetThreadData() const { return m_data.threads; }
     const ThreadData* GetThreadData( uint64_t tid ) const;
+    const unordered_flat_map<uint64_t, SequenceData*>& GetSequences() const { return m_data.sequences; }
+    const unordered_flat_map<const ZoneEvent*, SeqRef>& GetZoneSeqRef() const { return m_data.zoneSeqRef; }
     const MemData& GetMemoryNamed( uint64_t name ) const;
     const unordered_flat_map<uint64_t, MemData*>& GetMemNameMap() const { return m_data.memNameMap; }
     const Vector<short_ptr<FrameImage>>& GetFrameImages() const { return m_data.frameImage; }
@@ -609,6 +614,8 @@ public:
     const char* GetString( const StringRef& ref ) const;
     const char* GetString( const StringIdx& idx ) const;
     const char* GetThreadName( uint64_t id ) const;
+    void RegisterFlattenThreadName( uint64_t tid, const char* name, size_t sz );
+    void UnregisterFlattenThreadName( uint64_t tid );
     bool IsThreadLocal( uint64_t id ) { return IsThreadLocal( id, m_data.threadDataLast ); }
     bool IsThreadLocal( uint64_t id, ThreadCache& cache );
     bool IsThreadFiber( uint64_t id );
@@ -846,6 +853,11 @@ private:
     tracy_force_inline void ProcessThreadGroupHint( const QueueThreadGroupHint& ev );
     tracy_force_inline void ProcessFiberEnter( const QueueFiberEnter& ev );
     tracy_force_inline void ProcessFiberLeave( const QueueFiberLeave& ev );
+    tracy_force_inline void ProcessSeqCreate( const QueueSeqEvent& ev );
+    tracy_force_inline void ProcessSeqResume( const QueueSeqEvent& ev );
+    tracy_force_inline void ProcessSeqSuspend( const QueueSeqEvent& ev );
+    tracy_force_inline void ProcessSeqRetire( const QueueSeqEvent& ev );
+    SequenceData* GetOrCreateSequence( uint64_t id, int64_t t );
 
     tracy_force_inline ZoneEvent* AllocZoneEvent();
     tracy_force_inline void ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev );

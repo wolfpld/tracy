@@ -81,6 +81,10 @@ enum class QueueType : uint8_t
     SourceCodeMetadata,
     FiberEnter,
     FiberLeave,
+    SeqCreate,
+    SeqResume,
+    SeqSuspend,
+    SeqRetire,
     Terminate,
     KeepAlive,
     ThreadContext,
@@ -304,6 +308,13 @@ struct QueueFiberEnter
 struct QueueFiberLeave
 {
     int64_t time;
+    uint32_t thread;
+};
+
+struct QueueSeqEvent
+{
+    int64_t time;
+    uint64_t id;
     uint32_t thread;
 };
 
@@ -918,6 +929,7 @@ struct QueueItem
         QueueSourceCodeNotAvailable sourceCodeNotAvailable;
         QueueFiberEnter fiberEnter;
         QueueFiberLeave fiberLeave;
+        QueueSeqEvent seqEvent;
         QueueGpuZoneAnnotation zoneAnnotation;
     };
 };
@@ -997,6 +1009,10 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ),                                  // SourceCodeMetadata - not for wire transfer
     sizeof( QueueHeader ) + sizeof( QueueFiberEnter ),
     sizeof( QueueHeader ) + sizeof( QueueFiberLeave ),
+    sizeof( QueueHeader ) + sizeof( QueueSeqEvent ),        // SeqCreate
+    sizeof( QueueHeader ) + sizeof( QueueSeqEvent ),        // SeqResume
+    sizeof( QueueHeader ) + sizeof( QueueSeqEvent ),        // SeqSuspend
+    sizeof( QueueHeader ) + sizeof( QueueSeqEvent ),        // SeqRetire
     // above items must be first
     sizeof( QueueHeader ),                                  // terminate
     sizeof( QueueHeader ),                                  // keep alive

@@ -3695,6 +3695,18 @@ void Worker::CheckFiberName( uint64_t id, uint64_t tid )
     if( m_sock.IsValid() ) Query( ServerQueryFiberName, id );
 }
 
+void Worker::RegisterFlattenThreadName( uint64_t tid, const char* name, size_t sz )
+{
+    if( m_data.threadNames.find( tid ) != m_data.threadNames.end() ) return;
+    const auto sl = StoreString( name, sz );
+    m_data.threadNames.emplace( tid, sl.ptr );
+}
+
+void Worker::UnregisterFlattenThreadName( uint64_t tid )
+{
+    m_data.threadNames.erase( tid );
+}
+
 void Worker::CheckExternalName( uint64_t id )
 {
     if( m_data.externalNames.find( id ) != m_data.externalNames.end() ) return;
@@ -4822,6 +4834,18 @@ bool Worker::Process( const QueueItem& ev )
         break;
     case QueueType::FiberLeave:
         ProcessFiberLeave( ev.fiberLeave );
+        break;
+    case QueueType::SeqCreate:
+        ProcessSeqCreate( ev.seqEvent );
+        break;
+    case QueueType::SeqResume:
+        ProcessSeqResume( ev.seqEvent );
+        break;
+    case QueueType::SeqSuspend:
+        ProcessSeqSuspend( ev.seqEvent );
+        break;
+    case QueueType::SeqRetire:
+        ProcessSeqRetire( ev.seqEvent );
         break;
     default:
         assert( false );
@@ -7334,6 +7358,95 @@ void Worker::ProcessFiberLeave( const QueueFiberLeave& ev )
     cit->second->runningTime += dt;
 
     td->fiber = nullptr;
+}
+
+SequenceData* Worker::GetOrCreateSequence( uint64_t id, int64_t t )
+{
+    auto sit = m_data.sequences.find( id );
+    if( sit != m_data.sequences.end() ) return sit->second;
+    auto seq = m_slab.AllocInit<SequenceData>();
+    seq->createTime = t;
+    seq->retireTime = 0;
+    return m_data.sequences.emplace( id, seq ).first->second;
+}
+
+void Worker::ProcessSeqCreate( const QueueSeqEvent& ev )
+{
+    const auto t = TscTime( RefTime( m_refTimeThread, ev.time ) );
+    if( m_data.lastTime < t ) m_data.lastTime = t;
+    (void)GetOrCreateSequence( ev.id, t );
+}
+
+void Worker::ProcessSeqResume( const QueueSeqEvent& ev )
+{
+    const auto t = TscTime( RefTime( m_refTimeThread, ev.time ) );
+    if( m_data.lastTime < t ) m_data.lastTime = t;
+
+    auto seq = GetOrCreateSequence( ev.id, t );
+
+    auto td = NoticeThread( ev.thread );
+    if( !td || td->stack.empty() ) return;
+
+    auto zone = td->stack.back();
+    SeqContinuation cont;
+    cont.zone = zone;
+    cont.tid = ev.thread;
+    cont.resumeTime = t;
+    cont.suspendTime = 0;
+
+    // Insert in resumeTime-sorted order. The server processes events from multiple
+    // per-thread queues in interleaved batches, so a later thread's Resume can be
+    // processed before an earlier thread's Resume for the same sequence. Without
+    // sorting, conts[idx] would not reflect the logical chain order and neighbor
+    // lookups (idx-1, idx+1) would jump to wrong continuations.
+    auto& conts = seq->continuations;
+    size_t insertAt = conts.size();
+    while( insertAt > 0 && conts[insertAt - 1].resumeTime > t ) --insertAt;
+    if( insertAt == conts.size() )
+    {
+        conts.push_back( cont );
+    }
+    else
+    {
+        conts.insert( conts.data() + insertAt, cont );
+    }
+
+    // Rewrite zoneSeqRef for every entry from insertAt onwards — their indices shifted.
+    for( size_t i = insertAt; i < conts.size(); ++i )
+    {
+        const auto* z = (const ZoneEvent*)conts[i].zone;
+        m_data.zoneSeqRef[z] = SeqRef{ ev.id, uint32_t( i ) };
+    }
+}
+
+void Worker::ProcessSeqSuspend( const QueueSeqEvent& ev )
+{
+    const auto t = TscTime( RefTime( m_refTimeThread, ev.time ) );
+    if( m_data.lastTime < t ) m_data.lastTime = t;
+
+    auto seq = GetOrCreateSequence( ev.id, t );
+    auto& conts = seq->continuations;
+
+    // Match Suspend to the most recent unsuspended continuation on the same originating thread.
+    // Use ev.thread directly because the server's m_threadCtx may have drifted across the
+    // interleaved processing of multiple per-thread queues by the time this event runs.
+    for( size_t i = conts.size(); i-- > 0; )
+    {
+        if( conts[i].tid == ev.thread && conts[i].suspendTime == 0 )
+        {
+            conts[i].suspendTime = t;
+            return;
+        }
+    }
+}
+
+void Worker::ProcessSeqRetire( const QueueSeqEvent& ev )
+{
+    const auto t = TscTime( RefTime( m_refTimeThread, ev.time ) );
+    if( m_data.lastTime < t ) m_data.lastTime = t;
+
+    auto seq = GetOrCreateSequence( ev.id, t );
+    seq->retireTime = t;
 }
 
 void Worker::MemAllocChanged( MemData& memdata, int64_t time )

@@ -259,6 +259,14 @@ void View::DrawTimeline()
     m_cpuDataThread.Decay( 0 );
     m_zoneHover = nullptr;
     m_zoneHover2.Decay( nullptr );
+    m_seqArrowDraw.clear();
+    m_seqZoneYPos.clear();
+
+    for( auto seqId : m_flattenViewDestroyQueue )
+    {
+        DestroyFlattenView( seqId );
+    }
+    m_flattenViewDestroyQueue.clear();
     m_findZone.range.StartFrame();
     m_statRange.StartFrame();
     m_flameRange.StartFrame();
@@ -396,6 +404,10 @@ void View::DrawTimeline()
             }
             m_threadReinsert.clear();
         }
+        for( const auto& fv : m_flattenViews )
+        {
+            m_tc.AddItem<TimelineItemThread>( fv.td.get() );
+        }
         for( const auto& v : m_threadOrder )
         {
             m_tc.AddItem<TimelineItemThread>( v );
@@ -411,6 +423,7 @@ void View::DrawTimeline()
 
     const auto vcenter = verticallyCenterTimeline && drawMouseLine && m_viewMode == ViewMode::Paused;
     m_tc.End( pxns, wpos, hover, vcenter, yMin, yMax );
+    DrawSeqArrows( pxns, wpos );
     ImGui::EndChild();
 
     m_lockHighlight = m_nextLockHighlight;

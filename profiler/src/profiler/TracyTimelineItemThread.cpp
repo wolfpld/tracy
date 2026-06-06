@@ -44,6 +44,7 @@ uint32_t TimelineItemThread::HeaderColor() const
     auto& crash = m_worker.GetCrashEvent();
     if( crash.thread == m_thread->id ) return 0xFF2222FF;
     if( m_thread->isFiber ) return 0xFF88FF88;
+    if( m_thread->isFlatView ) return 0xFFFFCC88;   // light blue (ABGR)
     return 0xFFFFFFFF;
 }
 
@@ -52,6 +53,7 @@ uint32_t TimelineItemThread::HeaderColorInactive() const
     auto& crash = m_worker.GetCrashEvent();
     if( crash.thread == m_thread->id ) return 0xFF111188;
     if( m_thread->isFiber ) return 0xFF448844;
+    if( m_thread->isFlatView ) return 0xFF886644;   // darker light blue
     return 0xFF888888;
 }
 
@@ -235,6 +237,8 @@ void TimelineItemThread::HeaderTooltip( const char* label ) const
 
 void TimelineItemThread::HeaderExtraContents( const TimelineContext& ctx, int offset, float labelWidth )
 {
+    if( m_thread->isFlatView ) return;
+
     m_view.DrawThreadMessagesList( ctx, m_msgDraw, offset, m_thread->id );
 
     const bool hasGhostZones = m_worker.AreGhostZonesReady() && !m_thread->ghostZones.empty();
@@ -275,6 +279,16 @@ void TimelineItemThread::DrawOverlay( const ImVec2& ul, const ImVec2& dr )
 
 void TimelineItemThread::DrawExtraPopupItems()
 {
+    if( m_thread->isFlatView )
+    {
+        if( ImGui::MenuItem( ICON_FA_TRASH_CAN " Destroy flatten view" ) )
+        {
+            m_view.QueueDestroyFlattenViewByTid( m_thread->id );
+            ImGui::CloseCurrentPopup();
+        }
+        return;
+    }
+
     if( m_view.GetSelectThread() == m_thread->id )
     {
         if( ImGui::MenuItem( ICON_FA_TIMELINE " Unselect in CPU timeline" ) )
@@ -493,7 +507,7 @@ int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V
                     if( hasChildren ) childrenInherited = DarkenColorSlightly( color );
                 }
             }
-            if( hasChildren )
+            if( hasChildren && !m_thread->isFlatView )
             {
                 const auto d = PreprocessZoneLevel( ctx, m_worker.GetZoneChildren( ev.Child() ), depth + 1, visible, childrenInherited );
                 if( d > maxdepth ) maxdepth = d;

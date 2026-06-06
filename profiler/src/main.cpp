@@ -1466,13 +1466,17 @@ Would you like to enable achievements?
                     {
                         ImGui::Columns( 2 );
                         ImGui::SetColumnWidth( 0, 300 * dpiScale );
+                        ImGui::BeginChild( "##achievementtoc", ImVec2( 0, 0 ), ImGuiChildFlags_AlwaysUseWindowPadding );
                         DrawAchievements( c->items );
+                        ImGui::EndChild();
                         ImGui::NextColumn();
+                        ImGui::BeginChild( "##achievementtext", ImVec2( 0, 0 ), ImGuiChildFlags_AlwaysUseWindowPadding );
                         if( s_achievementItem )
                         {
                             tracy::Markdown md( nullptr, nullptr );
                             md.Print( s_achievementItem->text.c_str(), s_achievementItem->text.size() );
                         }
+                        ImGui::EndChild();
                         ImGui::EndColumns();
                         ImGui::EndTabItem();
                     }

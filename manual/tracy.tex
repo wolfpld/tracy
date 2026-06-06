@@ -2041,6 +2041,20 @@ filesystem setup as the one used to run the tracy instrumented application).
  You can do path substitution with the \texttt{-p} option to perform any number of path
 substitions in order to use symbols located elsewhere.
 
+By default symbol resolution is performed with the platform's native facility: the DbgHelp
+library on Windows, and the \texttt{addr2line} tool found in \texttt{PATH} elsewhere. You can
+override this with the \texttt{-a} option, passing the path to a custom
+\texttt{addr2line}-compatible tool (for instance an \texttt{addr2line} from a cross-compilation
+toolchain, or \texttt{llvm-addr2line}). The \texttt{-a} option works on all platforms, including
+Windows, and takes precedence over the platform default.
+
+Extra arguments can be passed verbatim to the resolution tool with the \texttt{-A} option. Tracy
+records callstack frame offsets relative to the image base, but \texttt{addr2line}-compatible
+tools expect a full virtual address for images that have a non-zero preferred image base (such as
+PE on Windows or Mach-O on Apple). For these, pass \texttt{-A "--relative-address"} so that
+\texttt{llvm-addr2line} or \texttt{llvm-symbolizer} adds the image base back. ELF images need no
+such adjustment.
+
 \begin{bclogo}[
 noborder=true,
 couleur=black!5,

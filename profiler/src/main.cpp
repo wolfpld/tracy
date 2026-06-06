@@ -1468,7 +1468,11 @@ Would you like to enable achievements?
                         ImGui::SetColumnWidth( 0, 300 * dpiScale );
                         DrawAchievements( c->items );
                         ImGui::NextColumn();
-                        if( s_achievementItem ) s_achievementItem->description();
+                        if( s_achievementItem )
+                        {
+                            tracy::Markdown md( nullptr, nullptr );
+                            md.Print( s_achievementItem->text.c_str(), s_achievementItem->text.size() );
+                        }
                         ImGui::EndColumns();
                         ImGui::EndTabItem();
                     }

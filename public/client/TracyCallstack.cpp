@@ -14,21 +14,7 @@
 #ifdef TRACY_HAS_CALLSTACK
 
 #if TRACY_HAS_CALLSTACK == 1
-#  ifndef NOMINMAX
-#    define NOMINMAX
-#  endif
-#  include <windows.h>
-#  include <psapi.h>
-#  include <algorithm>
-#  ifdef _MSC_VER
-#    pragma warning( push )
-#    pragma warning( disable : 4091 )
-#  endif
-#  include <dbghelp.h>
-#  pragma comment( lib, "dbghelp.lib" )
-#  ifdef _MSC_VER
-#    pragma warning( pop )
-#  endif
+#  include "windows/TracyDbgHelp.cpp"
 #elif defined(TRACY_USE_LIBBACKTRACE)
 
 #  include "../libbacktrace/backtrace.hpp"
@@ -59,21 +45,6 @@
 #elif TRACY_HAS_CALLSTACK == 5
 #  include <dlfcn.h>
 #  include <cxxabi.h>
-#endif
-
-#ifdef TRACY_DBGHELP_LOCK
-#  include "TracyProfiler.hpp"
-
-#  define DBGHELP_INIT TracyConcat( TRACY_DBGHELP_LOCK, Init() )
-#  define DBGHELP_LOCK TracyConcat( TRACY_DBGHELP_LOCK, Lock() );
-#  define DBGHELP_UNLOCK TracyConcat( TRACY_DBGHELP_LOCK, Unlock() );
-
-extern "C"
-{
-    void DBGHELP_INIT;
-    void DBGHELP_LOCK;
-    void DBGHELP_UNLOCK;
-};
 #endif
 
 #if defined(TRACY_USE_LIBBACKTRACE) || TRACY_HAS_CALLSTACK == 5
@@ -122,6 +93,18 @@ extern "C" const char* ___tracy_demangle( const char* mangled )
 namespace tracy
 {
 
+struct ImageEntry
+{
+    uint64_t m_startAddress = 0;
+    uint64_t m_endAddress = 0;
+    char* m_name = nullptr;
+    char* m_path = nullptr;
+
+#if TRACY_HAS_CALLSTACK == 1
+    SYM_TYPE m_symType = SymNone;
+#endif
+};
+    
 static bool IsKernelAddress(uint64_t addr) {
     return (addr >> 63) != 0;
 }
@@ -586,23 +569,12 @@ bool ShouldResolveSymbolsOffline()
 #if TRACY_HAS_CALLSTACK == 1
 
 constexpr size_t MaxCbTrace = 64;
-constexpr size_t MaxNameSize = 8*1024;
 
 int cb_num;
 CallstackEntry cb_data[MaxCbTrace];
 
 extern "C"
 {
-    typedef DWORD (__stdcall *t_SymAddrIncludeInlineTrace)( HANDLE hProcess, DWORD64 Address );
-    typedef BOOL (__stdcall *t_SymQueryInlineTrace)( HANDLE hProcess, DWORD64 StartAddress, DWORD StartContext, DWORD64 StartRetAddress, DWORD64 CurAddress, LPDWORD CurContext, LPDWORD CurFrameIndex );
-    typedef BOOL (__stdcall *t_SymFromInlineContext)( HANDLE hProcess, DWORD64 Address, ULONG InlineContext, PDWORD64 Displacement, PSYMBOL_INFO Symbol );
-    typedef BOOL (__stdcall *t_SymGetLineFromInlineContext)( HANDLE hProcess, DWORD64 qwAddr, ULONG InlineContext, DWORD64 qwModuleBaseAddress, PDWORD pdwDisplacement, PIMAGEHLP_LINE64 Line64 );
-
-    t_SymAddrIncludeInlineTrace _SymAddrIncludeInlineTrace = 0;
-    t_SymQueryInlineTrace _SymQueryInlineTrace = 0;
-    t_SymFromInlineContext _SymFromInlineContext = 0;
-    t_SymGetLineFromInlineContext _SymGetLineFromInlineContext = 0;
-
     typedef unsigned long (__stdcall *___tracy_t_RtlWalkFrameChain)( void**, unsigned long, unsigned long );
     ___tracy_t_RtlWalkFrameChain ___tracy_RtlWalkFrameChainPtr = nullptr;
     TRACY_API unsigned long ___tracy_RtlWalkFrameChain( void** callers, unsigned long count, unsigned long flags)
@@ -614,82 +586,6 @@ extern "C"
 void InitCallstackCritical()
 {
     ___tracy_RtlWalkFrameChainPtr = (___tracy_t_RtlWalkFrameChain)GetProcAddress( GetModuleHandleA( "ntdll.dll" ), "RtlWalkFrameChain" );
-}
-
-static void SymError( const char* function, DWORD code ) {
-    char message[1024] = {};
-    int written = snprintf( message, sizeof( message ), "ERROR: %s FAILED with code %u (0x%x) | ", function, code, code );
-    written += FormatMessageA(
-        FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL,
-        code,
-        MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
-        (LPSTR)&message[written],
-        sizeof(message) - written,
-        NULL
-    );
-    fprintf( stderr, "%s\n", message );
-    OutputDebugStringA( message );
-}
-
-void DbgHelpInit()
-{
-    if( s_shouldResolveSymbolsOffline ) return;
-
-    _SymAddrIncludeInlineTrace = (t_SymAddrIncludeInlineTrace)GetProcAddress(GetModuleHandleA("dbghelp.dll"), "SymAddrIncludeInlineTrace");
-    _SymQueryInlineTrace = (t_SymQueryInlineTrace)GetProcAddress(GetModuleHandleA("dbghelp.dll"), "SymQueryInlineTrace");
-    _SymFromInlineContext = (t_SymFromInlineContext)GetProcAddress(GetModuleHandleA("dbghelp.dll"), "SymFromInlineContext");
-    _SymGetLineFromInlineContext = (t_SymGetLineFromInlineContext)GetProcAddress(GetModuleHandleA("dbghelp.dll"), "SymGetLineFromInlineContext");
-
-#ifdef TRACY_DBGHELP_LOCK
-    DBGHELP_INIT;
-    DBGHELP_LOCK;
-#endif
-
-    // append executable path to the _NT_SYMBOL_PATH environment variable
-    char buffer [32767];  // max env var length on Windows (including null-terminator)
-    DWORD length = GetEnvironmentVariableA( "_NT_SYMBOL_PATH", buffer, sizeof( buffer ) );
-    if( length > sizeof( buffer ) ) SymError( "GetEnvironmentVariableA", GetLastError() );
-    else if( length + 1 >= sizeof( buffer ) ) SymError( "_TracyAppendEnvironmentVariable", ERROR_INSUFFICIENT_BUFFER );
-    else
-    {
-        buffer[length] = ';';
-        buffer[++length] = '\0';
-        length += GetModuleFileNameA( NULL, &buffer[length], sizeof( buffer ) - length );
-        if( length >= sizeof( buffer ) && GetLastError() == ERROR_INSUFFICIENT_BUFFER )
-        {
-            SymError( "GetModuleFileNameA", GetLastError() );
-        }
-        else
-        {
-            while( length > 0 && buffer[--length] != '\\' )
-                buffer[length] = '\0';
-        }
-    }
-
-    assert( length < sizeof( buffer ) );
-    if( SetEnvironmentVariableA( "_NT_SYMBOL_PATH", buffer ) == FALSE ) SymError( "SetEnvironmentVariableA", GetLastError() );
- 
-    SymSetOptions( SymGetOptions() | SYMOPT_LOAD_LINES );
-    if( SymInitialize( GetCurrentProcess(), NULL, TRUE ) == FALSE )
-    {
-        SymError( "SymInitialize", GetLastError() );
-    }
-    else if( GetModuleHandleA( "SymSrv.dll" ) == NULL )
-    {
-        TracyDebug( "SymSrv.dll was not loaded, it needs to be near a matching version of DbgHelp.dll. Symbol resolution may fail as symbol servers will not be used. See https://learn.microsoft.com/en-us/windows/win32/debug/calling-the-dbghelp-library" );
-    }
-
-
-#ifdef TRACY_DBGHELP_LOCK
-    DBGHELP_UNLOCK;
-#endif
-}
-
-DWORD64 DbgHelpLoadSymbolsForModule( const char* imageName, uint64_t baseOfDll, uint32_t bllSize )
-{
-    if( s_shouldResolveSymbolsOffline ) return 0;
-    return SymLoadModuleEx( GetCurrentProcess(), nullptr, imageName, nullptr, baseOfDll, bllSize, nullptr, 0 );
 }
 
 char* FormatImageName( const char* imageName, uint32_t imageNameLength )
@@ -728,8 +624,12 @@ ImageEntry* CacheModuleInfo( const char* imagePath, uint32_t imageNameLength, ui
 
 ImageEntry* LoadSymbolsForModuleAndCache( const char* imagePath, uint32_t imageNameLength, uint64_t baseOfDll, uint32_t dllSize )
 {
-    DbgHelpLoadSymbolsForModule( imagePath, baseOfDll, dllSize );
-    return CacheModuleInfo( imagePath, imageNameLength, baseOfDll, dllSize );
+    SYM_TYPE symType = SymNone;
+    if( !s_shouldResolveSymbolsOffline )
+        symType = DbgHelpLoadSymbolsForModule( imagePath, baseOfDll, dllSize );
+    ImageEntry* entry = CacheModuleInfo( imagePath, imageNameLength, baseOfDll, dllSize );
+    entry->m_symType = symType;
+    return entry;
 }
 
 static void CacheProcessDrivers()
@@ -823,11 +723,10 @@ void InitCallstack()
 
     CreateImageCaches();
 
-    DbgHelpInit();
-
-#ifdef TRACY_DBGHELP_LOCK
-    DBGHELP_LOCK;
-#endif
+    if( !s_shouldResolveSymbolsOffline )
+    {
+        DbgHelpInit();
+    }
 
     // use TRACY_NO_DBGHELP_INIT_LOAD=1 to disable preloading of driver
     // and process module symbol loading at startup time - they will be loaded on demand later
@@ -844,10 +743,6 @@ void InitCallstack()
         CacheProcessDrivers();
         CacheProcessModules();
     }
-
-#ifdef TRACY_DBGHELP_LOCK
-    DBGHELP_UNLOCK;
-#endif
 }
 
 void EndCallstack()
@@ -859,29 +754,18 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
 {
     if( s_shouldResolveSymbolsOffline ) return "[unresolved]";
 
-    static char ret[MaxNameSize];
-    const auto proc = GetCurrentProcess();
+    static char ret [DbgHelpSymbol::MaxNameSize];
 
-    char buf[sizeof( SYMBOL_INFO ) + MaxNameSize];
-    auto si = (SYMBOL_INFO*)buf;
-    si->SizeOfStruct = sizeof( SYMBOL_INFO );
-    si->MaxNameLen = MaxNameSize;
-
-#ifdef TRACY_DBGHELP_LOCK
-    DBGHELP_LOCK;
-#endif
-    if( SymFromAddr( proc, ptr, nullptr, si ) == 0 )
+    DbgHelpSymbol symbol;
+    if( DbgHelpResolveSymbol( symbol, ptr ) == false )
     {
         *ret = '\0';
     }
     else
     {
-        memcpy( ret, si->Name, si->NameLen );
-        ret[si->NameLen] = '\0';
+        memcpy( ret, symbol.info.Name, symbol.info.NameLen );
+        ret[symbol.info.NameLen] = '\0';
     }
-#ifdef TRACY_DBGHELP_LOCK
-    DBGHELP_UNLOCK;
-#endif
     return ret;
 }
 
@@ -898,6 +782,9 @@ struct ModuleNameAndBaseAddress
 {
     const char* name;
     uint64_t baseAddr;
+#if TRACY_HAS_CALLSTACK == 1
+    SYM_TYPE symType;
+#endif
 };
 
 ModuleNameAndBaseAddress GetModuleNameAndPrepareSymbols( uint64_t addr )
@@ -905,12 +792,12 @@ ModuleNameAndBaseAddress GetModuleNameAndPrepareSymbols( uint64_t addr )
     if( IsKernelAddress( addr ) )
     {
         const ImageEntry* entry = s_krnlCache->GetImageForAddress( addr );
-        if( entry != nullptr ) return ModuleNameAndBaseAddress{ entry->m_name, entry->m_startAddress };
-        return ModuleNameAndBaseAddress{ "<kernel>", addr };
+        if( entry != nullptr ) return ModuleNameAndBaseAddress{ entry->m_name, entry->m_startAddress, entry->m_symType };
+        return ModuleNameAndBaseAddress{ "<kernel>", addr, SymNone };
     }
 
     const ImageEntry* entry = s_imageCache->GetImageForAddress( addr );
-    if( entry != nullptr ) return ModuleNameAndBaseAddress{ entry->m_name, entry->m_startAddress };
+    if( entry != nullptr ) return ModuleNameAndBaseAddress{ entry->m_name, entry->m_startAddress, entry->m_symType };
 
     HANDLE proc = GetCurrentProcess();
     // Do not use FreeLibrary because we set the flag GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT
@@ -933,187 +820,149 @@ ModuleNameAndBaseAddress GetModuleNameAndPrepareSymbols( uint64_t addr )
                 {
                     // since this is the first time we encounter this module, load its symbols (needed for modules loaded after SymInitialize)
                     ImageEntry* cachedModule = LoadSymbolsForModuleAndCache( name, nameLength, (DWORD64)info.lpBaseOfDll, info.SizeOfImage );
-                    return ModuleNameAndBaseAddress{ cachedModule->m_name, cachedModule->m_startAddress };
+                    return ModuleNameAndBaseAddress{ cachedModule->m_name, cachedModule->m_startAddress, cachedModule->m_symType };
                 }
             }
         }
     }
 
-    return ModuleNameAndBaseAddress{ "[unknown]", 0x0 };
+    return ModuleNameAndBaseAddress{ "[unknown]", 0x0, SymNone };
 }
 
 CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
 {
-    CallstackSymbolData sym;
+    CallstackSymbolData sym = {};
+    sym.file = "[unknown]";
+    sym.line = 0;
+    sym.needFree = false;
 
-    if( s_shouldResolveSymbolsOffline )
-    {
-        sym.file = "[unknown]";
-        sym.line = 0;
-        sym.needFree = false;
-        return sym;
-    }
+    if( s_shouldResolveSymbolsOffline ) return sym;
 
-    IMAGEHLP_LINE64 line;
-    DWORD displacement = 0;
-    line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
-#ifdef TRACY_DBGHELP_LOCK
-    DBGHELP_LOCK;
-#endif
-    const auto res = SymGetLineFromAddr64( GetCurrentProcess(), ptr, &displacement, &line );
-    if( res == 0 || line.LineNumber >= 0xF00000 )
-    {
-        sym.file = "[unknown]";
-        sym.line = 0;
-        sym.needFree = false;
-    }
-    else
-    {
-        sym.file = CopyString( line.FileName );
-        sym.line = line.LineNumber;
-        sym.needFree = true;
-    }
-#ifdef TRACY_DBGHELP_LOCK
-    DBGHELP_UNLOCK;
-#endif
+    // SymExport modules do not contain line information
+    const ModuleNameAndBaseAddress moduleNameAndAddress = GetModuleNameAndPrepareSymbols( ptr );
+    if (moduleNameAndAddress.symType == SymNone) return sym;
+    if (moduleNameAndAddress.symType == SymExport) return sym;
+
+    DbgHelpSource source;
+    if( DbgHelpResolveSource(source, ptr ) == false ) return sym;
+
+    if( source.line.LineNumber >= 0xF00000 ) return sym;
+
+    sym.file = CopyString( source.line.FileName );
+    sym.line = source.line.LineNumber;
+    sym.needFree = true;
     return sym;
+}
+
+tracy_force_inline static CallstackEntry ResolveCallstackEntry( uint64_t symAddr, uint32_t symSize, const char* symName, const char* symFile, uint32_t symLine ) {
+    CallstackEntry cb_data = {};
+    cb_data.symAddr = symAddr;
+    cb_data.symLen = symSize;
+    cb_data.name = CopyStringFast( symName );   // TODO: pass symNameLen to use the faster (str,len) variant
+    cb_data.file = CopyStringFast( symFile );
+    cb_data.line = symLine;
+    return cb_data;
 }
 
 static CallstackEntryData MakeUnresolvedCallstackEntryData( uint64_t ptr, ModuleNameAndBaseAddress moduleNameAndBaseAddress )
 {
-    cb_data[0].symAddr = ptr - moduleNameAndBaseAddress.baseAddr;
-    cb_data[0].symLen = 0;
-
-    cb_data[0].name = CopyStringFast( "[unresolved]" );
-    cb_data[0].file = CopyStringFast( "[unknown]" );
-    cb_data[0].line = 0;
-
+    uint64_t symAddr = ptr - moduleNameAndBaseAddress.baseAddr;
+    cb_data[0] = ResolveCallstackEntry( symAddr, 0, "[unresolved]", "[unknown]", 0 );
     return { cb_data, 1, moduleNameAndBaseAddress.name };
+}
+
+static int ResolveInlines( uint64_t ptr, const ModuleNameAndBaseAddress& moduleInfo )
+{
+    // only SymPdb and SymDia are capable of carring inline information
+    if ( moduleInfo.symType != SymPdb && moduleInfo.symType != SymDia ) return 0;
+
+    DbgHelpInline inln;
+    int inlineNum = DbgHelpTraceInline( inln, ptr );
+    if( inlineNum > MaxCbTrace - 1 ) inlineNum = MaxCbTrace - 1;
+
+    DbgHelpSymbol symbol;
+    DbgHelpSource source;
+
+    for( DWORD i = 0; i < inlineNum; i++ )
+    {
+        const char* symName = moduleInfo.name;
+        uint32_t symSize = 0;
+        uint64_t symAddr = 0;
+        if( DbgHelpResolveSymbolInline( symbol, ptr, inln, i ) )
+        {
+            symName = symbol.info.Name;
+            symSize = symbol.info.Size;
+            symAddr = symbol.info.Address;
+        }
+
+        const char* symFile = "[unknown]";
+        uint32_t symLine = 0;
+        if( DbgHelpResolveSourceInline( source, ptr, inln, i ) )
+        {
+            symFile = source.line.FileName;
+            symLine = source.line.LineNumber;
+        }
+
+        cb_data[i] = ResolveCallstackEntry( symAddr, symSize, symName, symFile, symLine );
+    }
+
+    return int(inlineNum);
 }
 
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
-#ifdef TRACY_DBGHELP_LOCK
-    DBGHELP_LOCK;
-#endif
-
     InitAllocator();
 
     const ModuleNameAndBaseAddress moduleNameAndAddress = GetModuleNameAndPrepareSymbols( ptr );
 
     if( s_shouldResolveSymbolsOffline )
     {
-#ifdef TRACY_DBGHELP_LOCK
-        DBGHELP_UNLOCK;
-#endif
         return MakeUnresolvedCallstackEntryData( ptr, moduleNameAndAddress );
     }
 
-    int write;
-    const auto proc = GetCurrentProcess();
+    // NOTE: SymFromAddr and SymGetLineFromAddr64 are technically independent
+    // so it's possible for the former to fail and the latter to succeed.
+    // Similarly, "inline" API calls are also independent from either/both.
 
-#if !defined TRACY_NO_CALLSTACK_INLINES
-    BOOL doInline = FALSE;
-    DWORD ctx = 0;
-    DWORD inlineNum = 0;
-    if( _SymAddrIncludeInlineTrace )
+    // NOTE: decoding frames from SymExport modules is likely to fail here...
+    SYM_TYPE symType = moduleNameAndAddress.symType;
+    if( symType == SymNone )
+        return MakeUnresolvedCallstackEntryData( ptr, moduleNameAndAddress );
+
+    const char* symName = moduleNameAndAddress.name;
+    uint32_t symSize = 0;
+    uint64_t symAddr = 0;
+    DbgHelpSymbol symbol;
+    if( DbgHelpResolveSymbol( symbol, ptr ) )
     {
-        inlineNum = _SymAddrIncludeInlineTrace( proc, ptr );
-        if( inlineNum > MaxCbTrace - 1 ) inlineNum = MaxCbTrace - 1;
-        DWORD idx;
-        if( inlineNum != 0 ) doInline = _SymQueryInlineTrace( proc, ptr, 0, ptr, ptr, &ctx, &idx );
-    }
-    if( doInline )
-    {
-        write = inlineNum;
-        cb_num = 1 + inlineNum;
-    }
-    else
-#endif
-    {
-        write = 0;
-        cb_num = 1;
+        symName = symbol.info.Name;
+        symSize = symbol.info.Size;
+        symAddr = symbol.info.Address;
     }
 
-    char buf[sizeof( SYMBOL_INFO ) + MaxNameSize];
-    auto si = (SYMBOL_INFO*)buf;
-    si->SizeOfStruct = sizeof( SYMBOL_INFO );
-    si->MaxNameLen = MaxNameSize;
-
-    const auto symValid = SymFromAddr( proc, ptr, nullptr, si ) != 0;
-
-    IMAGEHLP_LINE64 line;
-    DWORD displacement = 0;
-    line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
-
+    // SymExport modules do not contain line/inline information
+    if (symType == SymExport)
     {
-        const char* filename;
-        const auto res = SymGetLineFromAddr64( proc, ptr, &displacement, &line );
-        if( res == 0 || line.LineNumber >= 0xF00000 )
-        {
-            filename = "[unknown]";
-            cb_data[write].line = 0;
-        }
-        else
-        {
-            filename = line.FileName;
-            cb_data[write].line = line.LineNumber;
-        }
+        cb_data[0] = ResolveCallstackEntry( symAddr, symSize, symName, "[unknown]", 0 );
+        return { cb_data, 1, moduleNameAndAddress.name };
+    }
 
-        cb_data[write].name = symValid ? CopyStringFast( si->Name, si->NameLen ) : CopyStringFast( moduleNameAndAddress.name );
-        cb_data[write].file = CopyStringFast( filename );
-        if( symValid )
+    const char* symFile = "[unknown]";
+    uint32_t symLine = 0;
+    DbgHelpSource source;
+    if( DbgHelpResolveSource( source, ptr ) )
+    {
+        if( source.line.LineNumber < 0xF00000 )
         {
-            cb_data[write].symLen = si->Size;
-            cb_data[write].symAddr = si->Address;
-        }
-        else
-        {
-            cb_data[write].symLen = 0;
-            cb_data[write].symAddr = 0;
+            symFile = source.line.FileName;
+            symLine = source.line.LineNumber;
         }
     }
 
-#if !defined TRACY_NO_CALLSTACK_INLINES
-    if( doInline )
-    {
-        for( DWORD i=0; i<inlineNum; i++ )
-        {
-            auto& cb = cb_data[i];
-            const auto symInlineValid = _SymFromInlineContext( proc, ptr, ctx, nullptr, si ) != 0;
-            const char* filename;
-            if( _SymGetLineFromInlineContext( proc, ptr, ctx, 0, &displacement, &line ) == 0 )
-            {
-                filename = "[unknown]";
-                cb.line = 0;
-            }
-            else
-            {
-                filename = line.FileName;
-                cb.line = line.LineNumber;
-            }
+    int outermost = ResolveInlines( ptr, moduleNameAndAddress );
+    cb_num = 1 + outermost;
 
-            cb.name = symInlineValid ? CopyStringFast( si->Name, si->NameLen ) : CopyStringFast( moduleNameAndAddress.name );
-            cb.file = CopyStringFast( filename );
-            if( symInlineValid )
-            {
-                cb.symLen = si->Size;
-                cb.symAddr = si->Address;
-            }
-            else
-            {
-                cb.symLen = 0;
-                cb.symAddr = 0;
-            }
-
-            ctx++;
-        }
-    }
-#endif
-#ifdef TRACY_DBGHELP_LOCK
-    DBGHELP_UNLOCK;
-#endif
-
+    cb_data[outermost] = ResolveCallstackEntry( symAddr, symSize, symName, symFile, symLine );
     return { cb_data, uint8_t( cb_num ), moduleNameAndAddress.name };
 }
 

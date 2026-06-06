@@ -525,8 +525,8 @@ namespace tracy
             MemWrite(&item->gpuNewContext.thread, static_cast<uint32_t>(0));
             MemWrite(&item->gpuNewContext.period, static_cast<float>(period));
             MemWrite(&item->gpuNewContext.context, static_cast<uint8_t>(GetId()));
-            MemWrite(&item->gpuNewContext.flags, static_cast<uint8_t>(0));  // no calibration available
-            MemWrite(&item->gpuNewContext.type, static_cast<uint8_t>(GpuContextType::WebGPU));
+            MemWrite(&item->gpuNewContext.flags, GpuContextFlags(0));  // no calibration available
+            MemWrite(&item->gpuNewContext.type, GpuContextType::WebGPU);
             SubmitQueueItem(item);
         }
 

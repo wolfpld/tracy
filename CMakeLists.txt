@@ -137,6 +137,7 @@ set_option(TRACY_SYMBOL_OFFLINE_RESOLVE "Instead of full runtime symbol resoluti
 set_option(TRACY_LIBBACKTRACE_ELF_DYNLOAD_SUPPORT "Enable libbacktrace to support dynamically loaded elfs in symbol resolution resolution after the first symbol resolve operation" OFF TracyClient)
 set_option(TRACY_DEBUGINFOD "Enable debuginfod support" OFF TracyClient)
 set_option(TRACY_IGNORE_MEMORY_FAULTS "Ignore instrumentation errors from memory free events that do not have a matching allocation" OFF TracyClient)
+set_option(TRACY_OPENGL_AUTO_CALIBRATION "Periodically recalibrate OpenGL GPU/CPU clock drift (forces a CPU/GPU sync each time)" OFF TracyClient)
 
 # advanced
 set_option(TRACY_VERBOSE "[advanced] Verbose output from the profiler" OFF TracyClient)

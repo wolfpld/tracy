@@ -1701,6 +1701,12 @@ logo=\bcattention
 \end{itemize}
 \end{bclogo}
 
+\subparagraph{Calibrated context}
+
+By default, the OpenGL context is uncalibrated: the CPU and GPU clocks are aligned only once, when the context is created, so over long captures the two time domains may drift apart (section~\ref{options} describes correcting this drift manually). Defining \texttt{TRACY\_OPENGL\_AUTO\_CALIBRATION} before including \texttt{TracyOpenGL.hpp} enables periodic recalibration instead: roughly once per second Tracy samples the GPU and CPU clocks together and emits a calibration event, allowing the profiler to track and remove the drift automatically.
+
+This is opt-in because OpenGL exposes no atomic CPU+GPU timestamp query (unlike Vulkan's \texttt{VK\_EXT\_calibrated\_timestamps} or Direct3D~12, whose contexts are always calibrated). Recalibration therefore reads the GPU clock with \texttt{glGetInteger64v(GL\_TIMESTAMP)}, which forces a CPU/GPU synchronization (a pipeline stall) each time it runs. Enable it only when the improved long-capture alignment is worth the periodic stall.
+
 \subsubsection{Vulkan}
 
 Similarly, for Vulkan support you should include the \texttt{public/tracy/TracyVulkan.hpp} header file. Tracing Vulkan devices and queues is a bit more involved, and the Vulkan initialization macro \texttt{TracyVkContext(physdev, device, queue, cmdbuf)} returns an instance of \texttt{TracyVkCtx} object, which tracks an associated Vulkan queue. Cleanup is performed using the \texttt{TracyVkDestroy(ctx)} macro. You may create multiple Vulkan contexts. To set a custom name for the context, use the \texttt{TracyVkContextName(ctx, name, size)} macro.

@@ -1,7 +1,7 @@
 #ifndef __TRACYDISASSEMBLY_HPP__
 #define __TRACYDISASSEMBLY_HPP__
 
-#include <nlohmann/json.hpp>
+#include <nlohmann/json_fwd.hpp>
 #include <stdint.h>
 #include <string>
 #include <vector>

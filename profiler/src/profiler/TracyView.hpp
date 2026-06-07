@@ -6,7 +6,7 @@
 #include <chrono>
 #include <functional>
 #include <memory>
-#include <nlohmann/json.hpp>
+#include <nlohmann/json_fwd.hpp>
 #include <string>
 #include <thread>
 #include <vector>

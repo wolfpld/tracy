@@ -22,27 +22,17 @@ jobs:
         key: ${{ runner.os }}-cpm-${{ hashFiles('**/vendor.cmake', '**/CMakeLists.txt') }}
         restore-keys: ${{ runner.os }}-cpm-
     - name: Install dependencies
-      run: brew install pkg-config glfw meson
+      run: brew install pkg-config glfw meson clang-build-analyzer
     - name: Trust git repo
       run: git config --global --add safe.directory '*'
     - name: Build profiler
       run: |
         # NOTE: disabling LTO to speed-up the GitHub macOS build bots (would take 30+ min otherwise)
         cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }} -DNO_LTO=ON -DCMAKE_CXX_FLAGS="-ftime-trace"
-        cmake --build profiler/build --parallel --config Release -- VERBOSE=1
-    - name: Profiler compile-time report
-      run: |
-        python3 -c "
-        import json, glob, os
-        times = []
-        for f in glob.glob('profiler/build/**/*.json', recursive=True):
-            try:
-                d = json.load(open(f))
-                total = next((e['dur'] for e in d['traceEvents'] if e.get('name')=='Total'), None)
-                if total: times.append((total/1e6, f))
-            except: pass
-        for t,f in sorted(times, reverse=True)[:20]: print(f'{t:6.1f}s  {os.path.basename(f)}')
-        "
+        ClangBuildAnalyzer --start profiler/build
+        cmake --build profiler/build --parallel --config Release
+        ClangBuildAnalyzer --stop profiler/build profiler_build.bin
+        ClangBuildAnalyzer --analyze profiler_build.bin
     - name: Build update
       run: |
         cmake -B update/build -S update -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}

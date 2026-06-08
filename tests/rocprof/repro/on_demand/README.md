@@ -36,19 +36,29 @@ Three bugs in `TracyRocprof.cpp` break on-demand profiling:
 ## Build and run
 
 ```bash
-make
-./repro &
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+./build/repro &
 tracy-capture -o repro.tracy -s 5
+```
+
+If ROCm is not under `/opt/rocm`, pass `-DROCM_PATH=/path/to/rocm`.
+
+The reproducer is also registered as a ctest target:
+
+```bash
+ctest --test-dir build -R repro
 ```
 
 ## Verifying the context name
 
 `check_gpu_ctx_name` loads a `.tracy` file and prints the GPU context
-names. Build it against the Tracy server library (e.g. from a capture
-build directory) and run:
+names. It links the Tracy server library, so it is built only on request:
 
 ```bash
-./check_gpu_ctx_name repro.tracy
+cmake -B build -DBUILD_CHECK_TOOL=ON
+cmake --build build --target check_gpu_ctx_name
+./build/check_gpu_ctx_name repro.tracy
 # Expected (patched):   "GPU context 0: rocprofv3"
 # Expected (unpatched): "GPU context 0: (unnamed)"
 ```

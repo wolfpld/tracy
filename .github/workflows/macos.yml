@@ -22,17 +22,19 @@ jobs:
         key: ${{ runner.os }}-cpm-${{ hashFiles('**/vendor.cmake', '**/CMakeLists.txt') }}
         restore-keys: ${{ runner.os }}-cpm-
     - name: Install dependencies
-      run: brew install pkg-config glfw meson clang-build-analyzer
+      run: brew install pkg-config glfw meson
     - name: Trust git repo
       run: git config --global --add safe.directory '*'
     - name: Build profiler
       run: |
-        # NOTE: disabling LTO to speed-up the GitHub macOS build bots (would take 30+ min otherwise)
-        cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }} -DNO_LTO=ON -DCMAKE_CXX_FLAGS="-ftime-trace"
-        ClangBuildAnalyzer --start profiler/build
+        # To disable LTO: -DNO_LTO=ON
+        # To enable Enable ClangBuildAnalyzer: -DCMAKE_CXX_FLAGS="-ftime-trace"
+        # brew install clang-build-analyzer
+        cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
+        # ClangBuildAnalyzer --start profiler/build
         cmake --build profiler/build --parallel 2 --config Release
-        ClangBuildAnalyzer --stop profiler/build profiler_build.bin
-        ClangBuildAnalyzer --analyze profiler_build.bin
+        # ClangBuildAnalyzer --stop profiler/build profiler_build.bin
+        # ClangBuildAnalyzer --analyze profiler_build.bin
     - name: Build update
       run: |
         cmake -B update/build -S update -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}

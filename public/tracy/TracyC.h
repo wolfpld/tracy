@@ -407,7 +407,7 @@ TRACY_API void ___tracy_custom_name_shared_lockable_ctx( struct __tracy_shared_l
 #define TracyCLockMark( lock ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,TracyLine) = { NULL, __func__,  TracyFile, (uint32_t)TracyLine, 0 }; ___tracy_mark_lockable_ctx( lock, &TracyConcat(__tracy_source_location,TracyLine) );
 #define TracyCLockCustomName( lock, name, nameSz ) ___tracy_custom_name_lockable_ctx( lock, name, nameSz );
 
-#define TracyCSharedLockAnnonce( lock ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,TracyLine) = { NULL, __func__,  TracyFile, (uint32_t)TracyLine, 0 }; lock = ___tracy_announce_shared_lockable_ctx( &TracyConcat(__tracy_source_location,TracyLine) );
+#define TracyCSharedLockAnnounce( lock ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,TracyLine) = { NULL, __func__,  TracyFile, (uint32_t)TracyLine, 0 }; lock = ___tracy_announce_shared_lockable_ctx( &TracyConcat(__tracy_source_location,TracyLine) );
 #define TracyCSharedLockTerminate( lock ) ___tracy_terminate_shared_lockable_ctx( lock );
 #define TracyCSharedLockBeforeLock( lock ) ___tracy_before_lock_shared_lockable_ctx( lock );
 #define TracyCSharedLockAfterLock( lock ) ___tracy_after_lock_shared_lockable_ctx( lock );

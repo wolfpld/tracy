@@ -105,6 +105,9 @@ uint8_t gpu_context_allocate( ToolData* data )
         tracy::MemWrite( &item->gpuNewContext.context, context_id );
         tracy::MemWrite( &item->gpuNewContext.flags, GpuContextFlags( context_flags ) );
         tracy::MemWrite( &item->gpuNewContext.type, tracy::GpuContextType::Rocprof );
+#ifdef TRACY_ON_DEMAND
+        GetProfiler().DeferItem( *item );
+#endif
         tracy::Profiler::QueueSerialFinish();
     }
 
@@ -121,6 +124,9 @@ uint8_t gpu_context_allocate( ToolData* data )
         tracy::MemWrite( &item->gpuContextNameFat.context, context_id );
         tracy::MemWrite( &item->gpuContextNameFat.ptr, uint64_t( cloned_name ) );
         tracy::MemWrite( &item->gpuContextNameFat.size, uint16_t( name_length ) );
+#ifdef TRACY_ON_DEMAND
+        GetProfiler().DeferItem( *item );
+#endif
         tracy::Profiler::QueueSerialFinish();
     }
 
@@ -380,8 +386,10 @@ void tool_callback_tracing_callback( rocprofiler_callback_tracing_record_t recor
 {
     assert( callback_data != nullptr );
     ToolData* data = static_cast<ToolData*>( callback_data );
-    if( !data->init ) return;
 
+    // Kernel symbol registrations happen at HIP init time, before any Tracy
+    // client connects (and before data->init is set). Record them regardless
+    // of init state so that kernel names are available when profiling starts.
     if( record.kind == ROCPROFILER_CALLBACK_TRACING_CODE_OBJECT &&
         record.operation == ROCPROFILER_CODE_OBJECT_DEVICE_KERNEL_SYMBOL_REGISTER )
     {
@@ -398,7 +406,13 @@ void tool_callback_tracing_callback( rocprofiler_callback_tracing_record_t recor
             data->client_kernels.erase( sym_data->kernel_id );
         }
     }
-    else if( record.kind == ROCPROFILER_CALLBACK_TRACING_KERNEL_DISPATCH )
+
+    // Gate dispatch and memory-copy recording on data->init, which is set
+    // once the GPU context is allocated (under TRACY_ON_DEMAND this waits
+    // for a client connection).
+    if( !data->init ) return;
+
+    if( record.kind == ROCPROFILER_CALLBACK_TRACING_KERNEL_DISPATCH )
     {
         auto* rdata = static_cast<rocprofiler_callback_tracing_kernel_dispatch_data_t*>( record.payload );
         if( record.operation == ROCPROFILER_KERNEL_DISPATCH_ENQUEUE )

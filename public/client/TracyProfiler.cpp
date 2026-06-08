@@ -5167,6 +5167,164 @@ TRACY_API void ___tracy_custom_name_lockable_ctx( struct __tracy_lockable_contex
     tracy::Profiler::QueueSerialFinish();
 }
 
+struct __tracy_shared_lockable_context_data {
+    struct __tracy_lockable_context_data m_base;
+};
+
+TRACY_API struct __tracy_shared_lockable_context_data* ___tracy_announce_shared_lockable_ctx( const struct ___tracy_source_location_data* srcloc )
+{
+    struct __tracy_shared_lockable_context_data *lockdata = (__tracy_shared_lockable_context_data*)tracy::tracy_malloc( sizeof( __tracy_shared_lockable_context_data ) );
+    lockdata->m_base.m_id = tracy::GetLockCounter().fetch_add( 1, std::memory_order_relaxed );
+#ifdef TRACY_ON_DEMAND
+    new(&lockdata->m_base.m_lockCount) std::atomic<uint32_t>( 0 );
+    new(&lockdata->m_base.m_active) std::atomic<bool>( false );
+#endif
+    assert( lockdata->m_base.m_id != (std::numeric_limits<uint32_t>::max)() );
+
+    auto item = tracy::Profiler::QueueSerial();
+    tracy::MemWrite( &item->hdr.type, tracy::QueueType::LockAnnounce );
+    tracy::MemWrite( &item->lockAnnounce.id, lockdata->m_base.m_id );
+    tracy::MemWrite( &item->lockAnnounce.time, tracy::Profiler::GetTime() );
+    tracy::MemWrite( &item->lockAnnounce.lckloc, (uint64_t)srcloc );
+    tracy::MemWrite( &item->lockAnnounce.type, tracy::LockType::SharedLockable );
+#ifdef TRACY_ON_DEMAND
+    tracy::GetProfiler().DeferItem( *item );
+#endif
+    tracy::Profiler::QueueSerialFinish();
+
+    return lockdata;
+}
+
+TRACY_API void ___tracy_terminate_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata )
+{
+    auto item = tracy::Profiler::QueueSerial();
+    tracy::MemWrite( &item->hdr.type, tracy::QueueType::LockTerminate );
+    tracy::MemWrite( &item->lockTerminate.id, lockdata->m_base.m_id );
+    tracy::MemWrite( &item->lockTerminate.time, tracy::Profiler::GetTime() );
+#ifdef TRACY_ON_DEMAND
+    tracy::GetProfiler().DeferItem( *item );
+#endif
+    tracy::Profiler::QueueSerialFinish();
+
+#ifdef TRACY_ON_DEMAND
+    lockdata->m_base.m_lockCount.~atomic();
+    lockdata->m_base.m_active.~atomic();
+#endif
+    tracy::tracy_free((void*)lockdata);
+}
+
+TRACY_API int32_t ___tracy_before_lock_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata )
+{
+    return ___tracy_before_lock_lockable_ctx( &lockdata->m_base );
+}
+
+TRACY_API void ___tracy_after_lock_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata )
+{
+    ___tracy_after_lock_lockable_ctx( &lockdata->m_base );
+}
+
+TRACY_API void ___tracy_after_unlock_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata )
+{
+    ___tracy_after_unlock_lockable_ctx( &lockdata->m_base );
+}
+
+TRACY_API void ___tracy_after_try_lock_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata, int32_t acquired )
+{
+    ___tracy_after_try_lock_lockable_ctx( &lockdata->m_base, acquired );
+}
+
+TRACY_API int32_t ___tracy_before_lock_shared_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata )
+{
+#ifdef TRACY_ON_DEMAND
+    bool queue = false;
+    const auto locks = lockdata->m_base.m_lockCount.fetch_add( 1, std::memory_order_relaxed );
+    const auto active = lockdata->m_base.m_active.load( std::memory_order_relaxed );
+    if( locks == 0 || active )
+    {
+        const bool connected = tracy::GetProfiler().IsConnected();
+        if( active != connected ) lockdata->m_base.m_active.store( connected, std::memory_order_relaxed );
+        if( connected ) queue = true;
+    }
+    if( !queue ) return static_cast<int32_t>(false);
+#endif
+
+    auto item = tracy::Profiler::QueueSerial();
+    tracy::MemWrite( &item->hdr.type, tracy::QueueType::LockSharedWait );
+    tracy::MemWrite( &item->lockWait.thread, tracy::GetThreadHandle() );
+    tracy::MemWrite( &item->lockWait.id, lockdata->m_base.m_id );
+    tracy::MemWrite( &item->lockWait.time, tracy::Profiler::GetTime() );
+    tracy::Profiler::QueueSerialFinish();
+    return static_cast<int32_t>(true);
+}
+
+TRACY_API void ___tracy_after_locked_shared_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata )
+{
+    auto item = tracy::Profiler::QueueSerial();
+    tracy::MemWrite( &item->hdr.type, tracy::QueueType::LockSharedObtain );
+    tracy::MemWrite( &item->lockObtain.thread, tracy::GetThreadHandle() );
+    tracy::MemWrite( &item->lockObtain.id, lockdata->m_base.m_id );
+    tracy::MemWrite( &item->lockObtain.time, tracy::Profiler::GetTime() );
+    tracy::Profiler::QueueSerialFinish();
+}
+
+TRACY_API void ___tracy_after_unlock_shared_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata )
+{
+#ifdef TRACY_ON_DEMAND
+    lockdata->m_base.m_lockCount.fetch_sub( 1, std::memory_order_relaxed );
+    if( !lockdata->m_base.m_active.load( std::memory_order_relaxed ) ) return;
+    if( !tracy::GetProfiler().IsConnected() )
+    {
+        lockdata->m_base.m_active.store( false, std::memory_order_relaxed );
+        return;
+    }
+#endif
+
+    auto item = tracy::Profiler::QueueSerial();
+    tracy::MemWrite( &item->hdr.type, tracy::QueueType::LockSharedRelease );
+    tracy::MemWrite( &item->lockReleaseShared.thread, tracy::GetThreadHandle() );
+    tracy::MemWrite( &item->lockReleaseShared.id, lockdata->m_base.m_id );
+    tracy::MemWrite( &item->lockReleaseShared.time, tracy::Profiler::GetTime() );
+    tracy::Profiler::QueueSerialFinish();
+}
+
+TRACY_API void ___tracy_after_try_lock_shared_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata, int32_t acquired )
+{
+#ifdef TRACY_ON_DEMAND
+    if( !acquired ) return;
+
+    bool queue = false;
+    const auto locks = lockdata->m_base.m_lockCount.fetch_add( 1, std::memory_order_relaxed );
+    const auto active = lockdata->m_base.m_active.load( std::memory_order_relaxed );
+    if( locks == 0 || active )
+    {
+        const bool connected = tracy::GetProfiler().IsConnected();
+        if( active != connected ) lockdata->m_base.m_active.store( connected, std::memory_order_relaxed );
+        if( connected ) queue = true;
+    }
+    if( !queue ) return;
+#endif
+
+    if( acquired )
+    {
+        auto item = tracy::Profiler::QueueSerial();
+        tracy::MemWrite( &item->hdr.type, tracy::QueueType::LockObtain );
+        tracy::MemWrite( &item->lockObtain.thread, tracy::GetThreadHandle() );
+        tracy::MemWrite( &item->lockObtain.id, lockdata->m_base.m_id );
+        tracy::MemWrite( &item->lockObtain.time, tracy::Profiler::GetTime() );
+        tracy::Profiler::QueueSerialFinish();
+    }
+}
+
+TRACY_API void ___tracy_mark_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata, const struct ___tracy_source_location_data* srcloc )
+{
+    ___tracy_mark_lockable_ctx( &lockdata->m_base, srcloc );
+}
+
+TRACY_API void ___tracy_custom_name_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata, const char* name, size_t nameSz )
+{
+    ___tracy_custom_name_lockable_ctx( &lockdata->m_base, name, nameSz );
+}
+
 TRACY_API int32_t ___tracy_connected( void )
 {
     return static_cast<int32_t>( tracy::GetProfiler().IsConnected() );

@@ -30,7 +30,7 @@ jobs:
         # NOTE: disabling LTO to speed-up the GitHub macOS build bots (would take 30+ min otherwise)
         cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }} -DNO_LTO=ON -DCMAKE_CXX_FLAGS="-ftime-trace"
         ClangBuildAnalyzer --start profiler/build
-        cmake --build profiler/build --parallel --config Release
+        cmake --build profiler/build --parallel 2 --config Release
         ClangBuildAnalyzer --stop profiler/build profiler_build.bin
         ClangBuildAnalyzer --analyze profiler_build.bin
     - name: Build update

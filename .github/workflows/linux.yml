@@ -29,11 +29,7 @@ jobs:
     - name: Profiler GUI
       run: |
         cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
-        if [ "${ACT:-}" != "true" ] && [ "${FORGEJO_ACTIONS:-}" != "true" ]; then
-          cmake --build profiler/build
-        else
-          cmake --build profiler/build --parallel
-        fi
+        cmake --build profiler/build --parallel 2
     - name: Update utility
       run: |
         cmake -B update/build -S update -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}

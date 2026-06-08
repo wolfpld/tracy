@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #include "TracyDebug.hpp"
+#include "../common/TracyForceInline.hpp"
 
 namespace tracy
 {
@@ -18,6 +19,7 @@ class RingBuffer
 public:
     RingBuffer( unsigned int size, int fd, int id, int cpu = -1 )
         : m_size( size )
+        , m_mask( size - 1 )
         , m_id( id )
         , m_cpu( cpu )
         , m_fd( fd )
@@ -74,10 +76,10 @@ public:
         ioctl( m_fd, PERF_EVENT_IOC_ENABLE, 0 );
     }
 
-    void Read( void* dst, uint64_t offset, uint64_t cnt )
+    tracy_force_inline void Read( void* dst, uint64_t offset, uint64_t cnt )
     {
         const auto size = m_size;
-        auto src = ( m_tail + offset ) % size;
+        auto src = ( m_tail + offset ) & m_mask;
         if( src + cnt <= size )
         {
             memcpy( dst, m_buffer + src, cnt );
@@ -128,6 +130,7 @@ private:
     }
 
     unsigned int m_size;
+    unsigned int m_mask;
     uint64_t m_tail;
     char* m_buffer;
     int m_id;

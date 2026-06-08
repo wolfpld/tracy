@@ -26,7 +26,7 @@ else()
     CPMAddPackage(
         NAME capstone
         GITHUB_REPOSITORY capstone-engine/capstone
-        GIT_TAG 6.0.0-Alpha7
+        GIT_TAG 6.0.0-Alpha9
         OPTIONS
             "CAPSTONE_X86_ATT_DISABLE ON"
             "CAPSTONE_ALPHA_SUPPORT OFF"
@@ -137,7 +137,7 @@ target_include_directories(TracyGetOpt PUBLIC ${GETOPT_DIR})
 CPMAddPackage(
     NAME ImGui
     GITHUB_REPOSITORY ocornut/imgui
-    GIT_TAG v1.92.7-docking
+    GIT_TAG v1.92.8-docking
     DOWNLOAD_ONLY TRUE
     PATCHES
         "${CMAKE_CURRENT_LIST_DIR}/imgui-emscripten.patch"
@@ -199,6 +199,7 @@ CPMAddPackage(
     VERSION 1.0.6
     PATCHES
         "${CMAKE_CURRENT_LIST_DIR}/ppqsort-nodebug.patch"
+        "${CMAKE_CURRENT_LIST_DIR}/ppqsort-semaphore.patch"
     EXCLUDE_FROM_ALL TRUE
 )
 
@@ -216,7 +217,7 @@ CPMAddPackage(
 CPMAddPackage(
     NAME md4c
     GITHUB_REPOSITORY mity/md4c
-    GIT_TAG release-0.5.2
+    GIT_TAG 755ce49acdc7cd682d4502b4796db5ed6a1230fb
     EXCLUDE_FROM_ALL TRUE
 )
 
@@ -253,7 +254,7 @@ if(NOT EMSCRIPTEN)
     CPMAddPackage(
         NAME usearch
         GITHUB_REPOSITORY unum-cloud/usearch
-        GIT_TAG v2.23.0
+        GIT_TAG v2.25.2
         EXCLUDE_FROM_ALL TRUE
     )
 
@@ -286,7 +287,7 @@ if(NOT EMSCRIPTEN)
         CPMAddPackage(
             NAME libcurl
             GITHUB_REPOSITORY curl/curl
-            GIT_TAG curl-8_19_0
+            GIT_TAG curl-8_20_0
             OPTIONS
                 "BUILD_STATIC_LIBS ON"
                 "BUILD_SHARED_LIBS OFF"

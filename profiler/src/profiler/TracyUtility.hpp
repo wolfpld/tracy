@@ -11,6 +11,8 @@
 namespace tracy
 {
 
+struct CallstackFrameData;
+class View;
 class Worker;
 
 enum class ShortenName : uint8_t
@@ -33,7 +35,7 @@ const char* FormatPlotValue( double val, PlotValueFormatting format );
 
 std::vector<std::string> SplitLines( const char* data, size_t sz );
 
-bool IsFrameExternal( const char* filename, const char* image );
+void PrintLocalStack( const CallstackFrameData* frame, const Worker& worker, const View& view );
 
 }
 

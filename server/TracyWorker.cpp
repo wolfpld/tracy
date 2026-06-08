@@ -3185,12 +3185,7 @@ void Worker::DispatchFailure( const QueueItem& ev, const char*& ptr )
 void Worker::Query( ServerQuery type, uint64_t data, uint32_t extra )
 {
     ServerQueryPacket query { type, data, extra };
-    if( m_serverQuerySpaceLeft > 0 && m_serverQueryQueuePrio.empty() && m_serverQueryQueue.empty() )
-    {
-        m_serverQuerySpaceLeft--;
-        m_sock.Send( &query, ServerQueryPacketSize );
-    }
-    else if( IsQueryPrio( type ) )
+    if( IsQueryPrio( type ) )
     {
         m_serverQueryQueuePrio.push_back( query );
     }
@@ -4133,7 +4128,7 @@ void Worker::AddCallstackAllocPayload( const char* data )
 
         for( auto& frame : *arr )
         {
-            QueryCallstackFrame( GetCanonicalPointer( frame ) );
+            if( frame.sel == 0 ) QueryCallstackFrame( GetCanonicalPointer( frame ) );
         }
     }
     else
@@ -4503,10 +4498,22 @@ bool Worker::Process( const QueueItem& ev )
         ProcessThreadContext( ev.threadCtx );
         break;
     case QueueType::ZoneBegin:
-        ProcessZoneBegin( ev.zoneBegin );
+        ProcessZoneBegin64( ev.zoneBegin );
+        break;
+    case QueueType::ZoneBegin32:
+        ProcessZoneBegin32( ev.zoneBegin32 );
+        break;
+    case QueueType::ZoneBegin16:
+        ProcessZoneBegin16( ev.zoneBegin16 );
         break;
     case QueueType::ZoneBeginCallstack:
-        ProcessZoneBeginCallstack( ev.zoneBegin );
+        ProcessZoneBeginCallstack64( ev.zoneBegin );
+        break;
+    case QueueType::ZoneBeginCallstack32:
+        ProcessZoneBeginCallstack32( ev.zoneBegin32 );
+        break;
+    case QueueType::ZoneBeginCallstack16:
+        ProcessZoneBeginCallstack16( ev.zoneBegin16 );
         break;
     case QueueType::ZoneBeginAllocSrcLoc:
         ProcessZoneBeginAllocSrcLoc( ev.zoneBeginLean );
@@ -4515,7 +4522,13 @@ bool Worker::Process( const QueueItem& ev )
         ProcessZoneBeginAllocSrcLocCallstack( ev.zoneBeginLean );
         break;
     case QueueType::ZoneEnd:
-        ProcessZoneEnd( ev.zoneEnd );
+        ProcessZoneEnd64( ev.zoneEnd );
+        break;
+    case QueueType::ZoneEnd32:
+        ProcessZoneEnd32( ev.zoneEnd32 );
+        break;
+    case QueueType::ZoneEnd16:
+        ProcessZoneEnd16( ev.zoneEnd16 );
         break;
     case QueueType::ZoneValidation:
         ProcessZoneValidation( ev.zoneValidation );
@@ -4709,10 +4722,22 @@ bool Worker::Process( const QueueItem& ev )
         ProcessCallstack();
         break;
     case QueueType::CallstackSample:
-        ProcessCallstackSample( ev.callstackSample );
+        ProcessCallstackSample64( ev.callstackSample );
+        break;
+    case QueueType::CallstackSample32:
+        ProcessCallstackSample32( ev.callstackSample32 );
+        break;
+    case QueueType::CallstackSample16:
+        ProcessCallstackSample16( ev.callstackSample16 );
         break;
     case QueueType::CallstackSampleContextSwitch:
-        ProcessCallstackSampleContextSwitch( ev.callstackSample );
+        ProcessCallstackSampleContextSwitch64( ev.callstackSample );
+        break;
+    case QueueType::CallstackSampleContextSwitch32:
+        ProcessCallstackSampleContextSwitch32( ev.callstackSample32 );
+        break;
+    case QueueType::CallstackSampleContextSwitch16:
+        ProcessCallstackSampleContextSwitch16( ev.callstackSample16 );
         break;
     case QueueType::CallstackFrameSize:
         ProcessCallstackFrameSize( ev.callstackFrameSize );
@@ -4878,6 +4903,31 @@ void Worker::ProcessZoneBegin( const QueueZoneBegin& ev )
     ProcessZoneBeginImpl( zone, ev );
 }
 
+void Worker::ProcessZoneBegin64( const QueueZoneBegin& ev )
+{
+    QueueZoneBegin unpack = ev;
+    if( ev.time >= 0 ) unpack.time += ProtocolOffset32Bit;
+    ProcessZoneBegin( unpack );
+}
+
+void Worker::ProcessZoneBegin32( const QueueZoneBegin32& ev )
+{
+    QueueZoneBegin unpack;
+    unpack.time = int64_t( ev.time + ProtocolOffset16Bit );
+    unpack.srcloc = ev.srcloc;
+
+    ProcessZoneBegin( unpack );
+}
+
+void Worker::ProcessZoneBegin16( const QueueZoneBegin16& ev )
+{
+    QueueZoneBegin unpack;
+    unpack.time = ev.time;
+    unpack.srcloc = ev.srcloc;
+
+    ProcessZoneBegin( unpack );
+}
+
 void Worker::ProcessZoneBeginCallstack( const QueueZoneBegin& ev )
 {
     auto zone = AllocZoneEvent();
@@ -4888,6 +4938,31 @@ void Worker::ProcessZoneBeginCallstack( const QueueZoneBegin& ev )
     auto& extra = RequestZoneExtra( *zone );
     extra.callstack.SetVal( it->second );
     it->second = 0;
+}
+
+void Worker::ProcessZoneBeginCallstack64( const QueueZoneBegin& ev )
+{
+    QueueZoneBegin unpack = ev;
+    if( ev.time >= 0 ) unpack.time += ProtocolOffset32Bit;
+    ProcessZoneBeginCallstack( unpack );
+}
+
+void Worker::ProcessZoneBeginCallstack32( const QueueZoneBegin32& ev )
+{
+    QueueZoneBegin unpack;
+    unpack.time = int64_t( ev.time + ProtocolOffset16Bit );
+    unpack.srcloc = ev.srcloc;
+
+    ProcessZoneBeginCallstack( unpack );
+}
+
+void Worker::ProcessZoneBeginCallstack16( const QueueZoneBegin16& ev )
+{
+    QueueZoneBegin unpack;
+    unpack.time = ev.time;
+    unpack.srcloc = ev.srcloc;
+
+    ProcessZoneBeginCallstack( unpack );
 }
 
 void Worker::ProcessZoneBeginAllocSrcLoc( const QueueZoneBeginLean& ev )
@@ -5012,6 +5087,25 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
 #else
     CountZoneStatistics( zone );
 #endif
+}
+
+void Worker::ProcessZoneEnd64( const QueueZoneEnd& ev )
+{
+    QueueZoneEnd unpack = ev;
+    if( ev.time >= 0 ) unpack.time += ProtocolOffset32Bit;
+    ProcessZoneEnd( unpack );
+}
+
+void Worker::ProcessZoneEnd32( const QueueZoneEnd32& ev )
+{
+    QueueZoneEnd unpack = { .time = int64_t( ev.time + ProtocolOffset16Bit ) };
+    ProcessZoneEnd( unpack );
+}
+
+void Worker::ProcessZoneEnd16( const QueueZoneEnd16& ev )
+{
+    QueueZoneEnd unpack = { .time = ev.time };
+    ProcessZoneEnd( unpack );
 }
 
 void Worker::ZoneStackFailure( uint64_t thread, const ZoneEvent* ev )
@@ -6568,6 +6662,31 @@ void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
     }
 }
 
+void Worker::ProcessCallstackSample64( const QueueCallstackSample& ev )
+{
+    QueueCallstackSample unpack = ev;
+    if( ev.time >= 0 ) unpack.time += ProtocolOffset32Bit;
+    ProcessCallstackSample( unpack );
+}
+
+void Worker::ProcessCallstackSample32( const QueueCallstackSample32& ev )
+{
+    QueueCallstackSample unpack = {
+        .thread = ev.thread,
+        .time = int64_t( ev.time + ProtocolOffset16Bit )
+    };
+    ProcessCallstackSample( unpack );
+}
+
+void Worker::ProcessCallstackSample16( const QueueCallstackSample16& ev )
+{
+    QueueCallstackSample unpack = {
+        .thread = ev.thread,
+        .time = int64_t( ev.time )
+    };
+    ProcessCallstackSample( unpack );
+}
+
 void Worker::ProcessCallstackSampleContextSwitch( const QueueCallstackSample& ev )
 {
     assert( m_pendingCallstackId != 0 );
@@ -6587,6 +6706,31 @@ void Worker::ProcessCallstackSampleContextSwitch( const QueueCallstackSample& ev
     ProcessCallstackSampleInsertSample( sd, td );
 
     td.ctxSwitchSamples.push_back( sd );
+}
+
+void Worker::ProcessCallstackSampleContextSwitch64( const QueueCallstackSample& ev )
+{
+    QueueCallstackSample unpack = ev;
+    if( ev.time >= 0 ) unpack.time += ProtocolOffset32Bit;
+    ProcessCallstackSampleContextSwitch( unpack );
+}
+
+void Worker::ProcessCallstackSampleContextSwitch32( const QueueCallstackSample32& ev )
+{
+    QueueCallstackSample unpack = {
+        .thread = ev.thread,
+        .time = int64_t( ev.time + ProtocolOffset16Bit )
+    };
+    ProcessCallstackSampleContextSwitch( unpack );
+}
+
+void Worker::ProcessCallstackSampleContextSwitch16( const QueueCallstackSample16& ev )
+{
+    QueueCallstackSample unpack = {
+        .thread = ev.thread,
+        .time = int64_t( ev.time )
+    };
+    ProcessCallstackSampleContextSwitch( unpack );
 }
 
 void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev )
@@ -8788,6 +8932,78 @@ void Worker::CacheSourceFiles()
             if( SourceFileValid( file, execTime != 0 ? execTime : GetCaptureTime() ) ) CacheSourceFromFile( file );
         }
     }
+}
+
+static bool IsImageExternalImpl( const char* image )
+{
+    assert( image );
+    if( strncmp( image, "/usr/", 5 ) == 0 ) return true;
+    if( strncmp( image, "/lib/", 5 ) == 0 ) return true;
+    if( strncmp( image, "/lib64/", 7 ) == 0 ) return true;
+    if( strcmp( image, "<kernel>" ) == 0 ) return true;
+    return false;
+}
+
+static bool IsSourceExternalImpl( const char* filename )
+{
+    assert( filename );
+    if( strncmp( filename, "/usr/", 5 ) == 0 ) return true;
+    if( strncmp( filename, "/lib/", 5 ) == 0 ) return true;
+    if( strcmp( filename, "[unknown]" ) == 0 ) return true;
+    if( strcmp( filename, "<kernel>" ) == 0 ) return true;
+    if( strncmp( filename, "C:\\Program Files", 16 ) == 0 ) return true;
+    if( strncmp( filename, "d:\\a01\\_work\\", 13 ) == 0 ) return true;
+
+    while( *filename )
+    {
+        if( filename[0] == '/' && filename[1] == '.' && filename[2] != '.' ) return true;
+        filename++;
+    }
+
+    return false;
+}
+
+static bool IsFrameExternalImpl( const char* filename, const char* image )
+{
+    if( image && IsImageExternalImpl( image ) ) return true;
+    return IsSourceExternalImpl( filename );
+}
+
+bool Worker::IsFrameExternal( StringIdx filename, StringIdx image ) const
+{
+    return IsFrameExternalImpl( GetString( filename ), image.Active() ? GetString( image ) : nullptr );
+}
+
+bool Worker::IsImageExternalBody( StringIdx image, uint32_t key, unordered_flat_map<uint32_t, bool>& cache, uint32_t& last ) const
+{
+    auto it = cache.find( key );
+    if( it != cache.end() )
+    {
+        last = key | ( it->second << 24 );
+        return it->second;
+    }
+
+    const auto res = IsImageExternalImpl( GetString( image ) );
+    cache.emplace( key, res );
+
+    last = key | ( res << 24 );
+    return res;
+}
+
+bool Worker::IsSourceExternalBody( StringIdx filename, uint32_t key, unordered_flat_map<uint32_t, bool>& cache, uint32_t& last ) const
+{
+    auto it = cache.find( key );
+    if( it != cache.end() )
+    {
+        last = key | ( it->second << 24 );
+        return it->second;
+    }
+
+    const auto res = IsSourceExternalImpl( GetString( filename ) );
+    cache.emplace( key, res );
+
+    last = key | ( res << 24 );
+    return res;
 }
 
 }

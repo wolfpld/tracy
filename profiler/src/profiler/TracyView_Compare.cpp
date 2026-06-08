@@ -16,44 +16,42 @@ namespace tracy
 
 extern double s_time;
 
-#ifndef TRACY_NO_STATISTICS
-    void View::FindZonesCompare()
+void View::FindZonesCompare()
+{
+    m_compare.match[0] = m_worker.GetMatchingSourceLocation( m_compare.pattern, m_compare.ignoreCase );
+    if( !m_compare.match[0].empty() )
     {
-        m_compare.match[0] = m_worker.GetMatchingSourceLocation( m_compare.pattern, m_compare.ignoreCase );
-        if( !m_compare.match[0].empty() )
+        auto it = m_compare.match[0].begin();
+        while( it != m_compare.match[0].end() )
         {
-            auto it = m_compare.match[0].begin();
-            while( it != m_compare.match[0].end() )
+            if( m_worker.GetZonesForSourceLocation( *it ).zones.empty() )
             {
-                if( m_worker.GetZonesForSourceLocation( *it ).zones.empty() )
-                {
-                    it = m_compare.match[0].erase( it );
-                }
-                else
-                {
-                    ++it;
-                }
+                it = m_compare.match[0].erase( it );
             }
-        }
-
-        m_compare.match[1] = m_compare.second->GetMatchingSourceLocation( m_compare.pattern, m_compare.ignoreCase );
-        if( !m_compare.match[1].empty() )
-        {
-            auto it = m_compare.match[1].begin();
-            while( it != m_compare.match[1].end() )
+            else
             {
-                if( m_compare.second->GetZonesForSourceLocation( *it ).zones.empty() )
-                {
-                    it = m_compare.match[1].erase( it );
-                }
-                else
-                {
-                    ++it;
-                }
+                ++it;
             }
         }
     }
-#endif
+
+    m_compare.match[1] = m_compare.second->GetMatchingSourceLocation( m_compare.pattern, m_compare.ignoreCase );
+    if( !m_compare.match[1].empty() )
+    {
+        auto it = m_compare.match[1].begin();
+        while( it != m_compare.match[1].end() )
+        {
+            if( m_compare.second->GetZonesForSourceLocation( *it ).zones.empty() )
+            {
+                it = m_compare.match[1].erase( it );
+            }
+            else
+            {
+                ++it;
+            }
+        }
+    }
+}
 
 bool View::FindMatchingZone( int prev0, int prev1, int flags )
 {
@@ -203,10 +201,7 @@ void View::DrawCompare()
     ImGui::SetNextWindowSize( ImVec2( 590 * scale, 800 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Compare traces", &m_compare.show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
-#ifdef TRACY_NO_STATISTICS
-    ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
-    ImGui::TextWrapped( "Rebuild without the TRACY_NO_STATISTICS macro to enable trace comparison." );
-#elif defined TRACY_NO_FILESELECTOR
+#if defined TRACY_NO_FILESELECTOR
     ImGui::TextWrapped( "File selector is disabled in this build." );
     ImGui::TextWrapped( "Rebuild without the TRACY_NO_FILESELECTOR macro to enable trace comparison." );
 #else
@@ -231,7 +226,7 @@ void View::DrawCompare()
                             try
                             {
                                 m_compare.second = std::make_unique<Worker>( *f, EventType::SourceCache );
-                                m_compare.userData = std::make_unique<UserData>( m_compare.second->GetCaptureProgram().c_str(), m_compare.second->GetCaptureTime() );
+                                m_compare.userData = std::make_unique<UserData>( m_compare.second->GetCaptureProgram().c_str(), m_compare.second->GetCaptureTime(), nullptr );
                                 m_compare.diffDirection = m_worker.GetCaptureTime() < m_compare.second->GetCaptureTime();
                             }
                             catch( const tracy::UnsupportedVersion& e )

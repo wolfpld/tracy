@@ -34,6 +34,9 @@ public:
 #include <atomic>
 #include <assert.h>
 #include <stdlib.h>
+#ifdef TRACY_OPENGL_AUTO_CALIBRATION
+#  include <chrono>
+#endif
 
 #include "Tracy.hpp"
 #include "../client/TracyProfiler.hpp"
@@ -106,6 +109,14 @@ public:
         GLint bits;
         glGetQueryiv( GL_TIMESTAMP, GL_QUERY_COUNTER_BITS, &bits );
 
+#ifdef TRACY_OPENGL_AUTO_CALIBRATION
+        // The anchor above is never refreshed; advertise calibration and emit periodic
+        // GpuCalibration events to correct CPU/GPU drift (see Recalibrate). Opt-in,
+        // because Recalibrate() calls glGetInteger64v( GL_TIMESTAMP ), which forces a
+        // CPU/GPU sync.
+        m_prevCalibration = GetHostTimeNs();
+#endif
+
         const float period = 1.f;
         const auto thread = GetThreadHandle();
         TracyLfqPrepare( QueueType::GpuNewContext );
@@ -114,7 +125,11 @@ public:
         MemWrite( &item->gpuNewContext.thread, thread );
         MemWrite( &item->gpuNewContext.period, period );
         MemWrite( &item->gpuNewContext.context, m_context );
-        MemWrite( &item->gpuNewContext.flags, uint8_t( 0 ) );
+#ifdef TRACY_OPENGL_AUTO_CALIBRATION
+        MemWrite( &item->gpuNewContext.flags, GpuContextFlags( GpuContextCalibration ) );
+#else
+        MemWrite( &item->gpuNewContext.flags, GpuContextFlags( 0 ) );
+#endif
         MemWrite( &item->gpuNewContext.type, GpuContextType::OpenGl );
 
 #ifdef TRACY_ON_DEMAND
@@ -143,8 +158,6 @@ public:
     {
         ZoneScopedC( Color::Red4 );
 
-        if( m_tail == m_head ) return;
-
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() )
         {
@@ -152,6 +165,14 @@ public:
             return;
         }
 #endif
+
+#ifdef TRACY_OPENGL_AUTO_CALIBRATION
+        // Before the drain's early-returns, so it runs even on frames with no
+        // completed queries.
+        Recalibrate();
+#endif
+
+        if( m_tail == m_head ) return;
 
         while( m_tail != m_head )
         {
@@ -173,6 +194,38 @@ public:
     }
 
 private:
+#ifdef TRACY_OPENGL_AUTO_CALIBRATION
+    // Monotonic host ns for the inter-calibration interval (cpuDelta), kept
+    // separate from Profiler::GetTime() as in the D3D12/Vulkan backends.
+    static tracy_force_inline int64_t GetHostTimeNs()
+    {
+        return std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::steady_clock::now().time_since_epoch() ).count();
+    }
+
+    // OpenGL has no atomic CPU+GPU timestamp query, so sample back-to-back; the
+    // gap is negligible against the recalibration interval below. Note this forces
+    // a CPU/GPU sync, which is why the whole path is opt-in (TRACY_OPENGL_AUTO_CALIBRATION).
+    tracy_force_inline void Recalibrate()
+    {
+        const int64_t hostNow = GetHostTimeNs();
+        const int64_t delta = hostNow - m_prevCalibration;
+        if( delta < 1000ll * 1000 * 1000 ) return; // throttle: ~once per second
+
+        int64_t tgpu;
+        glGetInteger64v( GL_TIMESTAMP, &tgpu );
+        const int64_t refCpu = Profiler::GetTime();
+        m_prevCalibration = hostNow;
+
+        TracyLfqPrepare( QueueType::GpuCalibration );
+        MemWrite( &item->gpuCalibration.gpuTime, tgpu );
+        MemWrite( &item->gpuCalibration.cpuTime, refCpu );
+        MemWrite( &item->gpuCalibration.cpuDelta, delta );
+        MemWrite( &item->gpuCalibration.context, m_context );
+        TracyLfqCommit;
+    }
+#endif
+
     tracy_force_inline unsigned int NextQueryId()
     {
         const auto id = m_head;
@@ -196,6 +249,10 @@ private:
 
     unsigned int m_head;
     unsigned int m_tail;
+
+#ifdef TRACY_OPENGL_AUTO_CALIBRATION
+    int64_t m_prevCalibration; // host-ns timestamp of the last emitted calibration
+#endif
 };
 
 class GpuCtxScope

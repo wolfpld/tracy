@@ -88,7 +88,7 @@ void View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
     }
     if( hasSamples && !samplesDraw.empty() )
     {
-        DrawSampleList( ctx, samplesDraw, thread.samples, sampleOffset );
+        DrawSampleList( ctx, samplesDraw, thread.samples, sampleOffset, thread.id );
     }
 
     if( m_vd.drawLocks )
@@ -190,7 +190,10 @@ void View::DrawThreadMessagesList( const TimelineContext& ctx, const std::vector
             CrashTooltip();
             if( IsMouseClicked( 0 ) )
             {
-                m_showInfo = true;
+                m_callstackView = {
+                    .id = crash.callstack,
+                    .thread = crash.thread
+                };
             }
             if( IsMouseClicked( 2 ) )
             {
@@ -367,11 +370,11 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
             {
                 if( zoneColor.thickness > 1.f )
                 {
-                    draw->AddRect( wpos + ImVec2( px0 + 1, offset + 1 ), wpos + ImVec2( px1 - 1, offset + tsz.y - 1 ), zoneColor.accentColor, 0.f, -1, zoneColor.thickness );
+                    draw->AddRect( wpos + ImVec2( px0 + 1, offset + 1 ), wpos + ImVec2( px1 - 1, offset + tsz.y - 1 ), zoneColor.accentColor, 0.f, zoneColor.thickness );
                 }
                 else
                 {
-                    draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), zoneColor.accentColor, 0.f, -1, zoneColor.thickness );
+                    draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), zoneColor.accentColor, 0.f, zoneColor.thickness );
                 }
             }
             else
@@ -409,7 +412,6 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
             }
             break;
         }
-#ifndef TRACY_NO_STATISTICS
         case TimelineDrawType::GhostFolded:
         {
             auto& ev = *(const GhostZone*)v.ev.get();
@@ -597,7 +599,6 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
             }
             break;
         }
-#endif
         default:
             assert( false );
             break;

@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <assert.h>
 #include <inttypes.h>
-#include <math.h>
 #include <mutex>
 
 #include "imgui.h"
@@ -27,11 +26,7 @@
 #include "../Fonts.hpp"
 
 #include "imgui_internal.h"
-#include "IconsFontAwesome6.h"
-
-#ifndef M_PI_2
-#define M_PI_2 1.57079632679489661923
-#endif
+#include "IconsFontAwesome7.h"
 
 namespace tracy
 {
@@ -59,7 +54,7 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char*
     , m_horizontalScrollMultiplier( s_config.horizontalScrollMultiplier )
     , m_verticalScrollMultiplier( s_config.verticalScrollMultiplier )
     , m_manualData( std::make_shared<TracyManualData>() )
-    , m_markdown( nullptr, nullptr )
+    , m_markdown( this, &m_worker )
 #ifdef __EMSCRIPTEN__
     , m_td( 2, "ViewMt" )
 #else
@@ -83,14 +78,14 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f
     , m_stcb( stcb )
     , m_sscb( sscb )
     , m_acb( acb )
-    , m_userData( m_worker.GetCaptureProgram().c_str(), m_worker.GetCaptureTime() )
+    , m_userData( m_worker.GetCaptureProgram().c_str(), m_worker.GetCaptureTime(), f.GetFilename().c_str() )
     , m_cbMainThread( cbMainThread )
     , m_achievementsMgr( amgr )
     , m_achievements( s_config.achievements )
     , m_horizontalScrollMultiplier( s_config.horizontalScrollMultiplier )
     , m_verticalScrollMultiplier( s_config.verticalScrollMultiplier )
     , m_manualData( std::make_shared<TracyManualData>() )
-    , m_markdown( nullptr, nullptr )
+    , m_markdown( this, &m_worker )
 #ifdef __EMSCRIPTEN__
     , m_td( 2, "ViewMt" )
 #else
@@ -109,7 +104,8 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f
     m_userData.StateShouldBePreserved();
     m_userData.LoadState( m_vd );
     m_userData.LoadAnnotations( m_annotations );
-    m_sourceRegexValid = m_userData.LoadSourceSubstitutions( m_sourceSubstitutions );
+    m_userData.LoadSourceSubstitutions( m_sourceSubstitutions );
+    ValidateSourceRegex();
 
     if( m_worker.GetCallstackSampleCount() == 0 ) m_showAllSymbols = true;
 
@@ -119,10 +115,7 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f
 View::~View()
 {
     m_worker.Shutdown();
-
-    m_userData.SaveState( m_vd );
-    m_userData.SaveAnnotations( m_annotations );
-    m_userData.SaveSourceSubstitutions( m_sourceSubstitutions );
+    SaveUserData();
 
     if( m_compare.loadThread.joinable() ) m_compare.loadThread.join();
     if( m_saveThread.joinable() ) m_saveThread.join();
@@ -157,6 +150,14 @@ void View::Achieve( const char* id )
 {
     if( !m_achievements || !m_achievementsMgr ) return;
     m_achievementsMgr->Achieve( id );
+}
+
+void View::SaveUserData()
+{
+    m_userData.StoreState( m_vd );
+    m_userData.StoreAnnotations( m_annotations );
+    m_userData.StoreSourceSubstitutions( m_sourceSubstitutions );
+    m_userData.Save();
 }
 
 void View::ViewSource( const char* fileName, int line )
@@ -225,6 +226,19 @@ void View::ViewSourceCheckKeyMod( const char* fileName, int line, const char* fu
     else
     {
         ViewSource( fileName, line, functionName );
+    }
+}
+
+void View::ViewSymbolSource( const char* fileName, int line )
+{
+    assert( fileName );
+    if( m_sourceView->SwitchTo( fileName, line, m_worker, *this ) )
+    {
+        m_sourceViewFile = fileName;
+    }
+    else
+    {
+        ViewSource( fileName, line );
     }
 }
 
@@ -724,7 +738,7 @@ bool View::DrawImpl()
         m_uarchSet = true;
         m_sourceView->SetCpuId( m_worker.GetCpuId() );
     }
-    if( !m_userData.Valid() ) m_userData.Init( m_worker.GetCaptureProgram().c_str(), m_worker.GetCaptureTime() );
+    if( !m_userData.Valid() ) m_userData.Init( m_worker.GetCaptureProgram().c_str(), m_worker.GetCaptureTime(), nullptr );
     if( m_saveThreadState.load( std::memory_order_acquire ) == SaveThreadState::NeedsJoin )
     {
         m_saveThread.join();
@@ -1160,7 +1174,7 @@ bool View::DrawImpl()
     if( m_memInfo.show ) DrawMemory();
     if( m_memInfo.showAllocList ) DrawAllocList();
     if( m_compare.show ) DrawCompare();
-    if( m_callstackInfoWindow != 0 ) DrawCallstackWindow();
+    if( m_callstackView.id != 0 ) DrawCallstackWindow();
     if( m_memoryAllocInfoWindow >= 0 ) DrawMemoryAllocWindow();
     if( m_showInfo ) DrawInfo();
     if( m_sourceViewFile ) DrawTextEditor();
@@ -1238,19 +1252,7 @@ bool View::DrawImpl()
                 m_zoomAnim.end1 += delta;
             }
         }
-        m_zoomAnim.progress += io.DeltaTime * 3.33f;
-        if( m_zoomAnim.progress >= 1.f )
-        {
-            m_zoomAnim.active = false;
-            m_vd.zvStart = m_zoomAnim.start1;
-            m_vd.zvEnd = m_zoomAnim.end1;
-        }
-        else
-        {
-            const auto v = sqrt( sin( M_PI_2 * m_zoomAnim.progress ) );
-            m_vd.zvStart = int64_t( m_zoomAnim.start0 + ( m_zoomAnim.start1 - m_zoomAnim.start0 ) * v );
-            m_vd.zvEnd = int64_t( m_zoomAnim.end0 + ( m_zoomAnim.end1 - m_zoomAnim.end0 ) * v );
-        }
+        UpdateZoomAnimation( m_zoomAnim, m_vd.zvStart, m_vd.zvEnd, io.DeltaTime );
     }
 
     bool active = m_wasActive.load( std::memory_order_acquire );
@@ -1314,14 +1316,17 @@ bool View::DrawImpl()
         TextFocused( "Reason:", m_worker.GetString( crash.message ) );
         if( crash.callstack != 0 )
         {
-            bool hilite = m_callstackInfoWindow == crash.callstack;
+            bool hilite = m_callstackView.id == crash.callstack;
             if( hilite )
             {
                 SetButtonHighlightColor();
             }
             if( ImGui::Button( ICON_FA_ALIGN_JUSTIFY " Call stack" ) )
             {
-                m_callstackInfoWindow = crash.callstack;
+                m_callstackView = {
+                    .id = crash.callstack,
+                    .thread = crash.thread
+                };
             }
             if( hilite )
             {
@@ -1404,12 +1409,12 @@ void View::CrashTooltip()
     ImGui::EndTooltip();
 }
 
-void View::DrawSourceTooltip( const char* filename, uint32_t srcline, int before, int after, bool separateTooltip )
+bool View::DrawSourceTooltip( const char* filename, uint32_t srcline, int before, int after, bool separateTooltip )
 {
-    if( !filename ) return;
-    if( !SourceFileValid( filename, m_worker.GetCaptureTime(), *this, m_worker ) ) return;
+    if( !filename ) return false;
+    if( !SourceFileValid( filename, m_worker.GetCaptureTime(), *this, m_worker ) ) return false;
     m_srcHintCache.Parse( filename, m_worker, *this );
-    if( m_srcHintCache.empty() ) return;
+    if( m_srcHintCache.empty() ) return false;
     ImGui::PushStyleVar( ImGuiStyleVar_ItemSpacing, ImVec2( 0, 0 ) );
     if( separateTooltip ) ImGui::BeginTooltip();
     ImGui::PushFont( g_fonts.mono, FontNormal );
@@ -1462,6 +1467,7 @@ void View::DrawSourceTooltip( const char* filename, uint32_t srcline, int before
     ImGui::PopFont();
     if( separateTooltip ) ImGui::EndTooltip();
     ImGui::PopStyleVar();
+    return true;
 }
 
 bool View::Save( const char* fn, FileCompression comp, int zlevel, bool buildDict, int streams )
@@ -1470,6 +1476,7 @@ bool View::Save( const char* fn, FileCompression comp, int zlevel, bool buildDic
     if( !f ) return false;
 
     m_userData.StateShouldBePreserved();
+    m_userData.SetFilePath( fn );
     m_saveThreadState.store( SaveThreadState::Saving, std::memory_order_relaxed );
     m_saveThread = std::thread( [this, f{std::move( f )}, buildDict] {
         Worker::MainThreadDataLockGuard lock = m_worker.ObtainLockForMainThread();
@@ -1499,6 +1506,7 @@ bool View::WasActive() const
 {
     return m_wasActive.load( std::memory_order_acquire ) ||
         m_zoomAnim.active ||
+        ( m_showFlameGraph && m_flameGraphZoomAnim.active ) ||
         m_notificationTime > 0 ||
         !m_playback.pause ||
         m_worker.IsConnected() ||
@@ -1521,6 +1529,14 @@ void View::AddLlmQuery( const char* query )
     m_llm.m_show = true;
     m_llm.QueueSendMessageLocking();
 #endif
+}
+
+void View::ViewCallstack( uint32_t callstack, uint32_t thread )
+{
+    m_callstackView = {
+        .id = callstack,
+        .thread = thread
+    };
 }
 
 }

@@ -8,7 +8,7 @@
 #endif
 
 #ifdef TRACY_MANUAL_LIFETIME
-#  include "tracy_rpmalloc.hpp"
+#  include "../common/TracyAlloc.hpp"
 #endif
 
 namespace tracy
@@ -24,7 +24,11 @@ public:
     ~ThreadExitHandler()
     {
 #ifdef TRACY_MANUAL_LIFETIME
+#  if defined TRACY_HAS_CUSTOM_ALLOCATOR
+        PlatformAllocatorThreadFinalize();
+#  elif defined TRACY_USE_RPMALLOC
         rpmalloc_thread_finalize( 1 );
+#  endif
         RpThreadInitDone = false;
 #endif
     }

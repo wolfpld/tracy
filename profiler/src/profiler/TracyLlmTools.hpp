@@ -16,8 +16,10 @@ class EmbedData;
 namespace tracy
 {
 
+struct LlmSkill;
 class TracyLlmApi;
 class TracyManualData;
+class View;
 class Worker;
 
 class TracyLlmTools
@@ -31,7 +33,7 @@ public:
         float progress = 0;
     };
 
-    TracyLlmTools( Worker& worker, const TracyManualData& manual );
+    TracyLlmTools( Worker& worker, const View& view, const TracyManualData& manual, const std::vector<LlmSkill>& skills );
     ~TracyLlmTools();
 
     std::string HandleToolCalls( const std::string& tool, const nlohmann::json& json, TracyLlmApi& api, int contextSize, bool hasEmbeddingsModel );
@@ -62,6 +64,10 @@ private:
     std::string SearchManual( const std::string& query, TracyLlmApi& api, bool hasEmbeddingsModel );
     std::string SourceFile( const std::string& file, uint32_t line, uint32_t context, uint32_t contextBack ) const;
     std::string SourceSearch( std::string query, bool caseInsensitive, const std::string& path ) const;
+    std::string GetSkill( const std::string& name ) const;
+    std::string SymbolDisasm( const std::string& address ) const;
+    std::string SymbolParents( const std::string& address, uint32_t limit ) const;
+    std::string SamplingStats( const std::string& query, uint32_t limit ) const;
 
     void ManualEmbeddingsWorker( TracyLlmApi& api );
 
@@ -78,7 +84,10 @@ private:
     std::vector<std::pair<std::string, uint32_t>> m_chunkData;
 
     Worker& m_worker;
+    const View& m_view;
+
     const TracyManualData& m_manual;
+    const std::vector<LlmSkill>& m_skills;
 };
 
 }

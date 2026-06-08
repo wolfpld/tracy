@@ -1,6 +1,7 @@
 option('tracy_enable', type : 'boolean', value : false, description : 'Enable profiling', yield: true)
 option('on_demand', type : 'boolean', value : false, description : 'On-demand profiling')
 option('callstack', type : 'integer', value : 0, description : 'Enforce callstack collection for tracy zones x frames deep')
+option('platform_header', type : 'string', value : '', description : 'Path to a header providing TRACY_HAS_CUSTOM_* hooks for an unsupported platform')
 option('no_callstack', type : 'boolean', value : false, description : 'Disable all callstack related functionality')
 option('no_callstack_inlines', type : 'boolean', value : false, description : 'Disables the inline functions in callstacks')
 option('only_localhost', type : 'boolean', value : false, description : 'Only listen on the localhost interface')
@@ -28,3 +29,4 @@ option('verbose', type : 'boolean', value : false, description : 'Enable verbose
 option('no_internal_message', type : 'boolean', value : false, description : 'Prevent the profiler from logging messages')
 option('debuginfod', type : 'boolean', value : false, description : 'Enable debuginfod support')
 option('ignore_memory_faults', type : 'boolean', value : false, description : 'Ignore instrumentation errors from memory free events that do not have a matching allocation')
+option('opengl_auto_calibration', type : 'boolean', value : false, description : 'Periodically recalibrate OpenGL GPU/CPU clock drift (forces a CPU/GPU sync each time)')

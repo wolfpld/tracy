@@ -36,7 +36,7 @@ struct Config
 #else
     bool llm = true;
 #endif
-    std::string llmAddress = "http://localhost:11434";
+    std::string llmAddress = "http://localhost:8080";
     std::string llmModel;
     std::string llmFastModel;
     std::string llmEmbeddingsModel;
@@ -48,6 +48,8 @@ struct Config
     bool llmAnnotateCallstacks = false;
     bool llmLimitToolReplySize = false;
     int llmMaxToolReplySizeValue = 48*1024;
+    bool llmSummary = true;
+    bool llmSuggestion = true;
 };
 
 extern Config s_config;

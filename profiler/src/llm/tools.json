@@ -2,6 +2,23 @@
 {
   "type": "function",
   "function": {
+    "name": "skill",
+    "description": "Learn a specialized skill for the task needing specific knowledge.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the skill, chosen from the list of available skills."
+        }
+      },
+      "required": ["name"]
+    }
+  }
+},
+{
+  "type": "function",
+  "function": {
     "name": "search_wikipedia",
     "description": "Search the Wikipedia with given query. The `key` field in the response is the Wikipedia page name. Uses network.",
     "parameters": {
@@ -164,6 +181,65 @@
         }
       },
       "required": ["query"]
+    }
+  }
+},
+{
+  "type": "function",
+  "function": {
+    "name": "symbol_disasm",
+    "description": "Get disassembly and profiling data for a symbol.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string",
+          "description": "Symbol address, for example `0x12345678`."
+        }
+      },
+      "required": ["address"]
+    }
+  }
+},
+{
+  "type": "function",
+  "function": {
+    "name": "symbol_parents",
+    "description": "Get the top N entry call stacks for a given symbol address. Shows the call paths through which execution reached this function.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string",
+          "description": "Symbol address, for example `0x12345678`."
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Maximum number of call stacks to return. Default: 10."
+        }
+      },
+      "required": ["address"]
+    }
+  }
+},
+{
+  "type": "function",
+  "function": {
+    "name": "sampling_stats",
+    "description": "Get sampling statistics for functions, sorted by time spent in each.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "ECMAScript regex to search for."
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Maximum number of entries to return. Default: 30."
+        }
+      },
+      "required": []
     }
   }
 }

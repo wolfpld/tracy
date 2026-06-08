@@ -12,6 +12,7 @@
 #include "tracy_SPSCQueue.h"
 #include "TracyCallstack.hpp"
 #include "TracyKCore.hpp"
+#include "TracyMangle.hpp"
 #include "TracySysPower.hpp"
 #include "TracySysTime.hpp"
 #include "TracyFastVector.hpp"
@@ -20,6 +21,10 @@
 #include "../common/TracyAlloc.hpp"
 #include "../common/TracyMutex.hpp"
 #include "../common/TracyProtocol.hpp"
+
+#ifdef TRACY_PLATFORM_HEADER
+#  include TRACY_PLATFORM_HEADER
+#endif
 
 #if defined _WIN32
 #  include <intrin.h>
@@ -85,7 +90,8 @@ struct GpuCtxWrapper
 };
 
 TRACY_API moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken();
-TRACY_API Profiler& GetProfiler();
+TRACY_API Profiler& MANGLED_NAME_BASED_ON_CONFIG(GetProfiler)();
+tracy_force_inline Profiler& GetProfiler() { return MANGLED_NAME_BASED_ON_CONFIG(GetProfiler)(); }
 TRACY_API std::atomic<uint32_t>& GetLockCounter();
 TRACY_API std::atomic<uint8_t>& GetGpuCtxCounter();
 TRACY_API GpuCtxWrapper& GetGpuCtx();
@@ -1120,7 +1126,7 @@ private:
 
 #if defined _WIN32
     void* m_prevHandler;
-#else
+#elif !defined TRACY_HAS_CUSTOM_SAFE_COPY
     int m_pipe[2];
     int m_pipeBufSize;
 #endif

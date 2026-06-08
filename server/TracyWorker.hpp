@@ -678,6 +678,14 @@ public:
     uint8_t GetHandshakeStatus() const { return m_handshake.load( std::memory_order_relaxed ); }
     int64_t GetSamplingPeriod() const { return m_samplingPeriod; }
     bool AreSamplesInconsistent() const { return m_inconsistentSamples; }
+    void NotifyExcessiveZoneDepth( int64_t time )
+    {
+        if( m_excessiveZoneDepthTime.load( std::memory_order_relaxed ) != -1 ) return;
+        int64_t expected = -1;
+        m_excessiveZoneDepthTime.compare_exchange_strong( expected, time, std::memory_order_relaxed );
+    }
+    int64_t GetExcessiveZoneDepthTime() const { return m_excessiveZoneDepthTime.load( std::memory_order_relaxed ); }
+    bool HasExcessiveZoneDepth() const { return GetExcessiveZoneDepthTime() != -1; }
 
     static const LoadProgress& GetLoadProgress() { return s_loadProgress; }
     int64_t GetLoadTime() const { return m_loadTime; }
@@ -703,6 +711,22 @@ public:
     void DoPostponedWorkAll();
 
     void CacheSourceFiles();
+    bool IsFrameExternal( StringIdx filename, StringIdx image ) const;
+
+    tracy_force_inline bool IsImageExternal( StringIdx image, unordered_flat_map<uint32_t, bool>& cache, uint32_t& last ) const
+    {
+        assert( image.Active() );
+        const auto key = image.Raw();
+        if( ( last & 0x00FFFFFF ) == key ) return last >> 24;
+        return IsImageExternalBody( image, key, cache, last );
+    }
+
+    tracy_force_inline bool IsSourceExternal( StringIdx filename, unordered_flat_map<uint32_t, bool>& cache, uint32_t& last ) const
+    {
+        const auto key = filename.Raw();
+        if( ( last & 0x00FFFFFF ) == key ) return last >> 24;
+        return IsSourceExternalBody( filename, key, cache, last );
+    }
 
     StringLocation StoreString( const char* str, size_t sz );
 
@@ -722,10 +746,19 @@ private:
     tracy_force_inline bool Process( const QueueItem& ev );
     tracy_force_inline void ProcessThreadContext( const QueueThreadContext& ev );
     tracy_force_inline void ProcessZoneBegin( const QueueZoneBegin& ev );
+    tracy_force_inline void ProcessZoneBegin64( const QueueZoneBegin& ev );
+    tracy_force_inline void ProcessZoneBegin32( const QueueZoneBegin32& ev );
+    tracy_force_inline void ProcessZoneBegin16( const QueueZoneBegin16& ev );
     tracy_force_inline void ProcessZoneBeginCallstack( const QueueZoneBegin& ev );
+    tracy_force_inline void ProcessZoneBeginCallstack64( const QueueZoneBegin& ev );
+    tracy_force_inline void ProcessZoneBeginCallstack32( const QueueZoneBegin32& ev );
+    tracy_force_inline void ProcessZoneBeginCallstack16( const QueueZoneBegin16& ev );
     tracy_force_inline void ProcessZoneBeginAllocSrcLoc( const QueueZoneBeginLean& ev );
     tracy_force_inline void ProcessZoneBeginAllocSrcLocCallstack( const QueueZoneBeginLean& ev );
     tracy_force_inline void ProcessZoneEnd( const QueueZoneEnd& ev );
+    tracy_force_inline void ProcessZoneEnd64( const QueueZoneEnd& ev );
+    tracy_force_inline void ProcessZoneEnd32( const QueueZoneEnd32& ev );
+    tracy_force_inline void ProcessZoneEnd16( const QueueZoneEnd16& ev );
     tracy_force_inline void ProcessZoneValidation( const QueueZoneValidation& ev );
     tracy_force_inline void ProcessFrameMark( const QueueFrameMark& ev );
     tracy_force_inline void ProcessFrameMarkStart( const QueueFrameMark& ev );
@@ -784,7 +817,13 @@ private:
     tracy_force_inline void ProcessCallstackSerial();
     tracy_force_inline void ProcessCallstack();
     tracy_force_inline void ProcessCallstackSample( const QueueCallstackSample& ev );
+    tracy_force_inline void ProcessCallstackSample64( const QueueCallstackSample& ev );
+    tracy_force_inline void ProcessCallstackSample32( const QueueCallstackSample32& ev );
+    tracy_force_inline void ProcessCallstackSample16( const QueueCallstackSample16& ev );
     tracy_force_inline void ProcessCallstackSampleContextSwitch( const QueueCallstackSample& ev );
+    tracy_force_inline void ProcessCallstackSampleContextSwitch64( const QueueCallstackSample& ev );
+    tracy_force_inline void ProcessCallstackSampleContextSwitch32( const QueueCallstackSample32& ev );
+    tracy_force_inline void ProcessCallstackSampleContextSwitch16( const QueueCallstackSample16& ev );
     tracy_force_inline void ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev );
     tracy_force_inline void ProcessCallstackFrame( const QueueCallstackFrame& ev, bool querySymbols );
     tracy_force_inline void ProcessSymbolInformation( const QueueSymbolInformation& ev );
@@ -983,6 +1022,9 @@ private:
     int64_t GetZoneEndImpl( const ZoneEvent& ev ) const;
     int64_t GetZoneEndImpl( const GpuEvent& ev ) const;
 
+    bool IsImageExternalBody( StringIdx image, uint32_t key, unordered_flat_map<uint32_t, bool>& cache, uint32_t& last ) const;
+    bool IsSourceExternalBody( StringIdx filename, uint32_t key,unordered_flat_map<uint32_t, bool>& cache, uint32_t& last ) const;
+
     void UpdateMbps( int64_t td );
 
     int64_t ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec, uint32_t size, int64_t refTime, int32_t& childIdx );
@@ -1034,6 +1076,7 @@ private:
     bool m_combineSamples;
     bool m_identifySamples = false;
     bool m_inconsistentSamples;
+    std::atomic<int64_t> m_excessiveZoneDepthTime { -1 };
     bool m_allowStringModification = false;
 
     short_ptr<GpuCtxData> m_gpuCtxMap[256];

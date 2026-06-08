@@ -5,53 +5,94 @@ here.
 vx.xx.x (2026-xx-xx)
 --------------------
 
+- Added tracy-capture-daemon for automated multi-client trace capture.
+- Added tracy-merge utility for combining multiple trace files into one.
+- Added support for Windows on ARM64 with MSVC.
 - External frames are now omitted in the single-line call stack list visible
   in messages list, or in memory allocation info window.
+- External frames are now hidden by default in various contexts where they
+  were previously enabled:
+  - Flame graph window.
+  - Call stack window.
+  - Statistics window (sampling mode).
+- External frames are now dimmed out in call stacks in various parts of UI.
+- Single-line call stacks now have ellipsis at the end, if there are frames
+  remaining.
 - System tracing on Windows has been refactored to be more robust.
 - Tracing on Arm macOS will now have more precise timer readings.
 - Extended CUDA support to track some previously missing memory operations.
 - Added support for setting message's source and severity, through the
   TracyLogString macro.
+- The "zone trace" list in zone information window has been removed. It was
+  never convenient to use properly. It was replaced by "parent zones" list,
+  which is basically a less convoluted equivalent.
+- Added inline call stack list to the zone information window.
+  - The "call stack" button for opening the call stack in a separate window
+    is still there.
+- Call stacks are now also displayed in zone tooltips (single-line).
+- Implemented heuristic reconstruction of zone call stacks for zones that
+  were captured without call stacks.
+  - Requires sampling to be enabled, and at least one sample in the zone
+    extent.
+  - Since this is a heuristic, the result can be wrong.
+  - The reconstructed call stack can be displayed in the zone tooltip and in
+    the inline call stack view in zone information window.
+  - Reconstructed call stacks are indicated with the "magic wand" icon.
 - Various LLM integration improvements.
   - The protocol has been updated to use model templates. As a result, tools
     are now specified in a common way and the reasoning is performed in a
     separate content stream.
-  - Smaller models are now viable to use. Models as small a 4B parameters do
+  - Several new tools were added, which in concert enable the assistant to
+    answer very general questions, such as "how to optimize this program?".
+  - Smaller models are now viable to use. Models as small as 4B parameters do
     now work really well. You can run such models on virtually all hardware.
   - Added horizontal scroll bars to code segments.
   - LLM thinking regions are now hidden by default.
+    - The assistant may notify the user about its current findings, then
+      resume thinking, after which it may give a more complete answer. In
+      such cases, the initial part of the reply will be faded out.
   - Sampled execution costs are now included in assembly attachments.
   - Source code retrieval now has an optional line context parameter.
   - Added ability to search the code for keywords.
   - Calls in assembly attachments are now annotated with function names.
   - Wikipedia search will now return 10 results, not only the top one.
+  - Brave search engine is now available as an alternative web search option.
   - Added emoji font.
   - Maximum tool reply size has been tweaked to better work with larger
     contexts.
+  - Tool reply size limit is now configurable in LLM settings.
   - Tool reply eviction logic for context management has been adjusted to
     better work with larger contexts. Additional logic was added to prefer
     eviction of old responses.
+  - Certain LLM actions want to run in a fast mode, with reasoning disabled.
+    In most scenarios the default chat model will have to do here. If you
+    have the memory to spare, you can optionally load two models at once,
+    setting the "fast" model to a smaller and much quicker one.
+  - Chat topic description is now provided, based on the first user question.
+  - Each assistant reply is now labeled with used model and reply time.
+  - Follow-up questions can be automatically suggested.
 - Expanded LLM attachments.
   - You can now attach complete symbol assembly.
   - Entry call stacks can be now attached (previously it was only regular
     call stacks).
   - Crash call stack attachments are now annotated with crash info.
   - Source code can be attached (also with execution costs in symbol view).
+  - Zone histogram data can be attached for analysis.
 - Markdown renderer improvements.
   - Tables are now properly rendered.
   - Tasklist rendering has been implemented.
   - Strikethrough is now supported.
   - Clickable links are now underlined.
 - Tweaked high-resolution scroll handling on Wayland.
+- Touchpad gestures on the timeline now either scroll or zoom, but not both
+  simultaneously.
 - Full user name is now stored in trace info.
 - External functions can be filtered out in the sampling statistics view.
 - Tweaked external paths heuristics.
   - Check for both 64-bit and 32-bit versions of Program Files directory.
   - Hidden unix files and directories are now also considered external. For
     example: $(HOME)/.cache/cpm/somelib/file.h.
-- LLM configuration now also expects a "fast model" to be set. It is intended
-  for quick queries that do not require tool use or reasoning.
-- Call stack window can now provide LLM summaries. It uses the fast model.
+- Call stack window can now provide LLM summaries.
   - These summaries can be performed automatically. Enable in LLM settings.
 - The capture utility is now displaying query backlog, just like the profiler
   GUI.
@@ -64,6 +105,73 @@ vx.xx.x (2026-xx-xx)
   should now work again on Linux.
 - In disassembly line view, source file names are now displayed instead of
   "unknown", in case the source line number is not known.
+- Trace host info is now properly formatted.
+- It is now possible to sort the order of threads on the timeline ("visible
+  threads" in trace settings).
+- Added clipboard support to emscripten backend.
+- Added TRACY_DISALLOW_HW_TIMER define for virtualized environments and WSL2,
+  which may not have reliable access to hardware timer registers. Falls back
+  to standard library timer with reduced resolution.
+- Fixed DPI scaling on macOS.
+- Thread names are no longer truncated to 15 characters on Apple.
+- Executable path is now inspected when looking for PDB files on Windows.
+- Added ___tracy_get_time() C API as an equivalent for Profiler::GetTime().
+- D3D12 instrumentation improvements.
+- CUDA instrumentation improvements.
+- Properly set API visibility attributes on MSVC + clang.
+- Fixed regression in data sorting algorithm that could cause broken (going
+  back in time) plots. A retroactive fix is included for previously broken
+  traces.
+- All tools provided by the project now report the version number and git sha
+  revision on the command line help output.
+- Microarchitectural data has been updated to include the latest uops.info
+  measurements.
+- Added validation check for SymSrv.dll on Windows.
+- Various CMake options are now available to control optional build settings:
+  - NO_LTO disables link-time optimization.
+  - NO_MOLD_LINKER disables use of the mold linker.
+  - NO_CCACHE disables use of ccache (compiler cache).
+- The Tracy library now has TRACY_ENABLED unset by default in the CMake and
+  Meson default configurations. This now matches what the documentation was
+  always saying. Some build setups may need updating.
+- Adjust to max sampling rate on Linux.
+- Further improvements to tracefs mount path discovery robustness.
+- Macro mismatch detection between Tracy configuration and client code.
+  - Tracy client build settings change the ABI of the library.
+  - Mismatched versions will break at linking.
+  - As a reminder, Tracy *always* required using the same set of compilation
+    options for the entire program.
+- Message windows will now properly show full message in a tooltip for
+  multi-line messages.
+- Greatly improved the in-profiler user manual.
+  - There is now chapter tree and the manual contents are displayed section
+    by section.
+  - Links to chapters are now properly working.
+  - The "bclogo" blocks are now correctly processed.
+  - The font awesome icons now show as in the rest of the UI.
+- Call stack window will now show the thread viewed call stack originates
+  from (if possible).
+- "Visible threads" checkboxes in messages, flame graph and wait stacks
+  windows are now displayed in multiple columns, and the maximum number of
+  visible rows is limited, with fallback to scrollable view.
+- Improved child call distribution list in the symbol view window.
+  - The visible area can be now resized horizontally.
+  - The list is now displayed as a table with resizable columns, etc.
+  - Child calls time percentage is now shown as a percentage of calls (as
+    it was before), and also as a percentage of total symbol time.
+- Child calls time is now also displayed as a percentage.
+- Prototype implementation of system tracing on Apple devices.
+- Local (inline) call stack printouts were added to tooltips in statistics
+  window, in sampling mode.
+- Ironed out some code corners to make integration of closed gaming console
+  platforms easier. Added support for custom platform headers.
+- Bottom and top sample trees (in wait stacks, or in entry call stacks)
+  now display aggregation counts if "group by function name" is enabled.
+- HW sample view in symbol view are now disabled by default.
+- The profiler can no longer be built with the statistics disabled.
+- Fixed NVCC builds.
+- Fixed possible lockups in Vulkan timer calibration loop.
+- The flame graph view now supports zooming in and panning with the mouse.
 
 
 v0.13.1 (2025-12-11)

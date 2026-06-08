@@ -27,10 +27,10 @@
 #else
 #  include <arpa/inet.h>
 #  include <sys/socket.h>
-#  include <sys/param.h>
 #  include <errno.h>
 #  include <fcntl.h>
 #  include <netinet/in.h>
+#  include <netinet/tcp.h>
 #  include <netdb.h>
 #  include <unistd.h>
 #  include <poll.h>
@@ -68,6 +68,18 @@ void InitWinSock()
     static __wsinit init;
 }
 #endif
+
+
+static void SetNoDelay( int sock )
+{
+#ifdef _WIN32
+    unsigned long val = 1;
+    setsockopt( sock, IPPROTO_TCP, TCP_NODELAY, (const char*)&val, sizeof( val ) );
+#else
+    int val = 1;
+    setsockopt( sock, IPPROTO_TCP, TCP_NODELAY, &val, sizeof( val ) );
+#endif
+}
 
 
 constexpr size_t BufSize = 128 * 1024;
@@ -150,6 +162,7 @@ bool Socket::Connect( const char* addr, uint16_t port )
         int flags = fcntl( m_connSock, F_GETFL, 0 );
         fcntl( m_connSock, F_SETFL, flags & ~O_NONBLOCK );
 #endif
+        SetNoDelay( m_connSock );
         m_sock.store( m_connSock, std::memory_order_relaxed );
         freeaddrinfo( m_res );
         m_ptr = nullptr;
@@ -218,7 +231,7 @@ bool Socket::Connect( const char* addr, uint16_t port )
     int flags = fcntl( sock, F_GETFL, 0 );
     fcntl( sock, F_SETFL, flags & ~O_NONBLOCK );
 #endif
-
+    SetNoDelay( sock );
     m_sock.store( sock, std::memory_order_relaxed );
     return true;
 }
@@ -495,7 +508,7 @@ bool ListenSocket::Listen( uint16_t port, int backlog )
 #if defined _WIN32
     unsigned long val = 0;
     setsockopt( m_sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&val, sizeof( val ) );
-#elif defined BSD
+#elif defined __APPLE__ || defined __FreeBSD__ || defined __NetBSD__ || defined __OpenBSD__ || defined __DragonFly__
     int val = 0;
     setsockopt( m_sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&val, sizeof( val ) );
     val = 1;
@@ -528,6 +541,8 @@ Socket* ListenSocket::Accept()
         int val = 1;
         setsockopt( sock, SOL_SOCKET, SO_NOSIGPIPE, &val, sizeof( val ) );
 #endif
+
+        SetNoDelay( sock );
 
         auto ptr = (Socket*)tracy_malloc( sizeof( Socket ) );
         new(ptr) Socket( sock );

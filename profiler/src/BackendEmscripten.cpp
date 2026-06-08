@@ -299,8 +299,12 @@ void Backend::NewFrame( int& w, int& h )
 
     if( s_width != w || s_height != h )
     {
-        EM_ASM( Module.canvas.style.width = window.innerWidth + 'px'; Module.canvas.style.height = window.innerHeight + 'px' );
-        EM_ASM( Module.canvas.width = $0; Module.canvas.height = $1, w, h );
+        EM_ASM( {
+            Module.canvas.style.width = ($0 / $2) + 'px';
+            Module.canvas.style.height = ($1 / $2) + 'px';
+            Module.canvas.width = $0;
+            Module.canvas.height = $1;
+        }, w, h, double( scale ) );
 
         s_width = w;
         s_height = h;

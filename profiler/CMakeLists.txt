@@ -5,9 +5,10 @@ include(${CMAKE_CURRENT_LIST_DIR}/../cmake/options.cmake)
 set_option(NO_FILESELECTOR "Disable the file selector" OFF)
 set_option(GTK_FILESELECTOR "Use the GTK file selector on Linux instead of the xdg-portal one" OFF)
 set_option(LEGACY "Instead of Wayland, use the legacy X11 backend on Linux" OFF)
-set_option(NO_STATISTICS "Disable calculation of statistics" OFF)
 set_option(SELF_PROFILE "Enable self-profiling" OFF)
 set_option_value(SANITIZE "Sanitizer parameters" "")
+
+set(NO_STATISTICS OFF)
 
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/version.cmake)
 
@@ -59,6 +60,7 @@ set(SERVER_FILES
     TracyBadVersion.cpp
     TracyColor.cpp
     TracyConfig.cpp
+    TracyDisassembly.cpp
     TracyEmbed.cpp
     TracyEventDebug.cpp
     TracyFileselector.cpp
@@ -144,15 +146,32 @@ set(PROFILER_FILES
 )
 
 Embed(PROFILER_FILES SystemPrompt src/llm/system.prompt.md)
+Embed(PROFILER_FILES SkillCallstack src/llm/skill.callstack.md)
+Embed(PROFILER_FILES SkillOptimization src/llm/skill.optimization.md)
 Embed(PROFILER_FILES ToolsJson src/llm/tools.json)
+
 Embed(PROFILER_FILES FontFixed src/font/FiraCode-Retina.ttf)
-Embed(PROFILER_FILES FontIcons src/font/Font\ Awesome\ 6\ Free-Solid-900.otf)
+Embed(PROFILER_FILES FontIcons src/font/Font\ Awesome\ 7\ Free-Solid-900.otf)
 Embed(PROFILER_FILES FontNormal src/font/Roboto-Regular.ttf)
 Embed(PROFILER_FILES FontBold src/font/Roboto-Bold.ttf)
 Embed(PROFILER_FILES FontItalic src/font/Roboto-Italic.ttf)
 Embed(PROFILER_FILES FontBoldItalic src/font/Roboto-BoldItalic.ttf)
 Embed(PROFILER_FILES FontEmoji src/font/NotoEmoji-Regular.ttf)
+
 Embed(PROFILER_FILES Manual ../manual/tracy.md)
+
+Embed(PROFILER_FILES Text100Million src/achievements/100Million.md)
+Embed(PROFILER_FILES TextConnectToClient src/achievements/ConnectToClient.md)
+Embed(PROFILER_FILES TextFindZone src/achievements/FindZone.md)
+Embed(PROFILER_FILES TextFrameImages src/achievements/FrameImages.md)
+Embed(PROFILER_FILES TextGlobalSettings src/achievements/GlobalSettings.md)
+Embed(PROFILER_FILES TextInstrumentationIntro src/achievements/InstrumentationIntro.md)
+Embed(PROFILER_FILES TextInstrumentationStatistics src/achievements/InstrumentationStatistics.md)
+Embed(PROFILER_FILES TextInstrumentFrames src/achievements/InstrumentFrames.md)
+Embed(PROFILER_FILES TextIntro src/achievements/Intro.md)
+Embed(PROFILER_FILES TextLoadTrace src/achievements/LoadTrace.md)
+Embed(PROFILER_FILES TextSamplingIntro src/achievements/SamplingIntro.md)
+Embed(PROFILER_FILES TextSaveTrace src/achievements/SaveTrace.md)
 
 set(INCLUDES "${CMAKE_CURRENT_BINARY_DIR}")
 set(LIBS "")

@@ -19,6 +19,10 @@ using CUDACtx = std::nullptr_t;
 #else
 #include <cupti.h>
 
+#if CUDA_VERSION < 12040
+#error "CUDA v12.4 (or later) is required by TracyCUDA.hpp"
+#endif
+
 #include <cassert>
 #include <cmath>
 #include <string>
@@ -1211,8 +1215,15 @@ namespace tracy
             {
                 // NOTE(marcos): a byproduct of CUPTI_ACTIVITY_KIND_SYNCHRONIZATION
                 // (I think this is related to cudaEvent*() API calls)
+#if CUDA_VERSION < 12080
+                // prior to CUDA v12.8
+                CUpti_ActivityCudaEvent* event = (CUpti_ActivityCudaEvent*)record;
+                UNREFERENCED(event);
+#else
+                // starting from CUDA v12.8
                 CUpti_ActivityCudaEvent2* event = (CUpti_ActivityCudaEvent2*)record;
                 UNREFERENCED(event);
+#endif
                 break;
             }
             default:

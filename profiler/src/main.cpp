@@ -39,7 +39,7 @@
 #include "profiler/TracyTexture.hpp"
 #include "profiler/TracyView.hpp"
 #include "profiler/TracyWeb.hpp"
-#include "profiler/IconsFontAwesome6.h"
+#include "profiler/IconsFontAwesome7.h"
 #include "../../server/tracy_pdqsort.h"
 #include "../../server/tracy_robin_hood.h"
 #include "../../server/TracyFileHeader.hpp"
@@ -123,6 +123,8 @@ static size_t s_totalMem = tracy::GetPhysicalMemorySize();
 tracy::AchievementsMgr* s_achievements;
 static const tracy::data::AchievementItem* s_achievementItem = nullptr;
 static bool s_switchAchievementCategory = false;
+
+ImTextureID GetProfilerIconTexture() { return iconTex; }
 
 static float smoothstep( float x )
 {
@@ -1464,9 +1466,17 @@ Would you like to enable achievements?
                     {
                         ImGui::Columns( 2 );
                         ImGui::SetColumnWidth( 0, 300 * dpiScale );
+                        ImGui::BeginChild( "##achievementtoc", ImVec2( 0, 0 ), ImGuiChildFlags_AlwaysUseWindowPadding );
                         DrawAchievements( c->items );
+                        ImGui::EndChild();
                         ImGui::NextColumn();
-                        if( s_achievementItem ) s_achievementItem->description();
+                        ImGui::BeginChild( "##achievementtext", ImVec2( 0, 0 ), ImGuiChildFlags_AlwaysUseWindowPadding );
+                        if( s_achievementItem )
+                        {
+                            tracy::Markdown md( nullptr, nullptr );
+                            md.Print( s_achievementItem->text.c_str(), s_achievementItem->text.size() );
+                        }
+                        ImGui::EndChild();
                         ImGui::EndColumns();
                         ImGui::EndTabItem();
                     }

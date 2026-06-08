@@ -11,7 +11,7 @@
 #  elif defined __APPLE__
 #    include <mach/mach_host.h>
 #    include <mach/host_info.h>
-#  elif defined BSD
+#  elif defined __FreeBSD__ || defined __NetBSD__ || defined __OpenBSD__ || defined __DragonFly__
 #    include <sys/types.h>
 #    include <sys/sysctl.h>
 #  endif
@@ -79,7 +79,7 @@ void SysTime::ReadTimes()
     idle = info.cpu_ticks[CPU_STATE_IDLE];
 }
 
-#  elif defined BSD
+#  elif defined __FreeBSD__ || defined __NetBSD__ || defined __OpenBSD__ || defined __DragonFly__
 
 void SysTime::ReadTimes()
 {
@@ -109,7 +109,7 @@ float SysTime::Get()
 
 #if defined _WIN32
     return diffUsed == 0 ? -1 : ( diffUsed - diffIdle ) * 100.f / diffUsed;
-#elif defined __linux__ || defined __APPLE__ || defined BSD
+#elif defined __linux__ || defined __APPLE__ || defined __FreeBSD__ || defined __NetBSD__ || defined __OpenBSD__ || defined __DragonFly__
     const auto total = diffUsed + diffIdle;
     return total == 0 ? -1 : diffUsed * 100.f / total;
 #endif

@@ -24,11 +24,21 @@ enum class QueueType : uint8_t
     Callstack,
     CallstackAlloc,
     CallstackSample,
+    CallstackSample32,
+    CallstackSample16,
     CallstackSampleContextSwitch,
+    CallstackSampleContextSwitch32,
+    CallstackSampleContextSwitch16,
     FrameImage,
     ZoneBegin,
+    ZoneBegin32,
+    ZoneBegin16,
     ZoneBeginCallstack,
+    ZoneBeginCallstack32,
+    ZoneBeginCallstack16,
     ZoneEnd,
+    ZoneEnd32,
+    ZoneEnd16,
     LockWait,
     LockObtain,
     LockRelease,
@@ -153,9 +163,31 @@ struct QueueZoneBeginThread : public QueueZoneBegin
     uint32_t thread;
 };
 
+struct QueueZoneBegin32
+{
+    uint32_t time;
+    uint64_t srcloc;
+};
+
+struct QueueZoneBegin16
+{
+    uint16_t time;
+    uint64_t srcloc;
+};
+
 struct QueueZoneEnd
 {
     int64_t time;
+};
+
+struct QueueZoneEnd32
+{
+    uint32_t time;
+};
+
+struct QueueZoneEnd16
+{
+    uint16_t time;
 };
 
 struct QueueZoneEndThread : public QueueZoneEnd
@@ -610,13 +642,25 @@ struct QueueCallstackAllocFatThread : public QueueCallstackAllocFat
 
 struct QueueCallstackSample
 {
-    int64_t time;
     uint32_t thread;
+    int64_t time;
 };
 
 struct QueueCallstackSampleFat : public QueueCallstackSample
 {
     uint64_t ptr;
+};
+
+struct QueueCallstackSample32
+{
+    uint32_t thread;
+    uint32_t time;
+};
+
+struct QueueCallstackSample16
+{
+    uint32_t thread;
+    uint16_t time;
 };
 
 struct QueueCallstackFrameSize
@@ -784,7 +828,11 @@ struct QueueItem
         QueueZoneBegin zoneBegin;
         QueueZoneBeginLean zoneBeginLean;
         QueueZoneBeginThread zoneBeginThread;
+        QueueZoneBegin32 zoneBegin32;
+        QueueZoneBegin16 zoneBegin16;
         QueueZoneEnd zoneEnd;
+        QueueZoneEnd32 zoneEnd32;
+        QueueZoneEnd16 zoneEnd16;
         QueueZoneEndThread zoneEndThread;
         QueueZoneValidation zoneValidation;
         QueueZoneValidationThread zoneValidationThread;
@@ -846,6 +894,8 @@ struct QueueItem
         QueueCallstackAllocFatThread callstackAllocFatThread;
         QueueCallstackSample callstackSample;
         QueueCallstackSampleFat callstackSampleFat;
+        QueueCallstackSample32 callstackSample32;
+        QueueCallstackSample16 callstackSample16;
         QueueCallstackFrameSize callstackFrameSize;
         QueueCallstackFrameSizeFat callstackFrameSizeFat;
         QueueCallstackFrame callstackFrame;
@@ -890,11 +940,21 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ),                                  // callstack
     sizeof( QueueHeader ),                                  // callstack alloc
     sizeof( QueueHeader ) + sizeof( QueueCallstackSample ),
-    sizeof( QueueHeader ) + sizeof( QueueCallstackSample ), // context switch
+    sizeof( QueueHeader ) + sizeof( QueueCallstackSample32 ),
+    sizeof( QueueHeader ) + sizeof( QueueCallstackSample16 ),
+    sizeof( QueueHeader ) + sizeof( QueueCallstackSample ),   // context switch
+    sizeof( QueueHeader ) + sizeof( QueueCallstackSample32 ), // context switch
+    sizeof( QueueHeader ) + sizeof( QueueCallstackSample16 ), // context switch
     sizeof( QueueHeader ) + sizeof( QueueFrameImage ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),
+    sizeof( QueueHeader ) + sizeof( QueueZoneBegin32 ),
+    sizeof( QueueHeader ) + sizeof( QueueZoneBegin16 ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // callstack
+    sizeof( QueueHeader ) + sizeof( QueueZoneBegin32 ),     // callstack
+    sizeof( QueueHeader ) + sizeof( QueueZoneBegin16 ),     // callstack
     sizeof( QueueHeader ) + sizeof( QueueZoneEnd ),
+    sizeof( QueueHeader ) + sizeof( QueueZoneEnd32 ),
+    sizeof( QueueHeader ) + sizeof( QueueZoneEnd16 ),
     sizeof( QueueHeader ) + sizeof( QueueLockWait ),
     sizeof( QueueHeader ) + sizeof( QueueLockObtain ),
     sizeof( QueueHeader ) + sizeof( QueueLockRelease ),

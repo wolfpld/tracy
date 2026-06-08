@@ -122,8 +122,8 @@ private:
 
 char SymbolResolver::s_symbolResolutionBuffer[symbolResolutionBufferSize];
 
-bool ResolveSymbols( const std::string& imagePath, const FrameEntryList& inputEntryList,
-                    SymbolEntryList& resolvedEntries )
+bool ResolveSymbolsDbgHelp( const std::string& imagePath, const FrameEntryList& inputEntryList,
+                            SymbolEntryList& resolvedEntries )
 {
     static SymbolResolver resolver;
     return resolver.ResolveSymbolsForModule( imagePath, inputEntryList, resolvedEntries );

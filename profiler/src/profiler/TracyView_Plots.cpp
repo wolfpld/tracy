@@ -88,7 +88,7 @@ bool View::DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vect
                         draw->AddRectFilled( dpos + ImVec2( px, offset + PlotHeight ), dpos + ImVec2( x, offset + py ), fill );
                     }
                     const ImVec2 data[3] = { dpos + ImVec2( px, offset + py ), dpos + ImVec2( x, offset + py ), dpos + ImVec2( x, offset + y ) };
-                    draw->AddPolyline( data, 3, color, 0, 1.0f );
+                    draw->AddPolyline( data, 3, color, 1.0f );
                 }
                 else
                 {

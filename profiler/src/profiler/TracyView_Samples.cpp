@@ -8,6 +8,7 @@
 #include "TracySourceView.hpp"
 #include "TracyTimelineContext.hpp"
 #include "TracyTimelineDraw.hpp"
+#include "TracyUtility.hpp"
 #include "TracyView.hpp"
 #include "tracy_pdqsort.h"
 #include "../Fonts.hpp"
@@ -15,7 +16,7 @@
 namespace tracy
 {
 
-void View::DrawSampleList( const TimelineContext& ctx, const std::vector<SamplesDraw>& drawList, const Vector<SampleData>& vec, int offset )
+void View::DrawSampleList( const TimelineContext& ctx, const std::vector<SamplesDraw>& drawList, const Vector<SampleData>& vec, int offset, uint64_t tid )
 {
     const auto& wpos = ctx.wpos;
     const auto ty = ctx.ty;
@@ -67,7 +68,10 @@ void View::DrawSampleList( const TimelineContext& ctx, const std::vector<Samples
                 CallstackTooltip( it->callstack.Val() );
                 if( IsMouseClicked( 0 ) )
                 {
-                    m_callstackInfoWindow = it->callstack.Val();
+                    m_callstackView = {
+                        .id = it->callstack.Val(),
+                        .thread = tid
+                    };
                 }
             }
         }
@@ -368,7 +372,7 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                         }
                         else
                         {
-                            pdqsort_branchless( inSymList.begin(), inSymList.end(), []( const auto& l, const auto& r ) { return l.incl != l.incl ? l.incl > r.incl : l.symAddr < r.symAddr; } );
+                            pdqsort_branchless( inSymList.begin(), inSymList.end(), []( const auto& l, const auto& r ) { return l.incl != r.incl ? l.incl > r.incl : l.symAddr < r.symAddr; } );
                         }
                     }
 
@@ -491,7 +495,19 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                     }
                     if( ImGui::IsItemHovered() )
                     {
-                        DrawSourceTooltip( file, line );
+                        auto frame = m_worker.GetCallstackFrame( m_worker.PackPointer( v.symAddr ) );
+                        if( frame && frame->size > 1 )
+                        {
+                            ImGui::BeginTooltip();
+                            if( DrawSourceTooltip( file, line, 3, 3, false ) ) ImGui::Separator();
+                            TextDisabledUnformatted( "Local call stack:" );
+                            PrintLocalStack( frame, m_worker, *this );
+                            ImGui::EndTooltip();
+                        }
+                        else
+                        {
+                            DrawSourceTooltip( file, line );
+                        }
                         if( ImGui::IsItemClicked( 1 ) )
                         {
                             if( SourceFileValid( file, m_worker.GetCaptureTime(), *this, m_worker ) )
@@ -720,7 +736,21 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                                 }
                                 if( ImGui::IsItemHovered() )
                                 {
-                                    DrawSourceTooltip( file, line );
+                                    bool passed = false;
+                                    if( iv.count <= 1 )
+                                    {
+                                        auto frame = m_worker.GetCallstackFrame( m_worker.PackPointer( iv.symAddr ) );
+                                        if( frame && frame->size > 1 )
+                                        {
+                                            ImGui::BeginTooltip();
+                                            if( DrawSourceTooltip( file, line, 3, 3, false ) ) ImGui::Separator();
+                                            TextDisabledUnformatted( "Local call stack:" );
+                                            PrintLocalStack( frame, m_worker, *this );
+                                            ImGui::EndTooltip();
+                                            passed = true;
+                                        }
+                                    }
+                                    if( !passed ) DrawSourceTooltip( file, line );
                                     if( ImGui::IsItemClicked( 1 ) )
                                     {
                                         if( SourceFileValid( file, m_worker.GetCaptureTime(), *this, m_worker ) )
@@ -889,11 +919,11 @@ void View::DrawSampleParents()
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        if( ImGui::RadioButton( ICON_FA_TREE " Bottom-up tree", m_sampleParents.mode == 1 ) ) m_sampleParents.mode = 1;
+        if( ImGui::RadioButton( ICON_FA_TREE ICON_FA_ARROW_UP " Bottom-up tree", m_sampleParents.mode == 1 ) ) m_sampleParents.mode = 1;
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        if( ImGui::RadioButton( ICON_FA_TREE " Top-down tree", m_sampleParents.mode == 2 ) ) m_sampleParents.mode = 2;
+        if( ImGui::RadioButton( ICON_FA_TREE ICON_FA_ARROW_DOWN " Top-down tree", m_sampleParents.mode == 2 ) ) m_sampleParents.mode = 2;
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
@@ -1007,10 +1037,9 @@ void View::DrawSampleParents()
                     for( uint8_t f=0; f<fsz; f++ )
                     {
                         const auto& frame = frameData->data[f];
-                        auto filename = m_worker.GetString( frame.file );
-                        auto image = frameData->imageName.Active() ? m_worker.GetString( frameData->imageName ) : nullptr;
 
-                        if( IsFrameExternal( filename, image ) )
+                        const auto isExternal = m_worker.IsFrameExternal( frame.file, frameData->imageName );
+                        if( isExternal )
                         {
                             if( !m_showExternalFrames )
                             {
@@ -1062,6 +1091,10 @@ void View::DrawSampleParents()
                             else if( m_worker.GetCanonicalPointer( entry ) >> 63 != 0 )
                             {
                                 TextColoredUnformatted( 0xFF8888FF, txt );
+                            }
+                            else if( isExternal )
+                            {
+                                TextDisabledUnformatted( txt );
                             }
                             else if( m_vd.shortenName == ShortenName::Never )
                             {

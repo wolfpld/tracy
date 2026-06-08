@@ -1,4 +1,10 @@
+#include <math.h>
+
 #include "TracyView.hpp"
+
+#ifndef M_PI_2
+#define M_PI_2 1.57079632679489661923
+#endif
 
 namespace tracy
 {
@@ -70,6 +76,25 @@ void View::ZoomToRange( int64_t start, int64_t end, bool pause )
         m_zoomAnim.end1 = end;
     }
     m_zoomAnim.progress = 0;
+}
+
+void View::UpdateZoomAnimation( Animation& anim, int64_t& start, int64_t& end, float deltaTime )
+{
+    if( !anim.active ) return;
+
+    anim.progress += deltaTime * 3.33f;
+    if( anim.progress >= 1.f )
+    {
+        anim.active = false;
+        start = anim.start1;
+        end = anim.end1;
+    }
+    else
+    {
+        const auto v = sqrt( sin( M_PI_2 * anim.progress ) );
+        start = int64_t( anim.start0 + ( anim.start1 - anim.start0 ) * v );
+        end = int64_t( anim.end0 + ( anim.end1 - anim.end0 ) * v );
+    }
 }
 
 void View::ZoomToPrevFrame()

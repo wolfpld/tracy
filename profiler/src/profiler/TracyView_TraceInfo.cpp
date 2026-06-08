@@ -41,15 +41,11 @@ void View::DrawInfo()
         TextFocused( "File:", m_filename.c_str() );
         if( m_userData.Valid() )
         {
-            const auto save = m_userData.GetConfigLocation();
-            if( save )
+            ImGui::SameLine();
+            auto sidecarPublic = m_userData.IsSidecarPublic();
+            if( SmallCheckbox( ICON_FA_USER_GEAR " Public sidecar", &sidecarPublic ) )
             {
-                ImGui::SameLine();
-                if( ImGui::SmallButton( ICON_FA_FOLDER ) )
-                {
-                    ImGui::SetClipboardText( save );
-                }
-                TooltipIfHovered( "Copy user settings location to clipboard." );
+                m_userData.SetSidecarPublic( sidecarPublic );
             }
         }
     }
@@ -117,7 +113,6 @@ void View::DrawInfo()
         }
         TextFocused( "Call stack samples:", RealToString( m_worker.GetCallstackSampleCount() ) );
         TextFocused( "Ghost zones:", RealToString( m_worker.GetGhostZonesCount() ) );
-#ifndef TRACY_NO_STATISTICS
         TextFocused( "Child sample symbols:", RealToString( m_worker.GetChildSamplesCountSyms() ) );
         if( ImGui::IsItemHovered() )
         {
@@ -126,7 +121,6 @@ void View::DrawInfo()
             ImGui::EndTooltip();
         }
         TextFocused( "Context switch samples:", RealToString( m_worker.GetContextSwitchSampleCount() ) );
-#endif
         TextFocused( "Hardware samples:", RealToString( m_worker.GetHwSampleCount() ) );
         if( ImGui::IsItemHovered() )
         {
@@ -865,24 +859,7 @@ void View::DrawInfo()
             m_sourceSubstitutions.erase( m_sourceSubstitutions.begin() + remove );
             changed = true;
         }
-
-        if( changed )
-        {
-            bool regexValid = true;
-            for( auto& v : m_sourceSubstitutions )
-            {
-                try
-                {
-                    v.regex.assign( v.pattern );
-                }
-                catch( std::regex_error& )
-                {
-                    regexValid = false;
-                    break;
-                }
-            }
-            m_sourceRegexValid = regexValid;
-        }
+        if( changed ) ValidateSourceRegex();
 
         ImGui::Checkbox("Enforce source file modification time older than trace capture time", &m_validateSourceAge);
 
@@ -973,14 +950,17 @@ void View::DrawInfo()
         if( crash.callstack != 0 )
         {
             ImGui::SameLine();
-            bool hilite = m_callstackInfoWindow == crash.callstack;
+            bool hilite = m_callstackView.id == crash.callstack;
             if( hilite )
             {
                 SetButtonHighlightColor();
             }
             if( ImGui::Button( ICON_FA_ALIGN_JUSTIFY " Call stack" ) )
             {
-                m_callstackInfoWindow = crash.callstack;
+                m_callstackView = {
+                    .id = crash.callstack,
+                    .thread = crash.thread
+                };
             }
             if( hilite )
             {

@@ -5,8 +5,11 @@
 #include <string>
 
 #include "TracyImGui.hpp"
+#include "TracyLlm.hpp"
 #include "TracyLlmChat.hpp"
 #include "TracyMouse.hpp"
+#include "TracyPrint.hpp"
+#include "TracyView.hpp"
 #include "../Fonts.hpp"
 #include "../../public/common/TracyForceInline.hpp"
 
@@ -67,7 +70,7 @@ static const char* utfendl( const char* str, int len )
 }
 
 
-static std::string ToolCallDescription( const nlohmann::json& json )
+std::string TracyLlmChat::ToolCallDescription( const nlohmann::json& json ) const
 {
     if( !json.contains( "arguments" ) ) return "";
     nlohmann::json args;
@@ -126,19 +129,66 @@ static std::string ToolCallDescription( const nlohmann::json& json )
         if( args.contains( "path" ) ) path = ", path: " + args["path"].get_ref<const std::string&>();
         return "Source search: " + args["query"].get_ref<const std::string&>() + caseInsensitive + path;
     }
+    else if( name == "skill" )
+    {
+        if( !args.contains( "name" ) ) return "";
+        auto skill = args["name"].get_ref<const std::string&>();
+        auto it = std::ranges::find_if( m_skills, [&skill]( const auto& s ) { return s.name == skill; } );
+        if( it == m_skills.end() ) return "";
+        return "Learn skill: " + it->description;
+    }
+    else if( name == "symbol_disasm" )
+    {
+        if( !args.contains( "address" ) ) return "";
+        auto addr = args["address"].get_ref<const std::string&>();
+        auto symAddr = strtoull( addr.c_str(), nullptr, 16 );
+        auto sym = m_worker.GetSymbolData( symAddr );
+        if( !sym ) return "";
+        if( sym->isInline ) return "";
+        return "Disassemble symbol: " + std::string( m_worker.GetString( sym->name ) );
+    }
+    else if( name == "symbol_parents" )
+    {
+        if( !args.contains( "address" ) ) return "";
+        auto addr = args["address"].get_ref<const std::string&>();
+        auto symAddr = strtoull( addr.c_str(), nullptr, 16 );
+        auto sym = m_worker.GetSymbolData( symAddr );
+        if( !sym ) return "";
+        if( sym->isInline ) return "";
+        std::string limit;
+        if( args.contains( "limit" ) ) limit = ", limit: " + std::to_string( args["limit"].get<uint32_t>() );
+        return "Symbol parents: " + std::string( m_worker.GetString( sym->name ) ) + limit;
+    }
+    else if( name == "sampling_stats" )
+    {
+        std::string query, limit;
+        if( args.contains( "query" ) ) query = ", query: " + args["query"].get_ref<const std::string&>();
+        if( args.contains( "limit" ) ) limit = ", limit: " + std::to_string( args["limit"].get<uint32_t>() );
+        return "Sampling stats" + query + limit;
+    }
     return "";
 }
 
 
-TracyLlmChat::TracyLlmChat( View& view, Worker& worker )
+TracyLlmChat::TracyLlmChat( View& view, Worker& worker, const std::vector<LlmSkill>& skills )
     : m_width( new float[NumRoles] )
     , m_markdown( &view, &worker )
+    , m_skills( skills )
+    , m_worker( worker )
+    , m_view( view )
 {
 }
 
 TracyLlmChat::~TracyLlmChat()
 {
     delete[] m_width;
+}
+
+void TracyLlmChat::SetModelTimeLabel( const char* model, uint64_t duration_ns )
+{
+    char buf[128];
+    snprintf( buf, sizeof( buf ), "%s  »  %s", model, TimeToString( duration_ns ) );
+    m_label = buf;
 }
 
 void TracyLlmChat::Begin()
@@ -156,19 +206,28 @@ void TracyLlmChat::Begin()
     m_thinkOpen = false;
     m_thinkIdx = 0;
     m_roleIdx = 0;
+    m_label.clear();
 }
 
 void TracyLlmChat::End()
 {
     if( m_role != TurnRole::None )
     {
+        if( m_role == TurnRole::Assistant && !m_label.empty() )
+        {
+            ImGui::Spacing();
+            ImGui::PushFont( g_fonts.normal, FontSmall );
+            ImGui::TextDisabled( "%s", m_label.c_str() );
+            ImGui::PopFont();
+            m_label.clear();
+        }
         NormalScope();
         ImGui::EndGroup();
         ImGui::PopID();
     }
 }
 
-bool TracyLlmChat::Turn( TurnRole role, std::vector<nlohmann::json>::iterator it, const std::vector<nlohmann::json>::iterator& end, Think think, bool last )
+bool TracyLlmChat::Turn( TurnRole role, std::vector<nlohmann::json>::iterator it, const std::vector<nlohmann::json>::iterator& end, Think think, bool last, bool fadeout )
 {
     auto& json = *it;
     if( json.contains( "role" ) && json["role"].get_ref<const std::string&>() == "tool" ) return true;
@@ -180,6 +239,14 @@ bool TracyLlmChat::Turn( TurnRole role, std::vector<nlohmann::json>::iterator it
     {
         if( m_role != TurnRole::None )
         {
+            if( m_role == TurnRole::Assistant && !m_label.empty() )
+            {
+                ImGui::Spacing();
+                ImGui::PushFont( g_fonts.normal, FontSmall );
+                ImGui::TextDisabled( "%s", m_label.c_str() );
+                ImGui::PopFont();
+                m_label.clear();
+            }
             NormalScope();
             ImGui::EndGroup();
             ImGui::PopID();
@@ -250,6 +317,37 @@ bool TracyLlmChat::Turn( TurnRole role, std::vector<nlohmann::json>::iterator it
             const bool expand = ImGui::TreeNode( "Attachment" );
             ImGui::SameLine();
             ImGui::TextDisabled( "(%s)", type.c_str() );
+            if( type == "callstack" )
+            {
+                if( j.contains( "id" ) )
+                {
+                    const auto id = j["id"].get<int64_t>();
+                    assert( id >= 0 );
+                    const auto thread = j.contains( "thread_id" ) ? j["thread_id"].get<uint32_t>() : 0;
+                    ImGui::SameLine();
+                    if( ImGui::SmallButton( ICON_FA_EYE ) )
+                    {
+                        m_view.ViewCallstack( id, thread );
+                    }
+                }
+            }
+            else if( type == "assembly" )
+            {
+                if( j.contains( "address" ) )
+                {
+                    const auto addrStr = j["address"].get_ref<const std::string&>();
+                    const auto address = strtoull( addrStr.c_str(), nullptr, 16 );
+                    ImGui::SameLine();
+                    if( ImGui::SmallButton( ICON_FA_EYE ) )
+                    {
+                        auto sym = m_worker.GetSymbolData( address );
+                        if( sym )
+                        {
+                            m_view.ViewDispatch( m_worker.GetString( sym->file ), sym->line, address );
+                        }
+                    }
+                }
+            }
             if( expand )
             {
                 ImGui::PushFont( g_fonts.mono, FontNormal );
@@ -310,14 +408,16 @@ bool TracyLlmChat::Turn( TurnRole role, std::vector<nlohmann::json>::iterator it
                 if( ptr != end )
                 {
                     NormalScope();
+                    if( fadeout ) ImGui::PushStyleColor( ImGuiCol_Text, ImGui::GetStyle().Colors[ImGuiCol_TextDisabled] );
                     m_markdown.Print( content.c_str(), content.size() );
-                    if( !last && think == Think::Hide && roleStr == "assistant" ) ImGui::Spacing();
+                    if( fadeout ) ImGui::PopStyleColor();
+                    if( roleStr == "assistant" ) ImGui::Spacing();
                 }
             }
         }
         if( think != Think::Hide && json.contains( "tool_calls" ) )
         {
-            ThinkScope( !roleChange || json.contains( "content" ) );
+            ThinkScope( !roleChange && !json.contains( "content" ) );
             if( m_thinkOpen )
             {
                 ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.5f, 0.5f, 0.5f, 1.f ) );

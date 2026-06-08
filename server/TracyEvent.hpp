@@ -85,6 +85,13 @@ public:
         return idx - 1;
     }
 
+    tracy_force_inline uint32_t Raw() const
+    {
+        uint32_t raw = 0;
+        memcpy( &raw, m_idx, 3 );
+        return raw;
+    }
+
     tracy_force_inline bool Active() const
     {
         uint32_t zero = 0;
@@ -477,6 +484,7 @@ struct MemCallstackFrameTree
     uint32_t count;
     unordered_flat_map<uint64_t, MemCallstackFrameTree> children;
     unordered_flat_set<uint32_t> callstacks;
+    unordered_flat_set<uint64_t> group;
 };
 
 
@@ -487,6 +495,7 @@ struct CallstackFrameTree
     CallstackFrameId frame;
     uint32_t count;
     unordered_flat_map<uint64_t, CallstackFrameTree> children;
+    unordered_flat_set<uint64_t> group;
 };
 
 
@@ -563,6 +572,7 @@ struct ContextSwitchData
     tracy_force_inline int64_t End() const { return _end.Val(); }
     tracy_force_inline void SetEnd( int64_t end ) { assert( end < (int64_t)( 1ull << 47 ) ); _end = end; }
     tracy_force_inline bool IsEndValid() const { return _end.IsNonNegative(); }
+    tracy_force_inline int64_t EndOrStart() const { return _end.IsNonNegative() ? _end.Val() : _start.Val(); }
     tracy_force_inline uint8_t Cpu() const { return _cpu; }
     tracy_force_inline void SetCpu( uint8_t cpu ) { _cpu = cpu; }
     tracy_force_inline uint8_t WakeupCpu() const { return _wakeupcpu; }

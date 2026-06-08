@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <curl/curl.h>
+#include <inttypes.h>
 #include <nlohmann/json.hpp>
 #include <libbase64.h>
 #include <pugixml.hpp>
@@ -8,14 +9,20 @@
 #include <tidybuffio.h>
 #include <time.h>
 #include <regex>
+#include <vector>
 
 #include "TracyConfig.hpp"
+#include "TracyDisassembly.hpp"
+#include "TracyLlm.hpp"
 #include "TracyLlmApi.hpp"
 #include "TracyLlmTools.hpp"
 #include "TracyManualData.hpp"
+#include "TracyPrint.hpp"
 #include "TracyStorage.hpp"
 #include "TracyUtility.hpp"
+#include "TracyView.hpp"
 #include "TracyWorker.hpp"
+#include "tracy_pdqsort.h"
 
 constexpr const char* NoNetworkAccess = "Internet access is disabled by the user. Inform the user that they may enable it in the settings, so that you can use the tools to gather information.";
 
@@ -78,9 +85,11 @@ static std::unique_ptr<pugi::xml_document> ParseHtml( const std::string& html )
     return doc;
 }
 
-TracyLlmTools::TracyLlmTools( Worker& worker, const TracyManualData& manual )
+TracyLlmTools::TracyLlmTools( Worker& worker, const View& view, const TracyManualData& manual, const std::vector<LlmSkill>& skills )
     : m_worker( worker )
+    , m_view( view )
     , m_manual( manual )
+    , m_skills( skills )
 {
     int idx = 0;
     for( auto& chunk : m_manual.GetChunks() )
@@ -181,6 +190,23 @@ std::string TracyLlmTools::HandleToolCalls( const std::string& tool, const nlohm
         {
             std::string empty;
             return SourceSearch( Param( "query" ), ParamOptBool( "case_insensitive", false ), ParamOptString( "path", empty ) );
+        }
+        else if( tool == "skill" )
+        {
+            return GetSkill( Param( "name" ) );
+        }
+        else if( tool == "symbol_disasm" )
+        {
+            return SymbolDisasm( Param( "address" ) );
+        }
+        else if( tool == "symbol_parents" )
+        {
+            return SymbolParents( Param( "address" ), ParamOptU32( "limit", 10 ) );
+        }
+        else if( tool == "sampling_stats" )
+        {
+            std::string empty;
+            return SamplingStats( ParamOptString( "query", empty ), ParamOptU32( "limit", 30 ) );
         }
         return "Unknown tool call: " + tool;
     }
@@ -450,16 +476,10 @@ std::string TracyLlmTools::SearchWikipedia( std::string query, const std::string
     for( auto& page : pages )
     {
         if( !page.contains( "key" ) ) continue;
-
         const auto key = page["key"].get_ref<const std::string&>();
-
-        auto summary = FetchHttp( "https://" + lang + ".wikipedia.org/api/rest_v1/page/summary/" + key );
-        auto summaryJson = nlohmann::json::parse( summary );
-
         nlohmann::json j = {
             { "key", key },
             { "title", page["title"] },
-            { "preview", summaryJson["extract"] },
             { "excerpt", page["excerpt"] }
         };
         if( page.contains( "description" ) && !page["description"].is_null() ) j["description"] = page["description"];
@@ -835,12 +855,17 @@ std::string TracyLlmTools::SearchManual( const std::string& query, TracyLlmApi& 
     for( auto& chunk : chunks )
     {
         auto& m = manualChunks[chunk.first];
-        nlohmann::json r;
-        r["distance"] = chunk.second;
-        r["content"] = m.text;
-        r["section"] = m.section;
-        r["title"] = m.title;
-        r["parents"] = m.parents;
+
+        nlohmann::json r = {
+            { "distance", chunk.second },
+            { "content", m.text },
+            { "parents", m.parents }
+        };
+
+        if( !m.title.empty() ) r["title"] = m.title;
+        if( !m.section.empty() ) r["section"] = m.section;
+        if( !m.link.empty() ) r["link"] = m.link;
+
         json.emplace_back( std::move( r ) );
     }
 
@@ -884,13 +909,13 @@ std::string TracyLlmTools::SourceFile( const std::string& file, uint32_t line, u
 
     nlohmann::json json = {
         { "file", file },
-        { "hint", "Each line starts with a line number, then: space, pipe, space, then the actual line content." },
+        { "hint", "Each line starts with a line number, then ':', then the actual line content." },
     };
 
     std::string contents;
     for( uint32_t i = minLine; i < maxLine; i++ )
     {
-        contents += std::to_string( i+1 ) + " | " + lines[i] + "\n";
+        contents += std::to_string( i+1 ) + ":" + lines[i] + "\n";
     }
 
     json.push_back( { "contents", std::move( contents ) } );
@@ -902,7 +927,7 @@ std::string TracyLlmTools::SourceSearch( std::string query, bool caseInsensitive
 {
     auto& cache = m_worker.GetSourceFileCache();
     nlohmann::json json = {
-        { "hint", "Each line starts with a line number, then: space, pipe, space, then the actual line content." }
+        { "hint", "Each line starts with a line number, then ':', then the actual line content." }
     };
 
     if( caseInsensitive ) std::ranges::transform( query, query.begin(), []( char c ) { return std::tolower( c ); } );
@@ -931,7 +956,7 @@ std::string TracyLlmTools::SourceSearch( std::string query, bool caseInsensitive
     size_t total = 0;
     for( auto& item : cache )
     {
-        if( IsFrameExternal( item.first, nullptr ) ) continue;
+        if( m_worker.IsFrameExternal( StringIdx( m_worker.FindStringIdx( item.first ) ), StringIdx() ) ) continue;
         if( !path.empty() && !std::regex_search( item.first, rxPath ) ) continue;
 
         char* tmp = nullptr;
@@ -965,14 +990,14 @@ std::string TracyLlmTools::SourceSearch( std::string query, bool caseInsensitive
             auto linesOrig = SplitLines( mem.data, mem.len );
             for( auto& line : res )
             {
-                r += std::to_string( line + 1 ) + " | " + linesOrig[line] + "\n";
+                r += std::to_string( line + 1 ) + ":" + linesOrig[line] + "\n";
             }
         }
         else
         {
             for( auto& line : res )
             {
-                r += std::to_string( line + 1 ) + " | " + lines[line] + "\n";
+                r += std::to_string( line + 1 ) + ":" + lines[line] + "\n";
             }
         }
 
@@ -1001,6 +1026,197 @@ std::string TracyLlmTools::SourceSearch( std::string query, bool caseInsensitive
         if( ret.size() > CalcMaxSize() ) return "Too many matches found.";
     }
     return ret;
+}
+
+std::string TracyLlmTools::GetSkill( const std::string& name ) const
+{
+    auto it = std::ranges::find_if( m_skills, [&name]( const auto& skill ) { return skill.name == name; } );
+    if( it == m_skills.end() ) return "No such skill.";
+    return it->content;
+}
+
+std::string TracyLlmTools::SymbolDisasm( const std::string& address ) const
+{
+    uint64_t symaddr = strtoull( address.c_str(), nullptr, 16 );
+    auto json = JsonDisassembly( symaddr, m_worker, m_view );
+    auto ret = json.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
+    if( ret.size() > CalcMaxSize() ) return "Too much data.";
+    return ret;
+}
+
+std::string TracyLlmTools::SymbolParents( const std::string& address, uint32_t limit ) const
+{
+    uint64_t symAddr = strtoull( address.c_str(), nullptr, 16 );
+    auto ss = m_worker.GetSymbolStats( symAddr );
+    if( !ss ) return "No parent callstack data for this symbol.";
+
+    const auto symbol = m_worker.GetSymbolData( symAddr );
+    if( !symbol ) return "Symbol not found.";
+    if( symbol->isInline ) return "Symbol is inline.";
+
+    auto stats = ss->parents;
+    auto excl = ss->excl;
+
+    const auto symLen = symbol->size.Val();
+    auto inSym = m_worker.GetInlineSymbolList( symAddr, symLen );
+    if( inSym )
+    {
+        const auto symEnd = symAddr + symLen;
+        while( *inSym < symEnd )
+        {
+            auto istat = m_worker.GetSymbolStats( *inSym++ );
+            if( !istat ) continue;
+            excl += istat->excl;
+            for( auto& v : istat->baseParents )
+            {
+                auto it = stats.find( v.first );
+                if( it == stats.end() )
+                {
+                    stats[v.first] = v.second;
+                }
+                else
+                {
+                    it->second += v.second;
+                }
+            }
+        }
+    }
+    if( stats.empty() ) return "No parent callstack data for this symbol.";
+
+    std::vector<decltype(stats.begin())> sorted;
+    sorted.reserve( stats.size() );
+    for( auto it = stats.begin(); it != stats.end(); ++it ) sorted.push_back( it );
+    pdqsort_branchless( sorted.begin(), sorted.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second > rhs->second; } );
+    if( sorted.size() > limit ) sorted.resize( limit );
+
+    nlohmann::json result = {
+        { "entries", nlohmann::json::array() },
+        { "hint", "Frame N is where frame N-1 returns to. The caller of frame N-1 may differ from frame N." }
+    };
+    auto& entries = result["entries"];
+
+    for( auto& entry : sorted )
+    {
+        auto& cs = m_worker.GetParentCallstack( entry->first );
+        auto frames = m_view.GetCallstackJson( cs.data(), cs.size() )["frames"];
+
+        char buf[32];
+        auto end = PrintFloat( buf, buf+32, 100.f * entry->second / excl, 4 );
+        *end = '\0';
+
+        entries.push_back( {
+            { "callstack", frames },
+            { "percentage", buf }
+        } );
+    }
+    return result.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
+}
+
+std::string TracyLlmTools::SamplingStats( const std::string& query, uint32_t limit ) const
+{
+    if( !m_worker.AreSymbolSamplesReady() ) return "Sampling data is not ready yet. Wait for background processing to complete.";
+    if( m_worker.GetCallstackSampleCount() == 0 ) return "No call stack samples in this trace.";
+
+    std::regex rx;
+    if( !query.empty() )
+    {
+        try
+        {
+            rx = std::regex( query );
+        }
+        catch( const std::regex_error& e )
+        {
+            return "Error: Invalid query regex: " + std::string( e.what() );
+        }
+    }
+
+    const auto& symMap = m_worker.GetSymbolMap();
+    const auto& symStat = m_worker.GetSymbolStats();
+
+    struct SymEntry
+    {
+        uint64_t symAddr;
+        uint32_t excl;
+    };
+
+    std::vector<SymEntry> data;
+    data.reserve( symStat.size() );
+    for( auto& v : symStat )
+    {
+        auto sit = symMap.find( v.first );
+        if( sit == symMap.end() ) continue;
+        data.emplace_back( v.first, v.second.excl );
+    }
+    if( data.empty() ) return "No symbol statistics available.";
+
+    unordered_flat_map<uint64_t, SymEntry> baseMap;
+    for( auto& v : data )
+    {
+        auto sym = m_worker.GetSymbolData( v.symAddr );
+        const auto symAddr = ( sym && sym->isInline ) ? m_worker.GetSymbolForAddress( v.symAddr ) : v.symAddr;
+        auto it = baseMap.find( symAddr );
+        if( it == baseMap.end() )
+        {
+            baseMap.emplace( symAddr, SymEntry { symAddr, v.excl } );
+        }
+        else
+        {
+            assert( symAddr == it->second.symAddr );
+            it->second.excl += v.excl;
+        }
+    }
+
+    data.clear();
+    for( auto& v : baseMap )
+    {
+        auto sit = symMap.find( v.second.symAddr );
+        if( sit == symMap.end() ) continue;
+        if( !query.empty() )
+        {
+            const auto name = m_worker.GetString( sit->second.name );
+            if( !std::regex_search( name, rx ) ) continue;
+        }
+        data.emplace_back( v.second );
+    }
+    if( data.empty() ) return "No symbols match the query.";
+
+    pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l.excl > r.excl; } );
+    if( data.size() > limit ) data.resize( limit );
+
+    const auto period = m_worker.GetSamplingPeriod();
+    const auto totalSamples = m_worker.GetCallstackSampleCount();
+
+    nlohmann::json result = {
+        { "total_time", TimeToString( totalSamples * period ) },
+        { "entries", nlohmann::json::array() },
+        { "hint", "Entries are sorted by exclusive time (child time not included), highest first." }
+    };
+    auto& entries = result["entries"];
+
+    for( auto& v : data )
+    {
+        auto sit = symMap.find( v.symAddr );
+        assert( sit != symMap.end() );
+
+        char addr[32];
+        snprintf( addr, sizeof( addr ), "0x%" PRIx64, v.symAddr );
+
+        const auto file = m_worker.GetString( sit->second.file );
+        char loc[1024];
+        snprintf( loc, sizeof( loc ), "%s:%u", file, sit->second.line );
+
+        entries.push_back( {
+            { "name", m_worker.GetString( sit->second.name ) },
+            { "address", addr },
+            { "location", loc },
+            { "image", m_worker.GetString( sit->second.imageName ) },
+            { "time", TimeToString( v.excl * period ) },
+            { "code_size", MemSizeToString( sit->second.size.Val() ) },
+            { "external", m_worker.IsFrameExternal( sit->second.file, sit->second.imageName ) }
+        } );
+    }
+
+    return result.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
 }
 
 }

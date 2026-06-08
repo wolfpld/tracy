@@ -435,7 +435,7 @@ void View::DrawMemory()
 
     ImGui::PushID( m_memInfo.pool );
     ImGui::Separator();
-    if( ImGui::TreeNode( ICON_FA_TREE " Bottom-up call stack tree" ) )
+    if( ImGui::TreeNode( ICON_FA_TREE ICON_FA_ARROW_UP " Bottom-up call stack tree" ) )
     {
         ImGui::SameLine();
         DrawHelpMarker( "Press ctrl key to display allocation info tooltip. Right click on function name to display allocations list." );
@@ -473,7 +473,7 @@ void View::DrawMemory()
     }
 
     ImGui::Separator();
-    if( ImGui::TreeNode( ICON_FA_TREE " Top-down call stack tree" ) )
+    if( ImGui::TreeNode( ICON_FA_TREE ICON_FA_ARROW_DOWN " Top-down call stack tree" ) )
     {
         ImGui::SameLine();
         DrawHelpMarker( "Press ctrl key to display allocation info tooltip. Right click on function name to display allocations list." );
@@ -562,7 +562,7 @@ void View::DrawMemoryAllocWindow()
         if( ev.CsAlloc() != 0 )
         {
             const auto cs = ev.CsAlloc();
-            SmallCallstackButton( ICON_FA_ALIGN_JUSTIFY, cs, idx );
+            SmallCallstackButton( ICON_FA_ALIGN_JUSTIFY, cs, idx, tidAlloc );
             ImGui::SameLine();
             DrawCallstackCalls( cs, 4 );
         }
@@ -588,7 +588,7 @@ void View::DrawMemoryAllocWindow()
             if( ev.csFree.Val() != 0 )
             {
                 const auto cs = ev.csFree.Val();
-                SmallCallstackButton( ICON_FA_ALIGN_JUSTIFY, cs, idx );
+                SmallCallstackButton( ICON_FA_ALIGN_JUSTIFY, cs, idx, tidFree );
                 ImGui::SameLine();
                 DrawCallstackCalls( cs, 4 );
             }
@@ -888,7 +888,7 @@ void View::ListMemData( std::vector<const MemEvent*>& vec, const std::function<v
                 }
                 else
                 {
-                    SmallCallstackButton( "alloc", v->CsAlloc(), idx );
+                    SmallCallstackButton( "alloc", v->CsAlloc(), idx, m_worker.DecompressThread( v->ThreadAlloc() ) );
                 }
                 ImGui::SameLine();
                 ImGui::Spacing();
@@ -899,7 +899,7 @@ void View::ListMemData( std::vector<const MemEvent*>& vec, const std::function<v
                 }
                 else
                 {
-                    SmallCallstackButton( "free", v->csFree.Val(), idx );
+                    SmallCallstackButton( "free", v->csFree.Val(), idx, m_worker.DecompressThread( v->ThreadFree() ) );
                 }
             }
         }

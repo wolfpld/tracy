@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <getopt.h>
+#include <linux/perf_event.h>
 #include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -7,6 +8,7 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/ptrace.h>
+#include <sys/syscall.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -27,6 +29,12 @@ static bool s_isForked = false;
 static void SignalHandler( int sig )
 {
     s_shouldQuit = 1;
+    if( s_isForked && s_targetPid != 0 )
+    {
+        // We launched the target under ptrace, so forward the signal to wake
+        // a blocking waitpid and let the child exit. kill() is async-signal-safe.
+        kill( s_targetPid, SIGINT );
+    }
 }
 
 static bool ReadProcessName( pid_t pid, char* buf, size_t bufSize )
@@ -75,6 +83,44 @@ static bool ProcessIsAlive( pid_t pid )
     return kill( pid, 0 ) == 0;
 }
 
+// Try opening one perf event against the target so we fail fast with a clear
+// message instead of starting the profiler and silently producing no samples.
+static bool PreflightPerfEventOpen( pid_t pid )
+{
+    perf_event_attr pe = {};
+    pe.type = PERF_TYPE_SOFTWARE;
+    pe.size = sizeof( perf_event_attr );
+    pe.config = PERF_COUNT_SW_CPU_CLOCK;
+    pe.disabled = 1;
+    pe.exclude_kernel = 1;
+    pe.exclude_hv = 1;
+
+    const long fd = syscall( __NR_perf_event_open, &pe, pid, 0, -1, 0 );
+    if( fd < 0 )
+    {
+        const int err = errno;
+        if( err == EACCES || err == EPERM )
+        {
+            fprintf( stderr, "Cannot open perf events for pid %d: %s\n", (int)pid, strerror( err ) );
+            fprintf( stderr, "Profiling another process requires one of:\n" );
+            fprintf( stderr, "  - running as root, or\n" );
+            fprintf( stderr, "  - /proc/sys/kernel/perf_event_paranoid <= 0, or\n" );
+            fprintf( stderr, "  - CAP_PERFMON + CAP_SYS_PTRACE capabilities\n" );
+            return false;
+        }
+        if( err == ESRCH )
+        {
+            fprintf( stderr, "Target process %d no longer exists.\n", (int)pid );
+            return false;
+        }
+        // Other errors may still be recoverable in the real setup path.
+        fprintf( stderr, "Warning: perf_event_open preflight failed: %s\n", strerror( err ) );
+        return true;
+    }
+    close( (int)fd );
+    return true;
+}
+
 static void PrintUsage( const char* progName )
 {
     printf( "tracy-monitor %i.%i.%i / %s\n\n", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, tracy::GitRef );
@@ -108,7 +154,7 @@ static int RunAttached( pid_t pid )
 
     s_targetPid = pid;
 
-    char procName[64];
+    char procName[64] = {};
     if( ReadProcessName( pid, procName, sizeof( procName ) ) )
     {
         memcpy( tracy::___tracy_magic_process_name, procName, sizeof( tracy::___tracy_magic_process_name ) );
@@ -117,6 +163,9 @@ static int RunAttached( pid_t pid )
     printf( "Attaching to process %d", (int)pid );
     if( tracy::___tracy_magic_process_name[0] ) printf( " (%s)", tracy::___tracy_magic_process_name );
     printf( "...\n" );
+    fflush( stdout );
+
+    if( !PreflightPerfEventOpen( pid ) ) return 1;
 
     tracy::InitExternalImageCache( pid );
     tracy::___tracy_magic_pid_override = (uint32_t)pid;
@@ -170,21 +219,41 @@ static int RunForked( int argc, char** argv )
     s_isForked = true;
 
     int status;
-    if( waitpid( childPid, &status, 0 ) < 0 )
+    for(;;)
     {
+        if( waitpid( childPid, &status, 0 ) >= 0 ) break;
+        if( errno == EINTR ) continue;
         fprintf( stderr, "waitpid failed: %s\n", strerror( errno ) );
+        kill( childPid, SIGKILL );
+        waitpid( childPid, nullptr, 0 );
         return 2;
     }
 
     if( !WIFSTOPPED( status ) )
     {
-        fprintf( stderr, "Child process did not stop as expected (status=0x%x).\n", status );
+        // Child exited or was killed before reaching the post-exec SIGTRAP.
+        if( s_shouldQuit )
+        {
+            fprintf( stderr, "\nInterrupted before target started.\n" );
+        }
+        else if( WIFEXITED( status ) )
+        {
+            fprintf( stderr, "Target exited before profiling began (status %d) -- exec failed?\n", WEXITSTATUS( status ) );
+        }
+        else if( WIFSIGNALED( status ) )
+        {
+            fprintf( stderr, "Target killed by signal %d before profiling began.\n", WTERMSIG( status ) );
+        }
+        else
+        {
+            fprintf( stderr, "Child process did not stop as expected (status=0x%x).\n", status );
+        }
         return 2;
     }
 
     // The child has exec'd but is stopped. Its address space is now the target program.
     // Read its process name and memory maps.
-    char procName[64];
+    char procName[64] = {};
     if( ReadProcessName( childPid, procName, sizeof( procName ) ) )
     {
         memcpy( tracy::___tracy_magic_process_name, procName, sizeof( tracy::___tracy_magic_process_name ) );
@@ -193,6 +262,14 @@ static int RunForked( int argc, char** argv )
     printf( "Profiling '%s' (pid %d)...\n",
             tracy::___tracy_magic_process_name[0] ? tracy::___tracy_magic_process_name : argv[0],
             (int)childPid );
+    fflush( stdout );
+
+    if( !PreflightPerfEventOpen( childPid ) )
+    {
+        kill( childPid, SIGKILL );
+        waitpid( childPid, nullptr, 0 );
+        return 1;
+    }
 
     // Initialize the external image cache (target's /proc/pid/maps)
     tracy::InitExternalImageCache( childPid );
@@ -201,11 +278,15 @@ static int RunForked( int argc, char** argv )
     tracy::___tracy_magic_pid_override = (uint32_t)childPid;
     tracy::StartupProfiler();
 
-    // Detach ptrace and let the child run
+    // Detach ptrace and let the child run. If detach fails the child stays
+    // stopped forever, so this has to be fatal.
     if( ptrace( PTRACE_DETACH, childPid, nullptr, nullptr ) < 0 )
     {
-        fprintf( stderr, "Warning: ptrace(DETACH) failed: %s\n", strerror( errno ) );
-        // Not fatal -- the child might still run
+        fprintf( stderr, "ptrace(DETACH) failed: %s -- killing child.\n", strerror( errno ) );
+        kill( childPid, SIGKILL );
+        waitpid( childPid, nullptr, 0 );
+        tracy::ShutdownProfiler();
+        return 2;
     }
 
     printf( "Profiling started. Waiting for Tracy server connection...\n" );
@@ -271,6 +352,8 @@ int main( int argc, char** argv )
     sa.sa_flags = 0;
     sigaction( SIGINT, &sa, nullptr );
     sigaction( SIGTERM, &sa, nullptr );
+    sigaction( SIGHUP, &sa, nullptr );
+    sigaction( SIGQUIT, &sa, nullptr );
 
     pid_t attachPid = 0;
     bool wantAttach = false;

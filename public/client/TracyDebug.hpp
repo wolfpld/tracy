@@ -4,7 +4,10 @@
 #ifdef TRACY_ON_DEMAND
 #  define TRACY_VERBOSE_EARLY_OUT_COND if( !GetProfiler().IsConnected() ) break
 #else
-#  define TRACY_VERBOSE_EARLY_OUT_COND assert( tracy::ProfilerAvailable() )
+// Skip rather than assert: TracyDebug can fire during Profiler member
+// construction (e.g. SysPower ctor scanning intel-rapl), before s_instance is
+// set, so ProfilerAvailable() is legitimately false.
+#  define TRACY_VERBOSE_EARLY_OUT_COND if( !tracy::ProfilerAvailable() ) break
 #endif
 
 #define TracyInternalMessage( severity, ... )																				   \

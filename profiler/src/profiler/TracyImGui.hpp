@@ -13,8 +13,10 @@
 #include "imgui_internal.h"
 
 #include "../public/common/TracyForceInline.hpp"
-#include "IconsFontAwesome6.h"
+#include "IconsFontAwesome7.h"
 #include "TracySourceTokenizer.hpp"
+
+ImTextureID GetProfilerIconTexture();
 
 #if !IMGUI_DEFINE_MATH_OPERATORS
 static inline ImVec2 operator+( const ImVec2& l, const ImVec2& r ) { return ImVec2( l.x + r.x, l.y + r.y ); }
@@ -33,6 +35,7 @@ void DrawStripedRect( ImDrawList* draw, const ImVec2& wpos, double x0, double y0
 void DrawHistogramMinMaxLabel( ImDrawList* draw, int64_t tmin, int64_t tmax, ImVec2 wpos, float w, float ty );
 void PrintSource( const std::vector<Tokenizer::Line>& lines );
 bool PrintTextWrapped( const char* text, const char* end, bool strikethrough, bool underline );
+bool DragHeightSplitter( const char* id, float& height, float minHeight, float maxHeight, float thickness );
 
 
 static constexpr const uint32_t SyntaxColors[] = {
@@ -276,13 +279,13 @@ static constexpr const uint32_t AsmSyntaxColors[] = {
 [[maybe_unused]] static tracy_force_inline void DrawLine( ImDrawList* draw, const ImVec2& v1, const ImVec2& v2, uint32_t col, float thickness = 1.0f )
 {
     const ImVec2 data[2] = { v1, v2 };
-    draw->AddPolyline( data, 2, col, 0, thickness );
+    draw->AddPolyline( data, 2, col, thickness );
 }
 
 [[maybe_unused]] static tracy_force_inline void DrawLine( ImDrawList* draw, const ImVec2& v1, const ImVec2& v2, const ImVec2& v3, uint32_t col, float thickness = 1.0f )
 {
     const ImVec2 data[3] = { v1, v2, v3 };
-    draw->AddPolyline( data, 3, col, 0, thickness );
+    draw->AddPolyline( data, 3, col, thickness );
 }
 
 [[maybe_unused]] static tracy_force_inline void TooltipIfHovered( const char* text )

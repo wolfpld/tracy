@@ -1,4 +1,4 @@
-// g++ identify.cpp -lpthread ../public/common/tracy_lz4.cpp ../zstd/common/*.c ../zstd/decompress/*.c ../zstd/decompress/huf_decompress_amd64.S
+// g++ identify.cpp -lpthread ../public/common/tracy_lz4.cpp -lzstd
 
 #include <memory>
 #include <stdint.h>

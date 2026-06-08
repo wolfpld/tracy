@@ -20,13 +20,24 @@ target_link_libraries(TracyClientBindings PUBLIC ${Python_LIBRARIES})
 target_compile_definitions(TracyClientBindings PUBLIC BUFFER_SIZE=${BUFFER_SIZE})
 target_compile_definitions(TracyClientBindings PUBLIC NAME_LENGTH=${NAME_LENGTH})
 
+include(${CMAKE_CURRENT_LIST_DIR}/../cmake/config.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/../cmake/vendor.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/../cmake/server.cmake)
+
+pybind11_add_module(TracyServerBindings SHARED bindings/ServerModule.cpp)
+target_link_libraries(TracyServerBindings PUBLIC TracyServer)
+target_link_libraries(TracyServerBindings PUBLIC ${Python_LIBRARIES})
+
 if (UNIX)
   set_target_properties(TracyClientBindings PROPERTIES
     BUILD_RPATH_USE_ORIGIN TRUE
     INSTALL_RPATH "\$ORIGIN/lib")
+  set_target_properties(TracyServerBindings PROPERTIES
+    BUILD_RPATH_USE_ORIGIN TRUE
+    INSTALL_RPATH "\$ORIGIN/lib")
 endif ()
 
-install(TARGETS TracyClientBindings
+install(TARGETS TracyClientBindings TracyServerBindings
   RUNTIME DESTINATION .
   LIBRARY DESTINATION .
 )

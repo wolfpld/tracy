@@ -113,8 +113,8 @@ namespace tracy {
             memset(&item->gpuNewContext.thread, 0, sizeof(item->gpuNewContext.thread));
             MemWrite(&item->gpuNewContext.period, 1.0f);
             MemWrite(&item->gpuNewContext.type, GpuContextType::OpenCL);
-            MemWrite(&item->gpuNewContext.context, (uint8_t) m_contextId);
-            MemWrite(&item->gpuNewContext.flags, (uint8_t)0);
+            MemWrite(&item->gpuNewContext.context, uint8_t(m_contextId));
+            MemWrite(&item->gpuNewContext.flags, GpuContextFlags(0));
 #ifdef TRACY_ON_DEMAND
             GetProfiler().DeferItem(*item);
 #endif
@@ -187,9 +187,9 @@ namespace tracy {
 
                 auto item = Profiler::QueueSerial();
                 MemWrite(&item->hdr.type, QueueType::GpuTime);
-                MemWrite(&item->gpuTime.gpuTime, (int64_t)eventTimeStamp);
-                MemWrite(&item->gpuTime.queryId, (uint16_t)m_tail);
-                MemWrite(&item->gpuTime.context, m_contextId);
+                MemWrite(&item->gpuTime.gpuTime, int64_t(eventTimeStamp));
+                MemWrite(&item->gpuTime.queryId, uint16_t(m_tail));
+                MemWrite(&item->gpuTime.context, uint8_t(m_contextId));
                 Profiler::QueueSerialFinish();
 
                 if (eventInfo.phase == EventPhase::End)

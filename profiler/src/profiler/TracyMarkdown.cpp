@@ -32,6 +32,17 @@ void* memmem( const void* haystack, size_t hsize, const char* needle, size_t nsi
 namespace tracy
 {
 
+static constexpr std::array FontSizes = {
+    1.f,    // normal text
+    1.6f,   // h1
+    1.5f,   // h2
+    1.4f,   // h3
+    1.3f,   // h4
+    1.2f,   // h5
+    1.1f,   // h6
+    0.75f,  // footnote
+};
+
 class MarkdownContext
 {
     struct List
@@ -140,6 +151,55 @@ public:
         case MD_BLOCK_TD:
             ImGui::TableNextColumn();
             break;
+        case MD_BLOCK_FOOTNOTE_DEF_SECTION:
+            Separate();
+            ImGui::Separator();
+            header = 7;
+            break;
+        case MD_BLOCK_FOOTNOTE_DEF:
+        {
+            ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.5f ) );
+            auto footnote = ((MD_BLOCK_FOOTNOTE_DEF_DETAIL*)detail);
+            ImGui::PushFont( g_fonts.normal, FontNormal * FontSizes[header] );
+            PrintTextExt( footnote->label.text, footnote->label.text + footnote->label.size, false );
+            Glue();
+            ImGui::TextUnformatted( ". " );
+            break;
+        }
+        case MD_BLOCK_ADMONITION:
+        {
+            Separate();
+            ImGui::Indent();
+            origin = ImGui::GetCursorScreenPos();
+            auto admonition = ((MD_BLOCK_ADMONITION_DETAIL*)detail);
+            switch( admonition->type.text[0] )
+            {
+            case 'n':   // note
+                color = 0xFFEB6F1F;
+                TextColoredUnformatted( color, ICON_FA_CIRCLE_INFO "  " );
+                break;
+            case 't':   // tip
+                color = 0xFF368623;
+                TextColoredUnformatted( color, ICON_FA_LIGHTBULB "  " );
+                break;
+            case 'i':   // important
+                color = 0xFFE55789;
+                TextColoredUnformatted( color, ICON_FA_MESSAGE "  " );
+                break;
+            case 'w':   // warning
+                color = 0xFF036A9E;
+                TextColoredUnformatted( color, ICON_FA_TRIANGLE_EXCLAMATION "  " );
+                break;
+            case 'c':   // caution
+                color = 0xFF3336DA;
+                TextColoredUnformatted( color, ICON_FA_HAND "  " );
+                break;
+            default:
+                assert( false );
+            }
+            Glue();
+            break;
+        }
         default:
             break;
         }
@@ -194,6 +254,18 @@ public:
         case MD_BLOCK_TD:
             glue = false;
             break;
+        case MD_BLOCK_FOOTNOTE_DEF:
+            ImGui::PopFont();
+            break;
+        case MD_BLOCK_ADMONITION:
+        {
+            const auto scale = GetScale();
+            const auto pos = ImGui::GetCursorScreenPos();
+            const auto offset = ImVec2( 8.f * scale, 0 );
+            ImGui::Unindent();
+            ImGui::GetWindowDrawList()->AddLine( origin - offset, pos - offset, color, 2.f * scale );
+            break;
+        }
         default:
             break;
         }
@@ -216,6 +288,14 @@ public:
         case MD_SPAN_DEL:
             strikethrough = true;
             break;
+        case MD_SPAN_FOOTNOTE_REF:
+        {
+            auto footnote = ((MD_SPAN_FOOTNOTE_REF_DETAIL*)detail);
+            ImGui::PushFont( g_fonts.normal, FontSmall );
+            Glue();
+            PrintTextExt( footnote->label.text, footnote->label.text + footnote->label.size );
+            break;
+        }
         default:
             break;
         }
@@ -246,17 +326,6 @@ public:
 
     int Text( MD_TEXTTYPE type, const MD_CHAR* text, MD_SIZE size )
     {
-        constexpr std::array FontSizes = {
-            1.f,
-            1.7f,
-            1.6f,
-            1.5f,
-            1.4f,
-            1.3f,
-            1.2f,
-            1.1f
-        };
-
         switch( type )
         {
         case MD_TEXT_NORMAL:
@@ -366,14 +435,16 @@ private:
 
     void LinkHover()
     {
-        const auto isSource = link.starts_with( "source:" );
+        const auto isSource = link.starts_with( "source:" ) && m_view && m_worker;
+        const auto isAnchor = link.starts_with( "#" ) && m_view;
         StringIdx idx;
         uint32_t line = 0;
 
         ImGui::SetMouseCursor( ImGuiMouseCursor_Hand );
         ImGui::BeginTooltip();
+        ImGui::PushFont( g_fonts.normal, FontNormal );
         ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 1.f, 1.f, 1.f ) );
-        if( isSource && m_view && m_worker )
+        if( isSource )
         {
             std::string source = link.substr( 7 );
             auto separator = source.find_last_of( ':' );
@@ -397,11 +468,31 @@ private:
                 ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.25f ) );
                 ImGui::Separator();
                 ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.25f ) );
-                m_view->DrawSourceTooltip( fn.c_str(), line, 3, 3, false );
+                m_view->DrawSourceTooltip( m_worker->GetString( idx ), line, 3, 3, false );
             }
             else
             {
                 TextColoredUnformatted( ImVec4( 1.f, 0.f, 0.f, 1.f ), "Invalid source file reference" );
+            }
+        }
+        else if( isAnchor )
+        {
+            auto chunk = m_view->GetManualChunk( link.c_str() );
+            if( chunk )
+            {
+                if( chunk->section.empty() )
+                {
+                    ImGui::TextUnformatted( chunk->title.c_str() );
+                }
+                else
+                {
+                    ImGui::Text( "%s. %s", chunk->section.c_str(), chunk->title.c_str() );
+                }
+            }
+            else
+            {
+                TextColoredUnformatted( ImVec4( 1.f, 0.f, 0.f, 1.f ), "Invalid manual chunk reference" );
+                ImGui::TextUnformatted( link.c_str() );
             }
         }
         else
@@ -409,16 +500,21 @@ private:
             ImGui::TextUnformatted( link.c_str() );
         }
         ImGui::PopStyleColor();
+        ImGui::PopFont();
         ImGui::EndTooltip();
         if( IsMouseClicked( ImGuiMouseButton_Left ) )
         {
-            if( isSource && m_view && m_worker )
+            if( isSource )
             {
                 if( idx.Active() )
                 {
                     auto str = m_worker->GetString( idx );
-                    m_view->ViewSource( str, line );
+                    m_view->ViewSymbolSource( str, line );
                 }
+            }
+            else if( isAnchor )
+            {
+                m_view->ViewManualChunk( link.c_str() );
             }
             else
             {
@@ -440,6 +536,9 @@ private:
 
     int idx = 0;
 
+    uint32_t color;
+    ImVec2 origin;
+
     std::vector<List> lists;
     std::string link;
 
@@ -454,7 +553,7 @@ Markdown::Markdown( View* view, Worker* worker )
     , m_worker( worker )
 {
     memset( m_parser, 0, sizeof( MD_PARSER ) );
-    m_parser->flags = MD_FLAG_COLLAPSEWHITESPACE | MD_FLAG_PERMISSIVEAUTOLINKS | MD_FLAG_NOHTML | MD_FLAG_TABLES | MD_FLAG_TASKLISTS | MD_FLAG_STRIKETHROUGH;
+    m_parser->flags = MD_FLAG_COLLAPSEWHITESPACE | MD_FLAG_PERMISSIVEAUTOLINKS | MD_FLAG_NOHTML | MD_FLAG_TABLES | MD_FLAG_TASKLISTS | MD_FLAG_STRIKETHROUGH | MD_FLAG_FOOTNOTES | MD_FLAG_ADMONITIONS;
     m_parser->enter_block = []( MD_BLOCKTYPE type, void* detail, void* ud ) -> int { return ((MarkdownContext*)ud)->EnterBlock( type, detail ); };
     m_parser->leave_block = []( MD_BLOCKTYPE type, void* detail, void* ud ) -> int { return ((MarkdownContext*)ud)->LeaveBlock( type, detail ); };
     m_parser->enter_span = []( MD_SPANTYPE type, void* detail, void* ud ) -> int { return ((MarkdownContext*)ud)->EnterSpan( type, detail ); };

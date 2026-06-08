@@ -2,6 +2,7 @@
 #include <new>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include "TracyCallstack.hpp"
 #include "TracyDebug.hpp"
 #include "TracyFastVector.hpp"
@@ -351,6 +352,10 @@ struct ExternalImageEntry
 static FastVector<ExternalImageEntry>* s_extImages = nullptr;
 static pid_t s_externalPid = 0;
 static bool s_extImagesSorted = true;
+// Wall-clock second of the last /proc/<pid>/maps re-parse. Used to rate-limit
+// refreshes so addresses that never resolve (JIT, vDSO, stack) do not trigger
+// a full re-parse on every symbolization.
+static int64_t s_lastMapsRefresh = 0;
 
 static uint64_t ReadElfMinLoadVaddr( const char* path )
 {
@@ -388,7 +393,7 @@ static uint64_t ReadElfMinLoadVaddr( const char* path )
     {
         elf_phdr phdr;
         if( read( fd, &phdr, sizeof( phdr ) ) != sizeof( phdr ) ) break;
-        if( phdr.p_type == ExtPT_LOAD ) minVaddr = std::min( minVaddr, phdr.p_vaddr );
+        if( phdr.p_type == ExtPT_LOAD ) minVaddr = std::min( minVaddr, static_cast<uint64_t>(phdr.p_vaddr) );
     }
 
     close( fd );
@@ -481,8 +486,13 @@ static const ExternalImageEntry* FindExternalImageRefresh( uint64_t address )
 
     if( s_externalPid != 0 )
     {
-        ParseExternalProcMaps( s_externalPid );
-        return FindExternalImage( address );
+        const int64_t now = (int64_t)time( nullptr );
+        if( now != s_lastMapsRefresh )
+        {
+            s_lastMapsRefresh = now;
+            ParseExternalProcMaps( s_externalPid );
+            return FindExternalImage( address );
+        }
     }
     return nullptr;
 }
@@ -908,7 +918,7 @@ ModuleNameAndBaseAddress GetModuleNameAndPrepareSymbols( uint64_t addr )
     constexpr DWORD flag = GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT;
     HMODULE mod = NULL;
 
-    InitRpmalloc();
+    InitAllocator();
     if( GetModuleHandleExA( flag, (char*)addr, &mod ) != 0 )
     {
         MODULEINFO info;
@@ -987,7 +997,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     DBGHELP_LOCK;
 #endif
 
-    InitRpmalloc();
+    InitAllocator();
 
     const ModuleNameAndBaseAddress moduleNameAndAddress = GetModuleNameAndPrepareSymbols( ptr );
 
@@ -1135,7 +1145,7 @@ static FastVector<DebugInfo>* s_di_known;
 struct KernelSymbol
 {
     uint64_t addr;
-    uint32_t size;
+    uint64_t endAddr;
     const char* name;
     const char* mod;
 };
@@ -1216,7 +1226,7 @@ static void InitKernelSymbols()
 
         auto sym = tmpSym.push_next();
         sym->addr = addr;
-        sym->size = 0;
+        sym->endAddr = addr;
         sym->name = strname;
         sym->mod = strmod;
     }
@@ -1227,7 +1237,7 @@ static void InitKernelSymbols()
     std::sort( tmpSym.begin(), tmpSym.end(), []( const KernelSymbol& lhs, const KernelSymbol& rhs ) { return lhs.addr < rhs.addr; } );
     for( size_t i=0; i<tmpSym.size()-1; i++ )
     {
-        if( tmpSym[i].name ) tmpSym[i].size = tmpSym[i+1].addr - tmpSym[i].addr;
+        if( tmpSym[i].name ) tmpSym[i].endAddr = tmpSym[i+1].addr;
     }
 
     s_kernelSymCnt = validCnt;
@@ -1304,7 +1314,7 @@ void InitCallstackCritical()
 
 void InitCallstack()
 {
-    InitRpmalloc();
+    InitAllocator();
 
 #ifdef TRACY_HAS_DL_ITERATE_PHDR_TO_REFRESH_IMAGE_CACHE
     CreateImageCaches();
@@ -1424,7 +1434,7 @@ static const char* DecodeCallstackPtrFastExternal( uint64_t ptr )
     auto vptr = (void*)ptr;
     const char* symname = nullptr;
 
-    const auto* extImg = FindExternalImage( ptr );
+    const auto* extImg = FindExternalImageRefresh( ptr );
     if( extImg )
     {
         auto* bts = GetExternalBtState( extImg );
@@ -1512,7 +1522,7 @@ static void SymbolAddressErrorCb( void* data, const char* /*msg*/, int /*errnum*
 static CallstackSymbolData DecodeSymbolAddressExternal( uint64_t ptr )
 {
     CallstackSymbolData sym;
-    const auto* extImg = FindExternalImage( ptr );
+    const auto* extImg = FindExternalImageRefresh( ptr );
     if( extImg )
     {
         auto* bts = GetExternalBtState( extImg );
@@ -1770,7 +1780,7 @@ CallstackEntryData DecodeCallstackPtrExternal( uint64_t ptr )
 
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
-    InitRpmalloc();
+    InitAllocator();
     if( !IsKernelAddress( ptr ) )
     {
 #ifdef __linux__
@@ -1815,13 +1825,13 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 #ifdef __linux
     else if( s_kernelSym )
     {
-        auto it = std::lower_bound( s_kernelSym, s_kernelSym + s_kernelSymCnt, ptr, []( const KernelSymbol& lhs, const uint64_t& rhs ) { return lhs.addr + lhs.size < rhs; } );
+        auto it = std::lower_bound( s_kernelSym, s_kernelSym + s_kernelSymCnt, ptr, []( const KernelSymbol& lhs, const uint64_t& rhs ) { return lhs.endAddr < rhs; } );
         if( it != s_kernelSym + s_kernelSymCnt )
         {
             cb_data[0].name = CopyStringFast( it->name );
             cb_data[0].file = CopyStringFast( "<kernel>" );
             cb_data[0].line = 0;
-            cb_data[0].symLen = it->size;
+            cb_data[0].symLen = it->endAddr - it->addr;
             cb_data[0].symAddr = it->addr;
             return { cb_data, 1, it->mod ? it->mod : "<kernel>" };
         }

@@ -1,4 +1,5 @@
 #include <atomic>
+#include <cassert>
 #include <chrono>
 #include <iostream>
 #include <mutex>
@@ -20,6 +21,10 @@ extern "C"
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_JPEG
 #include "stb_image.h"
+
+#ifdef TRACY_DEMANGLE
+extern "C" const char* ___tracy_demangle( const char* ) { return nullptr; }
+#endif
 
 struct static_init_test_t
 {
@@ -438,6 +443,105 @@ void LuaHookTest()
 
 #endif
 
+#ifdef TRACY_FIBERS
+
+struct FakeFiber
+{
+    const char* name;
+    int state = 0;
+    std::atomic_bool running = false;
+};
+
+void RunFiber( FakeFiber& fiber )
+{
+    ZoneScoped;
+
+    switch( fiber.state )
+    {
+    case 0:
+        TracyMessageL( "Fiber start" );
+        std::this_thread::sleep_for( std::chrono::milliseconds( 2 ) );
+        fiber.state = 1;
+        return;
+
+    case 1:
+        TracyMessageL( "Fiber resume" );
+        std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+        fiber.state = 2;
+        return;
+
+    case 2:
+        TracyMessageL( "Fiber end" );
+        fiber.state = 3;
+        return;
+
+    default:
+        fiber.state = 0;
+        return;
+    }
+}
+
+static constexpr size_t FiberThreadCount = 2;
+static constexpr size_t SharedFiberCount = 2;
+
+FakeFiber fiberAPerThread[FiberThreadCount] = { { "FibAThread1" }, { "FibAThread2" } };
+FakeFiber fiberDPerThread[FiberThreadCount] = { { "FibDThread1" }, { "FibDThread2" } };
+FakeFiber fiberB{ "FiberB" };
+FakeFiber fiberC{ "FiberC" };
+std::atomic_int fibIdx = 0;
+
+void FiberSimulation()
+{
+    const int threadIndex = fibIdx++;
+    assert( threadIndex < (int)FiberThreadCount );
+    FakeFiber& thisThreadFibA = fiberAPerThread[threadIndex];
+    FakeFiber& thisThreadFibD = fiberDPerThread[threadIndex];
+    for(;;)
+    {
+        ZoneScopedN( "FiberOuterLoop" );
+        // Enter first fiber from thread
+        TracyFiberEnter( thisThreadFibA.name );
+        {
+            ZoneScopedN( "FiberOuterLoopFiber" );
+
+            for( int i=0; i<10; i++ )
+            {
+                ZoneScopedN( "FiberInnerLoop" );
+                // Run A
+                RunFiber( thisThreadFibA );
+
+                // Pick randomly fiber B or C, depending on its availability to simulate thread migration.
+                const int offset = rand();
+                FakeFiber* fibersToChooseFrom[SharedFiberCount] = { &fiberB, &fiberC };
+                for( size_t j=0; j<SharedFiberCount; j++ )
+                {
+                    FakeFiber* f = fibersToChooseFrom[( j + offset ) % SharedFiberCount];
+                    if( f->running.exchange( true ) == false )
+                    {
+                        TracyFiberEnter( f->name );
+                        RunFiber( *f );
+                        f->running = false;
+                        // Immediately switch back to A
+                        TracyFiberEnter( thisThreadFibA.name );
+                        break;
+                    }
+                }
+
+                // Switch to D
+                TracyFiberEnter( thisThreadFibD.name );
+                RunFiber( thisThreadFibD );
+
+                // Back to main fiber, this is the one that started this scope
+                TracyFiberEnter( thisThreadFibA.name );
+            }
+        }
+        // Leave fiber system back to thread
+        TracyFiberLeave;
+    }
+}
+
+#endif
+
 int main()
 {
 #ifndef _WIN32
@@ -480,7 +584,13 @@ int main()
     auto t24 = std::thread( LuaTest );
     auto t25 = std::thread( LuaHookTest );
 #endif
-
+#ifdef TRACY_FIBERS
+    std::thread fibThreads[FiberThreadCount];
+    for( size_t i=0; i<FiberThreadCount; i++ )
+    {
+        fibThreads[i] = std::thread( FiberSimulation );
+    }
+#endif
     int x, y;
     auto image = stbi_load( "image.jpg", &x, &y, nullptr, 4 );
     if(image == nullptr)

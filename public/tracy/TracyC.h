@@ -378,8 +378,8 @@ TRACY_API void ___tracy_custom_name_lockable_ctx( struct __tracy_lockable_contex
 
 #define TracyCIsConnected ___tracy_connected()
 
-TRACY_API int ___tracy_begin_sampling_profiler( void );
-TRACY_API void ___tracy_end_sampling_profiler( void );
+TRACY_API int ___tracy_begin_sampling_profiling( void );
+TRACY_API void ___tracy_end_sampling_profiling( void );
 
 #define TracyCBeginSamplingProfiling() ___tracy_begin_sampling_profiling()
 #define TracyCEndSamplingProfiling() ___tracy_end_sampling_profiling()

@@ -2273,6 +2273,31 @@ TracyCLockAfterUnlock(tracy_lock_ctx);
 
 You can optionally mark the location of where the lock is held by using the \texttt{TracyCLockMark} macro, this should be done after acquiring the lock.
 
+Similarly, you can use the following macros to mark a shared lock using the C API:
+\begin{itemize}
+\item \texttt{TracyCSharedLockAnnonce(lock\_ctx)}
+\item \texttt{TracyCSharedLockTerminate(lock\_ctx)}
+\item \texttt{TracyCSharedLockBeforeLock(lock\_ctx)}
+\item \texttt{TracyCSharedLockAfterLock(lock\_ctx)}
+\item \texttt{TracyCSharedLockAfterUnlock(lock\_ctx)}
+\item \texttt{TracyCSharedLockAfterTryLock(lock\_ctx, acquired)}
+\item \texttt{TracyCSharedLockBeforeSharedLock(lock\_ctx)}
+\item \texttt{TracyCSharedLockAfterSharedLock(lock\_ctx)}
+\item \texttt{TracyCSharedLockAfterSharedUnlock(lock\_ctx)}
+\item \texttt{TracyCSharedLockAfterTrySharedLock(lock\_ctx, acquired)}
+\item \texttt{TracyCSharedLockMark(lock\_ctx)}
+\item \texttt{TracyCSharedLockCustomName(lock\_ctx, name, size)}
+\end{itemize}
+
+A shared lock context has to be defined next to the shared lock that it will be marking:
+\begin{lstlisting}
+TracyCSharedLockCtx tracy_shared_lock_ctx;
+HANDLE shared_lock;
+\end{lstlisting}
+
+The same rules apply to shared locks as to regular locks, but you need to use the shared lock macros instead.
+Lock implementations in classes \texttt{Lockable} and \texttt{SharedLockable} show how to properly perform context handling.
+
 \subsubsection{Memory profiling}
 \label{cmemoryprofiling}
 

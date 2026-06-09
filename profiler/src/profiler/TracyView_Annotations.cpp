@@ -1,4 +1,5 @@
 #include "TracyImGui.hpp"
+#include "TracyNameGen.hpp"
 #include "TracyPrint.hpp"
 #include "TracyView.hpp"
 #include "tracy_pdqsort.h"
@@ -10,6 +11,7 @@ namespace tracy
 void View::AddAnnotation( int64_t start, int64_t end )
 {
     auto ann = std::make_shared<Annotation>();
+    ann->text = GenerateAbstractName();
     ann->range.active = true;
     ann->range.min = start;
     ann->range.max = end;

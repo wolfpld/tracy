@@ -70,6 +70,7 @@ set(SERVER_FILES
     TracyMarkdown.cpp
     TracyMicroArchitecture.cpp
     TracyMouse.cpp
+    TracyNameGen.cpp
     TracyProtoHistory.cpp
     TracySourceContents.cpp
     TracySourceTokenizer.cpp

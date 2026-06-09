@@ -1,6 +1,9 @@
+#include <algorithm>
 #include <array>
+#include <assert.h>
 #include <stdint.h>
 #include <random>
+#include <vector>
 
 #include "TracyNameGen.hpp"
 
@@ -158,6 +161,8 @@ constexpr std::array NameBanks = {
     NameBank { CosmosAdjectives, CosmosNouns, sizeof(CosmosAdjectives) / sizeof(CosmosAdjectives[0]), sizeof(CosmosNouns) / sizeof(CosmosNouns[0]) },
 };
 
+constexpr std::array NameStructure = { "an", "aan", "nn" };
+
 
 std::string GenerateAbstractName()
 {
@@ -165,14 +170,32 @@ std::string GenerateAbstractName()
     std::default_random_engine gen( rd() );
     std::uniform_int_distribution<uint32_t> dist( 0, UINT32_MAX );
 
-    const auto bank = NameBanks[dist( gen ) % NameBanks.size()];
-    if( dist( gen ) % 6 != 0 )
-    {
-        return std::string( bank.adjectives[dist( gen ) % bank.numAdjectives] ) + " " + std::string( bank.nouns[dist( gen ) % bank.numNouns] );
-    }
+    const auto baseBank = NameBanks[dist( gen ) % NameBanks.size()];
+    const char* structure = NameStructure[dist( gen ) % NameStructure.size()];
 
-    const auto bank2 = NameBanks[dist( gen ) % NameBanks.size()];
-    return std::string( bank.adjectives[dist( gen ) % bank.numAdjectives] ) + " " + std::string( bank2.nouns[dist( gen ) % bank2.numNouns] );
+    std::vector<std::string> parts;
+    while( *structure )
+    {
+        const auto type = *structure++;
+        assert( type == 'a' || type == 'n' );
+        const auto bank = dist( gen ) % 6 == 0 ? NameBanks[dist( gen ) % NameBanks.size()] : baseBank;
+        for(;;)
+        {
+            auto part = std::string( type == 'a' ? bank.adjectives[dist( gen ) % bank.numAdjectives] : bank.nouns[dist( gen ) % bank.numNouns] );
+            if( std::ranges::find( parts, part ) == parts.end() )
+            {
+                parts.emplace_back( std::move( part ) );
+                break;
+            }
+        }
+    };
+
+    std::string ret = parts[0];
+    for( size_t i=1; i<parts.size(); i++ )
+    {
+        ret += " " + parts[i];
+    }
+    return ret;
 }
 
 }

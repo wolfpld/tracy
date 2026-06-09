@@ -37,14 +37,13 @@ endif()
 
 # When WGPU_PATH changes, discard any previously auto-detected WGPU_LIB so
 # detection re-runs against the new path.
-if(NOT "${WGPU_PATH}" STREQUAL "${_WGPU_PATH_LAST}" AND _WGPU_LIB_AUTO)
+if(NOT "${WGPU_PATH}" STREQUAL "${_WGPU_PATH_LAST}")
     unset(WGPU_LIB CACHE)
     set(WGPU_LIB "" CACHE STRING "WebGPU library name (wgpu_native or webgpu_dawn); auto-detected if empty")
 endif()
 set(_WGPU_PATH_LAST "${WGPU_PATH}" CACHE INTERNAL "")
 
 if(NOT WGPU_LIB)
-    # Always unset the find_library results so they re-probe the current WGPU_PATH.
     unset(_WGPU_NATIVE_LIB CACHE)
     unset(_WEBGPU_DAWN_LIB CACHE)
     find_library(_WGPU_NATIVE_LIB NAMES wgpu_native wgpu_native.dll PATHS "${WGPU_PATH}/lib" NO_DEFAULT_PATH)
@@ -56,10 +55,7 @@ if(NOT WGPU_LIB)
     else()
         message(FATAL_ERROR "Could not detect a WebGPU library in ${WGPU_PATH}/lib. Set WGPU_LIB explicitly (wgpu_native or webgpu_dawn).")
     endif()
-    set(_WGPU_LIB_AUTO TRUE CACHE INTERNAL "")
     message(STATUS "WebGPU library auto-detected: ${WGPU_LIB}")
-else()
-    set(_WGPU_LIB_AUTO FALSE CACHE INTERNAL "")
 endif()
 
 # ---------------------------------------------------------------------------

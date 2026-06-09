@@ -459,18 +459,15 @@ namespace tracy
         }
 
         WebGPUQueueCtx(WGPUInstance instance, WGPUDevice device, WGPUQueue queue)
-            : m_instance(instance)
-            , m_device(device)
-            , m_queue(queue)
         {
             ZoneScopedC(Color::Red4);
 
-            if (!VerifyDevice(m_device))
+            if (!VerifyDevice(device))
                 TracyWebGPUPanic("GPU profiling disabled because the device did not enable the necessary features.", return)
 
-            TracyWebGPUAssert(m_instance); wgpuInstanceAddRef(m_instance);
-            TracyWebGPUAssert(m_device); wgpuDeviceAddRef(m_device);
-            TracyWebGPUAssert(m_queue); wgpuQueueAddRef(m_queue);
+            TracyWebGPUAssert(instance); wgpuInstanceAddRef(instance); m_instance = instance;
+            TracyWebGPUAssert(device);   wgpuDeviceAddRef(device);     m_device   = device;
+            TracyWebGPUAssert(queue);    wgpuQueueAddRef(queue);       m_queue    = queue;
 
             // Setup Query Set: must have even size since queries are issued in pairs.
             // (The WebGPU spec mandates 4096, with no way to query the device limit.)
@@ -884,7 +881,7 @@ namespace tracy
 
     static inline void DestroyWebGPUContext(WebGPUQueueCtx* ctx)
     {
-        TracyWebGPUAssert(ctx);
+        if (!ctx) return;
         ctx->~WebGPUQueueCtx();
         tracy_free(ctx);
     }
@@ -916,7 +913,7 @@ using TracyWebGPUCtx = tracy::WebGPUQueueCtx*;
 
 #define TracyWebGPUContext(instance, device, queue) tracy::CreateWebGPUContext(instance, device, queue);
 #define TracyWebGPUDestroy(ctx) tracy::DestroyWebGPUContext(ctx);
-#define TracyWebGPUContextName(ctx, name, size) ctx->Name(name, size);
+#define TracyWebGPUContextName(ctx, name, size) if (ctx) ctx->Name(name, size);
 
 #define TracyWebGPUUnnamedZone ___tracy_gpu_webgpu_zone
 #define TracyWebGPUSrcLocSymbol TracyConcat(__tracy_webgpu_source_location,TracyLine)

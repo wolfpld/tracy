@@ -819,7 +819,7 @@ namespace tracy
             : m_active(active)
 #endif
         {
-            if (!m_active) return;
+            if (!m_active || !ctx) return;
             InitBase(ctx, encoder, passDesc);
             WriteQueueItem(srcLocation, 0, 0, nullptr, 0, nullptr, 0, nullptr, 0);
         }
@@ -832,7 +832,7 @@ namespace tracy
             : m_active(active)
 #endif
         {
-            if (!m_active) return;
+            if (!m_active || !ctx) return;
             InitBase(ctx, encoder, passDesc);
             WriteQueueItem(srcLocation, depth, 0, nullptr, 0, nullptr, 0, nullptr, 0);
         }
@@ -845,7 +845,7 @@ namespace tracy
             : m_active(active)
 #endif
         {
-            if (!m_active) return;
+            if (!m_active || !ctx) return;
             InitBase(ctx, encoder, passDesc);
             WriteQueueItem(nullptr, 0, line, source, sourceSz, function, functionSz, name, nameSz);
         }
@@ -858,14 +858,14 @@ namespace tracy
             : m_active(active)
 #endif
         {
-            if (!m_active) return;
+            if (!m_active || !ctx) return;
             InitBase(ctx, encoder, passDesc);
             WriteQueueItem(nullptr, depth, line, source, sourceSz, function, functionSz, name, nameSz);
         }
 
         tracy_force_inline ~WebGPUZoneScope()
         {
-            if (!m_active) return;
+            if (!m_active || !m_ctx) return;
 
             const auto queryId = m_queryId + 1;
 
@@ -950,7 +950,7 @@ using TracyWebGPUCtx = tracy::WebGPUQueueCtx*;
 #  define TracyWebGPUZoneTransientS(ctx, varname, encoder, passDesc, name, depth, active) TracyWebGPUZoneTransient(ctx, varname, encoder, passDesc, name, active)
 #endif
 
-#define TracyWebGPUCollect(ctx) ctx->Collect();
+#define TracyWebGPUCollect(ctx) if (ctx) ctx->Collect();
 
 #endif
 

@@ -4071,7 +4071,7 @@ You can freely adjust each time range on the timeline by clicking the \LMB{}~lef
 
 Tracy allows adding custom notes to the trace. For example, you may want to mark a region to ignore because the application was out-of-focus or a region where a new user was connecting to the game, which resulted in a frame drop that needs to be investigated.
 
-Methods of specifying the annotation region are described in section~\ref{timeranges}. When a new annotation is added, a settings window is displayed (section~\ref{annotationsettings}), allowing you to enter a description.
+Methods of specifying the annotation region are described in section~\ref{timeranges}. When a new annotation is added, it is assigned a semi-unique random name to make it distinguishable. The settings window is also opened (section~\ref{annotationsettings}), allowing you to enter your own description of the annotation.
 
 Annotations are displayed on the timeline, as presented in figure~\ref{annotation}. Clicking on the circle next to the text description will open the annotation settings window, in which you can modify or remove the region. List of all annotations in the trace is available in the annotations list window described in section~\ref{annotationlist}, which is accessible through the \emph{\faScrewdriverWrench{} Tools} button on the control menu.
 
@@ -4582,7 +4582,9 @@ The information about the selected memory allocation is displayed in this window
 \subsection{Trace information window}
 \label{traceinfo}
 
-This window contains information about the current trace: captured program name, time of the capture, profiler version which performed the capture, and a custom trace description, which you can fill in.
+This window contains information about the current trace: captured program name, time of the capture, profiler version which performed the capture.
+
+There's an text entry field for an optional custom description of the trace for you to fill in. This description will appear on the profiler window title bar, or when comparing two traces (section~\ref{compare}), enabling you to quickly recognize what the trace contains. For some people it's fine to just have \emph{any} semi-unique description to be able to identify a specific trace. For such purposes there's an \emph{\faDice{}~Generate name} button, which will set the trace description to an abstract meaningless identifier.
 
 If the \emph{\faUserGear{}~Public sidecar} option is selected, the file containing trace-specific user settings (see section~\ref{tracespecific}) will be saved on disk next to the trace file.
 
@@ -4922,7 +4924,7 @@ The profiled program is highlighted using green color. Furthermore, the yellow h
 \subsection{Annotation settings window}
 \label{annotationsettings}
 
-In this window, you may modify how a timeline annotation (section~\ref{annotatingtrace}) is presented by setting its text description or selecting region highlight color. If the note is no longer needed, you may also remove it here.
+In this window, you may modify how a timeline annotation (section~\ref{annotatingtrace}) is presented by setting its text description or selecting region highlight color. A random annotation description can be set with the \emph{\faDice{}~Generate name} button. If the note is no longer needed, you may also remove it here.
 
 \subsection{Annotation list window}
 \label{annotationlist}

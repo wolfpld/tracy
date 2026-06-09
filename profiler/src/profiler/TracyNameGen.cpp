@@ -34,7 +34,7 @@ constexpr const char* AnalysisNouns[] = {
     "Spectrum", "Snapshot", "Blueprint", "Aperture", "Index",
     "Radar", "Prism", "Gauge", "Focal", "Pattern",
     "Echo", "Signature", "Horizon", "Mirror", "Scale",
-    "Telemetry", "Graph", "Metric", "Artifact", "Aspect"
+    "Telemetry", "Graph", "Stratum", "Artifact", "Aspect"
 };
 
 constexpr const char* PerformanceAdjectives[] = {
@@ -53,7 +53,7 @@ constexpr const char* PerformanceNouns[] = {
     "Sprint", "Torrent", "Current", "Surge", "Momentum",
     "Flux", "Wave", "Accelerator", "Spark", "Jet",
     "Thrust", "Orbit", "Apex", "Bolt", "Phase", 
-    "Rush", "Impact", "Frequency", "Lapse", "Burst"
+    "Rush", "Impact", "Frequency", "Lapse", "Kick"
 };
 
 constexpr const char* CoreAdjectives[] = {
@@ -63,7 +63,7 @@ constexpr const char* CoreAdjectives[] = {
     "Monolithic", "Bare", "Rigid", "Concrete", "Fundamental",
     "Discrete", "Fixed", "Heavy", "Latent", "Symmetric",
     "Implicit", "Explicit", "Cold", "Basic", "Granite",
-    "Stark", "Brute", "Dense", "Solid", "Coarse"
+    "Stark", "Brute", "Firm", "Stout", "Coarse"
 };
 constexpr const char* CoreNouns[] = {
     "Stack", "Heap", "Node", "Buffer", "Segment",
@@ -91,7 +91,7 @@ constexpr const char* ModernNouns[] = {
     "Ecosystem", "Catalyst", "Interface", "Domain", "Gateway",
     "Lattice", "Cloud", "Instance", "Schema", "Registry",
     "Tenant", "Namespace", "Pod", "Stream", "Endpoint",
-    "Payload", "Registry", "Orchestrator", "Broker", "Agent"
+    "Payload", "Relay", "Orchestrator", "Broker", "Agent"
 };
 
 constexpr const char* FailureAdjectives[] = {
@@ -115,8 +115,8 @@ constexpr const char* FailureNouns[] = {
 
 constexpr const char* MythicAdjectives[] = {
     "Mythic", "Arcane", "Ancient", "Eternal", "Sacred",
-    "Divine", "Forgotten", "Elder", "Primordial", "Relic",
-    "Rune", "Oracle", "Titan", "Imperial", "Regal",
+    "Divine", "Forgotten", "Elder", "Primordial", "Venerable",
+    "Runic", "Prophetic", "Colossal", "Imperial", "Regal",
     "Sovereign", "Mystic", "Occult", "Hidden", "Cryptic",
     "Ethereal", "Celestial", "Gnostic", "Hermetic", "Alchemical",
     "Astral", "Golden", "Iron", "Bronze", "Obsidian",
@@ -136,7 +136,7 @@ constexpr const char* CosmosAdjectives[] = {
     "Relativistic", "Baryonic", "Intergalactic", "Event-Horizon", "Singular",
     "Celestial", "Nebular", "Void-Born", "Astral", "Luminous",
     "Spectral", "Ionized", "Gravitational", "Ecliptic", "Zenithal",
-    "Stellar", "Cosmological", "Parallax", "Vacuum", "Dark-Matter",
+    "Stellar", "Cosmological", "Parallactic", "Zero-Point", "Dark-Matter",
     "Radiant", "Orbital", "Supernova", "Hyper-Spatial", "Aetheric",
     "Cold-Void", "Infinite", "Dimensional", "Crystalline", "Tidal",
     "Planetary", "Solar", "Lunar", "Galactic", "Oblique"

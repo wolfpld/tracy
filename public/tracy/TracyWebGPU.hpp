@@ -650,7 +650,7 @@ namespace tracy
 
             auto& nextToCollect = m_readbackReel[pendingIdx];
             WGPUBufferMapCallbackInfo cbInfo = {};
-            cbInfo.mode = WGPUCallbackMode_ProcessEvents;
+            cbInfo.mode = WGPUCallbackMode_AllowProcessEvents;
             cbInfo.callback = [](WGPUMapAsyncStatus status, WGPUStringView, void* userData, void*)
             {
                 auto* stage = static_cast<ReadbackStage*>(userData);

@@ -290,7 +290,7 @@ static constexpr const uint32_t AsmSyntaxColors[] = {
 
 [[maybe_unused]] static tracy_force_inline void TooltipIfHovered( const char* text )
 {
-    if( !ImGui::IsItemHovered() ) return;
+    if( !ImGui::IsItemHovered( ImGuiHoveredFlags_AllowWhenDisabled ) ) return;
     ImGui::BeginTooltip();
     ImGui::TextUnformatted( text );
     ImGui::EndTooltip();

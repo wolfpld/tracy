@@ -28,7 +28,7 @@ jobs:
     - name: Build profiler
       run: |
         cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
-        cmake --build profiler/build --parallel --config Release
+        cmake --build profiler/build --parallel 2 --config Release
     - name: Build update
       run: |
         cmake -B update/build -S update -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}

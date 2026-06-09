@@ -32,7 +32,7 @@ jobs:
         if [ "${ACT:-}" != "true" ] && [ "${FORGEJO_ACTIONS:-}" != "true" ]; then
           cmake --build profiler/build
         else
-          cmake --build profiler/build --parallel
+          cmake --build profiler/build --parallel 2
         fi
     - name: Update utility
       run: |

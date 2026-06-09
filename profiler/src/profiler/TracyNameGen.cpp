@@ -151,6 +151,25 @@ constexpr const char* CosmosNouns[] = {
     "Wavelength", "Frequency", "Radiance", "Entropy", "Magnitude"
 };
 
+constexpr const char* GameAdjectives[] = {
+    "Frame-Locked", "Pixel-Perfect", "Arcade", "Retro", "Hardcore",
+    "Unlocked", "Godlike", "Buffed", "Nerfed", "Overclocked",
+    "Clutch", "Lagless", "Sweaty", "Tryhard", "Broken",
+    "Turbo", "Min-Max", "Rage-Quit", "No-Scope", "Frame-Perfect",
+    "Savescum", "Co-Op", "Modded", "Patched", "Hotfixed",
+    "Debugged", "Optimized", "Smoothed", "Playtest", "Sandbox",
+    "Scripted", "Speedrun", "Cheat-Code", "Invincible", "Flawless"
+};
+constexpr const char* GameNouns[] = {
+    "Frame", "Tick", "Sprite", "Polygon", "Shader",
+    "Texture", "Voxel", "Render", "Hitbox", "Hurtbox",
+    "Collision", "Input", "Viewport", "Level", "Checkpoint",
+    "Boss", "Loot", "Quest", "Spawn", "Respawn",
+    "Grind", "Scroll", "Tilemap", "Backdrop", "Rig",
+    "Build", "Frag", "Gib", "Drawcall", "Pass",
+    "Batch", "Delta", "Pool", "Arena", "Worker"
+};
+
 constexpr std::array NameBanks = {
     NameBank { AnalysisAdjectives, AnalysisNouns, sizeof(AnalysisAdjectives) / sizeof(AnalysisAdjectives[0]), sizeof(AnalysisNouns) / sizeof(AnalysisNouns[0]) },
     NameBank { PerformanceAdjectives, PerformanceNouns, sizeof(PerformanceAdjectives) / sizeof(PerformanceAdjectives[0]), sizeof(PerformanceNouns) / sizeof(PerformanceNouns[0]) },
@@ -159,6 +178,7 @@ constexpr std::array NameBanks = {
     NameBank { FailureAdjectives, FailureNouns, sizeof(FailureAdjectives) / sizeof(FailureAdjectives[0]), sizeof(FailureNouns) / sizeof(FailureNouns[0]) },
     NameBank { MythicAdjectives, MythicNouns, sizeof(MythicAdjectives) / sizeof(MythicAdjectives[0]), sizeof(MythicNouns) / sizeof(MythicNouns[0]) },
     NameBank { CosmosAdjectives, CosmosNouns, sizeof(CosmosAdjectives) / sizeof(CosmosAdjectives[0]), sizeof(CosmosNouns) / sizeof(CosmosNouns[0]) },
+    NameBank { GameAdjectives, GameNouns, sizeof(GameAdjectives) / sizeof(GameAdjectives[0]), sizeof(GameNouns) / sizeof(GameNouns[0]) },
 };
 
 constexpr std::array NameStructure = { "an", "aan", "nn" };

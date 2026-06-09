@@ -799,11 +799,12 @@ namespace tracy
         template<typename PassDescriptor>
         tracy_force_inline void InitBase(WebGPUQueueCtx* ctx, WGPUCommandEncoder encoder, PassDescriptor& passDesc)
         {
-            m_ctx       = ctx;
-            m_encoder   = encoder;
+            m_ctx     = ctx;
+            m_encoder = encoder;
 
             m_rawTicket = m_ctx->NextQueryId();
             m_queryId   = m_ctx->RingIndex(m_rawTicket);
+
             m_timestampWrites.querySet                  = m_ctx->m_querySet;
             m_timestampWrites.beginningOfPassWriteIndex = m_queryId;
             m_timestampWrites.endOfPassWriteIndex       = m_queryId + 1;

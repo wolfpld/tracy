@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-06-06 <https://github.com/wolfpld/tracy>
+2026-06-09 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -1495,6 +1495,12 @@ You also need to periodically collect the GPU events using the `TracyGpuCollect`
 
 [^49]: Because Apple is unable to implement standards properly.
 
+##### Calibrated context
+
+By default, the OpenGL context is uncalibrated: the CPU and GPU clocks are aligned only once, when the context is created, so over long captures the two time domains may drift apart (section [5.4](#options) describes correcting this drift manually). Defining `TRACY_OPENGL_AUTO_CALIBRATION` before including `TracyOpenGL.hpp` enables periodic recalibration instead: roughly once per second Tracy samples the GPU and CPU clocks together and emits a calibration event, allowing the profiler to track and remove the drift automatically.
+
+This is opt-in because OpenGL exposes no atomic CPU+GPU timestamp query (unlike Vulkan's `VK_EXT_calibrated_timestamps` or Direct3D 12, whose contexts are always calibrated). Recalibration therefore reads the GPU clock with `glGetInteger64v(GL_TIMESTAMP)`, which forces a CPU/GPU synchronization (a pipeline stall) each time it runs. Enable it only when the improved long-capture alignment is worth the periodic stall.
+
 ### Vulkan
 
 Similarly, for Vulkan support you should include the `public/tracy/TracyVulkan.hpp` header file. Tracing Vulkan devices and queues is a bit more involved, and the Vulkan initialization macro `TracyVkContext(physdev, device, queue, cmdbuf)` returns an instance of `TracyVkCtx` object, which tracks an associated Vulkan queue. Cleanup is performed using the `TracyVkDestroy(ctx)` macro. You may create multiple Vulkan contexts. To set a custom name for the context, use the `TracyVkContextName(ctx, name, size)` macro.
@@ -1794,6 +1800,10 @@ By default, tracy client resolves callstack symbols in a background thread at ru
 
 The generated tracy capture will have callstack frames symbols showing `[unresolved]`. The `update` tool can be used to load that capture, perform symbol resolution offline (by passing `-r`) and writing out a new capture with symbols resolved. By default `update` will use the original shared libraries paths that were recorded in the capture (which assumes running in the same machine or a machine with identical filesystem setup as the one used to run the tracy instrumented application). You can do path substitution with the `-p` option to perform any number of path substitions in order to use symbols located elsewhere.
 
+By default symbol resolution is performed with the platform's native facility: the DbgHelp library on Windows, and the `addr2line` tool found in `PATH` elsewhere. You can override this with the `-a` option, passing the path to a custom `addr2line`-compatible tool (for instance an `addr2line` from a cross-compilation toolchain, or `llvm-addr2line`). The `-a` option works on all platforms, including Windows, and takes precedence over the platform default.
+
+Extra arguments can be passed verbatim to the resolution tool with the `-A` option. Tracy records callstack frame offsets relative to the image base, but `addr2line`-compatible tools expect a full virtual address for images that have a non-zero preferred image base (such as PE on Windows or Mach-O on Apple). For these, pass `-A "--relative-address"` so that `llvm-addr2line` or `llvm-symbolizer` adds the image base back. ELF images need no such adjustment.
+
 > [!IMPORTANT]
 > **Important**
 >
@@ -1987,6 +1997,39 @@ After you release the lock use the `TracyCLockAfterUnlock` macro:
     TracyCLockAfterUnlock(tracy_lock_ctx);
 
 You can optionally mark the location of where the lock is held by using the `TracyCLockMark` macro, this should be done after acquiring the lock.
+
+Similarly, you can use the following macros to mark a shared lock using the C API:
+
+- `TracyCSharedLockAnnounce(lock_ctx)`
+
+- `TracyCSharedLockTerminate(lock_ctx)`
+
+- `TracyCSharedLockBeforeLock(lock_ctx)`
+
+- `TracyCSharedLockAfterLock(lock_ctx)`
+
+- `TracyCSharedLockAfterUnlock(lock_ctx)`
+
+- `TracyCSharedLockAfterTryLock(lock_ctx, acquired)`
+
+- `TracyCSharedLockBeforeSharedLock(lock_ctx)`
+
+- `TracyCSharedLockAfterSharedLock(lock_ctx)`
+
+- `TracyCSharedLockAfterSharedUnlock(lock_ctx)`
+
+- `TracyCSharedLockAfterTrySharedLock(lock_ctx, acquired)`
+
+- `TracyCSharedLockMark(lock_ctx)`
+
+- `TracyCSharedLockCustomName(lock_ctx, name, size)`
+
+A shared lock context has to be defined next to the shared lock that it will be marking:
+
+    TracyCSharedLockCtx tracy_shared_lock_ctx;
+    HANDLE shared_lock;
+
+The same rules apply to shared locks as to regular locks, but you need to use the shared lock macros instead. Lock implementations in classes `Lockable` and `SharedLockable` show how to properly perform context handling.
 
 ### Memory profiling {#cmemoryprofiling}
 
@@ -3582,7 +3625,7 @@ You can freely adjust each time range on the timeline by clicking the left mouse
 
 Tracy allows adding custom notes to the trace. For example, you may want to mark a region to ignore because the application was out-of-focus or a region where a new user was connecting to the game, which resulted in a frame drop that needs to be investigated.
 
-Methods of specifying the annotation region are described in section [5.3](#timeranges). When a new annotation is added, a settings window is displayed (section [5.21](#annotationsettings)), allowing you to enter a description.
+Methods of specifying the annotation region are described in section [5.3](#timeranges). When a new annotation is added, it is assigned a semi-unique random name to make it distinguishable. The settings window is also opened (section [5.21](#annotationsettings)), allowing you to enter your own description of the annotation.
 
 Annotations are displayed on the timeline, as presented in figure [21](#annotation). Clicking on the circle next to the text description will open the annotation settings window, in which you can modify or remove the region. List of all annotations in the trace is available in the annotations list window described in section [5.22](#annotationlist), which is accessible through the * Tools* button on the control menu.
 
@@ -4125,7 +4168,9 @@ The information about the selected memory allocation is displayed in this window
 
 ## Trace information window {#traceinfo}
 
-This window contains information about the current trace: captured program name, time of the capture, profiler version which performed the capture, and a custom trace description, which you can fill in.
+This window contains information about the current trace: captured program name, time of the capture, profiler version which performed the capture.
+
+There's an text entry field for an optional custom description of the trace for you to fill in. This description will appear on the profiler window title bar, or when comparing two traces (section [5.8](#compare)), enabling you to quickly recognize what the trace contains. For some people it's fine to just have *any* semi-unique description to be able to identify a specific trace. For such purposes there's an * Generate name* button, which will set the trace description to an abstract meaningless identifier.
 
 If the * Public sidecar* option is selected, the file containing trace-specific user settings (see section [9.2](#tracespecific)) will be saved on disk next to the trace file.
 
@@ -4159,6 +4204,7 @@ If an application should crash during profiling (section [2.5](#crashhandling))
 
 -----
 
+ - Dice icon
  - User Gear icon
 
 ## Zone information window {#zoneinfo}
@@ -4562,7 +4608,12 @@ The profiled program is highlighted using green color. Furthermore, the yellow h
 
 ## Annotation settings window {#annotationsettings}
 
-In this window, you may modify how a timeline annotation (section [5.3.1](#annotatingtrace)) is presented by setting its text description or selecting region highlight color. If the note is no longer needed, you may also remove it here.
+In this window, you may modify how a timeline annotation (section [5.3.1](#annotatingtrace)) is presented by setting its text description or selecting region highlight color. A random annotation description can be set with the * Generate name* button. If the note is no longer needed, you may also remove it here.
+
+
+-----
+
+ - Dice icon
 
 ## Annotation list window {#annotationlist}
 

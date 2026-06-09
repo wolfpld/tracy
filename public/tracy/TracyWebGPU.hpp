@@ -650,8 +650,7 @@ namespace tracy
 
             auto& nextToCollect = m_readbackReel[pendingIdx];
             WGPUBufferMapCallbackInfo cbInfo = {};
-            // This readback buffer map callback can fire "spontaneously" (it just sets a flag)
-            cbInfo.mode = WGPUCallbackMode_AllowSpontaneous;
+            cbInfo.mode = WGPUCallbackMode_ProcessEvents;
             cbInfo.callback = [](WGPUMapAsyncStatus status, WGPUStringView, void* userData, void*)
             {
                 auto* stage = static_cast<ReadbackStage*>(userData);

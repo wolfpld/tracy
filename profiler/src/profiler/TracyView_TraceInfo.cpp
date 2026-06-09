@@ -1,6 +1,7 @@
 #include <inttypes.h>
 
 #include "TracyImGui.hpp"
+#include "TracyNameGen.hpp"
 #include "TracyPrint.hpp"
 #include "TracyView.hpp"
 #include "tracy_pdqsort.h"
@@ -55,8 +56,22 @@ void View::DrawInfo()
         char buf[256];
         buf[descsz] = '\0';
         memcpy( buf, desc.c_str(), descsz );
-        ImGui::SetNextItemWidth( -1 );
-        if( ImGui::InputTextWithHint( "##traceDesc", "Enter description of the trace", buf, 256 ) )
+
+        const char* buttonText = ICON_FA_DICE;
+        auto buttonSize = ImGui::CalcTextSize( buttonText );
+        buttonSize.x += ImGui::GetStyle().FramePadding.x * 2.0f + ImGui::GetStyle().ItemSpacing.x;
+        ImGui::SetNextItemWidth( ImGui::GetContentRegionAvail().x - buttonSize.x );
+        bool changed = ImGui::InputTextWithHint( "##traceDesc", "Enter description of the trace", buf, 256 );
+        ImGui::SameLine();
+        if( ImGui::Button( buttonText ) )
+        {
+            changed = true;
+            const auto name = GenerateAbstractName();
+            const auto len = std::min( sizeof( buf ) - 1, name.size() );
+            memcpy( buf, name.c_str(), len );
+            buf[len] = '\0';
+        }
+        if( changed )
         {
             m_userData.SetDescription( buf );
             if( m_stcb ) UpdateTitle();

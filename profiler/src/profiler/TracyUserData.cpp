@@ -295,6 +295,7 @@ bool UserData::Load()
                 LoadValue( v, "min", a->range.min );
                 LoadValue( v, "max", a->range.max );
                 LoadValue( v, "color", a->color );
+                a->range.active = true;
                 m_annotations.emplace_back( std::move( a ) );
             }
         }

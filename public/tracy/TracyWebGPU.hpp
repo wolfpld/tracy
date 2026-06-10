@@ -395,75 +395,88 @@ namespace tracy
         }
 
     public:
-        static bool SetupDeviceDescriptor(WGPUDeviceDescriptor& deviceDescriptor)
+        class Requirements
         {
-            // TODO: pass features array/size as argument to better allow for repeated calls
-            static constexpr int MaxFeatures = 128;
-            static WGPUFeatureName features [MaxFeatures] = {};
-
-            int n = deviceDescriptor.requiredFeatureCount;
-            assert(n < MaxFeatures && "Too many required features in WGPUDeviceDescriptor");
-            if (n > 0 && deviceDescriptor.requiredFeatures)
-                memcpy(features, deviceDescriptor.requiredFeatures, n * sizeof(WGPUFeatureName));
-
-            features[n++] = WGPUFeatureName_TimestampQuery;
-
+            private:
 #           if (TRACY_WEBGPU_DAWN_NATIVE)
-                TracyWebGPUDebug( fprintf(stderr, "[INFO] [DAWN] ENABLING RAW TIMESTAMP TICKS (disabling ns conversion + quantization)\n") );
-                // disable_timestamp_query_conversion: resolve timestamps as raw GPU ticks, not nanoseconds.
-                // timestamp_quantization: disabled defensively (off by default on Metal, but on elsewhere).
-                static const char* dawnDisabledToggles[] = { "timestamp_quantization" };
-                static const char* dawnEnabledToggles[]  = { "disable_timestamp_query_conversion" };
-                static WGPUDawnTogglesDescriptor togglesDesc = {};
-                togglesDesc.chain.sType = WGPUSType_DawnTogglesDescriptor;
-                togglesDesc.disabledToggles = dawnDisabledToggles;
-                togglesDesc.disabledToggleCount = 1;
-                togglesDesc.enabledToggles = dawnEnabledToggles;
-                togglesDesc.enabledToggleCount  = 1;
-                togglesDesc.chain.next  = deviceDescriptor.nextInChain;
-                deviceDescriptor.nextInChain = reinterpret_cast<WGPUChainedStruct*>(&togglesDesc);
+                WGPUDawnTogglesDescriptor dawnTogglesDesc = {};
+                static constexpr int NumExtras = 0;
 #           elif (TRACY_WEBGPU_WGPU_NATIVE)
-                // wgpu-native: passTimestampWrites requires the non-standard
-                // TIMESTAMP_QUERY_INSIDE_PASSES device feature in addition to
-                // the standard TimestampQuery feature.
-                TracyWebGPUDebug( fprintf(stderr, "[INFO] [WGPU] Requesting TimestampQueryInsidePasses native feature\n") );
-                features[n++] = (WGPUFeatureName)WGPUNativeFeature_TimestampQueryInsideEncoders;
+                static constexpr int NumExtras = 1;
 #           endif
-            deviceDescriptor.requiredFeatures = features;
-            deviceDescriptor.requiredFeatureCount = static_cast<uint32_t>(n);
-            return true;
-        }
 
-        bool VerifyDevice(WGPUDevice device)
-        {
-            if (device == nullptr)
-                return false;
-            if (wgpuDeviceHasFeature(device, WGPUFeatureName_TimestampQuery) == WGPU_FALSE)
-                return false;
-#           if (TRACY_WEBGPU_DAWN_NATIVE)
-                bool hasDisableConversion = false, hasQuantization = false;
-                for (const char* t : ::dawn::native::GetTogglesUsed(device))
-                {
-                    if (strcmp(t, "disable_timestamp_query_conversion") == 0)
-                        hasDisableConversion = true;
-                    if (strcmp(t, "timestamp_quantization") == 0)
-                        hasQuantization = true;
-                }
-                return hasDisableConversion && !hasQuantization;
-#           elif (TRACY_WEBGPU_WGPU_NATIVE)
-                // wgpu-native also requires TimestampQueryInsideEncoders for ResolveQuerySet.
-                if (wgpuDeviceHasFeature(device, (WGPUFeatureName)WGPUNativeFeature_TimestampQueryInsideEncoders) == WGPU_FALSE)
+            public:
+            static constexpr int NumFeatures = 1 + NumExtras;
+            WGPUFeatureName  features [NumFeatures] = {};
+            WGPUChainedStruct* togglesDesc = nullptr;
+
+            Requirements()
+            {
+                this->features[0] = WGPUFeatureName_TimestampQuery;
+#               if (TRACY_WEBGPU_WGPU_NATIVE)
+                    this->features[1] = (WGPUFeatureName)WGPUNativeFeature_TimestampQueryInsideEncoders;
+#               endif
+#               if (TRACY_WEBGPU_DAWN_NATIVE)
+                    static const char* dawnDisabledToggles[] = { "timestamp_quantization" };
+                    static const char* dawnEnabledToggles[]  = { "disable_timestamp_query_conversion" };
+                    this->dawnTogglesDesc.chain.sType = WGPUSType_DawnTogglesDescriptor;
+                    this->dawnTogglesDesc.disabledToggles = dawnDisabledToggles;
+                    this->dawnTogglesDesc.disabledToggleCount = 1;
+                    this->dawnTogglesDesc.enabledToggles = dawnEnabledToggles;
+                    this->dawnTogglesDesc.enabledToggleCount  = 1;
+                    this->togglesDesc = reinterpret_cast<WGPUChainedStruct*>(&this->dawnTogglesDesc);
+#               endif
+            }
+
+            static bool VerifyDevice(WGPUDevice device)
+            {
+                if (device == nullptr)
                     return false;
-                return true;
-#           endif
-            return false;
-        }
+                if (wgpuDeviceHasFeature(device, WGPUFeatureName_TimestampQuery) == WGPU_FALSE)
+                    return false;
+#               if (TRACY_WEBGPU_DAWN_NATIVE)
+                    bool hasDisableConversion = false, hasQuantization = false;
+                    for (const char* t : ::dawn::native::GetTogglesUsed(device))
+                    {
+                        if (strcmp(t, "disable_timestamp_query_conversion") == 0)
+                            hasDisableConversion = true;
+                        if (strcmp(t, "timestamp_quantization") == 0)
+                            hasQuantization = true;
+                    }
+                    return hasDisableConversion && !hasQuantization;
+#               elif (TRACY_WEBGPU_WGPU_NATIVE)
+                    if (wgpuDeviceHasFeature(device, (WGPUFeatureName)WGPUNativeFeature_TimestampQueryInsideEncoders) == WGPU_FALSE)
+                        return false;
+                    return true;
+#               endif
+                return false;
+            }
+
+            void ApplyToDeviceDescriptor(WGPUDeviceDescriptor& deviceDescriptor)
+            {
+                uint32_t userCount   = deviceDescriptor.requiredFeatureCount;
+                uint32_t totalCount  = userCount + NumFeatures;
+                // NOTE: this allocation will leak...
+                auto* mergedFeatures = static_cast<WGPUFeatureName*>(tracy_malloc(totalCount * sizeof(WGPUFeatureName)));
+                if (userCount > 0 && deviceDescriptor.requiredFeatures)
+                    memcpy(mergedFeatures, deviceDescriptor.requiredFeatures, userCount * sizeof(WGPUFeatureName));
+                memcpy(mergedFeatures + userCount, features, NumFeatures * sizeof(WGPUFeatureName));
+                deviceDescriptor.requiredFeatures     = mergedFeatures;
+                deviceDescriptor.requiredFeatureCount = totalCount;
+
+                if (togglesDesc)
+                {
+                    togglesDesc->next            = deviceDescriptor.nextInChain;
+                    deviceDescriptor.nextInChain = togglesDesc;
+                }
+            }
+        };
 
         WebGPUQueueCtx(WGPUInstance instance, WGPUDevice device, WGPUQueue queue)
         {
             ZoneScopedC(Color::Red4);
 
-            if (!VerifyDevice(device))
+            if (!Requirements::VerifyDevice(device))
                 TracyWebGPUPanic("GPU profiling disabled because the device did not enable the necessary features.", return)
 
             TracyWebGPUAssert(instance); wgpuInstanceAddRef(instance); m_instance = instance;
@@ -910,7 +923,7 @@ namespace tracy
 
 using TracyWebGPUCtx = tracy::WebGPUQueueCtx*;
 
-#define TracyWebGPUSetupDeviceDescriptor(deviceDescriptor) tracy::WebGPUQueueCtx::SetupDeviceDescriptor(deviceDescriptor)
+#define TracyWebGPUSetupDeviceDescriptor(deviceDescriptor) tracy::WebGPUQueueCtx::Requirements TracyConcat(__tracy_wgpu_setup_, TracyLine); TracyConcat(__tracy_wgpu_setup_, TracyLine).ApplyToDeviceDescriptor(deviceDescriptor)
 
 #define TracyWebGPUContext(instance, device, queue) tracy::CreateWebGPUContext(instance, device, queue);
 #define TracyWebGPUDestroy(ctx) tracy::DestroyWebGPUContext(ctx);

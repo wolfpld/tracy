@@ -9,18 +9,6 @@
 #include <tracy/Tracy.hpp>
 #include <tracy/TracyWebGPU.hpp>
 
-#ifndef __TRACYWEBGPU_HPP__
-#define TracyWebGPUCtx void*
-#define TracyWebGPUSetupDevice(...)
-#define TracyWebGPUContext(...) nullptr
-#define TracyWebGPUContextName(...)
-#define TracyWebGPUNamedZone(...)
-#define TracyWebGPUCollect(...)
-#define TracyWebGPUDestroy(...)
-namespace tracy { struct WebGPUQueueCtx { static void SetupDevice(WGPUDeviceDescriptor) {} }; }
-#endif//__TRACYWEBGPU_HPP__
-
-
 // ---------------------------------------------------------------------------
 // Globals
 // ---------------------------------------------------------------------------

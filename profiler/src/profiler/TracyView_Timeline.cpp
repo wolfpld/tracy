@@ -299,6 +299,22 @@ void View::DrawTimeline()
             v->range.StartFrame();
             HandleRange( v->range, timespan, ImGui::GetCursorScreenPos(), w );
         }
+        if( IsMouseClicked( 0 ) )
+        {
+            const auto ty = ImGui::GetTextLineHeight();
+            for( auto& ann : m_annotations )
+            {
+                if( ann->range.min >= m_vd.zvEnd || ann->range.max <= m_vd.zvStart ) continue;
+                const auto aMin = ( ann->range.min - m_vd.zvStart ) * pxns;
+                const auto aMax = ( ann->range.max - m_vd.zvStart ) * pxns;
+                if( ImGui::IsMouseHoveringRect( linepos + ImVec2( aMin, lineh - ty * 1.5f ), linepos + ImVec2( aMax, lineh ) ) )
+                {
+                    m_selectedAnnotation = ann.get();
+                    ConsumeMouseEvents( 0 );
+                    break;
+                }
+            }
+        }
         HandleTimelineMouse( timespan, ImGui::GetCursorScreenPos(), w );
     }
     if( ImGui::IsWindowFocused( ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem ) )
@@ -447,11 +463,6 @@ void View::DrawTimeline()
                 TextFocused( "Annotation end:", TimeToStringExact( ann->range.max ) );
                 TextFocused( "Annotation length:", TimeToString( ann->range.max - ann->range.min ) );
                 ImGui::EndTooltip();
-
-                if( IsMouseClicked( 0 ) && ImGui::IsMouseHoveringRect( linepos + ImVec2( aMin, lineh - ty * 1.5f ), linepos + ImVec2( aMax, lineh ) ) )
-                {
-                    m_selectedAnnotation = ann.get();
-                }
             }
 
             const auto aw = ( ann->range.max - ann->range.min ) * pxns;

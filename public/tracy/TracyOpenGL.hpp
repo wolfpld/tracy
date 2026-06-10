@@ -1,7 +1,7 @@
 #ifndef __TRACYOPENGL_HPP__
 #define __TRACYOPENGL_HPP__
 
-#if !defined TRACY_ENABLE || defined __APPLE__
+#if !defined TRACY_ENABLE
 
 #define TracyGpuContext
 #define TracyGpuContextName(x,y)
@@ -30,6 +30,10 @@ public:
 }
 
 #else
+
+#if (defined __APPLE__ && !TARGET_OS_OSX)
+#error Apple devices do not support OpenGL (except on MacOS where it's deprecated).
+#endif
 
 #include <atomic>
 #include <assert.h>
@@ -94,20 +98,29 @@ class GpuCtx
 
 public:
     GpuCtx()
-        : m_context( GetGpuCtxCounter().fetch_add( 1, std::memory_order_relaxed ) )
+        : m_context( 255 )
         , m_head( 0 )
         , m_tail( 0 )
     {
-        assert( m_context != 255 );
+        ZoneScopedC( Color::Red4 );
+
+        GLint bits = 0;
+        glGetQueryiv( GL_TIMESTAMP, GL_QUERY_COUNTER_BITS, &bits );
+        assert( bits > 0 );
+        if( bits == 0 )
+        {
+            // all timestamp queries would resolve to 0 (and produce 0ns GPU zones).
+            // (this is the case for many TBDR GPUs, including Apple Silicon)
+            Profiler::LogString( MessageSourceType::Tracy, MessageSeverity::Error, Color::Red4, 0,
+                "OpenGL driver does not implement GL_TIMESTAMP precision." );
+            return;
+        }
 
         glGenQueries( QueryCount, m_query );
 
         int64_t tgpu;
         glGetInteger64v( GL_TIMESTAMP, &tgpu );
         int64_t tcpu = Profiler::GetTime();
-
-        GLint bits;
-        glGetQueryiv( GL_TIMESTAMP, GL_QUERY_COUNTER_BITS, &bits );
 
 #ifdef TRACY_OPENGL_AUTO_CALIBRATION
         // The anchor above is never refreshed; advertise calibration and emit periodic
@@ -116,6 +129,9 @@ public:
         // CPU/GPU sync.
         m_prevCalibration = GetHostTimeNs();
 #endif
+
+        assert( m_context != 255 );
+        m_context = GetGpuCtxCounter().fetch_add( 1, std::memory_order_relaxed );
 
         const float period = 1.f;
         const auto thread = GetThreadHandle();
@@ -141,6 +157,8 @@ public:
 
     void Name( const char* name, uint16_t len )
     {
+        if ( !Valid() ) return;
+
         auto ptr = (char*)tracy_malloc( len );
         memcpy( ptr, name, len );
 
@@ -156,6 +174,8 @@ public:
 
     void Collect()
     {
+        if ( !Valid() ) return;
+
         ZoneScopedC( Color::Red4 );
 
 #ifdef TRACY_ON_DEMAND
@@ -244,6 +264,11 @@ private:
         return m_context;
     }
 
+    tracy_force_inline bool Valid() const
+    {
+        return m_context != 255;
+    }
+
     unsigned int m_query[QueryCount];
     uint8_t m_context;
 
@@ -265,7 +290,7 @@ public:
         : m_active( is_active )
 #endif
     {
-        if( !m_active ) return;
+        if( !m_active || !Valid() ) return;
 
         const auto queryId = GetGpuCtx().ptr->NextQueryId();
         glQueryCounter( GetGpuCtx().ptr->TranslateOpenGlQueryId( queryId ), GL_TIMESTAMP );
@@ -286,7 +311,7 @@ public:
         : m_active( is_active )
 #endif
     {
-        if( !m_active ) return;
+        if( !m_active || !Valid() ) return;
 
         const auto queryId = GetGpuCtx().ptr->NextQueryId();
         glQueryCounter( GetGpuCtx().ptr->TranslateOpenGlQueryId( queryId ), GL_TIMESTAMP );
@@ -313,7 +338,7 @@ public:
         : m_active( is_active )
 #endif
     {
-        if( !m_active ) return;
+        if( !m_active || !Valid() ) return;
 
         const auto queryId = GetGpuCtx().ptr->NextQueryId();
         glQueryCounter( GetGpuCtx().ptr->TranslateOpenGlQueryId( queryId ), GL_TIMESTAMP );
@@ -335,7 +360,7 @@ public:
         : m_active( is_active )
 #endif
     {
-        if( !m_active ) return;
+        if( !m_active || !Valid() ) return;
 
         const auto queryId = GetGpuCtx().ptr->NextQueryId();
         glQueryCounter( GetGpuCtx().ptr->TranslateOpenGlQueryId( queryId ), GL_TIMESTAMP );
@@ -358,7 +383,7 @@ public:
 
     tracy_force_inline ~GpuCtxScope()
     {
-        if( !m_active ) return;
+        if( !m_active || !Valid() ) return;
 
         const auto queryId = GetGpuCtx().ptr->NextQueryId();
         glQueryCounter( GetGpuCtx().ptr->TranslateOpenGlQueryId( queryId ), GL_TIMESTAMP );
@@ -369,6 +394,11 @@ public:
         MemWrite( &item->gpuZoneEnd.queryId, uint16_t( queryId ) );
         MemWrite( &item->gpuZoneEnd.context, GetGpuCtx().ptr->GetId() );
         TracyLfqCommit;
+    }
+
+    tracy_force_inline bool Valid()
+    {
+        return GetGpuCtx().ptr->Valid();
     }
 
 private:

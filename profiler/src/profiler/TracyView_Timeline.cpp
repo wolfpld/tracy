@@ -360,9 +360,8 @@ void View::DrawTimeline()
     bool hover = ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( w, h ) );
     draw = ImGui::GetWindowDrawList();
 
+    const auto scale = GetScale();
     const auto ty = ImGui::GetTextLineHeight();
-    const auto to = 9.f;
-    const auto th = ( ty - to ) * sqrt( 3 ) * 0.5;
 
     if( m_vd.drawGpuZones )
     {
@@ -415,17 +414,24 @@ void View::DrawTimeline()
 
     m_lockHighlight = m_nextLockHighlight;
 
+    const auto iconSize = ImGui::CalcTextSize( ICON_FA_NOTE_STICKY );
     for( auto& ann : m_annotations )
     {
         if( ann->range.min < m_vd.zvEnd && ann->range.max > m_vd.zvStart )
         {
-            uint32_t c0 = ( ann->color & 0xFFFFFF ) | ( m_selectedAnnotation == ann.get() ? 0x44000000 : 0x22000000 );
-            uint32_t c1 = ( ann->color & 0xFFFFFF ) | ( m_selectedAnnotation == ann.get() ? 0x66000000 : 0x44000000 );
-            uint32_t c2 = ( ann->color & 0xFFFFFF ) | ( m_selectedAnnotation == ann.get() ? 0xCC000000 : 0xAA000000 );
-            draw->AddRectFilled( linepos + ImVec2( ( ann->range.min - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->range.max - m_vd.zvStart ) * pxns, lineh ), c0 );
-            DrawLine( draw, linepos + ImVec2( ( ann->range.min - m_vd.zvStart ) * pxns + 0.5f, 0.5f ), linepos + ImVec2( ( ann->range.min - m_vd.zvStart ) * pxns + 0.5f, lineh + 0.5f ), ann->range.hiMin ? c2 : c1, ann->range.hiMin ? 2 : 1 );
-            DrawLine( draw, linepos + ImVec2( ( ann->range.max - m_vd.zvStart ) * pxns + 0.5f, 0.5f ), linepos + ImVec2( ( ann->range.max - m_vd.zvStart ) * pxns + 0.5f, lineh + 0.5f ), ann->range.hiMax ? c2 : c1, ann->range.hiMax ? 2 : 1 );
-            if( drawMouseLine && ImGui::IsMouseHoveringRect( linepos + ImVec2( ( ann->range.min - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->range.max - m_vd.zvStart ) * pxns, lineh ) ) )
+            uint32_t c0 = ( ann->color & 0xFFFFFF ) | ( m_selectedAnnotation == ann.get() ? 0x22000000 : 0x11000000 );
+            uint32_t c1 = ( ann->color & 0xFFFFFF ) | ( m_selectedAnnotation == ann.get() ? 0x88000000 : 0x66000000 );
+            uint32_t c2 = ( ann->color & 0xFFFFFF ) | ( m_selectedAnnotation == ann.get() ? 0xDD000000 : 0xBB000000 );
+
+            const auto aMin = ( ann->range.min - m_vd.zvStart ) * pxns;
+            const auto aMax = ( ann->range.max - m_vd.zvStart ) * pxns;
+
+            draw->AddRectFilled( linepos + ImVec2( aMin, 0 ), linepos + ImVec2( aMax, lineh ), c0 );
+            draw->AddRectFilled( linepos + ImVec2( aMin + 1, lineh - ty * 1.5f ), linepos + ImVec2( aMax - 1, lineh ), 0x88000000 );
+            DrawLine( draw, linepos + ImVec2( aMin + 0.5f, 0.5f ), linepos + ImVec2( aMin + 0.5f, lineh + 0.5f ), ann->range.hiMin ? c2 : c1, ann->range.hiMin ? 2 : 1 );
+            DrawLine( draw, linepos + ImVec2( aMax - 0.5f, 0.5f ), linepos + ImVec2( aMax - 0.5f, lineh + 0.5f ), ann->range.hiMax ? c2 : c1, ann->range.hiMax ? 2 : 1 );
+
+            if( drawMouseLine && ImGui::IsMouseHoveringRect( linepos + ImVec2( aMin, 0 ), linepos + ImVec2( aMax, lineh ) ) )
             {
                 ImGui::BeginTooltip();
                 if( ann->text.empty() )
@@ -441,28 +447,28 @@ void View::DrawTimeline()
                 TextFocused( "Annotation end:", TimeToStringExact( ann->range.max ) );
                 TextFocused( "Annotation length:", TimeToString( ann->range.max - ann->range.min ) );
                 ImGui::EndTooltip();
-            }
-            const auto aw = ( ann->range.max - ann->range.min ) * pxns;
-            if( aw > th * 4 )
-            {
-                draw->AddCircleFilled( linepos + ImVec2( ( ann->range.min - m_vd.zvStart ) * pxns + th * 2, th * 2 ), th, 0x88AABB22 );
-                draw->AddCircle( linepos + ImVec2( ( ann->range.min - m_vd.zvStart ) * pxns + th * 2, th * 2 ), th, 0xAAAABB22 );
-                if( drawMouseLine && IsMouseClicked( 0 ) && ImGui::IsMouseHoveringRect( linepos + ImVec2( ( ann->range.min - m_vd.zvStart ) * pxns + th, th ), linepos + ImVec2( ( ann->range.min - m_vd.zvStart ) * pxns + th * 3, th * 3 ) ) )
+
+                if( IsMouseClicked( 0 ) && ImGui::IsMouseHoveringRect( linepos + ImVec2( aMin, lineh - ty * 1.5f ), linepos + ImVec2( aMax, lineh ) ) )
                 {
                     m_selectedAnnotation = ann.get();
                 }
+            }
 
+            const auto aw = ( ann->range.max - ann->range.min ) * pxns;
+            if( aw > ty + iconSize.x )
+            {
+                draw->AddText( linepos + ImVec2( aMin + ty * 0.5f, lineh - ty * 1.25f ), ann->color | 0xFF000000, ICON_FA_NOTE_STICKY );
                 if( !ann->text.empty() )
                 {
                     const auto tw = ImGui::CalcTextSize( ann->text.c_str() ).x;
-                    if( aw - th*4 > tw )
+                    if( aw > ty + iconSize.x + tw )
                     {
-                        draw->AddText( linepos + ImVec2( ( ann->range.min - m_vd.zvStart ) * pxns + th * 4, th * 0.5 ), 0xFFFFFFFF, ann->text.c_str() );
+                        draw->AddText( linepos + ImVec2( aMin + ty + iconSize.x, lineh - ty * 1.25f ), 0xFFFFFFFF, ann->text.c_str() );
                     }
                     else
                     {
-                        draw->PushClipRect( linepos + ImVec2( ( ann->range.min - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->range.max - m_vd.zvStart ) * pxns, lineh ), true );
-                        draw->AddText( linepos + ImVec2( ( ann->range.min - m_vd.zvStart ) * pxns + th * 4, th * 0.5 ), 0xFFFFFFFF, ann->text.c_str() );
+                        draw->PushClipRect( linepos + ImVec2( aMin + 1, lineh - ty * 1.5f ), linepos + ImVec2( aMax - 1, lineh ) );
+                        draw->AddText( linepos + ImVec2( aMin + ty + iconSize.x, lineh - ty * 1.25f ), 0xFFFFFFFF, ann->text.c_str() );
                         draw->PopClipRect();
                     }
                 }
@@ -485,7 +491,6 @@ void View::DrawTimeline()
         draw->AddRect( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x4488DD88 );
     }
 
-    const auto scale = GetScale();
     if( m_findZone.range.active && ( m_findZone.show || m_showRanges ) )
     {
         const auto px0 = ( m_findZone.range.min - m_vd.zvStart ) * pxns;

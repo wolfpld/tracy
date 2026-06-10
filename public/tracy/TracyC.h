@@ -391,7 +391,7 @@ TRACY_API void ___tracy_after_lock_shared_lockable_ctx( struct __tracy_shared_lo
 TRACY_API void ___tracy_after_unlock_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata );
 TRACY_API void ___tracy_after_try_lock_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata, int32_t acquired );
 TRACY_API int32_t ___tracy_before_lock_shared_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata );
-TRACY_API void ___tracy_after_locked_shared_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata );
+TRACY_API void ___tracy_after_lock_shared_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata );
 TRACY_API void ___tracy_after_unlock_shared_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata );
 TRACY_API void ___tracy_after_try_lock_shared_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata, int32_t acquired );
 TRACY_API void ___tracy_mark_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata, const struct ___tracy_source_location_data* srcloc );
@@ -414,7 +414,7 @@ TRACY_API void ___tracy_custom_name_shared_lockable_ctx( struct __tracy_shared_l
 #define TracyCSharedLockAfterUnlock( lock ) ___tracy_after_unlock_shared_lockable_ctx( lock );
 #define TracyCSharedLockAfterTryLock( lock, acquired ) ___tracy_after_try_lock_shared_lockable_ctx( lock, acquired );
 #define TracyCSharedLockBeforeSharedLock( lock ) ___tracy_before_lock_shared_shared_lockable_ctx( lock );
-#define TracyCSharedLockAfterSharedLock( lock ) ___tracy_after_locked_shared_shared_lockable_ctx( lock );
+#define TracyCSharedLockAfterSharedLock( lock ) ___tracy_after_lock_shared_shared_lockable_ctx( lock );
 #define TracyCSharedLockAfterSharedUnlock( lock ) ___tracy_after_unlock_shared_shared_lockable_ctx( lock );
 #define TracyCSharedLockAfterTrySharedLock( lock, acquired ) ___tracy_after_try_lock_shared_shared_lockable_ctx( lock, acquired );
 #define TracyCSharedLockMark( lock ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,TracyLine) = { NULL, __func__,  TracyFile, (uint32_t)TracyLine, 0 }; ___tracy_mark_shared_lockable_ctx( lock, &TracyConcat(__tracy_source_location,TracyLine) );

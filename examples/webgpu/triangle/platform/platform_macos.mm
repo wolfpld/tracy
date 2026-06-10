@@ -44,6 +44,7 @@ static void (*sShutdownCb)()       = nullptr;
         return event;
     }];
 
+    [NSApp activateIgnoringOtherApps:YES];
     [self.window makeKeyAndOrderFront:nil];
 }
 

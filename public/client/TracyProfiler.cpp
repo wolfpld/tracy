@@ -5257,7 +5257,7 @@ TRACY_API int32_t ___tracy_before_lock_shared_shared_lockable_ctx( struct __trac
     return static_cast<int32_t>(true);
 }
 
-TRACY_API void ___tracy_after_locked_shared_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata )
+TRACY_API void ___tracy_after_lock_shared_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata )
 {
     auto item = tracy::Profiler::QueueSerial();
     tracy::MemWrite( &item->hdr.type, tracy::QueueType::LockSharedObtain );

@@ -420,6 +420,7 @@ namespace tracy
                 togglesDesc.disabledToggleCount = 1;
                 togglesDesc.enabledToggles = dawnEnabledToggles;
                 togglesDesc.enabledToggleCount  = 1;
+                togglesDesc.chain.next  = deviceDescriptor.nextInChain;
                 deviceDescriptor.nextInChain = reinterpret_cast<WGPUChainedStruct*>(&togglesDesc);
 #           elif (TRACY_WEBGPU_WGPU_NATIVE)
                 // wgpu-native: passTimestampWrites requires the non-standard

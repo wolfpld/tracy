@@ -147,7 +147,7 @@ static int initWebGPU() {
     WGPUDeviceDescriptor deviceDesc = {};
     deviceDesc.uncapturedErrorCallbackInfo = errorCB;
 
-    TracyWebGPUSetupDevice(deviceDesc);
+    TracyWebGPUSetupDeviceDescriptor(deviceDesc);
 
     WGPURequestDeviceCallbackInfo deviceCB = {};
     deviceCB.mode      = WGPUCallbackMode_AllowProcessEvents;

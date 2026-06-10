@@ -11,7 +11,7 @@
 
 #ifndef TRACY_ENABLE
 
-#define TracyWebGPUSetupDevice(deviceDescriptor)
+#define TracyWebGPUSetupDeviceDescriptor(deviceDescriptor)
 
 #define TracyWebGPUContext(instance, device, queue) nullptr
 #define TracyWebGPUDestroy(ctx)
@@ -395,7 +395,7 @@ namespace tracy
         }
 
     public:
-        static bool SetupDevice(WGPUDeviceDescriptor& deviceDescriptor)
+        static bool SetupDeviceDescriptor(WGPUDeviceDescriptor& deviceDescriptor)
         {
             // TODO: pass features array/size as argument to better allow for repeated calls
             static constexpr int MaxFeatures = 128;
@@ -909,7 +909,7 @@ namespace tracy
 
 using TracyWebGPUCtx = tracy::WebGPUQueueCtx*;
 
-#define TracyWebGPUSetupDevice(deviceDescriptor) tracy::WebGPUQueueCtx::SetupDevice(deviceDescriptor)
+#define TracyWebGPUSetupDeviceDescriptor(deviceDescriptor) tracy::WebGPUQueueCtx::SetupDeviceDescriptor(deviceDescriptor)
 
 #define TracyWebGPUContext(instance, device, queue) tracy::CreateWebGPUContext(instance, device, queue);
 #define TracyWebGPUDestroy(ctx) tracy::DestroyWebGPUContext(ctx);

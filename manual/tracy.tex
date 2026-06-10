@@ -1797,7 +1797,7 @@ To stop profiling, call the \texttt{TracyCUDAStopProfiling(ctx)} macro.
 
 WebGPU support is enabled by including the \texttt{public/tracy/TracyWebGPU.hpp} header file. Both major implementations of WebGPU (Dawn and wgpu-native) are supported.
 
-Before creating the WebGPU device, make sure to call \texttt{TracyWebGPUSetupDevice()} to let Tracy request the necessary device features and extensions necessary for profiling. After the device is created, use the \texttt{TracyWebGPUContext()} macro to instantiate the necessary \texttt{WebGPUQueueCtx} object required for GPU instrumentation. The object should later be cleaned up with the \texttt{TracyWebGPUDestroy()} macro. To set a custom name for the context, use the \texttt{TracyWebGPUContextName()} macro.
+Before creating the WebGPU device, make sure to call \texttt{TracyWebGPUSetupDeviceDescriptor()} to let Tracy request the necessary device features and extensions necessary for profiling. After the device is created, use the \texttt{TracyWebGPUContext()} macro to instantiate the necessary \texttt{WebGPUQueueCtx} object required for GPU instrumentation. The object should later be cleaned up with the \texttt{TracyWebGPUDestroy()} macro. To set a custom name for the context, use the \texttt{TracyWebGPUContextName()} macro.
 
 To instrument a GPU zone, use the various \texttt{TracyWebGPU*Zone*()} macros. Note that WebGPU only offers command instrumentation at the "pass"-level. While command-level granularity is possible through implementation-specific WebGPU extensions, Tracy does not support it at the moment. Supply the corresponding WebGPU pass descriptor to the instrumentation macro \textit{before} creating the WebGPU pass encoder.
 

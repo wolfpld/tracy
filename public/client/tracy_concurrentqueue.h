@@ -1210,6 +1210,21 @@ private:
         return static_cast<ExplicitProducer*>(token.producer);
     }
 
+    // If a producer token is created before the constructor of a statically allocated
+    // queue runs (which may happen due to the undefined order of static initialization
+    // across module boundaries), the constructor will orphan it by resetting the
+    // producer list. Such a producer is functional, as producer creation works on the
+    // zero-initialized queue memory, but the consumer is not able to see the data it
+    // enqueues. This method links the producer back into the list.
+    bool readopt_orphaned_producer(ExplicitProducer* producer)
+    {
+        for (auto ptr = producerListTail.load(std::memory_order_relaxed); ptr != nullptr; ptr = ptr->next_prod()) {
+            if (ptr == static_cast<ProducerBase*>(producer)) return false;
+        }
+        add_producer(static_cast<ProducerBase*>(producer));
+        return true;
+    }
+
     private:
 
 	//////////////////////////////////

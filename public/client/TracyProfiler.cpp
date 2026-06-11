@@ -1425,6 +1425,22 @@ std::atomic<int> init_order(102) RpInitLock( 0 );
 thread_local bool RpThreadInitDone = false;
 thread_local bool RpThreadShutdown = false;
 moodycamel::ConcurrentQueue<QueueItem> init_order(103) s_queue( QueuePrealloc );
+
+#  ifndef _MSC_VER
+// An instrumented shared object may emit zones from its static initializers, which the
+// dynamic loader runs before any of the executable's constructors, including the
+// priority-ordered constructor of s_queue above. The main thread producer token (s_token)
+// is then lazily created against the zero-initialized queue memory, and the queue
+// constructor subsequently orphans it, making all zones emitted on the main thread
+// invisible to the consumer. Re-adopt such a producer here. If no zones were emitted up
+// to this point, this only triggers construction of s_token, which is a no-op repair.
+struct EarlyMainThreadTokenRepair
+{
+    EarlyMainThreadTokenRepair() { if( s_token.ptr ) s_queue.readopt_orphaned_producer( s_token.ptr ); }
+};
+static EarlyMainThreadTokenRepair init_order(104) s_earlyMainThreadTokenRepair;
+#  endif
+
 std::atomic<uint32_t> init_order(104) s_lockCounter( 0 );
 std::atomic<uint8_t> init_order(104) s_gpuCtxCounter( 0 );
 

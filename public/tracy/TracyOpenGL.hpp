@@ -103,6 +103,8 @@ public:
         , m_head( 0 )
         , m_tail( 0 )
     {
+        ZoneScopedC( Color::Red4 );
+
         assert( m_context != 255 );
 
         GLint bits;

@@ -4,12 +4,12 @@
 #     cmake -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -B build/ninja .
 #     cmake --build build/ninja
 #
-#   Linux (requires libx11-dev libgl1-mesa-dev libglew-dev):
+#   Linux (requires libx11-dev libgl1-mesa-dev):
 #     cmake -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -B build/ninja .
 #     cmake --build build/ninja
 #
-#   Windows (MSVC, requires GLEW):
-#     cmake -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DGLEW_ROOT=<path> -B build/ninja .
+#   Windows:
+#     cmake -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -B build/ninja .
 #     cmake --build build/ninja
 
 cmake_minimum_required(VERSION 3.16)
@@ -33,6 +33,20 @@ FetchContent_Declare(rgfw
 )
 FetchContent_MakeAvailable(rgfw)
 
+# ---------------------------------------------------------------------------
+# GL extension loader — GLEW (Windows + Linux, fetched automatically)
+# ---------------------------------------------------------------------------
+if(NOT APPLE)
+    set(glew-cmake_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+    set(ONLY_LIBS               ON  CACHE BOOL "" FORCE)
+    FetchContent_Declare(glew
+        GIT_REPOSITORY https://github.com/Perlmint/glew-cmake.git
+        GIT_TAG        master   # pin to a specific commit for reproducible builds
+        GIT_SHALLOW    TRUE
+    )
+    FetchContent_MakeAvailable(glew)
+endif()
+
 set(PLATFORM_SOURCES  platform/platform_rgfw.cpp)
 set(PLATFORM_INCLUDES ${rgfw_SOURCE_DIR})
 
@@ -40,12 +54,10 @@ if(APPLE)
     set(PLATFORM_LIBS "-framework Cocoa" "-framework OpenGL"
                       "-framework CoreVideo" "-framework IOKit")
 elseif(WIN32)
-    find_package(GLEW REQUIRED)
-    set(PLATFORM_LIBS opengl32 user32 gdi32 GLEW::GLEW)
+    set(PLATFORM_LIBS opengl32 user32 gdi32 libglew_static)
 else()
-    find_package(GLEW REQUIRED)
-    find_package(X11  REQUIRED)
-    set(PLATFORM_LIBS X11::X11 GL GLEW::GLEW)
+    find_package(X11 REQUIRED)
+    set(PLATFORM_LIBS X11::X11 GL libglew_static)
 endif()
 
 # ---------------------------------------------------------------------------

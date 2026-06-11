@@ -98,7 +98,9 @@ static int initGL() {
     glBindVertexArray(gVao);
 
     glClearColor(0.05f, 0.05f, 0.08f, 1.0f);
-    glViewport(0, 0, kWidth, kHeight);
+    float scaleX, scaleY;
+    platformGetPixelDensityScale(&scaleX, &scaleY);
+    glViewport(0, 0, (int)(kWidth * scaleX), (int)(kHeight * scaleY));
     return 0;
 }
 

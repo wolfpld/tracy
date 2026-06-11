@@ -23,23 +23,29 @@ option(TRACY_ENABLE                  "Enable Tracy profiling"                   
 option(TRACY_OPENGL_AUTO_CALIBRATION "Enable periodic GPU/CPU recalibration"     ON)
 
 # ---------------------------------------------------------------------------
-# Platform-specific sources and link settings
+# Platform — RGFW (cross-platform windowing, fetched automatically)
 # ---------------------------------------------------------------------------
+include(FetchContent)
+FetchContent_Declare(rgfw
+    GIT_REPOSITORY https://github.com/ColleagueRiley/RGFW.git
+    GIT_TAG        main   # pin to a specific commit for reproducible builds
+    GIT_SHALLOW    TRUE
+)
+FetchContent_MakeAvailable(rgfw)
+
+set(PLATFORM_SOURCES  platform/platform_rgfw.cpp)
+set(PLATFORM_INCLUDES ${rgfw_SOURCE_DIR})
+
 if(APPLE)
-    set(PLATFORM_SOURCES platform/platform_macos.mm)
-    set(PLATFORM_LIBS "-framework Cocoa" "-framework OpenGL")
-    set_source_files_properties(platform/platform_macos.mm
-        PROPERTIES COMPILE_FLAGS "-ObjC++"
-    )
+    set(PLATFORM_LIBS "-framework Cocoa" "-framework OpenGL"
+                      "-framework CoreVideo" "-framework IOKit")
 elseif(WIN32)
     find_package(GLEW REQUIRED)
-    set(PLATFORM_SOURCES platform/platform_windows.cpp)
-    set(PLATFORM_LIBS opengl32 GLEW::GLEW)
+    set(PLATFORM_LIBS opengl32 user32 gdi32 GLEW::GLEW)
 else()
     find_package(GLEW REQUIRED)
     find_package(X11  REQUIRED)
-    set(PLATFORM_SOURCES platform/platform_x11.cpp)
-    set(PLATFORM_LIBS GLEW::GLEW X11::X11 GL)
+    set(PLATFORM_LIBS X11::X11 GL GLEW::GLEW)
 endif()
 
 # ---------------------------------------------------------------------------
@@ -71,5 +77,8 @@ if(TRACY_OPENGL_AUTO_CALIBRATION)
     target_compile_definitions(gl_spinning_triangle PRIVATE TRACY_OPENGL_AUTO_CALIBRATION)
 endif()
 
-target_include_directories(gl_spinning_triangle PRIVATE "${TRACY_DIR}/public")
+target_include_directories(gl_spinning_triangle PRIVATE
+    "${TRACY_DIR}/public"
+    ${PLATFORM_INCLUDES}
+)
 target_link_libraries(gl_spinning_triangle PRIVATE ${PLATFORM_LIBS})

@@ -31,6 +31,10 @@ double platformGetTime();
 // Swap front and back buffers (present the rendered frame).
 void platformSwapBuffers();
 
+// Pixel scaling factor relative to the logical window size (1.0 on non-HiDPI displays).
+// Must be called after platformInit().
+void platformGetPixelDensityScale(float* x, float* y);
+
 // Enter the platform event/render loop.
 // Calls render() each frame at ~60 fps.
 // Calls shutdown() exactly once before returning.

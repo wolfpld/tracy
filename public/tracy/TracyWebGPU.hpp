@@ -454,8 +454,8 @@ namespace tracy
 
             void ApplyToDeviceDescriptor(WGPUDeviceDescriptor& deviceDescriptor)
             {
-                uint32_t userCount   = deviceDescriptor.requiredFeatureCount;
-                uint32_t totalCount  = userCount + NumFeatures;
+                size_t userCount  = deviceDescriptor.requiredFeatureCount;
+                size_t totalCount = userCount + NumFeatures;
                 // NOTE: this allocation will leak...
                 auto* mergedFeatures = static_cast<WGPUFeatureName*>(tracy_malloc(totalCount * sizeof(WGPUFeatureName)));
                 if (userCount > 0 && deviceDescriptor.requiredFeatures)

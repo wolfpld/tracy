@@ -52,20 +52,8 @@ public:
     RingBuffer( const RingBuffer& ) = delete;
     RingBuffer& operator=( const RingBuffer& ) = delete;
 
-    RingBuffer( RingBuffer&& other )
-    {
-        memcpy( (char*)&other, (char*)this, sizeof( RingBuffer ) );
-        m_metadata = nullptr;
-        m_fd = 0;
-    }
-
-    RingBuffer& operator=( RingBuffer&& other )
-    {
-        memcpy( (char*)&other, (char*)this, sizeof( RingBuffer ) );
-        m_metadata = nullptr;
-        m_fd = 0;
-        return *this;
-    }
+    RingBuffer( RingBuffer&& other ) = delete;
+    RingBuffer& operator=( RingBuffer&& other ) = delete;
 
     bool IsValid() const { return m_metadata != nullptr; }
     int GetId() const { return m_id; }

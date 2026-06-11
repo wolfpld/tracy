@@ -524,7 +524,7 @@ static const char* GetHostInfo()
     auto ptr = buf;
 #if defined _WIN32
 #  if defined TRACY_WIN32_NO_DESKTOP
-    auto GetVersion = &::GetVersionEx;
+    auto GetVersion = &::GetVersionExW;
 #  else
     auto GetVersion = (t_RtlGetVersion)GetProcAddress( GetModuleHandleA( "ntdll.dll" ), "RtlGetVersion" );
 #  endif

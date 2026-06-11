@@ -1408,9 +1408,30 @@ namespace
 // 1a. But s_queue is needed for initialization of variables in point 2.
 extern moodycamel::ConcurrentQueue<QueueItem> s_queue;
 
+// A producer token may be created before s_initTime is constructed (the dynamic loader
+// runs shared object initializers before any of the executable's constructors, and such
+// an initializer may emit a zone). Remember the time of such an early token creation, so
+// that the init time can be backdated accordingly and no event timestamp precedes the
+// trace epoch.
+static std::atomic<int64_t> s_earlyTokenTime { 0 };
+static bool s_initTimeConstructed = false;
+
 // 2. If these variables would be in the .CRT$XCB section, they would be initialized only in main thread.
 thread_local moodycamel::ProducerToken init_order(107) s_token_detail( s_queue );
-thread_local ProducerWrapper init_order(108) s_token { s_queue.get_explicit_producer( s_token_detail ) };
+
+static moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* CreateProducerToken()
+{
+    auto ptr = s_queue.get_explicit_producer( s_token_detail );
+    if( !s_initTimeConstructed )
+    {
+        const auto t = Profiler::GetTime();
+        auto e = s_earlyTokenTime.load( std::memory_order_relaxed );
+        while( ( e == 0 || t < e ) && !s_earlyTokenTime.compare_exchange_weak( e, t, std::memory_order_relaxed ) ) {}
+    }
+    return ptr;
+}
+
+thread_local ProducerWrapper init_order(108) s_token { CreateProducerToken() };
 thread_local ThreadHandleWrapper init_order(104) s_threadHandle { detail::GetThreadHandleImpl() };
 
 #  ifdef _MSC_VER
@@ -1419,7 +1440,15 @@ thread_local ThreadHandleWrapper init_order(104) s_threadHandle { detail::GetThr
 #    pragma init_seg( ".CRT$XCB" )
 #  endif
 
-static InitTimeWrapper init_order(101) s_initTime { SetupHwTimer() };
+static int64_t GetInitTimeImpl()
+{
+    auto t = SetupHwTimer();
+    const auto e = s_earlyTokenTime.load( std::memory_order_relaxed );
+    if( e != 0 && e < t ) t = e;
+    s_initTimeConstructed = true;
+    return t;
+}
+static InitTimeWrapper init_order(101) s_initTime { GetInitTimeImpl() };
 std::atomic<int> init_order(102) RpInitDone( 0 );
 std::atomic<int> init_order(102) RpInitLock( 0 );
 thread_local bool RpThreadInitDone = false;

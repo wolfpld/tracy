@@ -1,7 +1,12 @@
 #ifndef __TRACYOPENGL_HPP__
 #define __TRACYOPENGL_HPP__
 
-#if !defined TRACY_ENABLE || defined __APPLE__
+#ifdef __APPLE__
+#define TRACY_OPENGL_DISABLE
+#warning "OpenGL support on Apple devices is deprecated or unavailable."
+#endif
+
+#if !defined TRACY_ENABLE || defined TRACY_OPENGL_DISABLE
 
 #define TracyGpuContext
 #define TracyGpuContextName(x,y)

@@ -20,7 +20,6 @@ project(gl_spinning_triangle LANGUAGES C CXX)
 # ---------------------------------------------------------------------------
 set(TRACY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../..")
 option(TRACY_ENABLE                  "Enable Tracy profiling"                    ON)
-option(TRACY_OPENGL_AUTO_CALIBRATION "Enable periodic GPU/CPU recalibration"     ON)
 
 # ---------------------------------------------------------------------------
 # Platform — RGFW (cross-platform windowing, fetched automatically)
@@ -84,9 +83,6 @@ target_compile_features(gl_spinning_triangle PRIVATE cxx_std_17)
 
 if(TRACY_ENABLE)
     target_compile_definitions(gl_spinning_triangle PRIVATE TRACY_ENABLE)
-endif()
-if(TRACY_OPENGL_AUTO_CALIBRATION)
-    target_compile_definitions(gl_spinning_triangle PRIVATE TRACY_OPENGL_AUTO_CALIBRATION)
 endif()
 
 target_include_directories(gl_spinning_triangle PRIVATE

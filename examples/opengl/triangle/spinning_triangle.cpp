@@ -1,14 +1,23 @@
 // spinning_triangle.cpp — OpenGL spinning triangle demo with Tracy GPU profiling.
-//
-// Tracy GPU zones are active on non-Apple platforms when TRACY_ENABLE is defined.
-// TRACY_OPENGL_AUTO_CALIBRATION (enabled by default in CMakeLists.txt) enables
-// periodic GPU/CPU drift correction via glGetInteger64v(GL_TIMESTAMP).
 
-#include "platform/platform.h"
-#include <cmath>
-#include <cstdio>
+#ifdef __APPLE__
+// NOTE: OpenGL is only available on MacOS (no iOS support)
+// Including and using anything related to OpenGL on Apple (like <OpenGL/gl3.h>)
+// will emit deprecation warnings, unless GL_SILENCE_DEPRECATION is defined
+#define GL_SILENCE_DEPRECATION
+// NOTE: TracyOpenGL.hpp will not work as expected even on Apple devices that
+// support OpenGL, because the OpenGL drivers do not implement ARB_timer_query
+// properly (querying GL_TIMESTAMP always resolves to 0). TracyOpenGL.hpp will
+// emit a compiler warning, and a Tracy message to the trace/profiler, but the
+// program will still run.
+#endif
+
+#include "platform/platform.h"  // also includes OpenGL headers
 
 #include <tracy/Tracy.hpp>
+
+// NOTE: opt-in toggle for periodic recalibrations during Collect()
+#define TRACY_OPENGL_AUTO_CALIBRATION
 #include <tracy/TracyOpenGL.hpp>
 
 static const int kWidth  = 800;

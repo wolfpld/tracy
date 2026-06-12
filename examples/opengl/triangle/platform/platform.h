@@ -6,10 +6,6 @@
 #pragma once
 
 #ifdef __APPLE__
-// OpenGL is only available on MacOS (no iOS support)
-// Anything from gl3.h will spew deprecation warnings when used,
-// unless GL_SILENCE_DEPRECATION has been defined beforehand
-//#  define GL_SILENCE_DEPRECATION
 #  include <OpenGL/gl3.h>
 #else
 #  include <GL/glew.h>

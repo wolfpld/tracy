@@ -10,13 +10,37 @@
 #include <chrono>
 #include <cstdio>
 
+#if defined(__linux__)
+#include <X11/Xlib.h>
+static bool platformHasDisplay() {
+    // RGFW workaround: RGFW indiscriminately passes XOpenDisplay(0) unchecked
+    // to X11 functions like XCreateWindow(), which will lead to SIGSEGV.
+    Display* display = XOpenDisplay(0);
+    if (display == nullptr) {
+        fprintf(stderr, "ERROR: failed to open X11 display (is $DISPLAY set?)\n");
+        return false;
+    }
+    XCloseDisplay(display);
+    return true;
+}
+#else
+static bool platformHasDisplay() {
+    return true;
+}
+#endif
+
 static RGFW_window* sWin = nullptr;
 static std::chrono::steady_clock::time_point sStartTime;
 
 bool platformInit(int width, int height, const char* title) {
+    if (!platformHasDisplay()) {
+        fprintf(stderr, "ERROR: no display found\n");
+        return false;
+    }
+
     sWin = RGFW_createWindow(title, 0, 0, width, height, RGFW_windowCenter);
     if (!sWin) {
-        fprintf(stderr, "RGFW: failed to create window\n");
+        fprintf(stderr, "ERROR: failed to create window\n");
         return false;
     }
     RGFW_window_setExitKey(sWin, RGFW_keyEscape);

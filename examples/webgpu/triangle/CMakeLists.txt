@@ -104,7 +104,10 @@ elseif(WIN32)
     set(PLATFORM_LIBS user32 gdi32)
 else()
     find_package(X11 REQUIRED)
-    set(PLATFORM_LIBS X11::X11)
+    if(NOT X11_Xrandr_FOUND)
+        message(FATAL_ERROR "Xrandr not found — install libxrandr-dev")
+    endif()
+    set(PLATFORM_LIBS X11::X11 X11::Xrandr)
 endif()
 
 # ---------------------------------------------------------------------------

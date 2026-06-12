@@ -1642,6 +1642,8 @@ Sometimes an application will use more than one memory pool. For example, in add
 
 To mark that a separate memory pool is to be tracked you should use the named version of memory macros, for example \texttt{TracyAllocN(ptr, size, name)} and \texttt{TracyFreeN(ptr, name)}, where \texttt{name} is an unique pointer to a string literal (section~\ref{uniquepointers}) identifying the memory pool.
 
+Certain memory allocator designs ("arena allocators") use an always-incrementing pointer to track the next region to allocate and do not support deallocation of individual objects. The only way to free memory with such an allocator is to simultaneously release all the objects that were allocated (reset the allocator state). You can mark such a mass-deallocation event in a memory pool with the \texttt{TracyMemoryDiscard(name)} macro.
+
 \subsection{GPU profiling}
 \label{gpuprofiling}
 

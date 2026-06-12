@@ -5,9 +5,16 @@ here.
 vx.xx.x (2026-xx-xx)
 --------------------
 
+- API break: removed "secure" variants of memory alloc and free macros. The
+  secure code path is now always enabled. Migrate by removing "Secure" from
+  the macros you use, e.g. TracySecureAlloc(...) -> TracyAlloc(...).
 - Added tracy-capture-daemon for automated multi-client trace capture.
 - Added tracy-merge utility for combining multiple trace files into one.
 - Added support for Windows on ARM64 with MSVC.
+- Added support for WebGPU.
+- Trace-specific settings storage has been completely overhauled. It is now
+  possible to make the settings sidecar file public, saved next to the trace
+  file.
 - External frames are now omitted in the single-line call stack list visible
   in messages list, or in memory allocation info window.
 - External frames are now hidden by default in various contexts where they
@@ -147,8 +154,13 @@ vx.xx.x (2026-xx-xx)
   - There is now chapter tree and the manual contents are displayed section
     by section.
   - Links to chapters are now properly working.
-  - The "bclogo" blocks are now correctly processed.
+  - The "bclogo" blocks are now correctly processed and displayed as proper
+    admonitions.
   - The font awesome icons now show as in the rest of the UI.
+  - Footnotes are now rendered as proper footnotes.
+  - Tables are now rendered as intended.
+  - LaTeX math is now converted to readable form.
+  - Added a button to download the full PDF manual to the user manual window.
 - Call stack window will now show the thread viewed call stack originates
   from (if possible).
 - "Visible threads" checkboxes in messages, flame graph and wait stacks
@@ -172,6 +184,21 @@ vx.xx.x (2026-xx-xx)
 - Fixed NVCC builds.
 - Fixed possible lockups in Vulkan timer calibration loop.
 - The flame graph view now supports zooming in and panning with the mouse.
+- General application crash information polish in the profiler UI.
+- The achievements system has been converted to use markdown renderer.
+- Offline symbol resolution with the update utility now supports custom
+  addr2line-compatible tools via -a and -A command line parameters.
+  Additionally, it is now possible to reset all call stack frame symbols to
+  unresolved with the -R parameter.
+- Periodic recalibration of the clock drift in OpenGL contexts can be enabled
+  with the TRACY_OPENGL_AUTO_CALIBRATION compilation define. Note that this
+  requires a full CPU/GPU sync on each calibration event. These events will
+  not fire more often than once every second.
+- Added missing C API for shared locks.
+- Implemented semi-unique, nonsense random name generator.
+  - Can be used to set a trace description.
+  - Will be used to provide default description for newly added annotations.
+- Polished look and feel of annotation regions on the timeline.
 
 
 v0.13.1 (2025-12-11)

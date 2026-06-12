@@ -44,10 +44,16 @@ ExternalProject_Add(embed
 )
 
 function(Embed LIST NAME FILE)
+    cmake_parse_arguments(EMBED "TEXT" "" "" ${ARGN})
+    if(EMBED_TEXT)
+        set(EMBED_FLAGS -t)
+    else()
+        set(EMBED_FLAGS)
+    endif()
     add_custom_command(
         OUTPUT data/${NAME}.cpp data/${NAME}.hpp
         COMMAND ${CMAKE_COMMAND} -E make_directory data
-        COMMAND ${CMAKE_CURRENT_BINARY_DIR}/embed ${NAME} ${CMAKE_CURRENT_LIST_DIR}/${FILE} data/${NAME}
+        COMMAND ${CMAKE_CURRENT_BINARY_DIR}/embed ${EMBED_FLAGS} ${NAME} ${CMAKE_CURRENT_LIST_DIR}/${FILE} data/${NAME}
         DEPENDS embed ${CMAKE_CURRENT_LIST_DIR}/${FILE}
     )
     list(APPEND ${LIST} data/${NAME}.cpp)

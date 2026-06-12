@@ -719,7 +719,7 @@ public:
 
             GetProfiler().m_serialLock.lock();
             SendCallstackSerial( callstack );
-            SendMemDiscard( QueueType::MemDiscard, thread, name );
+            SendMemDiscard( QueueType::MemDiscardCallstack, thread, name );
             GetProfiler().m_serialLock.unlock();
         }
         else

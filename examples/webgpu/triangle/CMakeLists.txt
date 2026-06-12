@@ -85,9 +85,6 @@ FetchContent_Declare(rgfw
     GIT_REPOSITORY https://github.com/ColleagueRiley/RGFW.git
     GIT_TAG        main   # pin to a specific commit for reproducible builds
     GIT_SHALLOW    TRUE
-    # Upstream bug: id* vs id in the macOS WebGPU surface function.
-    PATCH_COMMAND
-        ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/patch_rgfw.cmake"
 )
 FetchContent_MakeAvailable(rgfw)
 

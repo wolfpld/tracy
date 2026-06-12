@@ -3,7 +3,7 @@
 
 #ifdef __APPLE__
 #define TRACY_OPENGL_DISABLE
-#warning "OpenGL support on Apple devices is deprecated or unavailable."
+#warning "OpenGL timestamps are unreliable on Apple devices that still run OpenGL."
 #endif
 
 #if !defined TRACY_ENABLE || defined TRACY_OPENGL_DISABLE

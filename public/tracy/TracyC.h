@@ -64,14 +64,9 @@ typedef const void* TracyCSharedLockCtx;
 #define TracyCAlloc(x,y)
 #define TracyCFree(x)
 #define TracyCMemoryDiscard(x)
-#define TracyCSecureAlloc(x,y)
-#define TracyCSecureFree(x)
-#define TracyCSecureMemoryDiscard(x)
 
 #define TracyCAllocN(x,y,z)
 #define TracyCFreeN(x,y)
-#define TracyCSecureAllocN(x,y,z)
-#define TracyCSecureFreeN(x,y)
 
 #define TracyCFrameMark
 #define TracyCFrameMarkNamed(x)
@@ -98,14 +93,9 @@ typedef const void* TracyCSharedLockCtx;
 #define TracyCAllocS(x,y,z)
 #define TracyCFreeS(x,y)
 #define TracyCMemoryDiscardS(x,y)
-#define TracyCSecureAllocS(x,y,z)
-#define TracyCSecureFreeS(x,y)
-#define TracyCSecureMemoryDiscardS(x,y)
 
 #define TracyCAllocNS(x,y,z,w)
 #define TracyCFreeNS(x,y,z)
-#define TracyCSecureAllocNS(x,y,z,w)
-#define TracyCSecureFreeNS(x,y,z)
 
 #define TracyCMessageS(x,y,z)
 #define TracyCMessageLS(x,y)
@@ -295,31 +285,26 @@ TRACY_API int32_t ___tracy_connected(void);
 #define TracyCZoneValue( ctx, value ) ___tracy_emit_zone_value( ctx, value );
 
 
-TRACY_API void ___tracy_emit_memory_alloc( const void* ptr, size_t size, int32_t secure );
-TRACY_API void ___tracy_emit_memory_alloc_callstack( const void* ptr, size_t size, int32_t depth, int32_t secure );
-TRACY_API void ___tracy_emit_memory_free( const void* ptr, int32_t secure );
-TRACY_API void ___tracy_emit_memory_free_callstack( const void* ptr, int32_t depth, int32_t secure );
-TRACY_API void ___tracy_emit_memory_alloc_named( const void* ptr, size_t size, int32_t secure, const char* name );
-TRACY_API void ___tracy_emit_memory_alloc_callstack_named( const void* ptr, size_t size, int32_t depth, int32_t secure, const char* name );
-TRACY_API void ___tracy_emit_memory_free_named( const void* ptr, int32_t secure, const char* name );
-TRACY_API void ___tracy_emit_memory_free_callstack_named( const void* ptr, int32_t depth, int32_t secure, const char* name );
-TRACY_API void ___tracy_emit_memory_discard( const char* name, int32_t secure );
-TRACY_API void ___tracy_emit_memory_discard_callstack( const char* name, int32_t secure, int32_t depth );
+TRACY_API void ___tracy_emit_memory_alloc( const void* ptr, size_t size );
+TRACY_API void ___tracy_emit_memory_alloc_callstack( const void* ptr, size_t size, int32_t depth );
+TRACY_API void ___tracy_emit_memory_free( const void* ptr );
+TRACY_API void ___tracy_emit_memory_free_callstack( const void* ptr, int32_t depth );
+TRACY_API void ___tracy_emit_memory_alloc_named( const void* ptr, size_t size, const char* name );
+TRACY_API void ___tracy_emit_memory_alloc_callstack_named( const void* ptr, size_t size, int32_t depth, const char* name );
+TRACY_API void ___tracy_emit_memory_free_named( const void* ptr, const char* name );
+TRACY_API void ___tracy_emit_memory_free_callstack_named( const void* ptr, int32_t depth, const char* name );
+TRACY_API void ___tracy_emit_memory_discard( const char* name );
+TRACY_API void ___tracy_emit_memory_discard_callstack( const char* name, int32_t depth );
 
 TRACY_API void ___tracy_emit_logString( int8_t severity, int32_t color, int32_t callstack_depth, size_t size, const char* txt );
 TRACY_API void ___tracy_emit_logStringL( int8_t severity, int32_t color, int32_t callstack_depth, const char* txt );
 
-#define TracyCAlloc( ptr, size ) ___tracy_emit_memory_alloc_callstack( ptr, size, TRACY_CALLSTACK, 0 )
-#define TracyCFree( ptr ) ___tracy_emit_memory_free_callstack( ptr, TRACY_CALLSTACK, 0 )
-#define TracyCMemoryDiscard( name ) ___tracy_emit_memory_discard_callstack( name, 0, TRACY_CALLSTACK );
-#define TracyCSecureAlloc( ptr, size ) ___tracy_emit_memory_alloc_callstack( ptr, size, TRACY_CALLSTACK, 1 )
-#define TracyCSecureFree( ptr ) ___tracy_emit_memory_free_callstack( ptr, TRACY_CALLSTACK, 1 )
-#define TracyCSecureMemoryDiscard( name ) ___tracy_emit_memory_discard_callstack( name, 1, TRACY_CALLSTACK );
+#define TracyCAlloc( ptr, size ) ___tracy_emit_memory_alloc_callstack( ptr, size, TRACY_CALLSTACK )
+#define TracyCFree( ptr ) ___tracy_emit_memory_free_callstack( ptr, TRACY_CALLSTACK )
+#define TracyCMemoryDiscard( name ) ___tracy_emit_memory_discard_callstack( name, TRACY_CALLSTACK );
 
-#define TracyCAllocN( ptr, size, name ) ___tracy_emit_memory_alloc_callstack_named( ptr, size, TRACY_CALLSTACK, 0, name )
-#define TracyCFreeN( ptr, name ) ___tracy_emit_memory_free_callstack_named( ptr, TRACY_CALLSTACK, 0, name )
-#define TracyCSecureAllocN( ptr, size, name ) ___tracy_emit_memory_alloc_callstack_named( ptr, size, TRACY_CALLSTACK, 1, name )
-#define TracyCSecureFreeN( ptr, name ) ___tracy_emit_memory_free_callstack_named( ptr, TRACY_CALLSTACK, 1, name )
+#define TracyCAllocN( ptr, size, name ) ___tracy_emit_memory_alloc_callstack_named( ptr, size, TRACY_CALLSTACK, name )
+#define TracyCFreeN( ptr, name ) ___tracy_emit_memory_free_callstack_named( ptr, TRACY_CALLSTACK, name )
 
 #define TracyCMessage( txt, size ) ___tracy_emit_logString( TracyMessageSeverityInfo, 0, TRACY_CALLSTACK, size, txt )
 #define TracyCMessageL( txt ) ___tracy_emit_logStringL( TracyMessageSeverityInfo, 0, TRACY_CALLSTACK, txt )
@@ -357,17 +342,12 @@ TRACY_API void ___tracy_emit_message_appinfo( const char* txt, size_t size );
 #define TracyCZoneCS( ctx, color, depth, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,TracyLine) = { NULL, __func__,  TracyFile, (uint32_t)TracyLine, color }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin_callstack( &TracyConcat(__tracy_source_location,TracyLine), depth, active );
 #define TracyCZoneNCS( ctx, name, color, depth, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,TracyLine) = { name, __func__,  TracyFile, (uint32_t)TracyLine, color }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin_callstack( &TracyConcat(__tracy_source_location,TracyLine), depth, active );
 
-#define TracyCAllocS( ptr, size, depth ) ___tracy_emit_memory_alloc_callstack( ptr, size, depth, 0 )
-#define TracyCFreeS( ptr, depth ) ___tracy_emit_memory_free_callstack( ptr, depth, 0 )
-#define TracyCMemoryDiscardS( name, depth ) ___tracy_emit_memory_discard_callstack( name, 0, depth )
-#define TracyCSecureAllocS( ptr, size, depth ) ___tracy_emit_memory_alloc_callstack( ptr, size, depth, 1 )
-#define TracyCSecureFreeS( ptr, depth ) ___tracy_emit_memory_free_callstack( ptr, depth, 1 )
-#define TracyCSecureMemoryDiscardS( name, depth ) ___tracy_emit_memory_discard_callstack( name, 1, depth )
+#define TracyCAllocS( ptr, size, depth ) ___tracy_emit_memory_alloc_callstack( ptr, size, depth )
+#define TracyCFreeS( ptr, depth ) ___tracy_emit_memory_free_callstack( ptr, depth )
+#define TracyCMemoryDiscardS( name, depth ) ___tracy_emit_memory_discard_callstack( name, depth )
 
-#define TracyCAllocNS( ptr, size, depth, name ) ___tracy_emit_memory_alloc_callstack_named( ptr, size, depth, 0, name )
-#define TracyCFreeNS( ptr, depth, name ) ___tracy_emit_memory_free_callstack_named( ptr, depth, 0, name )
-#define TracyCSecureAllocNS( ptr, size, depth, name ) ___tracy_emit_memory_alloc_callstack_named( ptr, size, depth, 1, name )
-#define TracyCSecureFreeNS( ptr, depth, name ) ___tracy_emit_memory_free_callstack_named( ptr, depth, 1, name )
+#define TracyCAllocNS( ptr, size, depth, name ) ___tracy_emit_memory_alloc_callstack_named( ptr, size, depth, name )
+#define TracyCFreeNS( ptr, depth, name ) ___tracy_emit_memory_free_callstack_named( ptr, depth, name )
 
 #define TracyCMessageS( txt, size, depth ) ___tracy_emit_logString( TracyMessageSeverityInfo, 0, depth, size, txt )
 #define TracyCMessageLS( txt, depth ) ___tracy_emit_logStringL( TracyMessageSeverityInfo, 0, depth, txt )

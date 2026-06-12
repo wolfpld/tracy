@@ -535,9 +535,9 @@ public:
         TracyLfqCommit;
     }
 
-    static tracy_force_inline void MemAlloc( const void* ptr, size_t size, bool secure )
+    static tracy_force_inline void MemAlloc( const void* ptr, size_t size )
     {
-        if( secure && !ProfilerAvailable() ) return;
+        if( !ProfilerAvailable() ) return;
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
@@ -548,9 +548,9 @@ public:
         GetProfiler().m_serialLock.unlock();
     }
 
-    static tracy_force_inline void MemFree( const void* ptr, bool secure )
+    static tracy_force_inline void MemFree( const void* ptr )
     {
-        if( secure && !ProfilerAvailable() ) return;
+        if( !ProfilerAvailable() ) return;
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
@@ -561,9 +561,9 @@ public:
         GetProfiler().m_serialLock.unlock();
     }
 
-    static tracy_force_inline void MemAllocCallstack( const void* ptr, size_t size, int32_t depth, bool secure )
+    static tracy_force_inline void MemAllocCallstack( const void* ptr, size_t size, int32_t depth )
     {
-        if( secure && !ProfilerAvailable() ) return;
+        if( !ProfilerAvailable() ) return;
         if( depth > 0 && has_callstack() )
         {
             auto& profiler = GetProfiler();
@@ -581,16 +581,16 @@ public:
         }
         else
         {
-            MemAlloc( ptr, size, secure );
+            MemAlloc( ptr, size );
         }
     }
 
-    static tracy_force_inline void MemFreeCallstack( const void* ptr, int32_t depth, bool secure )
+    static tracy_force_inline void MemFreeCallstack( const void* ptr, int32_t depth )
     {
-        if( secure && !ProfilerAvailable() ) return;
+        if( !ProfilerAvailable() ) return;
         if( !ProfilerAllocatorAvailable() )
         {
-            MemFree( ptr, secure );
+            MemFree( ptr );
             return;
         }
         if( depth > 0 && has_callstack() )
@@ -610,13 +610,13 @@ public:
         }
         else
         {
-            MemFree( ptr, secure );
+            MemFree( ptr );
         }
     }
 
-    static tracy_force_inline void MemAllocNamed( const void* ptr, size_t size, bool secure, const char* name )
+    static tracy_force_inline void MemAllocNamed( const void* ptr, size_t size, const char* name )
     {
-        if( secure && !ProfilerAvailable() ) return;
+        if( !ProfilerAvailable() ) return;
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
@@ -628,9 +628,9 @@ public:
         GetProfiler().m_serialLock.unlock();
     }
 
-    static tracy_force_inline void MemFreeNamed( const void* ptr, bool secure, const char* name )
+    static tracy_force_inline void MemFreeNamed( const void* ptr, const char* name )
     {
-        if( secure && !ProfilerAvailable() ) return;
+        if( !ProfilerAvailable() ) return;
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
@@ -642,9 +642,9 @@ public:
         GetProfiler().m_serialLock.unlock();
     }
 
-    static tracy_force_inline void MemAllocCallstackNamed( const void* ptr, size_t size, int32_t depth, bool secure, const char* name )
+    static tracy_force_inline void MemAllocCallstackNamed( const void* ptr, size_t size, int32_t depth, const char* name )
     {
-        if( secure && !ProfilerAvailable() ) return;
+        if( !ProfilerAvailable() ) return;
         if( depth > 0 && has_callstack() )
         {
             auto& profiler = GetProfiler();
@@ -663,13 +663,13 @@ public:
         }
         else
         {
-            MemAllocNamed( ptr, size, secure, name );
+            MemAllocNamed( ptr, size, name );
         }
     }
 
-    static tracy_force_inline void MemFreeCallstackNamed( const void* ptr, int32_t depth, bool secure, const char* name )
+    static tracy_force_inline void MemFreeCallstackNamed( const void* ptr, int32_t depth, const char* name )
     {
-        if( secure && !ProfilerAvailable() ) return;
+        if( !ProfilerAvailable() ) return;
         if( depth > 0 && has_callstack() )
         {
             auto& profiler = GetProfiler();
@@ -688,13 +688,13 @@ public:
         }
         else
         {
-            MemFreeNamed( ptr, secure, name );
+            MemFreeNamed( ptr, name );
         }
     }
 
-    static tracy_force_inline void MemDiscard( const char* name, bool secure )
+    static tracy_force_inline void MemDiscard( const char* name )
     {
-        if( secure && !ProfilerAvailable() ) return;
+        if( !ProfilerAvailable() ) return;
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
@@ -705,9 +705,9 @@ public:
         GetProfiler().m_serialLock.unlock();
     }
 
-    static tracy_force_inline void MemDiscardCallstack( const char* name, bool secure, int32_t depth )
+    static tracy_force_inline void MemDiscardCallstack( const char* name, int32_t depth )
     {
-        if( secure && !ProfilerAvailable() ) return;
+        if( !ProfilerAvailable() ) return;
         if( depth > 0 && has_callstack() )
         {
 #  ifdef TRACY_ON_DEMAND
@@ -724,7 +724,7 @@ public:
         }
         else
         {
-            MemDiscard( name, secure );
+            MemDiscard( name );
         }
     }
 

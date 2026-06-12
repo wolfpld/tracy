@@ -1609,8 +1609,6 @@ void operator delete(void* ptr) noexcept
 }
 \end{lstlisting}
 
-In some rare cases (e.g., destruction of TLS block), events may be reported after the profiler is no longer available, which would lead to a crash. To work around this issue, you may use \texttt{TracySecureAlloc} and \texttt{TracySecureFree} variants of the macros.
-
 \begin{bclogo}[
 noborder=true,
 couleur=black!5,
@@ -1889,7 +1887,7 @@ As you can see, there are two threads, \texttt{t1} and \texttt{t2}, which are si
 \subsection{Collecting call stacks}
 \label{collectingcallstacks}
 
-Capture of true calls stacks can be performed by using macros with the \texttt{S} postfix, which require an additional parameter, specifying the depth of call stack to be captured. The greater the depth, the longer it will take to perform capture. Currently you can use the following macros: \texttt{ZoneScopedS}, \texttt{ZoneScopedNS}, \texttt{ZoneScopedCS}, \texttt{ZoneScopedNCS}, \texttt{TracyAllocS}, \texttt{TracyFreeS}, \texttt{TracySecureAllocS}, \texttt{TracySecureFreeS}, \texttt{TracyMessageS}, \texttt{TracyMessageLS}, \texttt{TracyMessageCS}, \texttt{TracyMessageLCS}, \texttt{TracyGpuZoneS}, \texttt{TracyGpuZoneCS}, \texttt{TracyVkZoneS}, \texttt{TracyVkZoneCS}, and the named and transient variants.
+Capture of true calls stacks can be performed by using macros with the \texttt{S} postfix, which require an additional parameter, specifying the depth of call stack to be captured. The greater the depth, the longer it will take to perform capture. Currently you can use the following macros: \texttt{ZoneScopedS}, \texttt{ZoneScopedNS}, \texttt{ZoneScopedCS}, \texttt{ZoneScopedNCS}, \texttt{TracyAllocS}, \texttt{TracyFreeS}, \texttt{TracyMessageS}, \texttt{TracyMessageLS}, \texttt{TracyMessageCS}, \texttt{TracyMessageLCS}, \texttt{TracyGpuZoneS}, \texttt{TracyGpuZoneCS}, \texttt{TracyVkZoneS}, \texttt{TracyVkZoneCS}, and the named and transient variants.
 
 Be aware that call stack collection is a relatively slow operation. Table~\ref{CallstackTimes} and figure~\ref{CallstackPlot} show how long it took to perform a single capture of varying depth on multiple CPU architectures.
 
@@ -2318,8 +2316,6 @@ Use the following macros in your implementations of \texttt{malloc} and \texttt{
 \begin{itemize}
 \item \texttt{TracyCAlloc(ptr, size)}
 \item \texttt{TracyCFree(ptr)}
-\item \texttt{TracyCSecureAlloc(ptr, size)}
-\item \texttt{TracyCSecureFree(ptr)}
 \end{itemize}
 
 Correctly using this functionality can be pretty tricky. You also will need to handle all the memory allocations made by external libraries (which typically allow usage of custom memory allocation functions) and the allocations made by system functions. If you can't track such an allocation, you will need to make sure freeing is not reported\footnote{It's not uncommon to see a pattern where a system function returns some allocated memory, which you then need to release.}.
@@ -2879,8 +2875,8 @@ logo=\bclampe
 Use the following calls in your implementations of allocator/deallocator:
 
 \begin{itemize}
-\item \texttt{tracy\_memory\_alloc(ptr, size, name, depth, secure)}
-\item \texttt{tracy\_memory\_free(ptr, name, depth, secure)}
+\item \texttt{tracy\_memory\_alloc(ptr, size, name, depth)}
+\item \texttt{tracy\_memory\_free(ptr, name, depth)}
 \end{itemize}
 
 Correctly using this functionality can be pretty tricky especially in Fortran.

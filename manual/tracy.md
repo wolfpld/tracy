@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-06-09 <https://github.com/wolfpld/tracy>
+2026-06-12 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -69,7 +69,7 @@ Tracy is a real-time, nanosecond resolution *hybrid frame and sampling profiler*
 
 [^1]: Direct support is provided for C, C++, Lua, Python and Fortran integration. At the same time, third-party bindings to many other languages exist on the internet, such as Rust, Zig, C#, OCaml, Odin, etc.
 
-[^2]: All major graphic APIs: OpenGL, Vulkan, Direct3D 11/12, Metal, OpenCL.
+[^2]: All major graphics/compute APIs: OpenGL, Vulkan, Direct3D 11/12, Metal, OpenCL, CUDA, WebGPU.
 
 While Tracy can perform statistical analysis of sampled call stack data, just like other *statistical profilers* (such as VTune, perf, or Very Sleepy), it mainly focuses on manual markup of the source code. Such markup allows frame-by-frame inspection of the program execution. For example, you will be able to see exactly which functions are called, how much time they require, and how they interact with each other in a multi-threaded environment. In contrast, the statistical analysis may show you the hot spots in your code, but it cannot accurately pinpoint the underlying cause for semi-random frame stutter that may occur every couple of seconds.
 
@@ -905,6 +905,8 @@ Some features of the profiler are only available on selected platforms. Please r
 | GPU zones (OpenGL) |  |  |  |  |  |  |  |
 | GPU zones (Vulkan) |  |  |  |  |  |  |  |
 | GPU zones (Metal) |  |  |  | ^*b*^ | ^*b*^ |  |  |
+| GPU zones (CUDA) |  |  |  |  |  | ? |  |
+| GPU zones (WebGPU) |  |  |  |  |  | ? | ? |
 | Call stacks |  |  |  |  |  |  |  |
 | Symbol resolution |  |  |  |  |  |  |  |
 | Crash handling |  |  |  |  |  |  |  |
@@ -1416,8 +1418,6 @@ To mark memory events, use the `TracyAlloc(ptr, size)` and `TracyFree(ptr)` macr
         free(ptr);
     }
 
-In some rare cases (e.g., destruction of TLS block), events may be reported after the profiler is no longer available, which would lead to a crash. To work around this issue, you may use `TracySecureAlloc` and `TracySecureFree` variants of the macros.
-
 > [!IMPORTANT]
 > **Important**
 >
@@ -1446,9 +1446,11 @@ Sometimes an application will use more than one memory pool. For example, in add
 
 To mark that a separate memory pool is to be tracked you should use the named version of memory macros, for example `TracyAllocN(ptr, size, name)` and `TracyFreeN(ptr, name)`, where `name` is an unique pointer to a string literal (section [3.1.2](#uniquepointers)) identifying the memory pool.
 
+Certain memory allocator designs (\"arena allocators\") use an always-incrementing pointer to track the next region to allocate and do not support deallocation of individual objects. The only way to free memory with such an allocator is to simultaneously release all the objects that were allocated (reset the allocator state). You can mark such a mass-deallocation event in a memory pool with the `TracyMemoryDiscard(name)` macro.
+
 ## GPU profiling {#gpuprofiling}
 
-Tracy provides bindings for profiling OpenGL, Vulkan, Direct3D 11, Direct3D 12, Metal, OpenCL and CUDA execution time on GPU.
+Tracy provides bindings for profiling OpenGL, Vulkan, Direct3D 11, Direct3D 12, Metal, OpenCL, CUDA and WebGPU execution time on GPU.
 
 Note that the CPU and GPU timers may be unsynchronized unless you create a calibrated context, but the availability of calibrated contexts is limited. You can try to correct the desynchronization of uncalibrated contexts in the profiler's options (section [5.4](#options)).
 
@@ -1589,6 +1591,16 @@ Unlike other GPU backends in Tracy, there is no need to call `TracyCUDACollect(c
 
 To stop profiling, call the `TracyCUDAStopProfiling(ctx)` macro.
 
+### WebGPU
+
+WebGPU support is enabled by including the `public/tracy/TracyWebGPU.hpp` header file. Both major implementations of WebGPU (Dawn and wgpu-native) are supported.
+
+Before creating the WebGPU device, make sure to call `TracyWebGPUSetupDeviceDescriptor()` to let Tracy request the necessary device features and extensions necessary for profiling. After the device is created, use the `TracyWebGPUContext()` macro to instantiate the necessary `WebGPUQueueCtx` object required for GPU instrumentation. The object should later be cleaned up with the `TracyWebGPUDestroy()` macro. To set a custom name for the context, use the `TracyWebGPUContextName()` macro.
+
+To instrument a GPU zone, use the various `TracyWebGPU*Zone*()` macros. Note that WebGPU only offers command instrumentation at the \"pass\"-level. While command-level granularity is possible through implementation-specific WebGPU extensions, Tracy does not support it at the moment. Supply the corresponding WebGPU pass descriptor to the instrumentation macro *before* creating the WebGPU pass encoder.
+
+You are required to periodically collect the GPU events using the `TracyWebGPUCollect()` macro. Good places for collection are: after synchronous waits, after event processing `wgpuInstanceProcessEvents`, after present drawable calls (`wgpuSurfacePresent`), and inside the completion callback of command queues (`wgpuQueueOnSubmittedWorkDone`).
+
 ### ROCm
 
 On Linux, if rocprofiler-sdk is installed, tracy can automatically trace GPU dispatches and collect performance counter values. If CMake can't find rocprofiler-sdk, you can set the CMake variable `rocprofiler-sdk_DIR` to point it at the correct module directory. Use the `TRACY_ROCPROF_COUNTERS` environment variable with the desired counters separated by commas to control what values are collected. The results will appear for each dispatch in the tool tip and zone detail window. Results are summed across dimensions. You can get a list of the counters available for your hardware with this command:
@@ -1613,13 +1625,13 @@ rocprofv3 -L
 
 Putting more than one GPU zone macro in a single scope features the same issue as with the `ZoneScoped` macros, described in section [3.4.2](#multizone) (but this time the variable name is `___tracy_gpu_zone`).
 
-To solve this problem, in case of OpenGL use the `TracyGpuNamedZone` macro in place of `TracyGpuZone` (or the color variant). The same applies to Vulkan, Direct3D 11/12 and Metal -- replace `TracyVkZone` with `TracyVkNamedZone`, `TracyD3D11Zone`/`TracyD3D12Zone` with `TracyD3D11NamedZone`/`TracyD3D12NamedZone`, and `TracyMetalZone` with `TracyMetalNamedZone`.
+To solve this problem, in case of OpenGL use the `TracyGpuNamedZone` macro in place of `TracyGpuZone` (or the color variant). The same applies to Vulkan, Direct3D 11/12, Metal and WebGPU -- replace `TracyVkZone` with `TracyVkNamedZone`, `TracyD3D11Zone`/`TracyD3D12Zone` with `TracyD3D11NamedZone`/`TracyD3D12NamedZone`, `TracyMetalZone` with `TracyMetalNamedZone`, and `TracyWebGPUZone` with `TracyWebGPUNamedZone`.
 
 Remember to provide your name for the created stack variable as the first parameter to the macros.
 
 ### Transient GPU zones
 
-Transient zones (see section [3.4.4](#transientzones) for details) are available in OpenGL, Vulkan, and Direct3D 11/12 macros. Transient zones are not available for Metal at this moment.
+Transient zones (see section [3.4.4](#transientzones) for details) are available in OpenGL, Vulkan, Direct3D 11/12 and WebGPU macros. Transient zones are not available for Metal at this moment.
 
 ## Fibers
 
@@ -1664,7 +1676,7 @@ As you can see, there are two threads, `t1` and `t2`, which are simulating worke
 
 ## Collecting call stacks {#collectingcallstacks}
 
-Capture of true calls stacks can be performed by using macros with the `S` postfix, which require an additional parameter, specifying the depth of call stack to be captured. The greater the depth, the longer it will take to perform capture. Currently you can use the following macros: `ZoneScopedS`, `ZoneScopedNS`, `ZoneScopedCS`, `ZoneScopedNCS`, `TracyAllocS`, `TracyFreeS`, `TracySecureAllocS`, `TracySecureFreeS`, `TracyMessageS`, `TracyMessageLS`, `TracyMessageCS`, `TracyMessageLCS`, `TracyGpuZoneS`, `TracyGpuZoneCS`, `TracyVkZoneS`, `TracyVkZoneCS`, and the named and transient variants.
+Capture of true calls stacks can be performed by using macros with the `S` postfix, which require an additional parameter, specifying the depth of call stack to be captured. The greater the depth, the longer it will take to perform capture. Currently you can use the following macros: `ZoneScopedS`, `ZoneScopedNS`, `ZoneScopedCS`, `ZoneScopedNCS`, `TracyAllocS`, `TracyFreeS`, `TracyMessageS`, `TracyMessageLS`, `TracyMessageCS`, `TracyMessageLCS`, `TracyGpuZoneS`, `TracyGpuZoneCS`, `TracyVkZoneS`, `TracyVkZoneCS`, and the named and transient variants.
 
 Be aware that call stack collection is a relatively slow operation. Table [6](#CallstackTimes) and figure [6](#CallstackPlot) show how long it took to perform a single capture of varying depth on multiple CPU architectures.
 
@@ -2038,10 +2050,6 @@ Use the following macros in your implementations of `malloc` and `free`:
 - `TracyCAlloc(ptr, size)`
 
 - `TracyCFree(ptr)`
-
-- `TracyCSecureAlloc(ptr, size)`
-
-- `TracyCSecureFree(ptr)`
 
 Correctly using this functionality can be pretty tricky. You also will need to handle all the memory allocations made by external libraries (which typically allow usage of custom memory allocation functions) and the allocations made by system functions. If you can't track such an allocation, you will need to make sure freeing is not reported[^56].
 
@@ -2546,9 +2554,9 @@ To collect frame images, use `tracy_image(image, w, h, offset, flip)` call.
 
 Use the following calls in your implementations of allocator/deallocator:
 
-- `tracy_memory_alloc(ptr, size, name, depth, secure)`
+- `tracy_memory_alloc(ptr, size, name, depth)`
 
-- `tracy_memory_free(ptr, name, depth, secure)`
+- `tracy_memory_free(ptr, name, depth)`
 
 Correctly using this functionality can be pretty tricky especially in Fortran. In Fortran, you can not redefine `allocate` statement (as well as `deallocate` statement) to profile memory usage by `allocatable` variables. However, many applications[^58] uses stack allocator on memory tape where these calls can be useful.
 
@@ -3403,7 +3411,7 @@ You will find the zones with locks and their associated threads on this combined
 
 The left-hand side *index area* of the timeline view displays various labels (threads, locks), which can be categorized in the following way:
 
-- *Light blue label* -- GPU context. Multi-threaded Vulkan, OpenCL, Direct3D 12 and Metal contexts are additionally split into separate threads.
+- *Light blue label* -- GPU context. Multi-threaded Vulkan, OpenCL, Direct3D 12, Metal and WebGPU contexts are additionally split into separate threads.
 
 - *Pink label* -- CPU data graph.
 
@@ -3437,7 +3445,7 @@ In an example in figure [18](#zoneslocks) you can see that there are two thread
 
 Meanwhile, the *Streaming thread* is performing some *Streaming jobs*. The first *Streaming job* sent a message (section [3.7](#messagelog)). In addition to being listed in the message log, it is indicated by a triangle over the thread separator. When multiple messages are in one place, the triangle outline shape changes to a filled triangle.
 
-The GPU zones are displayed just like CPU zones, with an OpenGL/Vulkan/Direct3D/Metal/OpenCL context in place of a thread name.
+The GPU zones are displayed just like CPU zones, with an OpenGL/Vulkan/Direct3D/Metal/OpenCL/CUDA/WebGPU context in place of a thread name.
 
 Hovering the  mouse pointer over a zone will highlight all other zones that have the exact source location with a white outline. Clicking the left mouse button on a zone will open the zone information window (section [5.14](#zoneinfo)). Holding the Ctrl key and clicking the left mouse button on a zone will open the zone statistics window (section [5.7](#findzone)). Clicking the middle mouse button on a zone will zoom the view to the extent of the zone.
 
@@ -3659,7 +3667,7 @@ In this window, you can set various trace-related options. For example, the time
 
   - * Draw CPU usage graph* -- You can disable drawing of the CPU usage graph here.
 
-- * Draw GPU zones* -- Allows disabling display of OpenGL/Vulkan/Metal/Direct3D/OpenCL zones. The *GPU zones* drop-down allows disabling individual GPU contexts and setting CPU/GPU drift offsets of uncalibrated contexts (see section [3.9](#gpuprofiling) for more information). The * Auto* button automatically measures the GPU drift value[^78].
+- * Draw GPU zones* -- Allows disabling display of OpenGL/Vulkan/Metal/Direct3D/OpenCL/CUDA/WebGPU zones. The *GPU zones* drop-down allows disabling individual GPU contexts and setting CPU/GPU drift offsets of uncalibrated contexts (see section [3.9](#gpuprofiling) for more information). The * Auto* button automatically measures the GPU drift value[^78].
 
 - * Draw CPU zones* -- Determines whether CPU zones are displayed.
 

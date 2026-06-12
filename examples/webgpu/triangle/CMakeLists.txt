@@ -78,12 +78,23 @@ if(APPLE)
 endif()
 
 # ---------------------------------------------------------------------------
-# Platform-specific source and link settings
+# Platform — RGFW (cross-platform windowing, fetched automatically)
 # ---------------------------------------------------------------------------
-set(PLATFORM_GENERATED_INCLUDES "")
+include(FetchContent)
+FetchContent_Declare(rgfw
+    GIT_REPOSITORY https://github.com/ColleagueRiley/RGFW.git
+    GIT_TAG        main   # pin to a specific commit for reproducible builds
+    GIT_SHALLOW    TRUE
+    # Upstream bug: id* vs id in the macOS WebGPU surface function.
+    PATCH_COMMAND
+        ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/patch_rgfw.cmake"
+)
+FetchContent_MakeAvailable(rgfw)
+
+set(PLATFORM_SOURCES  platform/platform_rgfw.cpp)
+set(PLATFORM_INCLUDES ${rgfw_SOURCE_DIR})
 
 if(APPLE)
-    set(PLATFORM_SOURCES platform/platform_macos.mm)
     set(PLATFORM_LIBS
         "-framework Cocoa"
         "-framework Metal"
@@ -92,45 +103,11 @@ if(APPLE)
         "-framework IOKit"
         "-framework IOSurface"
     )
-    set_source_files_properties(platform/platform_macos.mm
-        PROPERTIES COMPILE_FLAGS "-ObjC++"
-    )
 elseif(WIN32)
-    set(PLATFORM_SOURCES platform/platform_windows.cpp)
     set(PLATFORM_LIBS user32 gdi32)
 else()
-    # Linux / Wayland — generate xdg-shell protocol glue via wayland-scanner.
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(WAYLAND_PROTOCOLS REQUIRED wayland-protocols)
-    pkg_get_variable(WAYLAND_PROTOCOLS_DIR wayland-protocols pkgdatadir)
-    find_program(WAYLAND_SCANNER wayland-scanner REQUIRED)
-
-    set(XDG_SHELL_XML "${WAYLAND_PROTOCOLS_DIR}/stable/xdg-shell/xdg-shell.xml")
-    set(XDG_SHELL_H   "${CMAKE_CURRENT_BINARY_DIR}/xdg-shell-client-protocol.h")
-    set(XDG_SHELL_C   "${CMAKE_CURRENT_BINARY_DIR}/xdg-shell-protocol.c")
-
-    add_custom_command(
-        OUTPUT  "${XDG_SHELL_H}"
-        COMMAND "${WAYLAND_SCANNER}" client-header "${XDG_SHELL_XML}" "${XDG_SHELL_H}"
-        DEPENDS "${XDG_SHELL_XML}"
-        COMMENT "Generating xdg-shell-client-protocol.h"
-        VERBATIM
-    )
-    add_custom_command(
-        OUTPUT  "${XDG_SHELL_C}"
-        COMMAND "${WAYLAND_SCANNER}" private-code  "${XDG_SHELL_XML}" "${XDG_SHELL_C}"
-        DEPENDS "${XDG_SHELL_XML}"
-        COMMENT "Generating xdg-shell-protocol.c"
-        VERBATIM
-    )
-
-    set(PLATFORM_SOURCES
-        platform/platform_wayland.cpp
-        "${XDG_SHELL_C}"
-        "${XDG_SHELL_H}"
-    )
-    set(PLATFORM_LIBS wayland-client)
-    set(PLATFORM_GENERATED_INCLUDES "${CMAKE_CURRENT_BINARY_DIR}")
+    find_package(X11 REQUIRED)
+    set(PLATFORM_LIBS X11::X11)
 endif()
 
 # ---------------------------------------------------------------------------
@@ -163,7 +140,7 @@ endif()
 target_include_directories(spinning_triangle PRIVATE
     "${WGPU_PATH}/include"
     "${TRACY_DIR}/public"
-    ${PLATFORM_GENERATED_INCLUDES}
+    ${PLATFORM_INCLUDES}
 )
 
 target_link_directories(spinning_triangle PRIVATE "${WGPU_PATH}/lib")

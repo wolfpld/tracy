@@ -492,7 +492,8 @@ enum class GpuContextType : uint8_t
     Metal,
     Custom,
     CUDA,
-    Rocprof
+    Rocprof,
+    WebGPU
 };
 
 enum GpuContextFlags : uint8_t

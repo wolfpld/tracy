@@ -49,7 +49,8 @@ constexpr const char* GpuContextNames[] = {
     "Metal",
     "Custom",
     "CUDA",
-    "Rocprof"
+    "Rocprof",
+    "WebGPU"
 };
 
 struct MemoryPage;

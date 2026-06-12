@@ -1,17 +1,27 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include <string>
 
 #include "../../public/common/tracy_lz4hc.hpp"
 
 static void Usage()
 {
-    fprintf( stderr, "Usage: embed <objectName> <source> <destination>\n" );
+    fprintf( stderr, "Usage: embed [-t] <objectName> <source> <destination>\n" );
     fprintf( stderr, "  destination should be without extension, will create cpp, hpp pair\n" );
+    fprintf( stderr, "  -t: treat source as text, convert line endings to unix\n" );
 }
 
 int main( int argc, char** argv )
 {
+    bool text = false;
+    if( argc >= 2 && strcmp( argv[1], "-t" ) == 0 )
+    {
+        text = true;
+        argc--;
+        argv++;
+    }
+
     if( argc < 4 )
     {
         Usage();
@@ -37,6 +47,16 @@ int main( int argc, char** argv )
     auto data = new uint8_t[sz];
     fread( data, 1, sz, src );
     fclose( src );
+
+    if( text )
+    {
+        size_t pos = 0;
+        for( size_t i=0; i<sz; i++ )
+        {
+            if( data[i] != '\r' ) data[pos++] = data[i];
+        }
+        sz = pos;
+    }
 
     const auto lz4szMax = tracy::LZ4_compressBound( sz );
     auto lz4data = new uint8_t[lz4szMax];

@@ -176,13 +176,18 @@ public:
 
         while( m_tail != m_head )
         {
+#ifdef GL_QUERY_RESULT_NO_WAIT
+            uint64_t time = ~0ull;
+            glGetQueryObjectui64v( m_query[m_tail], GL_QUERY_RESULT_NO_WAIT, &time );
+            if (time == ~0ull) return;
+#else
             GLint available;
             glGetQueryObjectiv( m_query[m_tail], GL_QUERY_RESULT_AVAILABLE, &available );
             if( !available ) return;
 
             uint64_t time;
             glGetQueryObjectui64v( m_query[m_tail], GL_QUERY_RESULT, &time );
-
+#endif
             TracyLfqPrepare( QueueType::GpuTime );
             MemWrite( &item->gpuTime.gpuTime, (int64_t)time );
             MemWrite( &item->gpuTime.queryId, (uint16_t)m_tail );

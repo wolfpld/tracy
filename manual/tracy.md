@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-06-12 <https://github.com/wolfpld/tracy>
+2026-06-14 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -145,7 +145,7 @@ Tracy aims to give you an understanding of the inner workings of a tight loop of
 
 ## Sampling profiler
 
-Tracy can periodically sample what the profiled application is doing, which provides detailed performance information at the source line/assembly instruction level. This can give you a deep understanding of how the processor executes the program. Using this information, you can get a coarse view at the call stacks, fine-tune your algorithms, or even 'steal' an optimization performed by one compiler and make it available for the others.
+Tracy can periodically sample what the profiled application is doing, which provides detailed performance information at the source line/assembly instruction level. This can give you a deep understanding of how the processor executes the program. Using this information, you can get a coarse view at the call stacks, fine-tune your algorithms, or even "steal" an optimization performed by one compiler and make it available for the others.
 
 On some platforms, it is possible to sample the hardware performance counters, which will give you information not only *where* your program is running slowly, but also *why*.
 
@@ -279,7 +279,7 @@ Tracy Profiler supports MSVC, GCC, and clang. You will need to use a reasonably 
 
 - QNX (x64)
 
-[^11]: Requires **\"OpenCL, OpenGL, and Vulkan Compatibility Pack\"** from Microsoft Store.
+[^11]: Requires **"OpenCL, OpenGL, and Vulkan Compatibility Pack"** from Microsoft Store.
 
 Moreover, the following platforms are not supported due to how secretive their owners are but were reported to be working after extending the system integration layer:
 
@@ -463,7 +463,7 @@ In the case of some programming environments, you may need to take extra steps t
 
 If you are using MSVC, you will need to disable the *Edit And Continue* feature, as it makes the compiler non-conformant to some aspects of the C++ standard. In order to do so, open the project properties and go to C/C++,General,Debug Information Format and make sure *Program Database for Edit And Continue (/ZI)* is *not* selected.
 
-For context, if you experience errors like \"error C2131: expression did not evaluate to a constant\", \"failure was caused by non-constant arguments or reference to a non-constant symbol\", and \"see usage of '`__LINE__Var`'\", chances are that your project has the *Edit And Continue* feature enabled.
+For context, if you experience errors like "error C2131: expression did not evaluate to a constant", "failure was caused by non-constant arguments or reference to a non-constant symbol", and "see usage of '`__LINE__Var`'", chances are that your project has the *Edit And Continue* feature enabled.
 
 #### Universal Windows Platform
 
@@ -641,11 +641,11 @@ Nevertheless, let's look at how we can try to stabilize the profiling data.
 
 Also known as: the *spectre* thing we have to deal with now.
 
-You must be aware that most processors available on the market[^19] *do not* execute machine code linearly, as laid out in the source code. This can lead to counterintuitive timing results reported by Tracy. Trying to get more 'reliable' readings[^20] would require a change in the behavior of the code, and this is not a thing a profiler should do. So instead, Tracy shows you what the hardware is *really* doing.
+You must be aware that most processors available on the market[^19] *do not* execute machine code linearly, as laid out in the source code. This can lead to counterintuitive timing results reported by Tracy. Trying to get more "reliable" readings[^20] would require a change in the behavior of the code, and this is not a thing a profiler should do. So instead, Tracy shows you what the hardware is *really* doing.
 
 [^19]: Except low-cost ARM CPUs.
 
-[^20]: And by saying 'reliable,' you do in reality mean: behaving in a way you expect it.
+[^20]: And by saying "reliable," you do in reality mean: behaving in a way you expect it.
 
 This is a complex subject, and the details vary from one CPU to another. You can read a brief rundown of the topic at the following address: <https://travisdowns.github.io/blog/2019/06/11/speed-limits.html>.
 
@@ -675,7 +675,7 @@ While the CPU is more-or-less designed always to be able to work at the advertis
 
 - Do you have complete control over the power profile? Spoiler alert: no. The operating system may run anything at any time on any of the other cores, which will impact the turbo frequency you're able to achieve.
 
-As you can see, this feature basically screams 'unreliable results!' Best keep it disabled and run at the base frequency. Otherwise, your timings won't make much sense. A true example: branchless compression function executing multiple times with the same input data was measured executing at *four* different speeds.
+As you can see, this feature basically screams "unreliable results!" Best keep it disabled and run at the base frequency. Otherwise, your timings won't make much sense. A true example: branchless compression function executing multiple times with the same input data was measured executing at *four* different speeds.
 
 Keep in mind that even at the base frequency, you may hit the thermal limits of the silicon and be down throttled.
 
@@ -797,7 +797,7 @@ If you want to use X11 instead, you can enable the `LEGACY` option in CMake buil
 
 Special considerations must be taken to run the Tracy server/profiler GUI on Windows on ARM.
 
-Ensure that the **\"OpenCL, OpenGL, and Vulkan Compatibility Pack\"** is installed (from the Microsoft Store), otherwise the GUI will fail to open.
+Ensure that the **"OpenCL, OpenGL, and Vulkan Compatibility Pack"** is installed (from the Microsoft Store), otherwise the GUI will fail to open.
 
 ### Using an IDE
 
@@ -813,7 +813,7 @@ The CMake build configuration will begin immediately. It is likely that you will
 
 After the build configuration phase is over, you may want to make some further adjustments to what is being built. The primary place to do this is in the *Project Status* section of the CMake side panel. The two key settings there are also available in the status bar at the bottom of the window:
 
-- The *Folder* setting allows you to choose which Tracy utility you want to work with. Select \"profiler\" for the profiler's GUI.
+- The *Folder* setting allows you to choose which Tracy utility you want to work with. Select "profiler" for the profiler's GUI.
 
 - The *Build variant* setting is used to toggle between the debug and release build configurations.
 
@@ -877,7 +877,7 @@ Some source location data such as function name, file path or line number can be
 
 On selected platforms (see section [2.6](#featurematrix)) Tracy will intercept application crashes[^28]. This serves two purposes. First, the client application will be able to send the remaining profiling data to the server. Second, the server will receive a crash report with the crash reason, call stack at the time of the crash, etc.
 
-[^28]: For example, invalid memory accesses ('segmentation faults', 'null pointer exceptions'), divisions by zero, etc.
+[^28]: For example, invalid memory accesses ("segmentation faults", "null pointer exceptions"), divisions by zero, etc.
 
 This is an automatic process, and it doesn't require user interaction. If you are experiencing issues with crash handling you may want to try defining the `TRACY_NO_CRASH_HANDLER` macro to disable the built in crash handling.
 
@@ -968,7 +968,7 @@ In some cases marked in the manual, Tracy expects you to provide a unique pointe
 
 Here, we pass two string literals with identical contents to two different macros. It is entirely up to the compiler to decide if it will pool these two strings into one pointer or if there will be two instances present in the executable image[^33]. For example, on MSVC, this is controlled by Configuration Properties,C/C++,Code Generation,Enable String Pooling option in the project properties (optimized builds enable it automatically). Note that even if string pooling is used on the compilation unit level, it is still up to the linker to implement pooling across object files.
 
-[^33]: [@ISO:2012:III] §2.14.5.12: \"Whether all string literals are distinct (that is, are stored in nonoverlapping objects) is implementation-defined.\"
+[^33]: [@ISO:2012:III] §2.14.5.12: "Whether all string literals are distinct (that is, are stored in nonoverlapping objects) is implementation-defined."
 
 As you can see, making sure that string literals are properly pooled can be surprisingly tricky. To work around this problem, you may employ the following technique. In *one* source file create the unique pointer for a string literal, for example:
 
@@ -1239,7 +1239,7 @@ Zone objects can't be moved or copied.
 
 ### Filtering zones {#filteringzones}
 
-Zone logging can be disabled on a per-zone basis by making use of the `ZoneNamed` macros. Each of the macros takes an `active` argument ('`true`' in the example in section [3.4.2](#multizone)), which will determine whether the zone should be logged.
+Zone logging can be disabled on a per-zone basis by making use of the `ZoneNamed` macros. Each of the macros takes an `active` argument ("`true`" in the example in section [3.4.2](#multizone)), which will determine whether the zone should be logged.
 
 Note that this parameter may be a run-time variable, such as a user-controlled switch to enable profiling of a specific part of code only when required.
 
@@ -1446,7 +1446,7 @@ Sometimes an application will use more than one memory pool. For example, in add
 
 To mark that a separate memory pool is to be tracked you should use the named version of memory macros, for example `TracyAllocN(ptr, size, name)` and `TracyFreeN(ptr, name)`, where `name` is an unique pointer to a string literal (section [3.1.2](#uniquepointers)) identifying the memory pool.
 
-Certain memory allocator designs (\"arena allocators\") use an always-incrementing pointer to track the next region to allocate and do not support deallocation of individual objects. The only way to free memory with such an allocator is to simultaneously release all the objects that were allocated (reset the allocator state). You can mark such a mass-deallocation event in a memory pool with the `TracyMemoryDiscard(name)` macro.
+Certain memory allocator designs ("arena allocators") use an always-incrementing pointer to track the next region to allocate and do not support deallocation of individual objects. The only way to free memory with such an allocator is to simultaneously release all the objects that were allocated (reset the allocator state). You can mark such a mass-deallocation event in a memory pool with the `TracyMemoryDiscard(name)` macro.
 
 ## GPU profiling {#gpuprofiling}
 
@@ -1597,7 +1597,7 @@ WebGPU support is enabled by including the `public/tracy/TracyWebGPU.hpp` header
 
 Before creating the WebGPU device, make sure to call `TracyWebGPUSetupDeviceDescriptor()` to let Tracy request the necessary device features and extensions necessary for profiling. After the device is created, use the `TracyWebGPUContext()` macro to instantiate the necessary `WebGPUQueueCtx` object required for GPU instrumentation. The object should later be cleaned up with the `TracyWebGPUDestroy()` macro. To set a custom name for the context, use the `TracyWebGPUContextName()` macro.
 
-To instrument a GPU zone, use the various `TracyWebGPU*Zone*()` macros. Note that WebGPU only offers command instrumentation at the \"pass\"-level. While command-level granularity is possible through implementation-specific WebGPU extensions, Tracy does not support it at the moment. Supply the corresponding WebGPU pass descriptor to the instrumentation macro *before* creating the WebGPU pass encoder.
+To instrument a GPU zone, use the various `TracyWebGPU*Zone*()` macros. Note that WebGPU only offers command instrumentation at the "pass"-level. While command-level granularity is possible through implementation-specific WebGPU extensions, Tracy does not support it at the moment. Supply the corresponding WebGPU pass descriptor to the instrumentation macro *before* creating the WebGPU pass encoder.
 
 You are required to periodically collect the GPU events using the `TracyWebGPUCollect()` macro. Good places for collection are: after synchronous waits, after event processing `wgpuInstanceProcessEvents`, after present drawable calls (`wgpuSurfacePresent`), and inside the completion callback of command queues (`wgpuQueueOnSubmittedWorkDone`).
 
@@ -1800,7 +1800,7 @@ An example implementation of such a lock interface is provided below, as a refer
     void DbgHelpUnlock() { ReleaseMutex(dbgHelpLock); }
     }
 
-At initilization time, tracy will attempt to preload symbols for device drivers and process modules. As this process can be slow when a lot of pdbs are involved, you can set the `TRACY_NO_DBGHELP_INIT_LOAD` environment variable to \"1\" to disable this behavior and rely on-demand symbol loading.
+At initilization time, tracy will attempt to preload symbols for device drivers and process modules. As this process can be slow when a lot of pdbs are involved, you can set the `TRACY_NO_DBGHELP_INIT_LOAD` environment variable to "1" to disable this behavior and rely on-demand symbol loading.
 
 #### Disabling resolution of inline frames
 
@@ -2116,7 +2116,7 @@ To see how you should use this API, you should look at the reference implementat
 > [!IMPORTANT]
 > **Important**
 >
-> A common mistake is to skip the zone \"`isActive`\" check. When using `TRACY_ON_DEMAND`, you need to read the value of `TracyCIsConnected` once, and check the same value for both\
+> A common mistake is to skip the zone "`isActive`" check. When using `TRACY_ON_DEMAND`, you need to read the value of `TracyCIsConnected` once, and check the same value for both\
 > `___tracy_emit_gpu_zone_begin_alloc` and `___tracy_emit_gpu_zone_end`. Tracy may otherwise receive a zone end without a zone begin.
 
 ### Fibers
@@ -2608,7 +2608,7 @@ Some profiling data can only be retrieved using the kernel facilities, which are
 
 [^59]: To make this easier, you can run MSVC with admin privileges, which will be inherited by your program when you start it from within the IDE.
 
-As this system-level tracing functionality is part of the automated collection process, no user intervention is necessary to enable it (assuming that the program was granted the rights needed). However, if, for some reason, you would want to prevent your application from trying to access kernel data, you may recompile your program with the `TRACY_NO_SYSTEM_TRACING` define. If you want to disable this functionality dynamically at runtime instead, you can set the `TRACY_NO_SYSTEM_TRACING` environment variable to \"1\".
+As this system-level tracing functionality is part of the automated collection process, no user intervention is necessary to enable it (assuming that the program was granted the rights needed). However, if, for some reason, you would want to prevent your application from trying to access kernel data, you may recompile your program with the `TRACY_NO_SYSTEM_TRACING` define. If you want to disable this functionality dynamically at runtime instead, you can set the `TRACY_NO_SYSTEM_TRACING` environment variable to "1".
 
 > [!TIP]
 > **What should be granted privileges?**
@@ -2745,7 +2745,7 @@ It would be best to be extra careful when working with non-public code, as parts
 
 ### Vertical synchronization
 
-On Windows and Linux, Tracy will automatically capture hardware Vsync events, provided that the application has access to the kernel data (privilege elevation may be needed, see section [3.17.1](#privilegeelevation)). These events will be reported as '`[x] Vsync`' frame sets, where `x` is the identifier of a specific monitor. Note that hardware vertical synchronization might not correspond to the one seen by your application due to desktop composition, command queue buffering, and so on. Also, in some instances, when there is nothing to update on the screen, the graphic driver may choose to stop issuing screen refresh. As a result, there may be periods where no vertical synchronization events are reported.
+On Windows and Linux, Tracy will automatically capture hardware Vsync events, provided that the application has access to the kernel data (privilege elevation may be needed, see section [3.17.1](#privilegeelevation)). These events will be reported as "`[x] Vsync`" frame sets, where `x` is the identifier of a specific monitor. Note that hardware vertical synchronization might not correspond to the one seen by your application due to desktop composition, command queue buffering, and so on. Also, in some instances, when there is nothing to update on the screen, the graphic driver may choose to stop issuing screen refresh. As a result, there may be periods where no vertical synchronization events are reported.
 
 Use the `TRACY_NO_VSYNC_CAPTURE` macro to disable capture of Vsync events.
 
@@ -2895,7 +2895,7 @@ The * Wrench* button opens the about dialog, which also contains a number of 
 
 The client *address entry* field and the  *Connect* button are used to connect to a running client[^66]. You can use the connection history button  to display a list of commonly used targets, from which you can quickly select an address. You can remove entries from this list by hovering the  mouse cursor over an entry and pressing the Delete button on the keyboard.
 
-[^66]: Note that a custom port may be provided here, for example by entering '127.0.0.1:1234'.
+[^66]: Note that a custom port may be provided here, for example by entering "127.0.0.1:1234".
 
 If you want to open a trace that you have stored on the disk, you can do so by pressing the  *Open saved trace* button.
 
@@ -3415,9 +3415,9 @@ The left-hand side *index area* of the timeline view displays various labels (th
 
 - *Pink label* -- CPU data graph.
 
-- *White label* -- A CPU thread. It will be replaced by a bright red label in a thread that has crashed (section [2.5](#crashhandling)). If automated sampling was performed, clicking the left mouse button on the * ghost zones* button will switch zone display mode between 'instrumented' and 'ghost.'
+- *White label* -- A CPU thread. It will be replaced by a bright red label in a thread that has crashed (section [2.5](#crashhandling)). If automated sampling was performed, clicking the left mouse button on the * ghost zones* button will switch zone display mode between "instrumented" and "ghost."
 
-- *Green label* -- Fiber, coroutine, or any other sort of cooperative multitasking 'green thread.'
+- *Green label* -- Fiber, coroutine, or any other sort of cooperative multitasking "green thread."
 
 - *Light red label* -- Indicates a lock.
 
@@ -3746,7 +3746,7 @@ You can filter the message list in the following ways:
 
 - By the originating thread in the * Visible threads* drop-down.
 
-- By matching the message text to the expression in the * Filter messages* entry field. Multiple filter expressions can be comma-separated (e.g. 'warn, info' will match messages containing strings 'warn' *or* 'info'). You can exclude matches by preceding the term with a minus character (e.g., '-debug' will hide all messages containing the string 'debug').
+- By matching the message text to the expression in the * Filter messages* entry field. Multiple filter expressions can be comma-separated (e.g. "warn, info" will match messages containing strings "warn" *or* "info"). You can exclude matches by preceding the term with a minus character (e.g., "-debug" will hide all messages containing the string "debug").
 
 - By message source, distinguishing between * User* messages and internal * Tracy* diagnostics.
 
@@ -4223,7 +4223,7 @@ The zone information window displays detailed information about a single zone. T
 
 - Timing information.
 
-- If the profiler performed context switch capture (section [3.17.3](#contextswitches)) and a thread was suspended during zone execution, a list of wait regions will be displayed, with complete information about the timing, CPU migrations, and wait reasons. If CPU topology data is available (section [3.17.4](#cputopology)), the profiler will mark zone migrations across cores with 'C' and migrations across packages -- with 'P.' In some cases, context switch data might be incomplete[^92], in which case a warning message will be displayed.
+- If the profiler performed context switch capture (section [3.17.3](#contextswitches)) and a thread was suspended during zone execution, a list of wait regions will be displayed, with complete information about the timing, CPU migrations, and wait reasons. If CPU topology data is available (section [3.17.4](#cputopology)), the profiler will mark zone migrations across cores with "C" and migrations across packages -- with "P." In some cases, context switch data might be incomplete[^92], in which case a warning message will be displayed.
 
 - Memory events list, both summarized and a list of individual allocation/free events (see section [5.10](#memorywindow) for more information on the memory events list).
 
@@ -4283,7 +4283,7 @@ This window shows the frames contained in the selected call stack. Information a
 
 A single stack frame may have multiple function call places associated with it. This happens in the case of inlined function calls. Such entries will be displayed in the call stack window, with *inline* in place of frame number[^94].
 
-[^94]: Or '' icon in case of call stack tooltips.
+[^94]: Or "" icon in case of call stack tooltips.
 
 If the call stack shows a crash (see section [2.5](#crashhandling)), a red * Crash* label will be displayed. Clicking it will center the timeline on the crash. Note that the crash stack may contain OS or Tracy frames where the crash was intercepted and processed.
 
@@ -4297,7 +4297,7 @@ Stack frame location may be displayed in the following number of ways, depending
 
 - *Symbol address* -- displays begin address of the function containing the frame address.
 
-In some cases, it may not be possible to decode stack frame addresses correctly. Such frames will be presented with a dimmed '`[ntdll.dll]`' name of the image containing the frame address, or simply '`[unknown]`' if the profiler cannot retrieve even this information. Additionally, '`[kernel]`' is used to indicate unknown stack frames within the operating system's internal routines.
+In some cases, it may not be possible to decode stack frame addresses correctly. Such frames will be presented with a dimmed "`[ntdll.dll]`" name of the image containing the frame address, or simply "`[unknown]`" if the profiler cannot retrieve even this information. Additionally, "`[kernel]`" is used to indicate unknown stack frames within the operating system's internal routines.
 
 External frames from system libraries are hidden by default. Enabling the * External* option will show these frames, which can be useful for debugging issues in external code. When external frames are displayed, they are dimmed out.
 
@@ -4396,7 +4396,7 @@ Some modes may be unavailable in some circumstances (missing or outdated source 
 
 #### Source mode
 
-This is pretty much the source file view window, but with the ability to select one of the source files that the compiler used to build the symbol. Additionally, each source file line that produced machine code in the symbol will show a count of associated assembly instructions, displayed with an '`@`' prefix, and will be marked with grey color on the scroll bar. Due to how optimizing compilers work, some lines may seemingly not produce any machine code, for example, because iterating a loop counter index might have been reduced to advancing a data pointer. Some other lines may have a disproportionate amount of associated instructions, e.g., when the compiler applied a loop unrolling optimization. This varies from case to case and from compiler to compiler.
+This is pretty much the source file view window, but with the ability to select one of the source files that the compiler used to build the symbol. Additionally, each source file line that produced machine code in the symbol will show a count of associated assembly instructions, displayed with an "`@`" prefix, and will be marked with grey color on the scroll bar. Due to how optimizing compilers work, some lines may seemingly not produce any machine code, for example, because iterating a loop counter index might have been reduced to advancing a data pointer. Some other lines may have a disproportionate amount of associated instructions, e.g., when the compiler applied a loop unrolling optimization. This varies from case to case and from compiler to compiler.
 
 The *Propagate inlines* option, available when sample data is present, will enable propagation of the instruction costs down the local call stack. For example, suppose a base function in the symbol issues a call to an inlined function (which may not be readily visible due to being contained in another source file). In that case, any cost attributed to the inlined function will be visible in the base function. Because the cost information is added to all the entries in the local call stacks, it is possible to see seemingly nonsense total cost values when this feature is enabled. To quickly toggle this on or off, you may also press the X key.
 
@@ -4411,7 +4411,7 @@ If the * Source locations* option is selected, each line of the assembly code
 >
 > In some cases, it may be challenging to understand what is being displayed in the disassembly. For example, calling the `std::lower_bound` function may generate multiple levels of inlined functions: first, we enter the search algorithm, then the comparison functions, which in turn may be lambdas that call even more external code, and so on. In such an event, you will most likely see that some external code is taking a long time to execute, and you will be none the wiser on improving things.
 >
-> The local call stack for an assembly instruction represents all the inline function calls *within the symbol* (hence the 'local' part), which were made to reach the instruction. Deeper inspection of the local call stack, including navigation to the source call site of each participating inline function, can be performed through the context menu accessible by pressing the right mouse button on the source location.
+> The local call stack for an assembly instruction represents all the inline function calls *within the symbol* (hence the "local" part), which were made to reach the instruction. Deeper inspection of the local call stack, including navigation to the source call site of each participating inline function, can be performed through the context menu accessible by pressing the right mouse button on the source location.
 
 Selecting the * Raw code* option will enable the display of raw machine code bytes for each line. Individual bytes are displayed with interwoven colors to make reading easier.
 
@@ -4495,9 +4495,9 @@ In this mode, the source and assembly panes will be displayed together, providin
 
 #### Instruction pointer cost statistics
 
-If automated call stack sampling (see chapter [3.17.5](#sampling)) was performed, additional profiling information will be available. The first column of source and assembly views will contain percentage counts of collected instruction pointer samples for each displayed line, both in numerical and graphical bar form. You can use this information to determine which function line takes the most time. The displayed percentage values are heat map color-coded, with the lowest values mapped to dark red and the highest to bright yellow. The color code will appear next to the percentage value and on the scroll bar so that you can identify 'hot' places in the code at a glance.
+If automated call stack sampling (see chapter [3.17.5](#sampling)) was performed, additional profiling information will be available. The first column of source and assembly views will contain percentage counts of collected instruction pointer samples for each displayed line, both in numerical and graphical bar form. You can use this information to determine which function line takes the most time. The displayed percentage values are heat map color-coded, with the lowest values mapped to dark red and the highest to bright yellow. The color code will appear next to the percentage value and on the scroll bar so that you can identify "hot" places in the code at a glance.
 
-By default, samples are displayed only within the selected symbol, in isolation. In some cases, you may, however, want to include samples from functions that the selected symbol called. To do so, enable the * Child calls* option, which you may also temporarily toggle by holding the Z key. You can also click the  drop down control to display a child call distribution list[^101], which shows each known function[^102] that the symbol called. Make sure to familiarize yourself with section [5.15.1](#readingcallstacks) to be able to read the results correctly. Each child call on the list has an attributed time cost, which is also displayed as a percentage of the child calls (\"% Calls\") and the percentage of the total symbol time (\"% Total\").
+By default, samples are displayed only within the selected symbol, in isolation. In some cases, you may, however, want to include samples from functions that the selected symbol called. To do so, enable the * Child calls* option, which you may also temporarily toggle by holding the Z key. You can also click the  drop down control to display a child call distribution list[^101], which shows each known function[^102] that the symbol called. Make sure to familiarize yourself with section [5.15.1](#readingcallstacks) to be able to read the results correctly. Each child call on the list has an attributed time cost, which is also displayed as a percentage of the child calls ("% Calls") and the percentage of the total symbol time ("% Total").
 
 [^101]: The height of the list can be changed by dragging the separator bar.
 
@@ -4718,7 +4718,7 @@ There are no ideal LLM providers, but here are some options:
 
 - *llama-swap* (<https://github.com/mostlygeek/llama-swap>) -- Wrapper for llama.cpp that allows model selection. Recommended to augment the above.
 
-- *LM Studio* (<https://lmstudio.ai/>) -- It is easy to install on all platforms and has a GUI. But it is overwhelming when it comes to the number of options it offers. Some people may question the licensing. Its features lag a behind llama.cpp. Manual configuration of each model is required. To get it to work properly, go to it settings (using the gear icon in the bottom right corner of the program window), then select the Developer tab and enable \"When applicable, separate `reasoning_content` and `content` in API responses\".
+- *LM Studio* (<https://lmstudio.ai/>) -- It is easy to install on all platforms and has a GUI. But it is overwhelming when it comes to the number of options it offers. Some people may question the licensing. Its features lag a behind llama.cpp. Manual configuration of each model is required. To get it to work properly, go to it settings (using the gear icon in the bottom right corner of the program window), then select the Developer tab and enable "When applicable, separate `reasoning_content` and `content` in API responses".
 
 ## Model selection
 
@@ -4735,19 +4735,19 @@ A good *starting* point that will work fairly well on almost any hardware is the
 > [!TIP]
 > **Model quantization**
 >
-> Running a model with full 32-bit floating-point weights is not feasible due to memory requirements. Instead, the model parameters are quantized, for which 4 bits is typically the sweet spot. In general, the lower the parameter precision, the more \"dumbed down\" the model becomes. However, the loss of model coherence due to quantization is less than the benefit of being able to run a larger model.
+> Running a model with full 32-bit floating-point weights is not feasible due to memory requirements. Instead, the model parameters are quantized, for which 4 bits is typically the sweet spot. In general, the lower the parameter precision, the more "dumbed down" the model becomes. However, the loss of model coherence due to quantization is less than the benefit of being able to run a larger model.
 
 > [!TIP]
 > **Model size**
 >
-> Another thing to consider when selecting a model is its size, which is typically measured in billions of parameters (weights) and written as 4B, for example. The model size determines how much memory, computation, and time are required to run it. Generally, the larger the model, the \"smarter\" its responses will be.
+> Another thing to consider when selecting a model is its size, which is typically measured in billions of parameters (weights) and written as 4B, for example. The model size determines how much memory, computation, and time are required to run it. Generally, the larger the model, the "smarter" its responses will be.
 >
-> Most modern models will be \"Mixture of Experts\", or MoE, and their size will be denoted, for example, 35B-A3B. This means that the model size is 35B, but only 3B parameters are active and used to compute the next token. In practice, this means that the model has knowledge closer to the full, dense 35B model but speed and GPU memory requirements closer to the fast 3B model.
+> Most modern models will be "Mixture of Experts", or "MoE", and their size will be denoted, for example, 35B-A3B. This means that the model size is 35B, but only 3B parameters are active and used to compute the next token. In practice, this means that the model has knowledge closer to the full, dense 35B model but speed and GPU memory requirements closer to the fast 3B model.
 
 > [!TIP]
 > **Context size**
 >
-> The model size only indicates the minimum memory requirement. For the model to operate properly, you also need to set the context size, which determines how much information from the conversation the model can \"remember\". This size is measured in tokens, and a very rough approximation is that each token is a combination of three or four letters.
+> The model size only indicates the minimum memory requirement. For the model to operate properly, you also need to set the context size, which determines how much information from the conversation the model can "remember". This size is measured in tokens, and a very rough approximation is that each token is a combination of three or four letters.
 >
 > Each token present in the context window may require a fairly large amount of memory, and that can quickly add up to gigabytes. Some modern models use solutions that greatly reduce context memory requirements, but that varies from model to model. If needed, the KV cache used for context can be quantized, just like model parameters. In this case, the recommended size per weight is 8 bits.
 >
@@ -4757,7 +4757,7 @@ A good *starting* point that will work fairly well on almost any hardware is the
 
 Sometimes Tracy needs to do some language processing where speed is more important than the smarts. The default setting is to use the chat model with the reasoning disabled, which is fine for most applications.
 
-It may be more convenient to use a small, quick model instead, in which case enable the *Fast model* checkbox and choose the second model. To save precious GPU resources for the chat model, you may want to keep this model entirely in system RAM (set `-ngl 0` for llama.cpp or set \"GPU offload\" to 0 in LM Studio) and disable the KV cache offload to GPU (set `-nkvo` for llama.cpp or disable \"Offload KV Cache to GPU Memory\" in LM Studio).
+It may be more convenient to use a small, quick model instead, in which case enable the *Fast model* checkbox and choose the second model. To save precious GPU resources for the chat model, you may want to keep this model entirely in system RAM (set `-ngl 0` for llama.cpp or set "GPU offload" to 0 in LM Studio) and disable the KV cache offload to GPU (set `-nkvo` for llama.cpp or disable "Offload KV Cache to GPU Memory" in LM Studio).
 
 ### Embedding model
 
@@ -4825,7 +4825,7 @@ The horizontal meter directly below shows how much of the context size has been 
 
 The chat section contains the conversation with the automated assistant with alternating user and assistant turns. Clicking on the * User* role icon removes the chat content up to the selected question. Similarly, clicking on the * Assistant* role icon removes the conversation content up to this point and generates another response from the assistant.
 
-The assistant may give preliminary replies to the user, for example, *\"I will now check the source of function foobar\"*, followed by performing the actual check, then a continuation of the reply, such as *\"Now I can see that\...\"*. To make reading these tiered replies easier, only the most recent reply is printed in normal text, while the preliminary responses are dimmed out.
+The assistant may give preliminary replies to the user, for example, "I will now check the source of function foobar", followed by performing the actual check, then a continuation of the reply, such as "Now I can see that\...". To make reading these tiered replies easier, only the most recent reply is printed in normal text, while the preliminary responses are dimmed out.
 
 Each assistant reply contains a note about the language model that was used and the time it took to generate the text.
 

@@ -4,7 +4,7 @@
 #     cmake -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -B build/ninja .
 #     cmake --build build/ninja
 #
-#   Linux (requires libx11-dev libgl1-mesa-dev):
+#   Linux (requires libsdl2-dev libgl1-mesa-dev):
 #     cmake -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -B build/ninja .
 #     cmake --build build/ninja
 #
@@ -22,20 +22,15 @@ set(TRACY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../..")
 option(TRACY_ENABLE                  "Enable Tracy profiling"                    ON)
 
 # ---------------------------------------------------------------------------
-# Platform — RGFW (cross-platform windowing, fetched automatically)
+# Platform — SDL2 (cross-platform windowing, must be installed on the system)
 # ---------------------------------------------------------------------------
-include(FetchContent)
-FetchContent_Declare(rgfw
-    GIT_REPOSITORY https://github.com/ColleagueRiley/RGFW.git
-    GIT_TAG        main   # pin to a specific commit for reproducible builds
-    GIT_SHALLOW    TRUE
-)
-FetchContent_MakeAvailable(rgfw)
+find_package(SDL2 REQUIRED)
 
 # ---------------------------------------------------------------------------
 # GL extension loader — GLEW (Windows + Linux, fetched automatically)
 # ---------------------------------------------------------------------------
 if(NOT APPLE)
+    include(FetchContent)
     set(glew-cmake_BUILD_SHARED OFF CACHE BOOL "" FORCE)
     set(ONLY_LIBS               ON  CACHE BOOL "" FORCE)
     FetchContent_Declare(glew
@@ -46,20 +41,14 @@ if(NOT APPLE)
     FetchContent_MakeAvailable(glew)
 endif()
 
-set(PLATFORM_SOURCES  platform/platform_rgfw.cpp)
-set(PLATFORM_INCLUDES ${rgfw_SOURCE_DIR})
+set(PLATFORM_SOURCES  platform/platform_sdl2.cpp)
 
 if(APPLE)
-    set(PLATFORM_LIBS "-framework Cocoa" "-framework OpenGL"
-                      "-framework CoreVideo" "-framework IOKit")
+    set(PLATFORM_LIBS SDL2::SDL2 "-framework OpenGL")
 elseif(WIN32)
-    set(PLATFORM_LIBS opengl32 user32 gdi32 libglew_static)
+    set(PLATFORM_LIBS SDL2::SDL2 opengl32 libglew_static)
 else()
-    find_package(X11 REQUIRED)
-    if(NOT X11_Xrandr_FOUND)
-        message(FATAL_ERROR "Xrandr not found — install libxrandr-dev")
-    endif()
-    set(PLATFORM_LIBS X11::X11 X11::Xrandr GL libglew_static)
+    set(PLATFORM_LIBS SDL2::SDL2 GL libglew_static)
 endif()
 
 # ---------------------------------------------------------------------------
@@ -90,6 +79,5 @@ endif()
 
 target_include_directories(gl_spinning_triangle PRIVATE
     "${TRACY_DIR}/public"
-    ${PLATFORM_INCLUDES}
 )
 target_link_libraries(gl_spinning_triangle PRIVATE ${PLATFORM_LIBS})

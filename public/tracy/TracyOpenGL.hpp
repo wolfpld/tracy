@@ -1,7 +1,12 @@
 #ifndef __TRACYOPENGL_HPP__
 #define __TRACYOPENGL_HPP__
 
-#if !defined TRACY_ENABLE || defined __APPLE__
+#ifdef __APPLE__
+#define TRACY_OPENGL_DISABLE
+#warning "OpenGL timestamps are unreliable on Apple devices that still run OpenGL."
+#endif
+
+#if !defined TRACY_ENABLE || defined TRACY_OPENGL_DISABLE
 
 #define TracyGpuContext
 #define TracyGpuContextName(x,y)
@@ -98,16 +103,24 @@ public:
         , m_head( 0 )
         , m_tail( 0 )
     {
+        ZoneScopedC( Color::Red4 );
+
         assert( m_context != 255 );
 
-        glGenQueries( QueryCount, m_query );
+        GLint bits;
+        glGetQueryiv( GL_TIMESTAMP, GL_QUERY_COUNTER_BITS, &bits );
+        if( bits == 0 )
+        {
+            // all timestamp queries would resolve to 0 (and produce 0ns GPU zones).
+            // (this is the case for many TBDR GPUs, including Apple Silicon)
+            Profiler::LogString( MessageSourceType::Tracy, MessageSeverity::Warning, Color::Tomato, 0,
+                "OpenGL driver does not implement GL_TIMESTAMP precision." );
+        }
+        assert( bits > 0 );
 
         int64_t tgpu;
         glGetInteger64v( GL_TIMESTAMP, &tgpu );
         int64_t tcpu = Profiler::GetTime();
-
-        GLint bits;
-        glGetQueryiv( GL_TIMESTAMP, GL_QUERY_COUNTER_BITS, &bits );
 
 #ifdef TRACY_OPENGL_AUTO_CALIBRATION
         // The anchor above is never refreshed; advertise calibration and emit periodic
@@ -116,6 +129,8 @@ public:
         // CPU/GPU sync.
         m_prevCalibration = GetHostTimeNs();
 #endif
+
+        glGenQueries( QueryCount, m_query );
 
         const float period = 1.f;
         const auto thread = GetThreadHandle();

@@ -4,7 +4,7 @@
 #     cmake -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -B build/ninja .
 #     cmake --build build/ninja
 #
-#   Linux (requires libsdl2-dev libgl1-mesa-dev):
+#   Linux (requires libsdl3-dev libgl1-mesa-dev):
 #     cmake -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -B build/ninja .
 #     cmake --build build/ninja
 #
@@ -22,9 +22,9 @@ set(TRACY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../..")
 option(TRACY_ENABLE                  "Enable Tracy profiling"                    ON)
 
 # ---------------------------------------------------------------------------
-# Platform — SDL2 (cross-platform windowing, must be installed on the system)
+# Platform — SDL3 (cross-platform windowing, must be installed on the system)
 # ---------------------------------------------------------------------------
-find_package(SDL2 REQUIRED)
+find_package(SDL3 REQUIRED)
 
 # ---------------------------------------------------------------------------
 # GL extension loader — GLEW (Windows + Linux, fetched automatically)
@@ -41,14 +41,14 @@ if(NOT APPLE)
     FetchContent_MakeAvailable(glew)
 endif()
 
-set(PLATFORM_SOURCES  platform/platform_sdl2.cpp)
+set(PLATFORM_SOURCES  platform/platform_sdl3.cpp)
 
 if(APPLE)
-    set(PLATFORM_LIBS SDL2::SDL2 "-framework OpenGL")
+    set(PLATFORM_LIBS SDL3::SDL3 "-framework OpenGL")
 elseif(WIN32)
-    set(PLATFORM_LIBS SDL2::SDL2 opengl32 libglew_static)
+    set(PLATFORM_LIBS SDL3::SDL3 opengl32 libglew_static)
 else()
-    set(PLATFORM_LIBS SDL2::SDL2 GL libglew_static)
+    set(PLATFORM_LIBS SDL3::SDL3 GL libglew_static)
 endif()
 
 # ---------------------------------------------------------------------------

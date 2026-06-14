@@ -20,7 +20,7 @@ jobs:
     - name: Setup emscripten
       uses: emscripten-core/setup-emsdk@v16
       with:
-        version: 6.0.0
+        version: 5.0.7
     - name: Trust git repo
       run: git config --global --add safe.directory '*'
     - uses: actions/checkout@v4

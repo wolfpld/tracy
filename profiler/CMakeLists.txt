@@ -307,7 +307,6 @@ if(EMSCRIPTEN)
         -sALLOW_MEMORY_GROWTH=1
         -sMAXIMUM_MEMORY=4gb
         -sSTACK_SIZE=1048576
-        -sWASM_BIGINT=1
         -sPTHREAD_POOL_SIZE=8
         -sEXPORTED_FUNCTIONS=_main,_nativeOpenFile,_tracy_paste_clipboard
         -sEXPORTED_RUNTIME_METHODS=ccall

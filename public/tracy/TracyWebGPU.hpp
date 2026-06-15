@@ -722,6 +722,10 @@ namespace tracy
 
         void ResolveQueryBatch(uint32_t queryBatchStartId)
         {
+            // Ensure there are pending queries to resolve in the batch
+            auto& stage = m_ctx->m_readbackReel[m_ctx->m_writeIdx];
+            if (WebGPUQueueCtx::Distance(stage.copiedUpto, m_rawTicket) <= 0) return;
+
             // 32 queries = 32 * 8 bytes = 256 bytes
             TracyWebGPUAssert(queryBatchStartId % 32 == 0, return);
             queryBatchStartId = m_ctx->RingIndex(queryBatchStartId);
@@ -735,7 +739,6 @@ namespace tracy
                 blockOffset // MUST be a multiple of (aligned to) 256...
             );
 
-            auto& stage = m_ctx->m_readbackReel[m_ctx->m_writeIdx];
             auto readbackBuffer = stage.buffer;
             wgpuCommandEncoderCopyBufferToBuffer(
                 m_encoder,

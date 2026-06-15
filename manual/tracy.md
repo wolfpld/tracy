@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-06-14 <https://github.com/wolfpld/tracy>
+2026-06-15 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -1373,7 +1373,21 @@ Fast navigation in large data sets and correlating zones with what was happening
 
 If you want to include color coding of the messages (for example to make critical messages easily visible), you can use `TracyMessageC(text, size, color)` or `TracyMessageLC(text, color)` macros.
 
-Messages can also have different severity levels: `Trace`, `Debug`, `Info`, `Warning`, `Error` or `Fatal`. The `TracyMessage` macros will log messages with the severity `Info`. To log a message with a different severity, you may use the `TracyLogString` macro that regroups all the functionalities from the previous macros. We recommend writing your own macros, wrapping the different severities for easier use. You may provide a color of 0 if you do not want to set a color for this message.
+Messages can also have different severity levels:
+
+- *Trace* -- Broadly track variable states and events in the software program.
+
+- *Debug* -- Describes variable states and details about specific internal events in the software, that are useful for investigations.
+
+- *Info* -- Describes normal events, which inform on the expected progress and state of your software.
+
+- *Warning* -- Describes potentially dangerous situations caused by unexpected events and states.
+
+- *Error* -- Describes the occurrence of unexpected behavior. Does not interrupt the execution of the software.
+
+- *Fatal* -- Describes a critical event that will lead to a software failure/crash.
+
+The `TracyMessage` macros will log messages with the severity `Info`. To log a message with a different severity, you may use the `TracyLogString` macro that regroups all the functionalities from the previous macros. We recommend writing your own macros, wrapping the different severities for easier use. You may provide a color of 0 if you do not want to set a color for this message.
 
 Examples:
 

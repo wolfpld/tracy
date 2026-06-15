@@ -1393,7 +1393,7 @@ Examples:
 
     std::string dynStr = "Trace using a dynamic string, blue color, no callstack";
     TracyLogString( tracy::MessageSeverity::Trace, 0xFF, 0, dynStr.size(), dynStr.c_str() );
-    TracyLogString( tracy::MessageSeverity::Warning, 0, TRACY_CALLSTACK, "Warning using a string litteral, no color, capturing the callstack to a depth of TRACY_CALLSTACK" );
+    TracyLogString( tracy::MessageSeverity::Warning, 0, TRACY_CALLSTACK, "Warning using a string literal, no color, capturing the callstack to a depth of TRACY_CALLSTACK" );
 
 ### Application information {#appinfo}
 

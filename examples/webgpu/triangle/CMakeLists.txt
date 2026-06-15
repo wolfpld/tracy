@@ -95,7 +95,11 @@ if(APPLE)
         "-framework IOSurface"
     )
 elseif(WIN32)
-    set(PLATFORM_LIBS SDL3::SDL3)
+    # wgpu-native (Rust stdlib) pull-ins: NtReadFile, GetUserProfileDirectoryW, ...
+    set(WGPU_NATIVE_WIN32_LIBS ntdll userenv)
+    # Dawn pull-ins: WKPDID_D3DDebugObjectName GUID, CompareObjectHandles, ...
+    set(WEBGPU_DAWN_WIN32_LIBS dxguid onecore)
+    set(PLATFORM_LIBS SDL3::SDL3 ${WGPU_NATIVE_WIN32_LIBS} ${WEBGPU_DAWN_WIN32_LIBS})
 else()
     set(PLATFORM_LIBS SDL3::SDL3)
 endif()

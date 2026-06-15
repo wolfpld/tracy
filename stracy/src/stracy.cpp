@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -172,11 +173,37 @@ static int64_t ParseRetval( const char* line )
     return neg ? -v : v;
 }
 
+// Extract the function name from a strace -k frame line, e.g.:
+//   "/lib/libc.so.6(__read_nocancel+0x7) [0xf1e07]"  →  "__read_nocancel"
+static std::string ParseFrameName( const std::string& frame )
+{
+    const char* p = frame.c_str();
+    const char* open = strchr( p, '(' );
+    if( !open ) return frame;
+    const char* name = open + 1;
+    const char* plus  = strchr( name, '+' );
+    const char* close = strchr( name, ')' );
+    const char* end = ( plus && ( !close || plus < close ) ) ? plus : close;
+    if( !end ) return frame;
+    return std::string( name, end );
+}
+
 struct PendingEntry
 {
     uint64_t    ts_begin;
     std::string syscall_name;
     std::string args_text;
+};
+
+// A complete or resumed syscall zone held until its trailing callstack frames are collected.
+struct PendingComplete
+{
+    uint64_t                 tid;
+    uint64_t                 ts_begin;
+    uint64_t                 ts_end;
+    std::string              name;
+    std::string              args;
+    std::vector<std::string> frames;  // innermost-first, as strace emits them
 };
 
 int main( int argc, char** argv )
@@ -199,6 +226,40 @@ int main( int argc, char** argv )
     std::unordered_map<uint64_t, std::string>       threadNames;
     std::unordered_map<uint64_t, PendingEntry>      pending;    // tid → in-flight syscall
 
+    // Holds a complete/resumed zone while we collect its trailing callstack frames.
+    std::optional<PendingComplete> pending_complete;
+
+    // Emit a pending zone as nested Tracy zones:
+    //   outer callstack frames  (one begin per frame, outermost first)
+    //     syscall zone          (begin + end)
+    //   outer callstack frames  (one end per frame, innermost first)
+    //
+    // frames[0] is the innermost frame (the libc/kernel syscall stub) and is
+    // skipped — it is already represented by the syscall zone itself.
+    auto flushComplete = [&]()
+    {
+        if( !pending_complete ) return;
+        const auto& pc = *pending_complete;
+
+        const size_t user_start = pc.frames.empty() ? 0 : 1; // skip innermost stub
+
+        // Open outer frames, outermost first (= reversed from strace order).
+        for( int i = (int)pc.frames.size() - 1; i >= (int)user_start; i-- )
+            timeline.push_back( { pc.tid, pc.ts_begin,
+                                   ParseFrameName( pc.frames[i] ), pc.frames[i],
+                                   false, "", 0 } );
+
+        // The syscall zone itself.
+        timeline.push_back( { pc.tid, pc.ts_begin, pc.name, pc.args, false, "", 0 } );
+        timeline.push_back( { pc.tid, pc.ts_end,   "",      "",      true,  "", 0 } );
+
+        // Close outer frames, innermost first.
+        for( size_t i = user_start; i < pc.frames.size(); i++ )
+            timeline.push_back( { pc.tid, pc.ts_end, "", "", true, "", 0 } );
+
+        pending_complete.reset();
+    };
+
     char buf[65536];
     // TID used when strace output has no [pid N] prefix (single-threaded traces or
     // the very first calls of a process before any fork).
@@ -207,6 +268,24 @@ int main( int argc, char** argv )
     while( fgets( buf, sizeof( buf ), fin ) )
     {
         const char* p = buf;
+
+        // Callstack frame from strace -k: " > /path/lib(func+0xoff) [0xaddr]"
+        // Must be checked before the isdigit guard.
+        if( p[0] == ' ' && p[1] == '>' )
+        {
+            if( pending_complete )
+            {
+                const char* frame = p + 2;
+                while( *frame == ' ' ) frame++;
+                std::string f( frame );
+                while( !f.empty() && strchr( "\r\n", f.back() ) ) f.pop_back();
+                if( !f.empty() ) pending_complete->frames.push_back( std::move( f ) );
+            }
+            continue;
+        }
+
+        // Any non-frame line closes the pending zone before we process it.
+        flushComplete();
 
         // Only process lines whose first character is a digit.
         // Silently skips strace warnings, "Process N attached/detached", etc.
@@ -269,8 +348,9 @@ int main( int argc, char** argv )
             if( it != pending.end() ) pending.erase( it );
 
             // ts = timestamp of the return line; use as zone end.
-            timeline.push_back( { tid, ts_begin, syscall_name, std::move( args_text ), false, "", 0 } );
-            timeline.push_back( { tid, ts,        "",           "",                     true,  "", 0 } );
+            pending_complete = PendingComplete{ tid, ts_begin, ts,
+                                               std::move( syscall_name ),
+                                               std::move( args_text ), {} };
         }
         // --- Process exit / kill ----------------------------------------
         // "+++ exited with N +++"  |  "+++ killed by SIGNAL +++"
@@ -327,13 +407,15 @@ int main( int argc, char** argv )
                     }
                 }
 
-                timeline.push_back( { tid, ts,          syscall_name, std::move( args ), false, "", 0 } );
-                timeline.push_back( { tid, ts + dur_ns, "",           "",                true,  "", 0 } );
+                pending_complete = PendingComplete{ tid, ts, ts + dur_ns,
+                                                   syscall_name,
+                                                   std::move( args ), {} };
             }
         }
     }
 
     if( fin != stdin ) fclose( fin );
+    flushComplete(); // flush the last zone if the file ends with callstack frames
 
     // Sort by timestamp. strace output is mostly ordered, but interleaved threads
     // and resumed events can place end-of-zone before begin-of-zone after sorting.

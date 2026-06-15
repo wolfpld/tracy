@@ -10,7 +10,7 @@ namespace tracy
 
 constexpr unsigned Lz4CompressBound( unsigned isize ) { return isize + ( isize / 255 ) + 16; }
 
-constexpr uint32_t ProtocolVersion = 79;
+constexpr uint32_t ProtocolVersion = 80;
 constexpr uint16_t BroadcastVersion = 3;
 
 using lz4sz_t = uint32_t;
@@ -155,6 +155,7 @@ struct BroadcastMessage_v0
 
 #pragma pack( pop )
 
+constexpr uint64_t ProtocolOffset8Bit  = (1ull << 8);
 constexpr uint64_t ProtocolOffset16Bit = (1ull << 16);
 constexpr uint64_t ProtocolOffset32Bit = (1ull << 16) + (1ull << 32);
 

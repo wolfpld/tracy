@@ -3454,34 +3454,68 @@ void Profiler::SendString( uint64_t str, const char* ptr, size_t len, QueueType 
     AppendDataUnsafe( ptr, l16 );
 }
 
-void Profiler::SendSingleString( const char* ptr, size_t len )
+void Profiler::SendSingleString8( const char* ptr, size_t len )
+{
+    QueueItem item;
+    MemWrite( &item.hdr.type, QueueType::SingleStringData8 );
+
+    assert( len <= std::numeric_limits<uint8_t>::max() );
+    auto l8 = uint8_t( len );
+
+    NeedDataSize( QueueDataSize[(int)QueueType::SingleStringData8] + sizeof( l8 ) + len );
+
+    AppendDataUnsafe( &item, QueueDataSize[(int)QueueType::SingleStringData8] );
+    AppendDataUnsafe( &l8, sizeof( l8 ) );
+    AppendDataUnsafe( ptr, len );
+}
+
+void Profiler::SendSingleString16( const char* ptr, size_t len )
 {
     QueueItem item;
     MemWrite( &item.hdr.type, QueueType::SingleStringData );
 
+    // Ignoring u16+ range by design
+    assert( len > std::numeric_limits<uint8_t>::max() );
     assert( len <= std::numeric_limits<uint16_t>::max() );
-    auto l16 = uint16_t( len );
+    auto l16 = uint16_t( len - ProtocolOffset8Bit );
 
-    NeedDataSize( QueueDataSize[(int)QueueType::SingleStringData] + sizeof( l16 ) + l16 );
+    NeedDataSize( QueueDataSize[(int)QueueType::SingleStringData] + sizeof( l16 ) + len );
 
     AppendDataUnsafe( &item, QueueDataSize[(int)QueueType::SingleStringData] );
     AppendDataUnsafe( &l16, sizeof( l16 ) );
-    AppendDataUnsafe( ptr, l16 );
+    AppendDataUnsafe( ptr, len );
 }
 
-void Profiler::SendSecondString( const char* ptr, size_t len )
+void Profiler::SendSecondString8( const char* ptr, size_t len )
+{
+    QueueItem item;
+    MemWrite( &item.hdr.type, QueueType::SecondStringData8 );
+
+    assert( len <= std::numeric_limits<uint8_t>::max() );
+    auto l8 = uint8_t( len );
+
+    NeedDataSize( QueueDataSize[(int)QueueType::SecondStringData8] + sizeof( l8 ) + len );
+
+    AppendDataUnsafe( &item, QueueDataSize[(int)QueueType::SecondStringData8] );
+    AppendDataUnsafe( &l8, sizeof( l8 ) );
+    AppendDataUnsafe( ptr, len );
+}
+
+void Profiler::SendSecondString16( const char* ptr, size_t len )
 {
     QueueItem item;
     MemWrite( &item.hdr.type, QueueType::SecondStringData );
 
+    // Ignoring u16+ range by design
+    assert( len > std::numeric_limits<uint8_t>::max() );
     assert( len <= std::numeric_limits<uint16_t>::max() );
-    auto l16 = uint16_t( len );
+    auto l16 = uint16_t( len - ProtocolOffset8Bit );
 
-    NeedDataSize( QueueDataSize[(int)QueueType::SecondStringData] + sizeof( l16 ) + l16 );
+    NeedDataSize( QueueDataSize[(int)QueueType::SecondStringData] + sizeof( l16 ) + len );
 
     AppendDataUnsafe( &item, QueueDataSize[(int)QueueType::SecondStringData] );
     AppendDataUnsafe( &l16, sizeof( l16 ) );
-    AppendDataUnsafe( ptr, l16 );
+    AppendDataUnsafe( ptr, len );
 }
 
 void Profiler::SendLongString( uint64_t str, const char* ptr, size_t len, QueueType type )

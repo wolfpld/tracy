@@ -3137,6 +3137,7 @@ void Worker::DispatchFailure( const QueueItem& ev, const char*& ptr )
     }
     else
     {
+        uint8_t sz8;
         uint16_t sz;
         switch( ev.hdr.type )
         {
@@ -3144,6 +3145,7 @@ void Worker::DispatchFailure( const QueueItem& ev, const char*& ptr )
             ptr += sizeof( QueueHeader );
             memcpy( &sz, ptr, sizeof( sz ) );
             ptr += sizeof( sz );
+            sz += ProtocolOffset8Bit;
             AddSingleStringFailure( ptr, sz );
             ptr += sz;
             break;
@@ -3151,8 +3153,23 @@ void Worker::DispatchFailure( const QueueItem& ev, const char*& ptr )
             ptr += sizeof( QueueHeader );
             memcpy( &sz, ptr, sizeof( sz ) );
             ptr += sizeof( sz );
+            sz += ProtocolOffset8Bit;
             AddSecondString( ptr, sz );
             ptr += sz;
+            break;
+        case QueueType::SingleStringData8:
+            ptr += sizeof( QueueHeader );
+            memcpy( &sz8, ptr, sizeof( sz8 ) );
+            ptr += sizeof( sz8 );
+            AddSingleStringFailure( ptr, sz8 );
+            ptr += sz8;
+            break;
+        case QueueType::SecondStringData8:
+            ptr += sizeof( QueueHeader );
+            memcpy( &sz8, ptr, sizeof( sz8 ) );
+            ptr += sizeof( sz8 );
+            AddSecondString( ptr, sz8 );
+            ptr += sz8;
             break;
         default:
             ptr += QueueDataSize[ev.hdr.idx];
@@ -3337,6 +3354,7 @@ bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
     }
     else
     {
+        uint8_t sz8;
         uint16_t sz;
         switch( ev.hdr.type )
         {
@@ -3344,6 +3362,7 @@ bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
             ptr += sizeof( QueueHeader );
             memcpy( &sz, ptr, sizeof( sz ) );
             ptr += sizeof( sz );
+            sz += ProtocolOffset8Bit;
             AddSingleString( ptr, sz );
             ptr += sz;
             return true;
@@ -3351,8 +3370,23 @@ bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
             ptr += sizeof( QueueHeader );
             memcpy( &sz, ptr, sizeof( sz ) );
             ptr += sizeof( sz );
+            sz += ProtocolOffset8Bit;
             AddSecondString( ptr, sz );
             ptr += sz;
+            return true;
+        case QueueType::SingleStringData8:
+            ptr += sizeof( QueueHeader );
+            memcpy( &sz8, ptr, sizeof( sz8 ) );
+            ptr += sizeof( sz8 );
+            AddSingleString( ptr, sz8 );
+            ptr += sz8;
+            return true;
+        case QueueType::SecondStringData8:
+            ptr += sizeof( QueueHeader );
+            memcpy( &sz8, ptr, sizeof( sz8 ) );
+            ptr += sizeof( sz8 );
+            AddSecondString( ptr, sz8 );
+            ptr += sz8;
             return true;
         default:
             ptr += QueueDataSize[ev.hdr.idx];

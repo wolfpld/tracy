@@ -122,6 +122,8 @@ enum class QueueType : uint8_t
     CpuTopology,
     SingleStringData,
     SecondStringData,
+    SingleStringData8,
+    SecondStringData8,
     MemNamePayload,
     ThreadGroupHint,
     GpuZoneAnnotation,
@@ -1040,6 +1042,8 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueCpuTopology ),
     sizeof( QueueHeader ),                                  // single string data
     sizeof( QueueHeader ),                                  // second string data
+    sizeof( QueueHeader ),                                  // single string data, 8 bit length
+    sizeof( QueueHeader ),                                  // second string data, 8 bit length
     sizeof( QueueHeader ) + sizeof( QueueMemNamePayload ),
     sizeof( QueueHeader ) + sizeof( QueueThreadGroupHint ),
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneAnnotation ), // GPU zone annotation

@@ -830,9 +830,9 @@ public:
     tracy_force_inline void SendString( uint64_t str, const char* ptr, QueueType type ) { SendString( str, ptr, strlen( ptr ), type ); }
     void SendString( uint64_t str, const char* ptr, size_t len, QueueType type );
     tracy_force_inline void SendSingleString( const char* ptr ) { SendSingleString( ptr, strlen( ptr ) ); }
-    void SendSingleString( const char* ptr, size_t len );
+    tracy_force_inline void SendSingleString( const char* ptr, size_t len ) { len <= 255 ? SendSingleString8( ptr, len ) : SendSingleString16( ptr, len ); }
     tracy_force_inline void SendSecondString( const char* ptr ) { SendSecondString( ptr, strlen( ptr ) ); }
-    void SendSecondString( const char* ptr, size_t len );
+    tracy_force_inline void SendSecondString( const char* ptr, size_t len ) { len <= 255 ? SendSecondString8( ptr, len ) : SendSecondString16( ptr, len ); }
 
 
     // Allocated source location data layout:
@@ -974,6 +974,11 @@ private:
     void CalibrateTimer();
     void CalibrateDelay();
     void ReportTopology();
+
+    void SendSingleString8( const char* ptr, size_t len );
+    void SendSingleString16( const char* ptr, size_t len );
+    void SendSecondString8( const char* ptr, size_t len );
+    void SendSecondString16( const char* ptr, size_t len );
 
     static tracy_force_inline void SendCallstackSerial( void* ptr )
     {

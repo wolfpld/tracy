@@ -390,7 +390,7 @@ enum class MessageSeverity : uint8_t
     Debug,   // Describes variable states and details about specific internal events in the software, that are useful for investigations.
     Info,    // Describes normal events, which inform on the expected progress and state of your software.
     Warning, // Describes potentially dangerous situations caused by unexpected events and states.
-    Error,   // Describes the occurance of unexpected behavior. Does not interrupt the execution of the software.
+    Error,   // Describes the occurrence of unexpected behavior. Does not interrupt the execution of the software.
     Fatal,   // Describes a critical event that will lead to a software failure/crash.
     COUNT
 };

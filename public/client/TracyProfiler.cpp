@@ -2335,12 +2335,12 @@ void Profiler::CompressWorker()
                 const auto w = fi->w;
                 const auto h = fi->h;
                 const auto csz = size_t( w * h / 2 );
-                auto etc1buf = (char*)tracy_malloc( csz );
-                CompressImageDxt1( (const char*)fi->image, etc1buf, w, h );
+                auto texbuf = (char*)tracy_malloc( csz );
+                CompressImageDxt1( (const char*)fi->image, texbuf, w, h );
                 tracy_free( fi->image );
 
                 TracyLfqPrepare( QueueType::FrameImage );
-                MemWrite( &item->frameImageFat.image, (uint64_t)etc1buf );
+                MemWrite( &item->frameImageFat.image, (uint64_t)texbuf );
                 MemWrite( &item->frameImageFat.frame, fi->frame );
                 MemWrite( &item->frameImageFat.w, w );
                 MemWrite( &item->frameImageFat.h, h );

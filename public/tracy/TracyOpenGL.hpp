@@ -248,7 +248,10 @@ private:
     {
         if( m_supportsQueryBufferObject )
         {
+            constexpr uint64_t sentinel = ~0ull;
+            uint64_t time = sentinel;
             glGetQueryObjectui64v( m_query[queryId], GL_QUERY_RESULT_NO_WAIT, &time );
+            if ( time == sentinel ) return false;
             timestamp = time;
         }
         else

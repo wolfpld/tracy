@@ -244,7 +244,7 @@ private:
         return exts && strstr( exts, feature ) != nullptr;
     }
 
-    bool GetTimestamp( uint64_t& timestamp, unsigned int queryId )
+    tracy_force_inline bool GetTimestamp( uint64_t& timestamp, unsigned int queryId )
     {
         if( m_supportsQueryBufferObject )
         {

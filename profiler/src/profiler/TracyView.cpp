@@ -1531,11 +1531,18 @@ void View::AddLlmQuery( const char* query )
 #endif
 }
 
-void View::ViewCallstack( uint32_t callstack, uint32_t thread )
+void View::ViewCallstack( uint32_t callstack, uint32_t thread, int64_t waitTime, const char* waitReason, const char* waitReasonCode, const char* waitState, const char* waitStateCode )
 {
     m_callstackView = {
         .id = callstack,
-        .thread = thread
+        .thread = thread,
+        .wait = {
+            .time = waitTime,
+            .reason = waitReason,
+            .reasonCode = waitReasonCode,
+            .state = waitState,
+            .stateCode = waitStateCode
+        }
     };
 }
 

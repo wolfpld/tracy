@@ -189,7 +189,7 @@ public:
     void AddLlmAttachment( const nlohmann::json& json );
     void AddLlmQuery( const char* query );
 
-    void ViewCallstack( uint32_t callstack, uint32_t thread );
+    void ViewCallstack( uint32_t callstack, uint32_t thread, int64_t waitTime = 0, const char* waitReason = nullptr, const char* waitReasonCode = nullptr, const char* waitState = nullptr, const char* waitStateCode = nullptr );
 
     nlohmann::json GetCallstackJson( const CallstackFrameId* data, size_t size ) const;
 

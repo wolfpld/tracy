@@ -214,6 +214,7 @@ bool View::DrawConnection()
                         else
                         {
                             auto val = int( p.val );
+                            ImGui::SetNextItemWidth( 100 * GetScale() );
                             if( ImGui::InputInt( "", &val, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue ) )
                             {
                                 m_worker.SetParameter( idx, int32_t( val ) );

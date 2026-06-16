@@ -24,22 +24,22 @@ void View::DrawCallstackWindow()
     ImGui::Begin( "Call stack", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     if( !ImGui::GetCurrentWindowRead()->SkipItems )
     {
-        DrawCallstackTable( m_callstackView.id, m_callstackView.thread, true, true );
+        DrawCallstackTable( m_callstackView.id, m_callstackView.thread, m_callstackView.wait, true, true );
     }
     ImGui::End();
     if( !show ) m_callstackView = {};
 }
 
-void View::DrawCallstackTable( uint32_t callstack, uint64_t thread, bool globalEntriesButton, bool showThread )
+void View::DrawCallstackTable( uint32_t callstack, uint64_t thread, const CallstackViewWait& wait, bool globalEntriesButton, bool showThread )
 {
     auto& crash = m_worker.GetCrashEvent();
     const bool hasCrashed = crash.thread != 0 && crash.callstack == callstack;
 
     auto& cs = m_worker.GetCallstack( callstack );
-    DrawCallstackTable( cs.data(), cs.size(), thread, globalEntriesButton, showThread, hasCrashed, callstack );
+    DrawCallstackTable( cs.data(), cs.size(), thread, wait, globalEntriesButton, showThread, hasCrashed, callstack );
 }
 
-void View::DrawCallstackTable( const CallstackFrameId* data, size_t size, uint64_t thread, bool globalEntriesButton, bool showThread, bool hasCrashed, int64_t callstack )
+void View::DrawCallstackTable( const CallstackFrameId* data, size_t size, uint64_t thread, const CallstackViewWait& wait, bool globalEntriesButton, bool showThread, bool hasCrashed, int64_t callstack )
 {
     if( ClipboardButton() )
     {

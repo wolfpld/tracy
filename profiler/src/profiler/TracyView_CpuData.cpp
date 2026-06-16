@@ -292,7 +292,7 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
                             TextFocused( "Thread:", m_worker.GetThreadName( thread ) );
                             ImGui::SameLine();
                             ImGui::TextDisabled( "(%s)", RealToString( thread ) );
-                            
+
                             m_drawThreadMigrations = thread;
                             m_cpuDataThread = thread;
                         }
@@ -337,7 +337,7 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
                             if( it != v.begin() )
                             {
                                 auto& prev = *( it - 1 );
-                                    
+
                                 ImGui::Separator();
 
                                 TextFocused( "Wait reason:", DecodeContextSwitchReasonCode( prev.Reason() ) );
@@ -349,7 +349,7 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
                                 TextFocused( "Wait state:", DecodeContextSwitchStateCode( prev.State() ) );
                                 TextFocused( "Waiting time:", TimeToString( it->WakeupVal() - prev.End() ) );
                             }
-                            
+
                             // Do we have information about the readying thread?
                             if( it->Start() - it->WakeupVal() )
                             {
@@ -369,7 +369,7 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
                                     bool wakeupThreadLocal, wakeupThreadUntracked;
                                     const char* wakeUpThreadProgram;
                                     auto wakeuplabel = GetThreadContextData( wakeupThread, wakeupThreadLocal, wakeupThreadUntracked, wakeUpThreadProgram );
-                                    
+
                                     uint32_t wakeupThreadColor = getDisplayThreadColor( wakeupThread, wakeupThreadLocal, wakeupThreadUntracked );
                                     TextColoredUnformatted( HighlightColor<75>( wakeupThreadColor ), wakeuplabel );
                                     ImGui::SameLine();

@@ -201,6 +201,26 @@ void View::DrawCallstackTable( const CallstackFrameId* data, size_t size, uint64
         }
     }
 
+    if( wait.time != 0 )
+    {
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        TextColoredUnformatted( ImVec4( 0.6f, 0.6f, 1.f, 1.f ), ICON_FA_HOURGLASS_HALF " Wait stack" );
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            TextFocused( "Time:", TimeToString( wait.time ) );
+            TextFocused( "Reason:", wait.reasonCode );
+            ImGui::SameLine();
+            TextDisabledUnformatted( wait.reason );
+            TextFocused( "State:", wait.stateCode );
+            ImGui::SameLine();
+            TextDisabledUnformatted( wait.state );
+            ImGui::EndTooltip();
+        }
+    }
+
     if( globalEntriesButton && m_worker.AreCallstackSamplesReady() )
     {
         auto frame = m_worker.GetCallstackFrame( *data );

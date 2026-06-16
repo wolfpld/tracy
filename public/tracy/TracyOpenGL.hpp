@@ -248,18 +248,16 @@ private:
     {
         if( m_supportsQueryBufferObject )
         {
-            uint64_t time = ~0ull;
-            glGetQueryObjectui64v( m_query[m_tail], GL_QUERY_RESULT_NO_WAIT, &time );
-            if ( time == ~0ull ) return false;
+            glGetQueryObjectui64v( m_query[queryId], GL_QUERY_RESULT_NO_WAIT, &time );
             timestamp = time;
         }
         else
         {
             GLint available;
-            glGetQueryObjectiv( m_query[m_tail], GL_QUERY_RESULT_AVAILABLE, &available );
+            glGetQueryObjectiv( m_query[queryId], GL_QUERY_RESULT_AVAILABLE, &available );
             if( !available ) return false;
             uint64_t time;
-            glGetQueryObjectui64v( m_query[m_tail], GL_QUERY_RESULT, &time );
+            glGetQueryObjectui64v( m_query[queryId], GL_QUERY_RESULT, &time );
             timestamp = time;
         }
         return true;

@@ -210,6 +210,12 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
 
             if( hover )
             {
+                int64_t waitTime = 0;
+                const char* waitReason = nullptr;
+                const char* waitReasonCode = nullptr;
+                const char* waitState = nullptr;
+                const char* waitStateCode = nullptr;
+
                 bool tooltip = false;
                 if( ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( pxw, offset + ty ) ) )
                 {
@@ -221,8 +227,9 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
                     }
                     else
                     {
+                        waitTime = ev.WakeupVal() - prev.End();
                         TextFocused( "Thread is", migration ? "migrating CPUs" : "waiting" );
-                        TextFocused( "Waiting time:", TimeToString( ev.WakeupVal() - prev.End() ) );
+                        TextFocused( "Waiting time:", TimeToString( waitTime ) );
                         if( migration )
                         {
                             TextFocused( "CPU:", RealToString( prev.Cpu() ) );
@@ -235,18 +242,22 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
                         }
                         if( prev.Reason() != 100 )
                         {
-                            TextFocused( "Wait reason:", DecodeContextSwitchReasonCode( prev.Reason() ) );
+                            waitReason = DecodeContextSwitchReason( prev.Reason() );
+                            waitReasonCode = DecodeContextSwitchReasonCode( prev.Reason() );
+                            TextFocused( "Wait reason:", waitReasonCode );
                             ImGui::SameLine();
                             ImGui::PushFont( g_fonts.normal, FontSmall );
                             ImGui::AlignTextToFramePadding();
-                            TextDisabledUnformatted( DecodeContextSwitchReason( prev.Reason() ) );
+                            TextDisabledUnformatted( waitReason );
                             ImGui::PopFont();
                         }
-                        TextFocused( "Wait state:", DecodeContextSwitchStateCode( prev.State() ) );
+                        waitState = DecodeContextSwitchState( prev.State() );
+                        waitStateCode = DecodeContextSwitchStateCode( prev.State() );
+                        TextFocused( "Wait state:", waitStateCode );
                         ImGui::SameLine();
                         ImGui::PushFont( g_fonts.normal, FontSmall );
                         ImGui::AlignTextToFramePadding();
-                        TextDisabledUnformatted( DecodeContextSwitchState( prev.State() ) );
+                        TextDisabledUnformatted( waitState );
                         ImGui::PopFont();
                     }
                     tooltip = true;
@@ -282,7 +293,14 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
                             {
                                 m_callstackView = {
                                     .id = waitStack,
-                                    .thread = m_worker.DecompressThread( ev.Thread() )
+                                    .thread = m_worker.DecompressThread( ev.Thread() ),
+                                    .wait = {
+                                        .time = waitTime,
+                                        .reason = waitReason,
+                                        .reasonCode = waitReasonCode,
+                                        .state = waitState,
+                                        .stateCode = waitStateCode
+                                    }
                                 };
                             }
                     }

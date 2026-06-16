@@ -261,10 +261,20 @@ private:
         uint32_t count;
     };
 
+    struct CallstackViewWait
+    {
+        int64_t time;
+        const char* reason;
+        const char* reasonCode;
+        const char* state;
+        const char* stateCode;
+    };
+
     struct CallstackView
     {
         uint32_t id;
         uint64_t thread;
+        CallstackViewWait wait;
     };
 
     void InitTextEditor();

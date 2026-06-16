@@ -107,6 +107,12 @@ public:
 
         assert( m_context != 255 );
 
+        if( !CheckFeature( "GL_ARB_timer_query" ) )
+        {
+            Profiler::LogString( MessageSourceType::Tracy, MessageSeverity::Warning, Color::Tomato, 0,
+                    "OpenGL context does not support GL_ARB_timer_query." );
+        }
+
         GLint bits;
         glGetQueryiv( GL_TIMESTAMP, GL_QUERY_COUNTER_BITS, &bits );
         if( bits == 0 )
@@ -209,6 +215,30 @@ public:
     }
 
 private:
+    // Returns whether the driver advertises a single extension (full GL_-prefixed token).
+    static bool CheckFeature( const char* feature )
+    {
+        GLint major = 0;
+        glGetIntegerv( GL_MAJOR_VERSION, &major );
+        if( glGetError() != GL_NO_ERROR ) major = 0;   // pre-3.0: enum not supported
+
+        if( major >= 3 )
+        {
+            GLint numExt = 0;
+            glGetIntegerv( GL_NUM_EXTENSIONS, &numExt );
+            for( GLint i = 0; i < numExt; i++ )
+            {
+                auto ext = (const char*)glGetStringi( GL_EXTENSIONS, i );
+                if( ext && strcmp( ext, feature ) == 0 ) return true;
+            }
+            return false;
+        }
+
+        // pre GL3 fallback:
+        auto exts = (const char*)glGetString( GL_EXTENSIONS );
+        return exts && strstr( exts, feature ) != nullptr;
+    }
+
 #ifdef TRACY_OPENGL_AUTO_CALIBRATION
     // Monotonic host ns for the inter-calibration interval (cpuDelta), kept
     // separate from Profiler::GetTime() as in the D3D12/Vulkan backends.

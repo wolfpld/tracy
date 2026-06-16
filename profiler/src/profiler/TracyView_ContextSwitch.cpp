@@ -166,7 +166,7 @@ const char* View::DecodeContextSwitchState( uint8_t state )
     }
 }
 
-void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<ContextSwitchDraw>& drawList, const Vector<ContextSwitchData>& ctxSwitch, int offset, int endOffset, bool isFiber )
+void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<ContextSwitchDraw>& drawList, const Vector<ContextSwitchData>& ctxSwitch, int offset, int endOffset, bool isFiber, uint64_t tid )
 {
     constexpr float MinCtxSize = 4;
 
@@ -293,7 +293,7 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
                         {
                             m_callstackView = {
                                 .id = waitStack,
-                                .thread = m_worker.DecompressThread( ev.Thread() ),
+                                .thread = tid,
                                 .wait = {
                                     .time = waitTime,
                                     .reason = waitReason,

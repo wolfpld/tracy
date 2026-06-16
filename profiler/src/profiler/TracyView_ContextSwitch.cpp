@@ -286,23 +286,23 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
                     const auto waitStack = v.data;
                     if( waitStack )
                     {
-                            ImGui::Separator();
-                            TextDisabledUnformatted( ICON_FA_HOURGLASS_HALF " Wait stack:" );
-                            CallstackTooltipContents( waitStack );
-                            if( ImGui::IsMouseClicked( 0 ) )
-                            {
-                                m_callstackView = {
-                                    .id = waitStack,
-                                    .thread = m_worker.DecompressThread( ev.Thread() ),
-                                    .wait = {
-                                        .time = waitTime,
-                                        .reason = waitReason,
-                                        .reasonCode = waitReasonCode,
-                                        .state = waitState,
-                                        .stateCode = waitStateCode
-                                    }
-                                };
-                            }
+                        ImGui::Separator();
+                        TextDisabledUnformatted( ICON_FA_HOURGLASS_HALF " Wait stack:" );
+                        CallstackTooltipContents( waitStack );
+                        if( ImGui::IsMouseClicked( 0 ) )
+                        {
+                            m_callstackView = {
+                                .id = waitStack,
+                                .thread = m_worker.DecompressThread( ev.Thread() ),
+                                .wait = {
+                                    .time = waitTime,
+                                    .reason = waitReason,
+                                    .reasonCode = waitReasonCode,
+                                    .state = waitState,
+                                    .stateCode = waitStateCode
+                                }
+                            };
+                        }
                     }
                     ImGui::EndTooltip();
                 }

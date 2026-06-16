@@ -248,7 +248,7 @@ private:
     {
         if( m_supportsQueryBufferObject )
         {
-            constexpr uint64_t sentinel = ~0ull;
+            constexpr uint64_t sentinel = ~uint64_t(0);
             uint64_t time = sentinel;
             glGetQueryObjectui64v( m_query[queryId], GL_QUERY_RESULT_NO_WAIT, &time );
             if ( time == sentinel ) return false;
@@ -258,7 +258,7 @@ private:
         {
             GLint available;
             glGetQueryObjectiv( m_query[queryId], GL_QUERY_RESULT_AVAILABLE, &available );
-            if( !available ) return false;
+            if( available == GL_FALSE ) return false;
             uint64_t time;
             glGetQueryObjectui64v( m_query[queryId], GL_QUERY_RESULT, &time );
             timestamp = time;

@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-06-15 <https://github.com/wolfpld/tracy>
+2026-06-16 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -4301,6 +4301,8 @@ A single stack frame may have multiple function call places associated with it. 
 
 If the call stack shows a crash (see section [2.5](#crashhandling)), a red * Crash* label will be displayed. Clicking it will center the timeline on the crash. Note that the crash stack may contain OS or Tracy frames where the crash was intercepted and processed.
 
+If the call stack shows a wait stack (see section [3.17.5.1](#waitstacks)), a blue * Wait stack* label will be displayed. Hovering the  mouse pointer over it will display a tooltip displaying how much time was spent waiting in the stack, what was the wait reason and status.
+
 Stack frame location may be displayed in the following number of ways, depending on the *Frame at* option selection:
 
 - *Source code* -- displays source file and line number associated with the frame.
@@ -4330,6 +4332,8 @@ Clicking on the * Summary* button will use Tracy Assist to generate a brief s
 
  - Caret Right icon
  - Skull icon
+ - Hourglass Half icon
+ - Arrow Pointer icon
  - Shield Halved icon
  - Scissors icon
  - Door Open icon

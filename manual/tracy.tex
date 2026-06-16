@@ -4684,6 +4684,8 @@ A single stack frame may have multiple function call places associated with it. 
 
 If the call stack shows a crash (see section~\ref{crashhandling}), a red \emph{\faSkull{}~Crash} label will be displayed. Clicking it will center the timeline on the crash. Note that the crash stack may contain OS or Tracy frames where the crash was intercepted and processed.
 
+If the call stack shows a wait stack (see section~\ref{waitstacks}), a blue \emph{\faHourglassHalf{}~Wait stack} label will be displayed. Hovering the \faArrowPointer{}~mouse pointer over it will display a tooltip displaying how much time was spent waiting in the stack, what was the wait reason and status.
+
 Stack frame location may be displayed in the following number of ways, depending on the \emph{Frame~at} option selection:
 
 \begin{itemize}

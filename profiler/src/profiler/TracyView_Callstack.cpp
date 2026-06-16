@@ -219,12 +219,18 @@ void View::DrawCallstackTable( const CallstackFrameId* data, size_t size, uint64
         {
             ImGui::BeginTooltip();
             TextFocused( "Time:", TimeToString( wait.time ) );
-            TextFocused( "Reason:", wait.reasonCode );
-            ImGui::SameLine();
-            TextDisabledUnformatted( wait.reason );
-            TextFocused( "State:", wait.stateCode );
-            ImGui::SameLine();
-            TextDisabledUnformatted( wait.state );
+            if( wait.reasonCode )
+            {
+                TextFocused( "Reason:", wait.reasonCode );
+                ImGui::SameLine();
+                TextDisabledUnformatted( wait.reason );
+            }
+            if( wait.stateCode )
+            {
+                TextFocused( "State:", wait.stateCode );
+                ImGui::SameLine();
+                TextDisabledUnformatted( wait.state );
+            }
             ImGui::EndTooltip();
         }
     }

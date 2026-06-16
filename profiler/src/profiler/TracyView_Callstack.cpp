@@ -113,7 +113,7 @@ void View::DrawCallstackTable( const CallstackFrameId* data, size_t size, uint64
     }
     if( s_config.llm )
     {
-        auto Attach = [this, data, size, hasCrashed, thread, callstack]() {
+        auto Attach = [this, data, size, wait, hasCrashed, thread, callstack]() {
             auto json = GetCallstackJson( data, size );
             if( hasCrashed )
             {
@@ -131,6 +131,14 @@ void View::DrawCallstackTable( const CallstackFrameId* data, size_t size, uint64
                 json["thread_id"] = thread;
             }
             if( callstack >= 0 ) json["id"] = callstack;
+            if( wait.time > 0 )
+            {
+                json["wait_time"] = TimeToString( wait.time );
+                if( wait.reason ) json["wait_reason"] = wait.reasonCode;
+                if( wait.reasonCode ) json["wait_reason_hint"] = wait.reason;
+                if( wait.state ) json["wait_state"] = wait.stateCode;
+                if( wait.stateCode ) json["wait_state_hint"] = wait.state;
+            }
 
             AddLlmAttachment( json );
         };

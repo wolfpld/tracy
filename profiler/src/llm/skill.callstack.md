@@ -103,6 +103,12 @@ Tracy Profiler can intercept crashes and report them to the user for analysis. T
 
 Each frame in a call stack has an associated instruction pointer, `ip` – the return address where the execution will return from the function a frame above. This address is somewhere in the symbol code. The start of the symbol is provided as the `baseAddr` value. This base address identifies the symbol and can be used in various symbol-related tool calls as the symbol address.
 
+# Wait stacks
+
+Some call stacks represent time spent waiting for something to happen. For example, the program may want to read something from the disk. In such cases, program execution will be paused, and the CPU will start running kernel code responsible for filesystem access, I/O routines, or just idling while waiting for a response from the hardware.
+
+A wait stack is identified by the presence of the `wait_time` field, which shows how much time was spent waiting for execution to return to the program. Further information about the wait stack can be inferred from the optional fields `wait_reason` (with an explanation in `wait_reason_hint`) and `wait_state` (with an explanation in `wait_state_hint`).
+
 # Inspecting call stacks
 
 1. Focus on user's code. Ignore standard library boilerplate.

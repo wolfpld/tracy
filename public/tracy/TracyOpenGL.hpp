@@ -102,6 +102,7 @@ public:
         : m_context( GetGpuCtxCounter().fetch_add( 1, std::memory_order_relaxed ) )
         , m_head( 0 )
         , m_tail( 0 )
+        , m_supportsQueryBufferObject( false )
     {
         ZoneScopedC( Color::Red4 );
 
@@ -111,6 +112,14 @@ public:
         {
             Profiler::LogString( MessageSourceType::Tracy, MessageSeverity::Warning, Color::Tomato, 0,
                     "OpenGL context does not support GL_ARB_timer_query." );
+        }
+
+        // check for GL_QUERY_RESULT_NO_WAIT support
+        m_supportsQueryBufferObject = CheckFeature( "GL_ARB_query_buffer_object" );
+        if( !m_supportsQueryBufferObject )
+        {
+            Profiler::LogString( MessageSourceType::Tracy, MessageSeverity::Info, 0, 0,
+                    "OpenGL context does not support GL_ARB_query_buffer_object." );
         }
 
         GLint bits;
@@ -197,12 +206,8 @@ public:
 
         while( m_tail != m_head )
         {
-            GLint available;
-            glGetQueryObjectiv( m_query[m_tail], GL_QUERY_RESULT_AVAILABLE, &available );
-            if( !available ) return;
-
             uint64_t time;
-            glGetQueryObjectui64v( m_query[m_tail], GL_QUERY_RESULT, &time );
+            if( !GetTimestamp(time, m_tail) ) return;
 
             TracyLfqPrepare( QueueType::GpuTime );
             MemWrite( &item->gpuTime.gpuTime, (int64_t)time );
@@ -237,6 +242,27 @@ private:
         // pre GL3 fallback:
         auto exts = (const char*)glGetString( GL_EXTENSIONS );
         return exts && strstr( exts, feature ) != nullptr;
+    }
+
+    bool GetTimestamp( uint64_t& timestamp, unsigned int queryId )
+    {
+        if( m_supportsQueryBufferObject )
+        {
+            uint64_t time = ~0ull;
+            glGetQueryObjectui64v( m_query[m_tail], GL_QUERY_RESULT_NO_WAIT, &time );
+            if ( time == ~0ull ) return false;
+            timestamp = time;
+        }
+        else
+        {
+            GLint available;
+            glGetQueryObjectiv( m_query[m_tail], GL_QUERY_RESULT_AVAILABLE, &available );
+            if( !available ) return false;
+            uint64_t time;
+            glGetQueryObjectui64v( m_query[m_tail], GL_QUERY_RESULT, &time );
+            timestamp = time;
+        }
+        return true;
     }
 
 #ifdef TRACY_OPENGL_AUTO_CALIBRATION
@@ -298,6 +324,8 @@ private:
 #ifdef TRACY_OPENGL_AUTO_CALIBRATION
     int64_t m_prevCalibration; // host-ns timestamp of the last emitted calibration
 #endif
+
+    bool m_supportsQueryBufferObject;
 };
 
 class GpuCtxScope

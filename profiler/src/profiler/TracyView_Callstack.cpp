@@ -131,7 +131,7 @@ void View::DrawCallstackTable( const CallstackFrameId* data, size_t size, uint64
                 json["thread_id"] = thread;
             }
             if( callstack >= 0 ) json["id"] = callstack;
-            if( wait.time > 0 )
+            if( wait.time != 0 )
             {
                 json["wait_time"] = TimeToString( wait.time );
                 if( wait.reason ) json["wait_reason"] = wait.reasonCode;

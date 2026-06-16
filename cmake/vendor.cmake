@@ -142,6 +142,7 @@ CPMAddPackage(
     PATCHES
         "${CMAKE_CURRENT_LIST_DIR}/imgui-emscripten.patch"
         "${CMAKE_CURRENT_LIST_DIR}/imgui-loader.patch"
+        "${CMAKE_CURRENT_LIST_DIR}/imgui-no-samplers.patch"
 )
 
 set(IMGUI_SOURCES

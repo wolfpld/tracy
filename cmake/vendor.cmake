@@ -272,7 +272,7 @@ if(NOT EMSCRIPTEN)
         CPMAddPackage(
             NAME pugixml
             GITHUB_REPOSITORY zeux/pugixml
-            GIT_TAG v1.15
+            GIT_TAG v1.16
             EXCLUDE_FROM_ALL TRUE
         )
         add_library(TracyPugixml INTERFACE)

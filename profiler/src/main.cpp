@@ -177,8 +177,8 @@ static void SetupDPIScale()
     auto& style = ImGui::GetStyle();
     style = ImGuiStyle();
     ImGui::StyleColorsDark();
-    style.WindowBorderSize = 1.f * scale;
-    style.FrameBorderSize = 1.f * scale;
+    style.WindowBorderSize = 1.f;
+    style.FrameBorderSize = 1.f;
     style.FrameRounding = 5.f;
     style.Colors[ImGuiCol_ScrollbarBg] = ImVec4( 1, 1, 1, 0.03f );
     style.Colors[ImGuiCol_Header] = ImVec4(0.26f, 0.59f, 0.98f, 0.25f);

@@ -4857,6 +4857,12 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::FiberLeave:
         ProcessFiberLeave( ev.fiberLeave );
         break;
+    case QueueType::SectionEnter:
+        ProcessSectionEnter( ev.sectionEnter );
+        break;
+    case QueueType::SectionLeave:
+        ProcessSectionLeave( ev.sectionLeave );
+        break;
     default:
         assert( false );
         break;
@@ -7369,6 +7375,15 @@ void Worker::ProcessFiberLeave( const QueueFiberLeave& ev )
 
     td->fiber = nullptr;
 }
+
+void Worker::ProcessSectionEnter( const QueueSectionEnter& ev )
+{
+}
+
+void Worker::ProcessSectionLeave( const QueueSectionLeave& ev )
+{
+}
+
 
 void Worker::MemAllocChanged( MemData& memdata, int64_t time )
 {

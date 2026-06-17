@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <atomic>
 #include <condition_variable>
+#include <stdarg.h>
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
@@ -19,6 +20,7 @@
 #include "../common/TracyQueue.hpp"
 #include "../common/TracyAlign.hpp"
 #include "../common/TracyAlloc.hpp"
+#include "../common/TracyFormat.hpp"
 #include "../common/TracyMutex.hpp"
 #include "../common/TracyProtocol.hpp"
 
@@ -792,6 +794,46 @@ public:
     }
 #endif
 
+    static tracy_force_inline uint32_t SectionEnter( const char* fmt, ... ) TRACY_ATTRIBUTE_FORMAT_PRINTF( 1, 2 )
+    {
+        auto& profiler = GetProfiler();
+#ifdef TRACY_ON_DEMAND
+        if( !profiler.IsConnected() ) return 0;
+#endif
+        va_list args;
+        va_start( args, fmt );
+        auto size = vsnprintf( nullptr, 0, fmt, args );
+        va_end( args );
+        if( size < 0 ) return 0;
+        assert( size < (std::numeric_limits<uint16_t>::max)() );
+
+        char* ptr = (char*)tracy_malloc( size_t( size ) + 1 );
+        va_start( args, fmt );
+        vsnprintf( ptr, size_t( size ) + 1, fmt, args );
+        va_end( args );
+
+        const auto id = profiler.m_sectionId.fetch_add( 1, std::memory_order_relaxed );
+        TracyLfqPrepare( QueueType::SectionEnter );
+        MemWrite( &item->sectionEnterFat.time, GetTime() );
+        MemWrite( &item->sectionEnterFat.id, id );
+        MemWrite( &item->sectionEnterFat.text, (uint64_t)ptr );
+        MemWrite( &item->sectionEnterFat.size, (uint16_t)size );
+        TracyLfqCommit;
+        return id;
+    }
+
+    static tracy_force_inline void SectionLeave( uint32_t id )
+    {
+        if( id == 0 ) return;
+#ifdef TRACY_ON_DEMAND
+        if( !GetProfiler().IsConnected() ) return;
+#endif
+        TracyLfqPrepare( QueueType::SectionLeave );
+        MemWrite( &item->sectionLeave.time, GetTime() );
+        MemWrite( &item->sectionLeave.id, id );
+        TracyLfqCommit;
+    }
+
     void SendCallstack( int32_t depth, const char** skipBefore );
     static void CutCallstack( void* callstack, const char** skipBefore );
 
@@ -1064,6 +1106,7 @@ private:
     bool m_noExit;
     uint32_t m_userPort;
     std::atomic<uint32_t> m_zoneId;
+    std::atomic<uint32_t> m_sectionId;
     int64_t m_samplingPeriod;
 
     uint32_t m_threadCtx;

@@ -1521,6 +1521,7 @@ Profiler::Profiler()
     , m_noExit( false )
     , m_userPort( 0 )
     , m_zoneId( 1 )
+    , m_sectionId( 1 )
     , m_samplingPeriod( 0 )
     , m_stream( LZ4_createStream() )
     , m_buffer( (char*)tracy_malloc( TargetFrameSize*3 ) )
@@ -2484,6 +2485,10 @@ static void FreeAssociatedMemory( const QueueItem& item )
         ptr = MemRead( &item.sourceCodeMetadata.ptr );
         tracy_free( (void*)ptr );
         break;
+    case QueueType::SectionEnter:
+        ptr = MemRead( &item.sectionEnterFat.text );
+        tracy_free( (void*)ptr );
+        break;
     default:
         break;
     }
@@ -2862,6 +2867,26 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         tracy_free_fast( (void*)ptr );
                         ++item;
                         continue;
+                    }
+                    case QueueType::SectionEnter:
+                    {
+                        int64_t t = MemRead( &item->sectionEnter.time );
+                        int64_t dt = t - refThread;
+                        refThread = t;
+                        MemWrite( &item->sectionEnter.time, dt );
+                        ptr = MemRead( &item->sectionEnterFat.text );
+                        size = MemRead( &item->sectionEnterFat.size );
+                        SendSingleString( (const char*)ptr, size );
+                        tracy_free_fast( (void*)ptr );
+                        break;
+                    }
+                    case QueueType::SectionLeave:
+                    {
+                        int64_t t = MemRead( &item->sectionLeave.time );
+                        int64_t dt = t - refThread;
+                        refThread = t;
+                        MemWrite( &item->sectionLeave.time, dt );
+                        break;
                     }
                     default:
                         assert( false );

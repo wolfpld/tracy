@@ -81,6 +81,8 @@ enum class QueueType : uint8_t
     SourceCodeMetadata,
     FiberEnter,
     FiberLeave,
+    SectionEnter,
+    SectionLeave,
     Terminate,
     KeepAlive,
     ThreadContext,
@@ -307,6 +309,24 @@ struct QueueFiberLeave
 {
     int64_t time;
     uint32_t thread;
+};
+
+struct QueueSectionEnter
+{
+    int64_t time;
+    uint32_t id;
+};
+
+struct QueueSectionEnterFat : public QueueSectionEnter
+{
+    uint64_t text;      // ptr
+    uint16_t size;
+};
+
+struct QueueSectionLeave
+{
+    int64_t time;
+    uint32_t id;
 };
 
 struct QueueLockTerminate
@@ -921,6 +941,9 @@ struct QueueItem
         QueueSourceCodeNotAvailable sourceCodeNotAvailable;
         QueueFiberEnter fiberEnter;
         QueueFiberLeave fiberLeave;
+        QueueSectionEnter sectionEnter;
+        QueueSectionEnterFat sectionEnterFat;
+        QueueSectionLeave sectionLeave;
         QueueGpuZoneAnnotation zoneAnnotation;
     };
 };
@@ -1000,6 +1023,8 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ),                                  // SourceCodeMetadata - not for wire transfer
     sizeof( QueueHeader ) + sizeof( QueueFiberEnter ),
     sizeof( QueueHeader ) + sizeof( QueueFiberLeave ),
+    sizeof( QueueHeader ) + sizeof( QueueSectionEnter ),
+    sizeof( QueueHeader ) + sizeof( QueueSectionLeave ),
     // above items must be first
     sizeof( QueueHeader ),                                  // terminate
     sizeof( QueueHeader ),                                  // keep alive

@@ -5,6 +5,9 @@
 #  if __has_include(<charconv>) && __has_include(<type_traits>)
 #    include <charconv>
 #    include <type_traits>
+#    if !defined(__cpp_lib_to_chars)
+#       define NO_CHARCONV
+#    endif
 #  else
 #    define NO_CHARCONV
 #  endif

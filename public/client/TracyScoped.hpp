@@ -9,15 +9,10 @@
 #include "../common/TracySystem.hpp"
 #include "../common/TracyAlign.hpp"
 #include "../common/TracyAlloc.hpp"
+#include "../common/TracyFormat.hpp"
 #include "TracyProfiler.hpp"
 #include "TracyCallstack.hpp"
 
-#if (defined(__GNUC__) || defined(__clang__))
-#  define TRACY_ATTRIBUTE_FORMAT_PRINTF(fmt_idx, arg_idx) \
-     __attribute__((format(printf, fmt_idx, arg_idx)))
-#else
-#  define TRACY_ATTRIBUTE_FORMAT_PRINTF(fmt_idx, arg_idx)
-#endif
 namespace tracy
 {
 

@@ -849,11 +849,18 @@ struct CpuThreadData
 };
 
 
+enum class ParameterType
+{
+    Integer,
+    Boolean,
+    Trigger
+};
+
 struct Parameter
 {
     uint32_t idx;
     StringRef name;
-    bool isBool;
+    ParameterType type;
     int32_t val;
 };
 

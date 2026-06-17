@@ -7261,7 +7261,7 @@ void Worker::ProcessHwSampleBranchMiss( const QueueHwSample& ev )
 void Worker::ProcessParamSetup( const QueueParamSetup& ev )
 {
     CheckString( ev.name );
-    m_params.push_back( Parameter { ev.idx, StringRef( StringRef::Ptr, ev.name ), bool( ev.isBool ), ev.val } );
+    m_params.push_back( Parameter { ev.idx, StringRef( StringRef::Ptr, ev.name ), ParameterType( ev.type ), ev.val } );
 }
 
 void Worker::ProcessSourceCodeNotAvailable( const QueueSourceCodeNotAvailable& ev )

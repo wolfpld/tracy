@@ -203,15 +203,18 @@ bool View::DrawConnection()
                         ImGui::TextUnformatted( m_worker.GetString( p.name ) );
                         ImGui::TableNextColumn();
                         ImGui::PushID( idx );
-                        if( p.isBool )
+                        switch( p.type )
+                        {
+                        case ParameterType::Boolean:
                         {
                             bool val = p.val;
                             if( ImGui::Checkbox( "", &val ) )
                             {
                                 m_worker.SetParameter( idx, int32_t( val ) );
                             }
+                            break;
                         }
-                        else
+                        case ParameterType::Integer:
                         {
                             auto val = int( p.val );
                             ImGui::SetNextItemWidth( 100 * GetScale() );
@@ -219,6 +222,14 @@ bool View::DrawConnection()
                             {
                                 m_worker.SetParameter( idx, int32_t( val ) );
                             }
+                            break;
+                        }
+                        case ParameterType::Trigger:
+                            if( ImGui::Button( ICON_FA_CIRCLE_DOT ) )
+                            {
+                                m_worker.SetParameter( idx, p.val );
+                            }
+                            break;
                         }
                         ImGui::PopID();
                         idx++;

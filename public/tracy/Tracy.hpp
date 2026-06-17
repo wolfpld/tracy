@@ -16,6 +16,12 @@
 #  define TracyLine TracyConcat(__LINE__,U) // MSVC Edit and continue __LINE__ is non-constant. See https://developercommunity.visualstudio.com/t/-line-cannot-be-used-as-an-argument-for-constexpr/195665
 #endif
 
+
+#define TracyParamTypeInt       0
+#define TracyParamTypeBool      1
+#define TracyParamTypeTrigger   2
+
+
 #ifndef TRACY_ENABLE
 
 #define TracyNoop
@@ -248,7 +254,7 @@
 
 #define TracySourceCallbackRegister( cb, data ) tracy::Profiler::SourceCallbackRegister( cb, data )
 #define TracyParameterRegister( cb, data ) tracy::Profiler::ParameterRegister( cb, data )
-#define TracyParameterSetup( idx, name, isBool, val ) tracy::Profiler::ParameterSetup( idx, name, isBool, val )
+#define TracyParameterSetup( idx, name, type, val ) tracy::Profiler::ParameterSetup( idx, name, type, val )
 #define TracyIsConnected tracy::GetProfiler().IsConnected()
 #define TracySetProgramName( name ) tracy::GetProfiler().SetProgramName( name );
 

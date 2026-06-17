@@ -795,7 +795,7 @@ struct QueueParamSetup
 {
     uint32_t idx;
     uint64_t name;      // ptr
-    uint8_t isBool;
+    uint8_t type;
     int32_t val;
 };
 

@@ -748,12 +748,13 @@ public:
         profiler.m_paramCallbackData = data;
     }
 
-    static tracy_force_inline void ParameterSetup( uint32_t idx, const char* name, bool isBool, int32_t val )
+    static tracy_force_inline void ParameterSetup( uint32_t idx, const char* name, uint8_t type, int32_t val )
     {
+        assert( type >= 0 && type <= 2 );
         TracyLfqPrepare( QueueType::ParamSetup );
         tracy::MemWrite( &item->paramSetup.idx, idx );
         tracy::MemWrite( &item->paramSetup.name, (uint64_t)name );
-        tracy::MemWrite( &item->paramSetup.isBool, (uint8_t)isBool );
+        tracy::MemWrite( &item->paramSetup.type, type );
         tracy::MemWrite( &item->paramSetup.val, val );
 
 #ifdef TRACY_ON_DEMAND

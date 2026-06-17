@@ -437,6 +437,7 @@ private:
     void UpdateTitle();
 
     void ValidateSourceRegex();
+    void UpdateThreadOrder();
 
     unordered_flat_map<uint64_t, int> m_threadDepthLimit;
     unordered_flat_map<uint64_t, bool> m_visibleMsgThread;

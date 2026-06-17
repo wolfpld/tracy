@@ -1026,7 +1026,8 @@ void View::DrawFlameGraph()
         m_flameGraphPan = 0;
     }
 
-    auto& td = m_worker.GetThreadData();
+    UpdateThreadOrder();
+    const auto& td = m_threadOrder;
     auto expand = ImGui::TreeNode( ICON_FA_SHUFFLE " Visible threads:" );
     ImGui::SameLine();
     size_t visibleThreads = 0;

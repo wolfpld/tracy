@@ -2863,6 +2863,17 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         ++item;
                         continue;
                     }
+                    case QueueType::SeqCreate:
+                    case QueueType::SeqResume:
+                    case QueueType::SeqSuspend:
+                    case QueueType::SeqRetire:
+                    {
+                        int64_t t = MemRead<int64_t>( &item->seqEvent.time );
+                        int64_t dt = t - refThread;
+                        refThread = t;
+                        MemWrite( &item->seqEvent.time, dt );
+                        break;
+                    }
                     default:
                         assert( false );
                         break;
@@ -3275,6 +3286,18 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     int64_t dt = t - refThread;
                     refThread = t;
                     MemWrite( &item->fiberLeave.time, dt );
+                    break;
+                }
+                case QueueType::SeqCreate:
+                case QueueType::SeqResume:
+                case QueueType::SeqSuspend:
+                case QueueType::SeqRetire:
+                {
+                    ThreadCtxCheckSerial( seqEvent );
+                    int64_t t = MemRead<int64_t>( &item->seqEvent.time );
+                    int64_t dt = t - refThread;
+                    refThread = t;
+                    MemWrite( &item->seqEvent.time, dt );
                     break;
                 }
 #endif
@@ -5413,6 +5436,11 @@ TRACY_API int32_t ___tracy_connected( void )
 TRACY_API void ___tracy_fiber_enter( const char* fiber ){ tracy::Profiler::EnterFiber( fiber, 0 ); }
 TRACY_API void ___tracy_fiber_leave( void ){ tracy::Profiler::LeaveFiber(); }
 #endif
+
+TRACY_API uint64_t ___tracy_seq_create( void ){ return tracy::Profiler::CreateSequence(); }
+TRACY_API void ___tracy_seq_resume( uint64_t id ){ tracy::Profiler::ResumeSequence( id ); }
+TRACY_API void ___tracy_seq_suspend( uint64_t id ){ tracy::Profiler::SuspendSequence( id ); }
+TRACY_API void ___tracy_seq_retire( uint64_t id ){ tracy::Profiler::RetireSequence( id ); }
 
 #  if defined TRACY_MANUAL_LIFETIME && defined TRACY_DELAYED_INIT
 TRACY_API void ___tracy_startup_profiler( void )

@@ -116,6 +116,11 @@
 #define TracyFiberEnterHint(x,y)
 #define TracyFiberLeave
 
+#define TracySeqCreate() ((uint64_t)0)
+#define TracySeqResume(id) ((void)(id))
+#define TracySeqSuspend(id) ((void)(id))
+#define TracySeqRetire(id) ((void)(id))
+
 #else
 
 #include <string.h>
@@ -254,6 +259,11 @@
 #  define TracyFiberEnterHint( fiber, groupHint ) tracy::Profiler::EnterFiber( fiber, groupHint )
 #  define TracyFiberLeave tracy::Profiler::LeaveFiber()
 #endif
+
+#define TracySeqCreate() tracy::Profiler::CreateSequence()
+#define TracySeqResume( id ) tracy::Profiler::ResumeSequence( id )
+#define TracySeqSuspend( id ) tracy::Profiler::SuspendSequence( id )
+#define TracySeqRetire( id ) tracy::Profiler::RetireSequence( id )
 
 #endif
 

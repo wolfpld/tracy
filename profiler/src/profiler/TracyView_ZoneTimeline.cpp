@@ -76,7 +76,7 @@ void View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
     if( !draw.empty() && yPos <= yMax && yPos + ostep * croppedDepth >= yMin )
     {
         // Only apply margin when croppingActive to avoid text moving around when mouse is getting close to the cropper widget
-        DrawZoneList( ctx, draw, offset, thread.id, croppedDepth, croppingActive ? cropperAdditionalMargin + GetScale() /* Ensure text has a bit of space for text */ : 0.f );
+        DrawZoneList( ctx, draw, offset, thread.id, croppedDepth, croppingActive ? cropperAdditionalMargin + GetScale() /* Ensure text has a bit of space for text */ : 0.f, thread.isFlatView != 0 );
     }
     offset += ostep * croppedDepth;
 
@@ -230,7 +230,7 @@ void View::DrawThreadOverlays( const ThreadData& thread, const ImVec2& ul, const
 }
 
 
-void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineDraw>& drawList, int _offset, uint64_t tid, int maxDepth, double margin )
+void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineDraw>& drawList, int _offset, uint64_t tid, int maxDepth, double margin, bool isFlatView )
 {
     auto draw = ImGui::GetWindowDrawList();
     const auto w = ctx.w;
@@ -354,7 +354,25 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
             const auto pr1 = ( end - vStart ) * pxns;
             const auto zsz = std::max( pr1 - pr0, pxns * 0.5 );
 
-            const auto zoneColor = GetZoneColorData( ev, tid, v.depth, v.inheritedColor );
+            const auto& seqRefMap = m_worker.GetZoneSeqRef();
+            const auto seqIt = seqRefMap.find( &ev );
+            if( !isFlatView && seqIt != seqRefMap.end() )
+            {
+                m_seqZoneYPos[&ev] = wpos.y + offset + ty * 0.5f;
+            }
+
+            // Preserve original-thread coloring when rendered on a flat view.
+            uint64_t colorTid = tid;
+            if( isFlatView && seqIt != seqRefMap.end() )
+            {
+                const auto& seqMap = m_worker.GetSequences();
+                auto sit = seqMap.find( seqIt->second.seqId );
+                if( sit != seqMap.end() && seqIt->second.continuationIdx < sit->second->continuations.size() )
+                {
+                    colorTid = sit->second->continuations[seqIt->second.continuationIdx].tid;
+                }
+            }
+            const auto zoneColor = GetZoneColorData( ev, colorTid, v.depth, v.inheritedColor );
             const char* zoneName = m_worker.GetZoneName( ev );
 
             auto tsz = ImGui::CalcTextSize( zoneName );
@@ -388,7 +406,11 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y + 1 ) ) )
             {
                 ZoneTooltip( ev );
-                if( IsMouseClickReleased( 1 ) ) m_setRangePopup = RangeSlim { ev.Start(), m_worker.GetZoneEnd( ev ), true };
+                if( IsMouseClickReleased( 1 ) )
+                {
+                    m_setRangePopup = RangeSlim { ev.Start(), m_worker.GetZoneEnd( ev ), true };
+                    m_seqFlattenPopupSeqId = ( !isFlatView && seqIt != seqRefMap.end() ) ? seqIt->second.seqId : 0;
+                }
 
                 if( !m_zoomAnim.active && IsMouseClicked( 2 ) )
                 {
@@ -409,6 +431,30 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
 
                 m_zoneSrcLocHighlight = ev.SrcLoc();
                 m_zoneHover = &ev;
+
+                if( !isFlatView && seqIt != seqRefMap.end() )
+                {
+                    const auto& seqMap = m_worker.GetSequences();
+                    const auto sit = seqMap.find( seqIt->second.seqId );
+                    if( sit != seqMap.end() )
+                    {
+                        const auto& conts = sit->second->continuations;
+                        const auto idx = seqIt->second.continuationIdx;
+                        if( idx > 0 )
+                        {
+                            m_seqArrowDraw.push_back( {
+                                conts[idx-1].suspendTime, (const ZoneEvent*)conts[idx-1].zone,
+                                conts[idx].resumeTime,    (const ZoneEvent*)conts[idx].zone } );
+                        }
+                        if( idx + 1 < conts.size() )
+                        {
+                            m_seqArrowDraw.push_back( {
+                                conts[idx].suspendTime,   (const ZoneEvent*)conts[idx].zone,
+                                conts[idx+1].resumeTime,  (const ZoneEvent*)conts[idx+1].zone } );
+                        }
+                    }
+
+                }
             }
             break;
         }
@@ -668,6 +714,114 @@ void View::DrawThreadCropper( const int depth, const uint64_t tid, const float x
             color = 0xFF888888;
         }
         draw->AddCircleFilled( center, circleRadius, color );
+    }
+}
+
+void View::MakeFlattenView( uint64_t seqId )
+{
+    for( const auto& fv : m_flattenViews )
+    {
+        if( fv.seqId == seqId ) return;     // idempotent
+    }
+    const auto& seqMap = m_worker.GetSequences();
+    auto sit = seqMap.find( seqId );
+    if( sit == seqMap.end() || sit->second->continuations.empty() ) return;
+    const auto& conts = sit->second->continuations;
+
+    const uint64_t synthTid = ( uint64_t(2) << 32 ) | m_nextFlattenTid++;
+
+    auto td = std::make_unique<ThreadData>();
+    td->id = synthTid;
+    td->count = 0;
+    td->nextZoneId = 0;
+    td->kernelSampleCnt = 0;
+    td->isFiber = 0;
+    td->isFlatView = 1;
+    td->fiber = nullptr;
+    td->stackCount = nullptr;
+    td->groupHint = 0;
+#ifndef TRACY_NO_STATISTICS
+    td->ghostIdx = 0;
+#endif
+
+    for( const auto& c : conts )
+    {
+        td->timeline.push_back( c.zone );
+    }
+
+    char name[128];
+    const auto* firstZone = (const ZoneEvent*)conts[0].zone;
+    const char* zName = m_worker.GetZoneName( *firstZone );
+    std::snprintf( name, sizeof( name ), "flat: %s", zName ? zName : "?" );
+    m_worker.RegisterFlattenThreadName( synthTid, name, strlen( name ) );
+
+    m_flattenViews.push_back( FlattenView{ std::move( td ), seqId } );
+}
+
+void View::DestroyFlattenView( uint64_t seqId )
+{
+    for( auto it = m_flattenViews.begin(); it != m_flattenViews.end(); ++it )
+    {
+        if( it->seqId == seqId )
+        {
+            m_worker.UnregisterFlattenThreadName( it->td->id );
+            m_flattenViews.erase( it );
+            return;
+        }
+    }
+}
+
+void View::QueueDestroyFlattenViewByTid( uint64_t tid )
+{
+    for( const auto& fv : m_flattenViews )
+    {
+        if( fv.td->id == tid )
+        {
+            m_flattenViewDestroyQueue.push_back( fv.seqId );
+            return;
+        }
+    }
+}
+
+void View::DrawSeqArrows( double pxns, const ImVec2& wpos )
+{
+    if( m_seqArrowDraw.empty() ) return;
+
+    auto draw = ImGui::GetWindowDrawList();
+    const auto vStart = m_vd.zvStart;
+    const auto scale = GetScale();
+    const auto lineThickness = std::max( 1.5f * scale, 1.0f );
+    const auto dotRadius = 2.5f * scale;
+    const auto arrowSize = 5.0f * scale;
+    constexpr ImU32 color = 0xFFFFFFFF;
+    constexpr ImU32 shadow = 0xFF000000;
+
+    for( const auto& a : m_seqArrowDraw )
+    {
+        const auto fromIt = m_seqZoneYPos.find( a.fromZone );
+        const auto toIt = m_seqZoneYPos.find( a.toZone );
+        if( fromIt == m_seqZoneYPos.end() || toIt == m_seqZoneYPos.end() ) continue;
+
+        const ImVec2 p0( wpos.x + ( a.fromTime - vStart ) * pxns, fromIt->second );
+        const ImVec2 p1( wpos.x + ( a.toTime   - vStart ) * pxns, toIt->second   );
+
+        draw->AddLine( p0 + ImVec2( 1, 1 ), p1 + ImVec2( 1, 1 ), shadow, lineThickness );
+        draw->AddLine( p0, p1, color, lineThickness );
+        draw->AddCircleFilled( p0, dotRadius, color );
+
+        // Arrowhead at p1
+        const auto dx = p1.x - p0.x;
+        const auto dy = p1.y - p0.y;
+        const auto len = std::sqrt( dx * dx + dy * dy );
+        if( len > 1.0f )
+        {
+            const auto nx = dx / len;
+            const auto ny = dy / len;
+            const ImVec2 base( p1.x - nx * arrowSize, p1.y - ny * arrowSize );
+            const ImVec2 left ( base.x - ny * arrowSize * 0.5f, base.y + nx * arrowSize * 0.5f );
+            const ImVec2 right( base.x + ny * arrowSize * 0.5f, base.y - nx * arrowSize * 0.5f );
+            draw->AddTriangleFilled( p1, left, right, color );
+        }
     }
 }
 

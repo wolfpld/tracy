@@ -706,6 +706,7 @@ struct ThreadData
     Vector<SampleData> ctxSwitchSamples;
     uint64_t kernelSampleCnt;
     uint8_t isFiber;
+    uint8_t isFlatView = 0;
     ThreadData* fiber;
     uint8_t* stackCount;
     int32_t groupHint;
@@ -873,6 +874,28 @@ struct FlameGraphItem
     StringIdx name;
     int64_t begin;
     std::vector<FlameGraphItem> children;
+};
+
+
+struct SeqRef
+{
+    uint64_t seqId;
+    uint32_t continuationIdx;
+};
+
+struct SeqContinuation
+{
+    short_ptr<ZoneEvent> zone;
+    uint64_t tid;
+    int64_t resumeTime;
+    int64_t suspendTime;    // 0 ⇒ still open
+};
+
+struct SequenceData
+{
+    int64_t createTime;
+    int64_t retireTime;     // 0 ⇒ not retired
+    Vector<SeqContinuation> continuations;
 };
 
 }

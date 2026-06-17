@@ -1235,9 +1235,17 @@ bool View::DrawImpl()
         {
             AddAnnotation( s, e );
         }
+        if( m_seqFlattenPopupSeqId != 0 )
+        {
+            if( ImGui::Selectable( ICON_FA_DIAGRAM_PROJECT " Flatten sequence timeline" ) )
+            {
+                MakeFlattenView( m_seqFlattenPopupSeqId );
+            }
+        }
         ImGui::EndPopup();
     }
     m_setRangePopupOpen = ImGui::IsPopupOpen( "SetZoneRange" );
+    if( !m_setRangePopupOpen ) m_seqFlattenPopupSeqId = 0;
 
     if( m_zoomAnim.active )
     {

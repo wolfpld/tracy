@@ -172,6 +172,7 @@ public:
     }
 
     void HighlightThread( uint64_t thread );
+    void QueueDestroyFlattenViewByTid( uint64_t tid );
     void SelectThread( uint64_t thread );
     uint64_t GetSelectThread() const { return m_selectedThread; }
     void ZoomToRange( int64_t start, int64_t end, bool pause = true );
@@ -291,7 +292,10 @@ private:
     void DrawTimelineFrames( const FrameData& frames );
     void DrawTimeline();
     void DrawSampleList( const TimelineContext& ctx, const std::vector<SamplesDraw>& drawList, const Vector<SampleData>& vec, int offset, uint64_t tid );
-    void DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineDraw>& drawList, int offset, uint64_t tid, int maxDepth, double margin );
+    void DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineDraw>& drawList, int offset, uint64_t tid, int maxDepth, double margin, bool isFlatView );
+    void DrawSeqArrows( double pxns, const ImVec2& wpos );
+    void MakeFlattenView( uint64_t seqId );
+    void DestroyFlattenView( uint64_t seqId );
     void DrawThreadCropper( const int depth, const uint64_t tid, const float xPos, const float yPos, const float ostep, const float cropperWidth, const bool hasCtxSwitches );
     void DrawContextSwitchList( const TimelineContext& ctx, const std::vector<ContextSwitchDraw>& drawList, const Vector<ContextSwitchData>& ctxSwitch, int offset, int endOffset, bool isFiber, uint64_t tid );
     int DispatchGpuZoneLevel( const Vector<short_ptr<GpuEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift );
@@ -538,6 +542,26 @@ private:
     uint32_t m_lockInfoWindow = InvalidId;
     const ZoneEvent* m_zoneHover = nullptr;
     DecayValue<const ZoneEvent*> m_zoneHover2 = nullptr;
+
+    struct SeqArrowDraw
+    {
+        int64_t fromTime;
+        const ZoneEvent* fromZone;
+        int64_t toTime;
+        const ZoneEvent* toZone;
+    };
+    std::vector<SeqArrowDraw> m_seqArrowDraw;
+    unordered_flat_map<const ZoneEvent*, float> m_seqZoneYPos;
+
+    struct FlattenView
+    {
+        std::unique_ptr<ThreadData> td;
+        uint64_t seqId;
+    };
+    std::vector<FlattenView> m_flattenViews;
+    std::vector<uint64_t> m_flattenViewDestroyQueue;
+    uint32_t m_nextFlattenTid = 1;
+    uint64_t m_seqFlattenPopupSeqId = 0;
     int m_frameHover = -1;
     bool m_messagesScrollBottom;
 

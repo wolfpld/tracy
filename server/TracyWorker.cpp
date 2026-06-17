@@ -7378,10 +7378,58 @@ void Worker::ProcessFiberLeave( const QueueFiberLeave& ev )
 
 void Worker::ProcessSectionEnter( const QueueSectionEnter& ev )
 {
+    const auto t = TscTime( RefTime( m_refTimeThread, ev.time ) );
+    if( m_data.lastTime < t ) m_data.lastTime = t;
+    const auto text = GetSingleStringIdx();
+
+    const auto ait = m_data.sectionsActive.find( ev.id );
+    if( ait != m_data.sectionsActive.end() )
+    {
+        m_data.sectionsActive.erase( ait );
+        auto it = std::ranges::find_if( m_data.sectionsPending, [id = ev.id]( const auto& s ) { return s.id == id; } );
+        assert( it != m_data.sectionsPending.end() );
+        assert( it->start.Val() < 0 );
+        assert( !it->text.Active() );
+        it->start.SetVal( t );
+        it->text.SetIdx( text );
+        m_data.sections.push_back( *it );
+        m_data.sectionsPending.erase( it );
+    }
+    else
+    {
+        m_data.sections.push_back( SectionItem {
+            .start = t,
+            .end = -1,
+            .text = StringIdx( text ),
+            .id = ev.id
+        } );
+        m_data.sectionsActive.insert( ev.id );
+    }
 }
 
 void Worker::ProcessSectionLeave( const QueueSectionLeave& ev )
 {
+    const auto t = TscTime( RefTime( m_refTimeThread, ev.time ) );
+    if( m_data.lastTime < t ) m_data.lastTime = t;
+
+    const auto ait = m_data.sectionsActive.find( ev.id );
+    if( ait != m_data.sectionsActive.end() )
+    {
+        m_data.sectionsActive.erase( ait );
+        auto it = std::ranges::find_if( m_data.sections, [id = ev.id]( const auto& s ) { return s.id == id; } );
+        assert( it != m_data.sections.end() );
+        assert( it->end.Val() < 0 );
+        it->end.SetVal( t );
+    }
+    else
+    {
+        m_data.sectionsPending.push_back( SectionItem {
+            .start = -1,
+            .end = t,
+            .id = ev.id
+        } );
+        m_data.sectionsActive.insert( ev.id );
+    }
 }
 
 

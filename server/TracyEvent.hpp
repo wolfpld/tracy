@@ -683,6 +683,14 @@ struct ChildSample
     uint64_t addr;
 };
 
+
+struct SectionItem
+{
+    Int48 start, end;
+    StringIdx text;
+    uint32_t id;
+};
+
 #pragma pack( pop )
 
 

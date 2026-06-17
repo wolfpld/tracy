@@ -407,6 +407,10 @@ private:
         bool hasBranchRetirement = false;
 
         unordered_flat_map<uint64_t, uint64_t> fiberToThreadMap;
+
+        Vector<SectionItem> sections;
+        Vector<SectionItem> sectionsPending;
+        unordered_flat_set<uint64_t> sectionsActive;
     };
 
     struct MbpsBlock

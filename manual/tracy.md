@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-06-16 <https://github.com/wolfpld/tracy>
+2026-06-18 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -2769,14 +2769,25 @@ Sometimes it is desired to change how the profiled application behaves during th
 
     void Callback(void* data, uint32_t idx, int32_t val)
 
-The `data` parameter will have the same value as was specified in the macro. The `idx` argument is an user-defined parameter index and `val` is the value set in the profiler user interface.
+The `data` parameter will have the same value as was specified in the macro. The `idx` argument is an user-defined parameter index and `val` is the value set in the profiler user interface (in the connection information popup, see section [4.4.2](#connectionpopup)).
 
-To specify individual parameters, use the `TracyParameterSetup(idx, name, isBool, val)` macro. The `idx` value will be passed to the callback function for identification purposes (Tracy doesn't care what it's set to). `Name` is the parameter label, displayed on the list of parameters. Finally, `isBool` determines if `val` should be interpreted as a boolean value, or as an integer number.
+To specify individual parameters, use the `TracyParameterSetup(idx, name, type, val)` macro. The `idx` value will be passed to the callback function for identification purposes (Tracy doesn't care what it's set to), `name` is the parameter label, displayed on the list of parameters, and `val` is the initial value. Finally, `type` determines how to interpret the `val` value, and can be selected from:
+
+- `TracyParamTypeInt` -- `val` is an integer value, with the profiler UI displaying a numerical entry field.
+
+- `TracyParamTypeBool` -- `val` is a boolean value, with a checkbox in the user interface.
+
+- `TracyParamTypeTrigger` -- a * Trigger* button is displayed, for cases when you just want some action to happen. Repeats the initial `val` value provided to the setup function.
 
 > [!IMPORTANT]
 > **Important**
 >
 > Usage of trace parameters makes profiling runs dependent on user interaction with the profiler, and thus it's not recommended to be employed if a consistent profiling environment is desired. Furthermore, interaction with the parameters is only possible in the graphical profiling application but not in the command line capture utility.
+
+
+-----
+
+ - Circle Dot icon
 
 ## Source contents callback
 
@@ -2994,7 +3005,7 @@ You can use the  *Save trace* button to save the current profile data to a fi
 
 If frame image capture has been implemented (chapter [3.3.3](#frameimages)), a thumbnail of the last received frame image will be provided for reference.
 
-Suppose the profiled application opted to provide trace parameters (see section [3.18](#traceparameters)) and the connection is still active. In that case, this pop-up will also contain a *trace parameters* section, listing all the provided options. A callback function will be executed on the client when you change any value here.
+Suppose the profiled application opted to provide trace parameters (see section [3.18](#traceparameters)) and the connection is still active. In that case, this pop-up will also contain a *Trace parameters* section, listing all the provided options. A callback function will be executed on the client when you change any value here.
 
 
 -----

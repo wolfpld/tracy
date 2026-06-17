@@ -3109,9 +3109,15 @@ Sometimes it is desired to change how the profiled application behaves during th
 void Callback(void* data, uint32_t idx, int32_t val)
 \end{lstlisting}
 
-The \texttt{data} parameter will have the same value as was specified in the macro. The \texttt{idx} argument is an user-defined parameter index and \texttt{val} is the value set in the profiler user interface.
+The \texttt{data} parameter will have the same value as was specified in the macro. The \texttt{idx} argument is an user-defined parameter index and \texttt{val} is the value set in the profiler user interface (in the connection information popup, see section~\ref{connectionpopup}).
 
-To specify individual parameters, use the \texttt{TracyParameterSetup(idx, name, isBool, val)} macro. The \texttt{idx} value will be passed to the callback function for identification purposes (Tracy doesn't care what it's set to). \texttt{Name} is the parameter label,  displayed on the list of parameters. Finally, \texttt{isBool} determines if \texttt{val} should be interpreted as a boolean value, or as an integer number.
+To specify individual parameters, use the \texttt{TracyParameterSetup(idx, name, type, val)} macro. The \texttt{idx} value will be passed to the callback function for identification purposes (Tracy doesn't care what it's set to), \texttt{name} is the parameter label,  displayed on the list of parameters, and \texttt{val} is the initial value. Finally, \texttt{type} determines how to interpret the \texttt{val} value, and can be selected from:
+
+\begin{itemize}
+\item \texttt{TracyParamTypeInt} -- \texttt{val} is an integer value, with the profiler UI displaying a numerical entry field.
+\item \texttt{TracyParamTypeBool} -- \texttt{val} is a boolean value, with a checkbox in the user interface.
+\item \texttt{TracyParamTypeTrigger} -- a~\emph{\faCircleDot{}~Trigger} button is displayed, for cases when you just want some action to happen. Repeats the initial \texttt{val} value provided to the setup function.
+\end{itemize}
 
 \begin{bclogo}[
 noborder=true,
@@ -3335,7 +3341,7 @@ You can use the \faFloppyDisk{}~\emph{Save trace} button to save the current pro
 
 If frame image capture has been implemented (chapter~\ref{frameimages}), a thumbnail of the last received frame image will be provided for reference.
 
-Suppose the profiled application opted to provide trace parameters (see section~\ref{traceparameters}) and the connection is still active. In that case, this pop-up will also contain a \emph{trace parameters} section, listing all the provided options. A callback function will be executed on the client when you change any value here.
+Suppose the profiled application opted to provide trace parameters (see section~\ref{traceparameters}) and the connection is still active. In that case, this pop-up will also contain a \emph{Trace parameters} section, listing all the provided options. A callback function will be executed on the client when you change any value here.
 
 \subsubsection{Automatic loading or connecting}
 

@@ -188,12 +188,15 @@ bool TracyLlmApi::ChatCompletion( const nlohmann::json& req, const std::function
     {
         if( m_models[modelIdx].contextSize <= 0 )
         {
-            if( m_type == Type::LlamaSwap )
+            if( m_type == Type::LlamaSwap || m_type == Type::LlamaCpp )
             {
                 curl_easy_reset( m_curl );
                 SetupCurl( m_curl );
                 std::string buf;
-                if( GetRequest( m_url + "/upstream/" + m_models[modelIdx].name + "/props", buf ) == 200 )
+                const auto url = m_type == Type::LlamaSwap
+                    ? m_url + "/upstream/" + m_models[modelIdx].name + "/props"
+                    : m_url + "/props?model=" + m_models[modelIdx].name;
+                if( GetRequest( url, buf ) == 200 )
                 {
                     auto json = nlohmann::json::parse( buf );
                     if( json.contains( "default_generation_settings" ) )

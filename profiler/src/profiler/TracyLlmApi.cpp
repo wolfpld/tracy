@@ -239,11 +239,21 @@ bool TracyLlmApi::Embeddings( const nlohmann::json& req, nlohmann::json& respons
 
 int TracyLlmApi::Tokenize( const std::string& text, int modelIdx )
 {
-    if( m_type == Type::LlamaSwap )
+    if( m_type == Type::LlamaSwap || m_type == Type::LlamaCpp )
     {
         std::string buf;
         nlohmann::json req = { { "content", text } };
-        auto res = PostRequest( m_url + "/upstream/" + m_models[modelIdx].name + "/tokenize", req.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace ), buf, true );
+        std::string url;
+        if( m_type == Type::LlamaSwap )
+        {
+            url = m_url + "/upstream/" + m_models[modelIdx].name + "/tokenize";
+        }
+        else
+        {
+            url = m_url + "/tokenize";
+            req["model"] = m_models[modelIdx].name;
+        }
+        auto res = PostRequest( url, req.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace ), buf, true );
         if( res != 200 ) return -1;
 
         try

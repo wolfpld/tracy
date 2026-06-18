@@ -407,6 +407,8 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
 
 void View::DrawWaitStacks()
 {
+    UpdateThreadOrder();
+
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 1400 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Wait stacks", &m_showWaitStacks );

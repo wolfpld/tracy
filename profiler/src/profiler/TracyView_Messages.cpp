@@ -137,6 +137,8 @@ void View::DrawMessages()
         ImGui::Checkbox( ICON_FA_IMAGE " Show frame images", &m_showMessageImages );
     }
 
+    UpdateThreadOrder();
+
     bool threadsChanged = false;
     ImGui::AlignTextToFramePadding();
     auto expand = ImGui::TreeNodeEx( ICON_FA_SHUFFLE " Visible threads:", ImGuiTreeNodeFlags_SpanLabelWidth );

@@ -249,6 +249,26 @@ void View::ViewSymbol( const char* fileName, int line, uint64_t baseAddr, uint64
     m_sourceView->OpenSymbol( fileName, line, baseAddr, symAddr, m_worker, *this );
 }
 
+void View::UpdateThreadOrder()
+{
+    const auto& threadData = m_worker.GetThreadData();
+    if( threadData.size() == m_threadOrder.size() ) return;
+
+    m_threadOrder.reserve( threadData.size() );
+    // Only new threads are in the end of the worker's ThreadData vector.
+    // Threads which get reordered by received thread hints are not new, yet removed from m_threadOrder.
+    // Therefore, those are kept in m_threadReinsert and are gathered before the remaining new threads.
+    const size_t numReinsert = m_threadReinsert.size();
+    const size_t numNew = threadData.size() - m_threadOrder.size() - numReinsert;
+    for( size_t i = 0; i < numReinsert + numNew; i++ )
+    {
+        const ThreadData* td = i < numReinsert ? m_threadReinsert[i] : threadData[m_threadOrder.size()];
+        auto it = std::find_if( m_threadOrder.begin(), m_threadOrder.end(), [td]( const auto t ) { return td->groupHint < t->groupHint; } );
+        m_threadOrder.insert( it, td );
+    }
+    m_threadReinsert.clear();
+}
+
 bool View::ViewDispatch( const char* fileName, int line, uint64_t symAddr )
 {
     if( line == 0 )

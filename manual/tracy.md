@@ -4733,6 +4733,39 @@ This feature can be completely disabled in the *Global settings*, as described i
 >
 > The only way to access the assistant is to run everything locally on your system. This ensures that everything you do stays private and that you won't be subject to forced changes in features or terms and conditions. You should own the tools you work with instead of renting them from someone else.
 
+If you just want to get things running and have a reasonably powerful hardware, follow the steps below.
+
+1.  Go to <https://llama.app/> and follow instructions to install llama.cpp.
+
+2.  Create the following `llama.ini` configuration file:
+
+        ; Launch with: llama-server --models-preset llama.ini
+
+        [*]
+        version = 1
+        cache-type-k = q8_0
+        cache-type-v = q8_0
+
+        [unsloth/Qwen3.6-27B-MTP-GGUF:Q4_K_M]
+        parallel = 1
+        spec-default = true
+        spec-type = draft-mtp
+        chat-template-kwargs = {"preserve_thinking": true}
+
+        [nomic-ai/nomic-embed-text-v1.5-GGUF:Q4_K_M]
+        embedding = true
+        parallel = 4
+        ctx-size = 8192
+        cache-ram = 0
+
+3.  Run `llama serve --models-preset llama.ini`
+
+4.  Connect to llama.cpp inside the profiler!
+
+The models will be automatically downloaded when trying to access them for the first time. It may take some time.
+
+To get faster response speed you may try replacing `unsloth/Qwen3.6-27B-MTP-GGUF:Q4_K_M` with `unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q4_K_M` in the configuration file.
+
 ## Service provider
 
 To get started, you will need to install an LLM[^103] provider on your system. Any service that's compatible with the standard API should work, but some may work better than others. The LLM field is advancing quickly, with new models frequently being released that often require specific support from provider services to deliver the best experience.

@@ -67,6 +67,16 @@ bool TracyLlmApi::Connect( const char* url )
                 m_type = Type::LlamaSwap;
                 if( id.find( "embed" ) != std::string::npos ) m_models.back().embeddings = true;
             }
+            else if( ( m_type == Type::Unknown || m_type == Type::LlamaCpp ) && GetRequest( m_url + "/props", buf2 ) == 200 && buf2.find( "\"build_info\"" ) != std::string::npos )
+            {
+                m_type = Type::LlamaCpp;
+                if( model.contains( "status" ) && model["status"].contains( "preset" ) && model["status"]["preset"].is_string() &&
+                    model["status"]["preset"].get_ref<const std::string&>().find( "embedding" ) != std::string::npos )
+                {
+                    m_models.back().embeddings = true;
+                }
+                if( model.contains( "meta" ) && model["meta"].contains( "n_ctx" ) ) m_models.back().contextSize = model["meta"]["n_ctx"].get<int>();
+            }
             else if( ( m_type == Type::Unknown || m_type == Type::LmStudio ) && GetRequest( m_url + "/api/v0/models/" + id, buf2 ) == 200 )
             {
                 m_type = Type::LmStudio;

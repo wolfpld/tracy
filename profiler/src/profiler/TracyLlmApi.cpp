@@ -78,6 +78,7 @@ bool TracyLlmApi::Connect( const char* url )
             else if( m_type == Type::Unknown )
             {
                 m_type = Type::Other;
+                if( id.find( "embed" ) != std::string::npos ) m_models.back().embeddings = true;
             }
         }
     }

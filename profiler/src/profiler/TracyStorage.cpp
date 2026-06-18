@@ -308,6 +308,8 @@ const char* GetCachePath( const char* file )
     assert( sz + fsz < MaxPath );
     memcpy( buf+sz, file, fsz+1 );
 
+    NormalizeProgramName( buf+sz, fsz );
+
     return buf;
 }
 

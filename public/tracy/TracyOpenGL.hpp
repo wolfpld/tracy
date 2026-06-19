@@ -52,9 +52,24 @@ public:
 #if !defined GL_TIMESTAMP && defined GL_TIMESTAMP_EXT
 #  define GL_TIMESTAMP GL_TIMESTAMP_EXT
 #  define GL_QUERY_COUNTER_BITS GL_QUERY_COUNTER_BITS_EXT
+#  define GL_QUERY_RESULT GL_QUERY_RESULT_EXT
+#  define GL_QUERY_RESULT_AVAILABLE GL_QUERY_RESULT_AVAILABLE_EXT
+#  define glGenQueries glGenQueriesEXT
+#  define glGetQueryiv glGetQueryivEXT
 #  define glGetQueryObjectiv glGetQueryObjectivEXT
 #  define glGetQueryObjectui64v glGetQueryObjectui64vEXT
+#  define glGetInteger64v glGetInteger64vEXT
 #  define glQueryCounter glQueryCounterEXT
+#endif
+
+#ifndef GL_MAJOR_VERSION
+#  define GL_MAJOR_VERSION 0x821B
+#endif
+#ifndef GL_NUM_EXTENSIONS
+#  define GL_NUM_EXTENSIONS 0x821D
+#endif
+#ifndef GL_QUERY_RESULT_NO_WAIT
+#  define GL_QUERY_RESULT_NO_WAIT 0x9194
 #endif
 
 #define TracyGpuContext tracy::GetGpuCtx().ptr = (tracy::GpuCtx*)tracy::tracy_malloc( sizeof( tracy::GpuCtx ) ); new(tracy::GetGpuCtx().ptr) tracy::GpuCtx;
@@ -108,10 +123,10 @@ public:
 
         assert( m_context != 255 );
 
-        if( !CheckFeature( "GL_ARB_timer_query" ) )
+        if( !CheckFeature( "GL_ARB_timer_query" ) && !CheckFeature( "GL_EXT_disjoint_timer_query" ) )
         {
             Profiler::LogString( MessageSourceType::Tracy, MessageSeverity::Warning, Color::Tomato, 0,
-                    "OpenGL context does not support GL_ARB_timer_query." );
+                    "OpenGL context does not support timer queries." );
         }
 
         // check for GL_QUERY_RESULT_NO_WAIT support
@@ -227,6 +242,8 @@ private:
         glGetIntegerv( GL_MAJOR_VERSION, &major );
         if( glGetError() != GL_NO_ERROR ) major = 0;   // pre-3.0: enum not supported
 
+#if defined(GL_VERSION_3_0) || defined(GL_ES_VERSION_3_0)
+        // GL 3 onwards: glGetStringi
         if( major >= 3 )
         {
             GLint numExt = 0;
@@ -238,6 +255,7 @@ private:
             }
             return false;
         }
+#endif
 
         // pre GL3 fallback:
         auto exts = (const char*)glGetString( GL_EXTENSIONS );

@@ -214,6 +214,20 @@ PYBIND11_MODULE( TracyServerBindings, m )
         return w.GetMessages().size();
     } )
 
+        // --- Sections ---
+        .def( "get_sections", []( const Worker& w ) {
+        py::list result;
+        for( auto& s : w.GetSections() )
+        {
+            py::dict d;
+            d["start"] = s.start.Val();
+            d["end"] = s.end.Val();
+            d["text"] = std::string( w.GetString( s.text ) );
+            result.append( d );
+        }
+        return result;
+    } )
+
         // --- Source locations / zones ---
         .def( "get_src_loc", []( const Worker& w, int16_t id ) {
         return w.GetSourceLocation( id );

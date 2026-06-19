@@ -21,6 +21,9 @@ data surface. Common entry points:
 - Threads: `get_threads()`, `get_thread_name(tid)`, `get_thread_context_switches(tid)`
 - Messages / plots / locks / memory / callstacks: `get_messages()`, `get_plots()`,
   `get_locks()`, `get_memory_events()`, `get_callstack_frames(...)`
+- Sections: `get_sections()` — timed code sections from
+  `TracySectionEnter`/`TracySectionLeave` instrumentation. Returns a list of
+  `{start, end, text}` dicts (start/end in ns).
 - Capture metadata: `get_capture_name()`, `get_capture_program()`,
   `get_first_time()`, `get_last_time()`, `get_resolution()`, `get_host_info()`
 

@@ -30,6 +30,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _PORT_FILE = os.path.join(_HERE, "tracy_mcp.port")
 _PID_FILE  = os.path.join(_HERE, "tracy_mcp.pid")
 _PREFERRED_PORT = int(os.environ.get("TRACY_MCP_PORT", "47380"))
+_TRANSPORT = os.environ.get("TRACY_MCP_TRANSPORT", "streamable-http").strip().lower()
 
 # Shared documentation surfaces. system.prompt.md is Tracy Assist's source
 # system prompt; exposing it as an MCP resource keeps analysis guidance in
@@ -677,6 +678,13 @@ async def shutdown_server() -> str:
 if __name__ == "__main__":
     atexit.register(_cleanup_pid_files)
 
+    if _TRANSPORT not in ("sse", "streamable-http"):
+        print(
+            "TRACY_MCP_TRANSPORT must be 'sse' or 'streamable-http'.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     running, existing_port = _is_our_server_running()
     if running:
         print(
@@ -689,12 +697,17 @@ if __name__ == "__main__":
     port = _find_free_port()
     _write_pid_and_port(port)
 
-    print(f"Tracy MCP listening on http://127.0.0.1:{port}/sse", file=sys.stderr)
+    path = (
+        mcp_server.settings.sse_path
+        if _TRANSPORT == "sse"
+        else mcp_server.settings.streamable_http_path
+    )
+    print(f"Tracy MCP listening on http://127.0.0.1:{port}{path}", file=sys.stderr)
 
     mcp_server.settings.host = "127.0.0.1"
     mcp_server.settings.port = port
     try:
-        mcp_server.run(transport="sse")
+        mcp_server.run(transport=_TRANSPORT)
     except KeyboardInterrupt:
         print("\nTracy MCP server stopped.", file=sys.stderr)
         sys.exit(0)

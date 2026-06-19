@@ -2315,21 +2315,22 @@ Set the following environment variables before launching (or export them in your
     PYTHONPATH=/path/to/tracy/build/python/Release
     TRACY_CAPTURES_DIR=/path/to/captures   # enables list_captures
     TRACY_MCP_PORT=47380                   # optional; default 47380
+    TRACY_MCP_TRANSPORT=streamable-http    # optional; streamable-http or sse
 
 ### Integrating with an AI assistant
 
-The server runs as a singleton on SSE transport (port 47380 by default). Only one process loads `TracyServerBindings` regardless of how many editor windows are open; subsequent launches detect the port is taken and exit immediately.
+The server runs as a singleton on Streamable HTTP transport (port 47380 by default). Only one process loads `TracyServerBindings` regardless of how many editor windows are open; subsequent launches detect the port is taken and exit immediately. Set `TRACY_MCP_TRANSPORT=sse` before launching to use the legacy SSE transport instead.
 
 The server prints its URL on startup and writes it to `extra/mcp/tracy_mcp.port`:
 
-    Tracy MCP listening on http://127.0.0.1:47380/sse
+    Tracy MCP listening on http://127.0.0.1:47380/mcp
 
 Configure your AI assistant using that URL. For example, for a JSON-based MCP configuration:
 
     {
       "mcpServers": {
         "tracy": {
-          "url": "http://127.0.0.1:47380/sse"
+          "url": "http://127.0.0.1:47380/mcp"
         }
       }
     }

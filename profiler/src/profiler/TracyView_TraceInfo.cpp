@@ -161,6 +161,7 @@ void View::DrawInfo()
         ImGui::SameLine();
         TextFocused( "+", RealToString( m_worker.GetContextSwitchPerCpuCount() ) );
         TooltipIfHovered( "Coarse CPU core context switch data" );
+        TextFocused( "Sections:", RealToString( m_worker.GetSections().size() ) );
         if( m_worker.GetSourceFileCacheCount() == 0 )
         {
             TextFocused( "Source file cache:", "0" );

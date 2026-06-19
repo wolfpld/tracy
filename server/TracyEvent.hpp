@@ -688,7 +688,6 @@ struct SectionItem
 {
     Int48 start, end;
     StringIdx text;
-    uint32_t id;
 };
 
 #pragma pack( pop )

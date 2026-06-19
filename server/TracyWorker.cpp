@@ -7386,9 +7386,8 @@ void Worker::ProcessSectionEnter( const QueueSectionEnter& ev )
     if( ait != m_data.sectionsActive.end() )
     {
         m_data.sectionsActive.erase( ait );
-        auto it = std::ranges::find_if( m_data.sectionsPending, [id = ev.id]( const auto& s ) { return s.id == id; } );
+        auto it = std::ranges::find_if( m_data.sectionsPending, [id = ev.id]( const auto& s ) { return s.start.Val() == id; } );
         assert( it != m_data.sectionsPending.end() );
-        assert( it->start.Val() < 0 );
         assert( !it->text.Active() );
         it->start.SetVal( t );
         it->text.SetIdx( text );
@@ -7399,9 +7398,8 @@ void Worker::ProcessSectionEnter( const QueueSectionEnter& ev )
     {
         m_data.sections.push_back( SectionItem {
             .start = t,
-            .end = -1,
-            .text = StringIdx( text ),
-            .id = ev.id
+            .end = -int64_t( ev.id ),
+            .text = StringIdx( text )
         } );
         m_data.sectionsActive.insert( ev.id );
     }
@@ -7416,7 +7414,7 @@ void Worker::ProcessSectionLeave( const QueueSectionLeave& ev )
     if( ait != m_data.sectionsActive.end() )
     {
         m_data.sectionsActive.erase( ait );
-        auto it = std::ranges::find_if( m_data.sections, [id = ev.id]( const auto& s ) { return s.id == id; } );
+        auto it = std::ranges::find_if( m_data.sections, [id = -int64_t( ev.id )]( const auto& s ) { return s.end.Val() == id; } );
         assert( it != m_data.sections.end() );
         assert( it->end.Val() < 0 );
         it->end.SetVal( t );
@@ -7424,9 +7422,8 @@ void Worker::ProcessSectionLeave( const QueueSectionLeave& ev )
     else
     {
         m_data.sectionsPending.push_back( SectionItem {
-            .start = -1,
-            .end = t,
-            .id = ev.id
+            .start = ev.id,
+            .end = t
         } );
         m_data.sectionsActive.insert( ev.id );
     }

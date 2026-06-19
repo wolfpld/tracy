@@ -2420,10 +2420,7 @@ Tracy C API exposes functions with the \texttt{\_\_\_tracy} prefix that you may 
 \item \texttt{\_\_\_tracy\_alloc\_srcloc\_name(uint32\_t line, const char* source, size\_t sourceSz, const char* function, size\_t functionSz, const char* name, size\_t nameSz)}
 \end{itemize}
 
-Here \texttt{line} is line number in the \texttt{source} source file and \texttt{function} is the
-name of a function in which the zone is created. \texttt{sourceSz} and \texttt{functionSz} are the
-size of the corresponding string arguments in bytes. You may additionally specify an optional zone
-name, by providing it in the \texttt{name} variable, and specifying its size in \texttt{nameSz}.
+Here \texttt{line} is line number in the \texttt{source} source file and \texttt{function} is the name of a function in which the zone is created. \texttt{sourceSz} and \texttt{functionSz} are the sizes of the corresponding string arguments in bytes. You may additionally specify an optional zone name by providing it in the \texttt{name} variable and specifying its size in \texttt{nameSz}. If the passed strings contain null-terminating characters, these characters must be excluded from the provided sizes.
 
 The \texttt{\_\_\_tracy\_alloc\_srcloc} and \texttt{\_\_\_tracy\_alloc\_srcloc\_name} functions
 return an \texttt{uint64\_t} source location identifier corresponding to an \emph{allocated source

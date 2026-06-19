@@ -259,8 +259,7 @@ def _prompt_resource() -> str:
 @mcp_server.resource("tracy://eval-guide")
 def _eval_guide_resource() -> str:
     """Bindings-layer guide for the eval tool: ctx object model, time units,
-    source-location ID semantics, and worked examples translating catalog
-    entries into ctx Python."""
+    source-location ID semantics, and worked examples of common ctx queries."""
     return _read_text(_EVAL_GUIDE_PATH)
 
 

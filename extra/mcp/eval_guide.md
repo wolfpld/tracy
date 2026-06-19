@@ -1,7 +1,7 @@
 # Tracy MCP eval guide
 
-This document covers the bindings-layer detail that the curated catalog
-(`tracy://catalog`) and analysis guidance (`tracy://prompt`) do not.
+This document covers the bindings-layer detail that the analysis
+guidance (`tracy://prompt`) does not.
 
 ## ctx
 
@@ -44,24 +44,23 @@ Run `print([m for m in dir(ctx) if not m.startswith('_')])` for the full list.
 - Source-location IDs from `get_all_zone_source_locations()` are the join key
   between zone-name lookups and per-callsite queries.
 
-## Translating catalog entries to ctx Python
+## Common query patterns
 
-The catalog (`tracy://catalog`) lists curated queries. Each maps to a small
-Python snippet:
+Small Python snippets for the queries you'll reach for most often:
 
 ```python
-# zone_list — top 10 hottest zones by total time
+# top 10 hottest zones by total time
 top = sorted(ctx.get_all_zone_stats().items(),
              key=lambda kv: kv[1].total, reverse=True)[:10]
 for k, v in top:
     print(f"{v.total/1e6:.2f}ms  count={v.count}  {k}")
 
-# frame_list — primary frame set timing
+# primary frame set timing
 times = ctx.get_frame_times()  # ns per frame
 print(f"frames={len(times)}  avg={sum(times)/len(times)/1e6:.2f}ms  "
       f"p99={sorted(times)[int(len(times)*0.99)]/1e6:.2f}ms")
 
-# zone_stats for a named zone — find the srcloc id, then drill in
+# stats for a named zone — find the srcloc id, then drill in
 import re
 matches = [k for k in ctx.get_all_zone_stats() if k.startswith("MyFunc ")]
 sid = int(re.search(r"<(\d+)>$", matches[0]).group(1))

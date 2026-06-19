@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-06-18 <https://github.com/wolfpld/tracy>
+2026-06-19 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -2161,7 +2161,7 @@ Tracy C API exposes functions with the `___tracy` prefix that you may use to wri
 
 - `___tracy_alloc_srcloc_name(uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz)`
 
-Here `line` is line number in the `source` source file and `function` is the name of a function in which the zone is created. `sourceSz` and `functionSz` are the size of the corresponding string arguments in bytes. You may additionally specify an optional zone name, by providing it in the `name` variable, and specifying its size in `nameSz`.
+Here `line` is line number in the `source` source file and `function` is the name of a function in which the zone is created. `sourceSz` and `functionSz` are the sizes of the corresponding string arguments in bytes. You may additionally specify an optional zone name by providing it in the `name` variable and specifying its size in `nameSz`. If the passed strings contain null-terminating characters, these characters must be excluded from the provided sizes.
 
 The `___tracy_alloc_srcloc` and `___tracy_alloc_srcloc_name` functions return an `uint64_t` source location identifier corresponding to an *allocated source location*. As these functions do not require the provided string data to be available after they return, the calling code is free to deallocate them at any time afterward. This way, the string lifetime requirements described in section [3.1](#textstrings) are relaxed.
 
@@ -4746,13 +4746,16 @@ If you just want to get things running and have a reasonably powerful hardware, 
         cache-type-k = q8_0
         cache-type-v = q8_0
 
-        [unsloth/Qwen3.6-27B-MTP-GGUF:Q4_K_M]
+        [unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q4_K_M]
+        hf = unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q4_K_M
         parallel = 1
         spec-default = true
         spec-type = draft-mtp
         chat-template-kwargs = {"preserve_thinking": true}
+        ctx-size = 100000
 
         [nomic-ai/nomic-embed-text-v1.5-GGUF:Q4_K_M]
+        hf = nomic-ai/nomic-embed-text-v1.5-GGUF:Q4_K_M
         embedding = true
         parallel = 4
         ctx-size = 8192
@@ -4764,7 +4767,7 @@ If you just want to get things running and have a reasonably powerful hardware, 
 
 The models will be automatically downloaded when trying to access them for the first time. It may take some time.
 
-To get faster response speed you may try replacing `unsloth/Qwen3.6-27B-MTP-GGUF:Q4_K_M` with `unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q4_K_M` in the configuration file.
+If you have the resources available you may try replacing `unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q4_K_M` with `unsloth/Qwen3.6-27B-MTP-GGUF:Q4_K_M` in the configuration file to get a more capable model.
 
 ## Service provider
 

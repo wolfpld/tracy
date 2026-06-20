@@ -726,6 +726,13 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
     m_data.framesBase = m_data.frames.Data()[0];
     assert( m_data.framesBase->name == 0 );
 
+    if( fileVer >= FileVersion( 0, 13, 4 ) )
+    {
+        f.Read( sz );
+        m_data.sections.reserve_exact( sz, m_slab );
+        f.Read( m_data.sections.data(), sz * sizeof( SectionItem ) );
+    }
+
     unordered_flat_map<uint64_t, const char*> pointerMap;
 
     f.Read( sz );
@@ -8225,6 +8232,10 @@ void Worker::Write( FileWrite& f, bool fiDict )
             }
         }
     }
+
+    sz = m_data.sections.size();
+    f.Write( &sz, sizeof( sz ) );
+    f.Write( m_data.sections.data(), sz * sizeof( SectionItem ) );
 
     sz = m_data.stringData.size();
     f.Write( &sz, sizeof( sz ) );

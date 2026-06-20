@@ -963,7 +963,7 @@ private:
     {
         assert( len <= TargetFrameSize );
         bool ret = true;
-        if( m_bufferOffset - m_bufferStart + (int)len > TargetFrameSize )
+        if( m_bufferOffset - m_bufferStart + (int)len > (int)TargetFrameSize )
         {
             ret = CommitData();
         }

@@ -1,5 +1,7 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.29)
 project(dyna LANGUAGES C CXX)
+
+option(TRACY_ENABLE "Enable Tracy" ON)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -16,6 +18,7 @@ CPMAddPackage(
 )
 
 add_subdirectory(${glad_SOURCE_DIR}/cmake ${CMAKE_CURRENT_BINARY_DIR}/glad)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../.. client/)
 
 glad_add_library(glad_gl_core_33 STATIC API gl:core=3.3)
 
@@ -43,6 +46,7 @@ target_link_libraries(dyna
     glad_gl_core_33
     SDL3::SDL3
     SDL3_image::SDL3_image
+    Tracy::TracyClient
 )
 
 target_include_directories(dyna PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)

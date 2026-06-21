@@ -4,6 +4,7 @@
 #include "timer.hpp"
 
 #include <SDL3/SDL.h>
+#include <tracy/Tracy.hpp>
 
 #include <cstdio>
 #include <vector>
@@ -242,6 +243,7 @@ void swap()
 {
     flush_batch();
     SDL_GL_SwapWindow( g_window );
+    FrameMark;
 }
 
 void alpha( float a )

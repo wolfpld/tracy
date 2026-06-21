@@ -6,6 +6,7 @@
 #include <SDL3/SDL.h>
 #include <tracy/Tracy.hpp>
 
+#include <cassert>
 #include <cstdio>
 #include <vector>
 
@@ -193,6 +194,91 @@ void flush_batch()
     g_cmds.clear();
 }
 
+// Frame image capture, following the OpenGL example in the Tracy manual. The
+// backbuffer is downscaled on the GPU to a small fixed size and read back
+// asynchronously, so a screenshot can be attached to every frame without
+// stalling the CPU on the GPU. Several buffer sets are cycled because rendering
+// runs a few frames ahead of the GPU.
+// Half the render resolution, preserving its aspect ratio; both dimensions
+// stay divisible by 4 as FrameImage requires.
+constexpr int FI_W = Gfx::w / 2;
+constexpr int FI_H = Gfx::h / 2;
+constexpr int FI_COUNT = 4;
+
+GLuint g_fi_texture[FI_COUNT];
+GLuint g_fi_framebuffer[FI_COUNT];
+GLuint g_fi_pbo[FI_COUNT];
+GLsync g_fi_fence[FI_COUNT] = {};
+int g_fi_idx = 0;
+std::vector<int> g_fi_queue;
+
+void init_frame_images()
+{
+    ZoneScoped;
+    glGenTextures( FI_COUNT, g_fi_texture );
+    glGenFramebuffers( FI_COUNT, g_fi_framebuffer );
+    glGenBuffers( FI_COUNT, g_fi_pbo );
+    for( int i = 0; i < FI_COUNT; i++ )
+    {
+        glBindTexture( GL_TEXTURE_2D, g_fi_texture[i] );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+        glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, FI_W, FI_H, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr );
+
+        glBindFramebuffer( GL_FRAMEBUFFER, g_fi_framebuffer[i] );
+        glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, g_fi_texture[i], 0 );
+
+        glBindBuffer( GL_PIXEL_PACK_BUFFER, g_fi_pbo[i] );
+        glBufferData( GL_PIXEL_PACK_BUFFER, FI_W * FI_H * 4, nullptr, GL_STREAM_READ );
+    }
+    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+    glBindBuffer( GL_PIXEL_PACK_BUFFER, 0 );
+}
+
+void shutdown_frame_images()
+{
+    ZoneScoped;
+    glDeleteTextures( FI_COUNT, g_fi_texture );
+    glDeleteFramebuffers( FI_COUNT, g_fi_framebuffer );
+    glDeleteBuffers( FI_COUNT, g_fi_pbo );
+}
+
+// Send any captures the GPU has already finished, then queue a capture of the
+// frame just rendered. Call after the batch is flushed but before swapping.
+void capture_frame_image()
+{
+    ZoneScoped;
+
+    // Hand finished captures from earlier frames to the profiler. The queue
+    // size is the number of frames we are still ahead of the GPU, which is the
+    // frame lag Tracy needs as the FrameImage offset.
+    while( !g_fi_queue.empty() )
+    {
+        const int idx = g_fi_queue.front();
+        if( glClientWaitSync( g_fi_fence[idx], 0, 0 ) == GL_TIMEOUT_EXPIRED ) break;
+        glDeleteSync( g_fi_fence[idx] );
+        glBindBuffer( GL_PIXEL_PACK_BUFFER, g_fi_pbo[idx] );
+        void* ptr = glMapBufferRange( GL_PIXEL_PACK_BUFFER, 0, FI_W * FI_H * 4, GL_MAP_READ_BIT );
+        FrameImage( ptr, FI_W, FI_H, g_fi_queue.size(), true );
+        glUnmapBuffer( GL_PIXEL_PACK_BUFFER );
+        g_fi_queue.erase( g_fi_queue.begin() );
+    }
+
+    // Downscale the current backbuffer into the next buffer set and start an
+    // asynchronous read-back, signalled by a fence.
+    assert( g_fi_queue.empty() || g_fi_queue.front() != g_fi_idx );  // buffer overrun
+    glBindFramebuffer( GL_DRAW_FRAMEBUFFER, g_fi_framebuffer[g_fi_idx] );
+    glBlitFramebuffer( 0, 0, Gfx::w, Gfx::h, 0, 0, FI_W, FI_H, GL_COLOR_BUFFER_BIT, GL_LINEAR );
+    glBindFramebuffer( GL_DRAW_FRAMEBUFFER, 0 );
+    glBindFramebuffer( GL_READ_FRAMEBUFFER, g_fi_framebuffer[g_fi_idx] );
+    glBindBuffer( GL_PIXEL_PACK_BUFFER, g_fi_pbo[g_fi_idx] );
+    glReadPixels( 0, 0, FI_W, FI_H, GL_RGBA, GL_UNSIGNED_BYTE, nullptr );
+    glBindFramebuffer( GL_READ_FRAMEBUFFER, 0 );
+    g_fi_fence[g_fi_idx] = glFenceSync( GL_SYNC_GPU_COMMANDS_COMPLETE, 0 );
+    g_fi_queue.emplace_back( g_fi_idx );
+    g_fi_idx = ( g_fi_idx + 1 ) % FI_COUNT;
+}
+
 } // namespace
 
 namespace Render
@@ -203,12 +289,14 @@ bool init()
     ZoneScoped;
     if( !init_shaders() ) return false;
     init_quad_vao();
+    init_frame_images();
     return true;
 }
 
 void shutdown()
 {
     ZoneScoped;
+    shutdown_frame_images();
     if( g_vbo ) glDeleteBuffers( 1, &g_vbo );
     if( g_vao ) glDeleteVertexArrays( 1, &g_vao );
     if( g_program ) glDeleteProgram( g_program );
@@ -250,6 +338,7 @@ void swap()
 {
     ZoneScoped;
     flush_batch();
+    capture_frame_image();
     SDL_GL_SwapWindow( g_window );
     FrameMark;
 }

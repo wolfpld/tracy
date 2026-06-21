@@ -6,6 +6,8 @@
 #include "timer.hpp"
 #include "world.hpp"
 
+#include <tracy/Tracy.hpp>
+
 namespace dyna
 {
 
@@ -19,6 +21,7 @@ Player::Player( int gx, int gy )
 
 void Player::tick( World& world )
 {
+    ZoneScoped;
     Map& map = world.map();
 
     delta += Timer::delta;
@@ -79,6 +82,7 @@ void Player::tick( World& world )
 
 void Player::draw()
 {
+    ZoneScoped;
     const AnimTexture* tex = nullptr;
 
     switch( action )

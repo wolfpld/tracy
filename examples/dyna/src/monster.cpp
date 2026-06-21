@@ -6,6 +6,8 @@
 #include "timer.hpp"
 #include "world.hpp"
 
+#include <tracy/Tracy.hpp>
+
 namespace dyna
 {
 
@@ -77,6 +79,7 @@ Action Monster::rand_dir( const Map& map )
 
 void Monster::think( const Map& map )
 {
+    ZoneScoped;
     if( action == Action::wait || action == Action::appear )
     {
         set_action( rand_dir( map ) );
@@ -108,6 +111,7 @@ void Monster::think( const Map& map )
 
 void Monster::tick( World& world )
 {
+    ZoneScoped;
     Map& map = world.map();
 
     delta += Timer::delta;
@@ -189,6 +193,7 @@ const AnimTexture& Monster::texture_for( Action a ) const
 
 void Monster::draw()
 {
+    ZoneScoped;
     // The original returns without drawing for unexpected actions; monsters only
     // ever hold the actions handled by texture_for, so always draw.
     generic_draw( texture_for( action ) );

@@ -15,6 +15,8 @@
 #include <fstream>
 #include <sstream>
 
+#include <tracy/Tracy.hpp>
+
 namespace dyna
 {
 
@@ -108,6 +110,9 @@ void Field::draw( int x, int y ) const
 
 Map::Map( const std::string& fn )
 {
+    ZoneScoped;
+    ZoneText( fn.c_str(), fn.size() );
+
     load( fn );
     generate_destructibles();
     populate_map();
@@ -117,6 +122,7 @@ Map::~Map() = default;
 
 void Map::load( const std::string& fn )
 {
+    ZoneScoped;
     std::ifstream f( fn );
     if( !f )
     {
@@ -174,6 +180,7 @@ bool Map::monster_ok( int rx, int ry, int pxx, int pyy, int r ) const
 
 void Map::generate_destructibles()
 {
+    ZoneScoped;
     int i = destructibles;
     while( i != 0 )
     {
@@ -189,6 +196,7 @@ void Map::generate_destructibles()
 
 void Map::populate_map()
 {
+    ZoneScoped;
     for( int type = 1; type <= 3; type++ )
     {
         int count = ( type == 1 ) ? m1 : ( type == 2 ) ? m2
@@ -208,6 +216,7 @@ void Map::populate_map()
 
 void Map::draw()
 {
+    ZoneScoped;
     for( int ry = 0; ry < Y; ry++ )
         for( int rx = 0; rx < X; rx++ )
             at( rx, ry ).draw( rx, ry );
@@ -219,6 +228,7 @@ void Map::draw()
 
 void Map::tick( World& world )
 {
+    ZoneScoped;
     // Bombs.
     for( auto& b : bombs ) b->tick( world );
     bombs.erase( std::remove_if( bombs.begin(), bombs.end(),

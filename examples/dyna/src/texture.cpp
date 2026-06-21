@@ -5,6 +5,7 @@
 
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
+#include <tracy/Tracy.hpp>
 
 #include <cstdint>
 #include <cstdio>
@@ -41,6 +42,7 @@ using SurfacePtr = std::unique_ptr<SDL_Surface, SurfaceDeleter>;
 // failure; the result owns its pixels.
 SurfacePtr to_rgba( SDL_Surface* src )
 {
+    ZoneScoped;
     if( !src ) return nullptr;
     return SurfacePtr{ SDL_ConvertSurface( src, SDL_PIXELFORMAT_RGBA32 ) };
 }
@@ -49,6 +51,9 @@ SurfacePtr to_rgba( SDL_Surface* src )
 
 bool Texture::load( const char* fn )
 {
+    ZoneScoped;
+    ZoneText( fn, strlen( fn ) );
+
     SurfacePtr image{ IMG_Load( fn ) };
     if( !image )
     {
@@ -85,6 +90,8 @@ void Texture::bind() const
 
 void AnimTexture::load( SDL_Surface* sheet, int tilex, int tiley, int n )
 {
+    ZoneScoped;
+
     SurfacePtr rgba = to_rgba( sheet );
     if( !rgba )
     {
@@ -140,6 +147,8 @@ AnimTexture vortex_appear, vortex;
 
 void preload()
 {
+    ZoneScoped;
+
     menu.load( data_path( "data/gfx/menu.png" ).c_str() );
     sand.load( data_path( "data/gfx/sand.png" ).c_str() );
     wall.load( data_path( "data/gfx/wall.png" ).c_str() );

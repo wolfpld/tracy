@@ -4,6 +4,8 @@
 #include "texture.hpp"
 #include "timer.hpp"
 
+#include <tracy/Tracy.hpp>
+
 namespace dyna
 {
 
@@ -17,6 +19,7 @@ Vortex::Vortex( int gx, int gy )
 
 void Vortex::draw()
 {
+    ZoneScoped;
     int frame = static_cast<int>( ( Timer::get_timestamp() - action_start ) / 40 );
 
     switch( action )
@@ -36,6 +39,7 @@ void Vortex::draw()
 
 void Vortex::tick( World& )
 {
+    ZoneScoped;
     delta += Timer::delta;
 
     while( delta > 10 )

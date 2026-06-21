@@ -6,6 +6,8 @@
 #include "timer.hpp"
 #include "world.hpp"
 
+#include <tracy/Tracy.hpp>
+
 namespace dyna
 {
 
@@ -18,6 +20,7 @@ Bomb::Bomb( int x_, int y_ )
 
 void Bomb::draw()
 {
+    ZoneScoped;
     if( stage == Stage::exploding )
         return;
 
@@ -38,6 +41,7 @@ void Bomb::draw()
 
 void Bomb::tick( World& world )
 {
+    ZoneScoped;
     delta += Timer::delta;
 
     while( delta > 10 )
@@ -74,6 +78,7 @@ void Bomb::tick( World& world )
 
 void Bomb::explode( World& world )
 {
+    ZoneScoped;
     stage = Stage::exploding;
     left = 200;
 
@@ -126,6 +131,7 @@ void Bomb::explode( World& world )
 
 void Bomb::die( World& world )
 {
+    ZoneScoped;
     dead = true;
 
     Map& map = world.map();

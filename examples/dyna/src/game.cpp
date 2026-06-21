@@ -8,6 +8,7 @@
 #include "world.hpp"
 
 #include <SDL3/SDL.h>
+#include <tracy/Tracy.hpp>
 
 #include <string>
 

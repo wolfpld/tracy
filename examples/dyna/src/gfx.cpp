@@ -73,6 +73,7 @@ void main() {
 
 GLuint compile_shader( GLenum type, const char* src )
 {
+    ZoneScoped;
     GLuint s = glCreateShader( type );
     glShaderSource( s, 1, &src, nullptr );
     glCompileShader( s );
@@ -91,6 +92,7 @@ GLuint compile_shader( GLenum type, const char* src )
 
 bool init_shaders()
 {
+    ZoneScoped;
     GLuint vs = compile_shader( GL_VERTEX_SHADER, VERT_SRC );
     if( !vs ) return false;
     GLuint fs = compile_shader( GL_FRAGMENT_SHADER, FRAG_SRC );
@@ -138,6 +140,7 @@ bool init_shaders()
 
 void init_quad_vao()
 {
+    ZoneScoped;
     glGenVertexArrays( 1, &g_vao );
     glGenBuffers( 1, &g_vbo );
 
@@ -162,6 +165,7 @@ void init_quad_vao()
 // order. Consecutive quads that share a texture collapse into one draw call.
 void flush_batch()
 {
+    ZoneScoped;
     if( g_verts.empty() )
         return;
 
@@ -196,6 +200,7 @@ namespace Render
 
 bool init()
 {
+    ZoneScoped;
     if( !init_shaders() ) return false;
     init_quad_vao();
     return true;
@@ -203,6 +208,7 @@ bool init()
 
 void shutdown()
 {
+    ZoneScoped;
     if( g_vbo ) glDeleteBuffers( 1, &g_vbo );
     if( g_vao ) glDeleteVertexArrays( 1, &g_vao );
     if( g_program ) glDeleteProgram( g_program );
@@ -217,6 +223,7 @@ void use_texture( GLuint tex, int layer )
 
 GLuint make_texture( int w, int h, int layers, const void* rgba )
 {
+    ZoneScoped;
     GLuint tex = 0;
     glGenTextures( 1, &tex );
     glBindTexture( GL_TEXTURE_2D_ARRAY, tex );
@@ -241,6 +248,7 @@ void clear()
 
 void swap()
 {
+    ZoneScoped;
     flush_batch();
     SDL_GL_SwapWindow( g_window );
     FrameMark;
@@ -253,6 +261,7 @@ void alpha( float a )
 
 void draw_quad( const Vertex corners[4] )
 {
+    ZoneScoped;
     // Two triangles, vertices appended in submission order so painter ordering
     // (and the transient per-monster alpha) is preserved by the batch.
     const int idx[6] = { 0, 1, 2, 0, 2, 3 };
@@ -271,6 +280,7 @@ void draw_quad( const Vertex corners[4] )
 
 void draw_sprite( int x, int y )
 {
+    ZoneScoped;
     float fx = static_cast<float>( x );
     float fy = static_cast<float>( y );
     float top = static_cast<float>( h ) - fy;
@@ -291,6 +301,7 @@ void draw_square( int x, int y )
 
 void show_help()
 {
+    ZoneScoped;
     Textures::menu.bind();
 
     const float fw = static_cast<float>( w );
@@ -329,6 +340,7 @@ void show_help()
 
 void show_menu()
 {
+    ZoneScoped;
     Textures::menu.bind();
 
     Vertex logo[4] = {
@@ -355,6 +367,7 @@ namespace Init
 
 bool all()
 {
+    ZoneScoped;
     if( !SDL_Init( SDL_INIT_VIDEO ) )
     {
         std::fprintf( stderr, "SDL_Init failed: %s\n", SDL_GetError() );
@@ -403,6 +416,7 @@ bool all()
 
 void shutdown()
 {
+    ZoneScoped;
     Render::shutdown();
     if( g_gl_context ) SDL_GL_DestroyContext( g_gl_context );
     if( g_window ) SDL_DestroyWindow( g_window );

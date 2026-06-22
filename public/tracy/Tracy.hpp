@@ -118,7 +118,7 @@
 #define TracyIsStarted false
 #define TracySetProgramName(x)
 
-#define TracySectionEnter(x, ...) 0;
+#define TracySectionEnter(x, ...) 0
 #define TracySectionLeave(x)
 
 #define TracyFiberEnter(x)
@@ -258,8 +258,8 @@
 #define TracyIsConnected tracy::GetProfiler().IsConnected()
 #define TracySetProgramName( name ) tracy::GetProfiler().SetProgramName( name );
 
-#define TracySectionEnter( fmt, ... ) tracy::Profiler::SectionEnter( fmt, ##__VA_ARGS__ );
-#define TracySectionLeave( id ) tracy::Profiler::SectionLeave( id );
+#define TracySectionEnter( fmt, ... ) tracy::Profiler::SectionEnter( fmt, ##__VA_ARGS__ )
+#define TracySectionLeave( id ) tracy::Profiler::SectionLeave( id )
 
 #ifdef TRACY_FIBERS
 #  define TracyFiberEnter( fiber ) tracy::Profiler::EnterFiber( fiber, 0 )

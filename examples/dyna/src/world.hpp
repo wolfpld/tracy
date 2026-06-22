@@ -28,6 +28,7 @@ public:
     Map& map() { return *map_; }
     const Map& map() const { return *map_; }
     Player* player() { return player_.get(); }   // null on the menu screen
+    const std::string& name() const { return name_; }
 
     void tick();
     void draw();
@@ -39,6 +40,7 @@ public:
 private:
     std::unique_ptr<Map> map_;
     std::unique_ptr<Player> player_;
+    std::string name_;
 };
 
 }

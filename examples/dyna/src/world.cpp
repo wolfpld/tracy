@@ -8,6 +8,7 @@ namespace dyna
 
 World::World( const std::string& level_fn, bool with_player )
     : map_( std::make_unique<Map>( level_fn ) )
+    , name_( level_fn.substr( level_fn.rfind( '/' ) + 1 ) )
 {
     if( with_player )
     {

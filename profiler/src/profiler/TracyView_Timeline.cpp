@@ -353,6 +353,8 @@ void View::DrawTimeline()
     const auto yMin = ImGui::GetCursorScreenPos().y;
     const auto yMax = linepos.y + lineh;
 
+    draw->AddLineH( winpos.x, winpos.x + ImGui::GetContentRegionAvail().x + 1, yMin - 1, 0x0FFFFFFF );
+
     ImGui::SetNextWindowContentSize( ImVec2( 0, m_tc.GetHeight() ) );
     ImGui::BeginChild( "##zoneWin", ImVec2( ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y ), false, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 

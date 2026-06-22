@@ -21,6 +21,29 @@ namespace Game
 namespace
 {
 
+struct TracySection
+{
+    explicit TracySection( const char* name ) { Enter( name ); }
+    ~TracySection() { Leave(); }
+
+    void Enter( const char* name )
+    {
+        idx = TracySectionEnter( "%s", name );
+    }
+
+    void Leave()
+    {
+        if( idx > 0 )
+        {
+            TracySectionLeave( idx );
+            idx = 0;
+        }
+    }
+
+private:
+    uint32_t idx;
+};
+
 SDL_Keycode key = 0;   // most recently pressed movement key
 bool help = false;
 
@@ -29,6 +52,8 @@ bool help = false;
 // escape, or reaching the exit) and control should return to the caller.
 bool level_loop( World& world )
 {
+    TracySection section( ( std::string( "Level " ) + world.name() ).c_str() );
+
     Player* p = world.player();
 
     for( ;; )
@@ -109,6 +134,8 @@ bool level_loop( World& world )
 // Play through the levels in order. Returns true if the application should quit.
 bool new_game()
 {
+    TracySection section( "In-game" );
+
     int level = 1;
 
     for( ;; )
@@ -129,6 +156,9 @@ bool new_game()
 
 void menu_loop()
 {
+    constexpr const char* sectionName = "Main menu";
+    TracySection section( sectionName );
+
     World world( data_path( "data/levels/menu" ), false );
 
     for( ;; )
@@ -146,8 +176,10 @@ void menu_loop()
                 case SDLK_ESCAPE:
                     return;
                 case SDLK_SPACE:
+                    section.Leave();
                     if( new_game() )
                         return;   // window closed during play
+                    section.Enter( sectionName );
                     break;
                 case SDLK_H:
                     help = !help;

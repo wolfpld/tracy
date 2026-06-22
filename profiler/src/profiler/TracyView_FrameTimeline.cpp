@@ -348,7 +348,7 @@ void View::DrawTimelineSections()
     {
         const auto start = v.start.Val();
         const auto end = v.end.IsNonNegative() ? v.end.Val() : m_worker.GetLastTime();
-        if( start < m_vd.zvEnd && end > m_vd.zvStart ) visible.emplace_back( SectionEntry {
+        if( end - start > 0 && start < m_vd.zvEnd && end > m_vd.zvStart ) visible.emplace_back( SectionEntry {
             .idx = idx,
             .len = end - start,
             .start = std::max( start, m_vd.zvStart ),

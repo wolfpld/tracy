@@ -3,7 +3,17 @@ include(${CMAKE_CURRENT_LIST_DIR}/options.cmake)
 set_option(NO_ISA_EXTENSIONS "Disable ISA extensions (don't pass -march=native or -mcpu=native to the compiler)" OFF)
 set_option(NO_LTO "Disable interprocedural optimization (LTO)" OFF)
 set_option(NO_MOLD_LINKER "Disable mold linker (use default linker)" OFF)
-set_option(NO_CCACHE "Disable ccache acceleration" OFF)
+# Enable ccache by default only when Tracy is the top-level project.
+# When consumed as a subdirectory dependency the GLOBAL RULE_LAUNCH_COMPILE
+# property would infect the parent build; consumers that want ccache can
+# set -DNO_CCACHE=OFF or manage it themselves (e.g. CMAKE_CXX_COMPILER_LAUNCHER).
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    set(_tracy_no_ccache_default OFF)
+else()
+    set(_tracy_no_ccache_default ON)
+endif()
+set_option(NO_CCACHE "Disable ccache acceleration" ${_tracy_no_ccache_default})
+unset(_tracy_no_ccache_default)
 
 if (NOT NO_ISA_EXTENSIONS)
     include(CheckCXXCompilerFlag)

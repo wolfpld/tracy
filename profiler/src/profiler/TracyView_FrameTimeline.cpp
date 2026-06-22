@@ -403,63 +403,141 @@ void View::DrawTimelineSections()
 
     const auto timespan = m_vd.zvEnd - m_vd.zvStart;
     const auto pxns = w / double( timespan );
+    const auto nspx = 1.0 / pxns;
+    const auto MinVisNs = int64_t( round( GetScale() * MinVisSize * nspx ) );
 
     int rowidx = 0;
     for( auto& row : rows )
     {
         const auto offset = ostep * rowidx;
-        for( auto sidx : row.items )
+
+        pdqsort_branchless( row.items.begin(), row.items.end(), [&data]( uint32_t a, uint32_t b ) { return data[a].start.Val() < data[b].start.Val(); } );
+
+        size_t i = 0;
+        while( i < row.items.size() )
         {
-            auto& v = data[sidx];
+            auto& v = data[row.items[i]];
             const auto start = v.start.Val();
             const auto end = v.end.IsNonNegative() ? v.end.Val() : m_worker.GetLastTime();
-            const auto pr0 = ( start - m_vd.zvStart ) * pxns;
-            const auto pr1 = ( end - m_vd.zvStart ) * pxns;
-            const auto px0 = std::max( pr0, -10.0 );
-            const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
+            const auto zsz = end - start;
 
-            const char* name = m_worker.GetString( v.text );
-            const auto color = GetHsvColor( charutil::hash( name ), 0 );
-
-            draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + ty ), color );
-            const auto darkColor = DarkenColor( color );
-            DrawLine( draw, dpos + ImVec2( px0, offset + ty ), dpos + ImVec2( px0, offset ), dpos + ImVec2( px1-1, offset ), HighlightColor( color ) );
-            DrawLine( draw, dpos + ImVec2( px0, offset + ty ), dpos + ImVec2( px1-1, offset + ty ), dpos + ImVec2( px1-1, offset ), darkColor );
-
-            const auto tsz = ImGui::CalcTextSize( name );
-            const auto tpx0 = std::max( px0, 0.0 );
-            if( tsz.x < px1 - tpx0 )
+            if( zsz < MinVisNs )
             {
-                const auto x = pr0 + ( pr1 - pr0 - tsz.x ) / 2;
-                if( x < 0 || x > w - tsz.x )
+                uint32_t count = 1;
+                auto groupEnd = end;
+                size_t j = i + 1;
+                while( j < row.items.size() )
                 {
-                    ImGui::PushClipRect( wpos + ImVec2( tpx0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
-                    DrawTextContrast( draw, wpos + ImVec2( std::max( tpx0, std::min( double( w - tsz.x ), x ) ), offset ), 0xFFFFFFFF, name );
-                    ImGui::PopClipRect();
+                    auto& nv = data[row.items[j]];
+                    const auto nStart = nv.start.Val();
+                    const auto nEnd = nv.end.IsNonNegative() ? nv.end.Val() : m_worker.GetLastTime();
+                    if( ( nEnd - nStart ) >= MinVisNs ) break;
+                    if( nStart > groupEnd + MinVisNs ) break;
+                    groupEnd = nEnd;
+                    ++count;
+                    ++j;
                 }
-                else
+
+                const auto pr0 = ( start - m_vd.zvStart ) * pxns;
+                const auto pr1 = ( groupEnd - m_vd.zvStart ) * pxns;
+                const auto px0 = std::max( pr0, -10.0 );
+                const auto px1 = std::min( std::max( pr1, px0 + MinVisSize ), double( w + 10 ) );
+                constexpr uint32_t color = 0xFF666666;
+                const auto darkColor = DarkenColor( color );
+
+                draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + ty ), color );
+                DrawZigZag( draw, wpos + ImVec2( 0, offset + ty/2 ), std::max( px0, -10.0 ), std::min( std::max( pr1, px0 + MinVisSize ), double( w + 10 ) ), ty/4, darkColor );
+
+                const auto tmp = RealToString( count );
+                const auto tsz = ImGui::CalcTextSize( tmp );
+                const auto tpx0 = std::max( px0, 0.0 );
+                if( tsz.x < px1 - tpx0 )
                 {
-                    DrawTextContrast( draw, wpos + ImVec2( x, offset ), 0xFFFFFFFF, name );
+                    const auto x = tpx0 + ( px1 - tpx0 - tsz.x ) / 2;
+                    DrawTextContrast( draw, wpos + ImVec2( x, offset ), 0xFF4488DD, tmp );
                 }
+
+                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( pr1, px0 + MinVisSize ), double( w + 10 ) ), offset + ty + 1 ) ) )
+                {
+                    ImGui::BeginTooltip();
+                    if( count > 1 )
+                    {
+                        TextFocused( "Sections too small to display:", RealToString( count ) );
+                        ImGui::Separator();
+                        TextFocused( "Execution time:", TimeToString( groupEnd - start ) );
+                        ImGui::EndTooltip();
+
+                        if( IsMouseClickReleased( 1 ) ) m_setRangePopup = RangeSlim { start, groupEnd, true };
+                        if( IsMouseClicked( 2 ) ) ZoomToRange( start, groupEnd );
+                    }
+                    else
+                    {
+                        const char* name = m_worker.GetString( v.text );
+                        ImGui::TextUnformatted( name );
+                        ImGui::Separator();
+                        TextFocused( "Execution time:", TimeToString( end - start ) );
+                        TextFocused( "Time from start of program:", TimeToStringExact( start ) );
+                        ImGui::EndTooltip();
+
+                        if( IsMouseClickReleased( 1 ) ) m_setRangePopup = RangeSlim { start, end, true };
+                        if( IsMouseClicked( 2 ) ) ZoomToRange( start, end );
+                    }
+                }
+
+                i = j;
             }
             else
             {
-                ImGui::PushClipRect( wpos + ImVec2( tpx0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
-                DrawTextContrast( draw, wpos + ImVec2( tpx0, offset ), 0xFFFFFFFF, name );
-                ImGui::PopClipRect();
-            }
+                const auto pr0 = ( start - m_vd.zvStart ) * pxns;
+                const auto pr1 = ( end - m_vd.zvStart ) * pxns;
+                const auto px0 = std::max( pr0, -10.0 );
+                const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
 
-            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + ty + 1 ) ) )
-            {
-                ImGui::BeginTooltip();
-                ImGui::TextUnformatted( name );
-                ImGui::Separator();
-                TextFocused( "Execution time:", TimeToString( end - start ) );
-                TextFocused( "Time from start of program:", TimeToStringExact( start ) );
-                ImGui::EndTooltip();
+                const char* name = m_worker.GetString( v.text );
+                const auto color = GetHsvColor( charutil::hash( name ), 0 );
 
-                if( IsMouseClickReleased( 1 ) ) m_setRangePopup = RangeSlim { start, end, true };
-                if( IsMouseClicked( 2 ) ) ZoomToRange( start, end );
+                draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + ty ), color );
+                const auto darkColor = DarkenColor( color );
+                DrawLine( draw, dpos + ImVec2( px0, offset + ty ), dpos + ImVec2( px0, offset ), dpos + ImVec2( px1-1, offset ), HighlightColor( color ) );
+                DrawLine( draw, dpos + ImVec2( px0, offset + ty ), dpos + ImVec2( px1-1, offset + ty ), dpos + ImVec2( px1-1, offset ), darkColor );
+
+                const auto tsz = ImGui::CalcTextSize( name );
+                const auto tpx0 = std::max( px0, 0.0 );
+                if( tsz.x < px1 - tpx0 )
+                {
+                    const auto x = pr0 + ( pr1 - pr0 - tsz.x ) / 2;
+                    if( x < 0 || x > w - tsz.x )
+                    {
+                        ImGui::PushClipRect( wpos + ImVec2( tpx0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
+                        DrawTextContrast( draw, wpos + ImVec2( std::max( tpx0, std::min( double( w - tsz.x ), x ) ), offset ), 0xFFFFFFFF, name );
+                        ImGui::PopClipRect();
+                    }
+                    else
+                    {
+                        DrawTextContrast( draw, wpos + ImVec2( x, offset ), 0xFFFFFFFF, name );
+                    }
+                }
+                else
+                {
+                    ImGui::PushClipRect( wpos + ImVec2( tpx0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
+                    DrawTextContrast( draw, wpos + ImVec2( tpx0, offset ), 0xFFFFFFFF, name );
+                    ImGui::PopClipRect();
+                }
+
+                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + ty + 1 ) ) )
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::TextUnformatted( name );
+                    ImGui::Separator();
+                    TextFocused( "Execution time:", TimeToString( end - start ) );
+                    TextFocused( "Time from start of program:", TimeToStringExact( start ) );
+                    ImGui::EndTooltip();
+
+                    if( IsMouseClickReleased( 1 ) ) m_setRangePopup = RangeSlim { start, end, true };
+                    if( IsMouseClicked( 2 ) ) ZoomToRange( start, end );
+                }
+
+                ++i;
             }
         }
         rowidx++;

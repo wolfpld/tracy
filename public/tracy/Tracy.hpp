@@ -256,7 +256,7 @@
 #define TracyParameterRegister( cb, data ) tracy::Profiler::ParameterRegister( cb, data )
 #define TracyParameterSetup( idx, name, type, val ) tracy::Profiler::ParameterSetup( idx, name, type, val )
 #define TracyIsConnected tracy::GetProfiler().IsConnected()
-#define TracySetProgramName( name ) tracy::GetProfiler().SetProgramName( name );
+#define TracySetProgramName( name ) tracy::GetProfiler().SetProgramName( name )
 
 #define TracySectionEnter( fmt, ... ) tracy::Profiler::SectionEnter( fmt, ##__VA_ARGS__ )
 #define TracySectionLeave( id ) tracy::Profiler::SectionLeave( id )

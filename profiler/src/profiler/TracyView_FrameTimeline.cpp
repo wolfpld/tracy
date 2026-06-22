@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <math.h>
 
+#include "TracyColor.hpp"
 #include "TracyImGui.hpp"
 #include "TracyMouse.hpp"
 #include "TracyPrint.hpp"
@@ -388,6 +389,80 @@ void View::DrawTimelineSections()
             if( m_vd.zvEnd > e.end ) row.available.emplace_back( e.end, m_vd.zvEnd );
             row.items.push_back( e.idx );
         }
+    }
+
+    const auto wpos = ImGui::GetCursorScreenPos();
+    const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
+    const auto w = ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ScrollbarSize;
+    auto draw = ImGui::GetWindowDrawList();
+    const auto ty = ImGui::GetTextLineHeight();
+    const auto ostep = ty + 1;
+
+    ImGui::InvisibleButton( "##sections", ImVec2( w, ostep * rows.size() ) );
+    const bool hover = ImGui::IsItemHovered();
+
+    const auto timespan = m_vd.zvEnd - m_vd.zvStart;
+    const auto pxns = w / double( timespan );
+
+    int rowidx = 0;
+    for( auto& row : rows )
+    {
+        const auto offset = ostep * rowidx;
+        for( auto sidx : row.items )
+        {
+            auto& v = data[sidx];
+            const auto start = v.start.Val();
+            const auto end = v.end.IsNonNegative() ? v.end.Val() : m_worker.GetLastTime();
+            const auto pr0 = ( start - m_vd.zvStart ) * pxns;
+            const auto pr1 = ( end - m_vd.zvStart ) * pxns;
+            const auto px0 = std::max( pr0, -10.0 );
+            const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
+
+            const char* name = m_worker.GetString( v.text );
+            const auto color = GetHsvColor( charutil::hash( name ), 0 );
+
+            draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + ty ), color );
+            const auto darkColor = DarkenColor( color );
+            DrawLine( draw, dpos + ImVec2( px0, offset + ty ), dpos + ImVec2( px0, offset ), dpos + ImVec2( px1-1, offset ), HighlightColor( color ) );
+            DrawLine( draw, dpos + ImVec2( px0, offset + ty ), dpos + ImVec2( px1-1, offset + ty ), dpos + ImVec2( px1-1, offset ), darkColor );
+
+            const auto tsz = ImGui::CalcTextSize( name );
+            const auto tpx0 = std::max( px0, 0.0 );
+            if( tsz.x < px1 - tpx0 )
+            {
+                const auto x = pr0 + ( pr1 - pr0 - tsz.x ) / 2;
+                if( x < 0 || x > w - tsz.x )
+                {
+                    ImGui::PushClipRect( wpos + ImVec2( tpx0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
+                    DrawTextContrast( draw, wpos + ImVec2( std::max( tpx0, std::min( double( w - tsz.x ), x ) ), offset ), 0xFFFFFFFF, name );
+                    ImGui::PopClipRect();
+                }
+                else
+                {
+                    DrawTextContrast( draw, wpos + ImVec2( x, offset ), 0xFFFFFFFF, name );
+                }
+            }
+            else
+            {
+                ImGui::PushClipRect( wpos + ImVec2( tpx0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
+                DrawTextContrast( draw, wpos + ImVec2( tpx0, offset ), 0xFFFFFFFF, name );
+                ImGui::PopClipRect();
+            }
+
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + ty + 1 ) ) )
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted( name );
+                ImGui::Separator();
+                TextFocused( "Execution time:", TimeToString( end - start ) );
+                TextFocused( "Time from start of program:", TimeToStringExact( start ) );
+                ImGui::EndTooltip();
+
+                if( IsMouseClickReleased( 1 ) ) m_setRangePopup = RangeSlim { start, end, true };
+                if( IsMouseClicked( 2 ) ) ZoomToRange( start, end );
+            }
+        }
+        rowidx++;
     }
 }
 

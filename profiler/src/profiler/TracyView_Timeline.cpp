@@ -348,6 +348,7 @@ void View::DrawTimeline()
             }
         }
     }
+    DrawTimelineSections();
 
     const auto yMin = ImGui::GetCursorScreenPos().y;
     const auto yMax = linepos.y + lineh;

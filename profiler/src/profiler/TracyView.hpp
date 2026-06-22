@@ -289,6 +289,7 @@ private:
     void DrawFrames();
     void DrawTimelineFramesHeader();
     void DrawTimelineFrames( const FrameData& frames );
+    void DrawTimelineSections();
     void DrawTimeline();
     void DrawSampleList( const TimelineContext& ctx, const std::vector<SamplesDraw>& drawList, const Vector<SampleData>& vec, int offset, uint64_t tid );
     void DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineDraw>& drawList, int offset, uint64_t tid, int maxDepth, double margin );

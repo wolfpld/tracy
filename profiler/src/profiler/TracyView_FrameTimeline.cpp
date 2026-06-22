@@ -7,6 +7,8 @@
 #include "TracyTexture.hpp"
 #include "TracyView.hpp"
 
+#include "tracy_pdqsort.h"
+
 namespace tracy
 {
 
@@ -315,6 +317,76 @@ void View::DrawTimelineFrames( const FrameData& frames )
         if( IsMouseClicked( 0 ) )
         {
             m_frames = &frames;
+        }
+    }
+}
+
+struct SectionEntry
+{
+    uint32_t idx;
+    int64_t len;
+    int64_t start;
+    int64_t end;
+};
+
+struct SectionRow
+{
+    std::vector<uint32_t> items;
+    std::vector<std::pair<int64_t, int64_t>> available;
+};
+
+void View::DrawTimelineSections()
+{
+    auto& data = m_worker.GetSections();
+    if( data.empty() ) return;
+
+    uint32_t idx = 0;
+    std::vector<SectionEntry> visible;
+    visible.reserve( data.size() );
+    for( auto& v : data )
+    {
+        const auto start = v.start.Val();
+        const auto end = v.end.IsNonNegative() ? v.end.Val() : m_worker.GetLastTime();
+        if( start < m_vd.zvEnd && end > m_vd.zvStart ) visible.emplace_back( SectionEntry {
+            .idx = idx,
+            .len = end - start,
+            .start = std::max( start, m_vd.zvStart ),
+            .end = std::min( end, m_vd.zvEnd )
+        } );
+        idx++;
+    }
+    if( visible.empty() ) return;
+
+    pdqsort( visible.begin(), visible.end(), []( const SectionEntry& a, const SectionEntry& b ) { return a.len > b.len; } );
+
+    std::vector<SectionRow> rows;
+    for( auto& e : visible )
+    {
+        bool found = false;
+        for( auto& row : rows )
+        {
+            for( size_t i=0; i<row.available.size(); i++ )
+            {
+                const auto gap = row.available[i];
+                if( gap.first <= e.start && gap.second >= e.end )
+                {
+                    row.available.erase( row.available.begin() + i );
+                    if( gap.second > e.end ) row.available.insert( row.available.begin() + i, { e.end, gap.second } );
+                    if( gap.first < e.start ) row.available.insert( row.available.begin() + i, { gap.first, e.start } );
+                    row.items.push_back( e.idx );
+                    found = true;
+                    break;
+                }
+            }
+            if( found ) break;
+        }
+        if( !found )
+        {
+            rows.emplace_back();
+            auto& row = rows.back();
+            if( m_vd.zvStart < e.start ) row.available.emplace_back( m_vd.zvStart, e.start );
+            if( m_vd.zvEnd > e.end ) row.available.emplace_back( e.end, m_vd.zvEnd );
+            row.items.push_back( e.idx );
         }
     }
 }

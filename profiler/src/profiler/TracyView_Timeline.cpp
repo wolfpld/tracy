@@ -436,6 +436,8 @@ void View::DrawTimeline()
             if( drawMouseLine && ImGui::IsMouseHoveringRect( linepos + ImVec2( aMin, 0 ), linepos + ImVec2( aMax, lineh ) ) )
             {
                 ImGui::BeginTooltip();
+                TextDisabledUnformatted( ICON_FA_NOTE_STICKY );
+                ImGui::SameLine();
                 if( ann->text.empty() )
                 {
                     TextDisabledUnformatted( "Empty annotation" );

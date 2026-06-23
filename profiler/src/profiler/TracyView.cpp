@@ -1233,36 +1233,18 @@ bool View::DrawImpl()
     {
         const auto s = std::min( m_setRangePopup.min, m_setRangePopup.max );
         const auto e = std::max( m_setRangePopup.min, m_setRangePopup.max );
-        if( ImGui::Selectable( ICON_FA_MAGNIFYING_GLASS " Limit find zone time range" ) )
+        TextDisabledUnformatted( ICON_FA_RULER " Set time range for:" );
+        ImGui::Indent();
+        for( auto& r : m_ranges )
         {
-            m_findZone.range.active = true;
-            m_findZone.range.min = s;
-            m_findZone.range.max = e;
+            if( ImGui::Selectable( r.name ) )
+            {
+                r.range->active = true;
+                r.range->min = s;
+                r.range->max = e;
+            }
         }
-        if( ImGui::Selectable( ICON_FA_ARROW_UP_WIDE_SHORT " Limit statistics time range" ) )
-        {
-            m_statRange.active = true;
-            m_statRange.min = s;
-            m_statRange.max = e;
-        }
-        if( ImGui::Selectable( ICON_FA_FIRE_FLAME_CURVED " Limit flame time range" ) )
-        {
-            m_flameRange.active = true;
-            m_flameRange.min = s;
-            m_flameRange.max = e;
-        }
-        if( ImGui::Selectable( ICON_FA_HOURGLASS_HALF " Limit wait stacks range" ) )
-        {
-            m_waitStackRange.active = true;
-            m_waitStackRange.min = s;
-            m_waitStackRange.max = e;
-        }
-        if( ImGui::Selectable( ICON_FA_MEMORY " Limit memory range" ) )
-        {
-            m_memInfo.range.active = true;
-            m_memInfo.range.min = s;
-            m_memInfo.range.max = e;
-        }
+        ImGui::Unindent();
         ImGui::Separator();
         if( ImGui::Selectable( ICON_FA_NOTE_STICKY " Add annotation" ) )
         {

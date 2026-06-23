@@ -1242,6 +1242,7 @@ bool View::DrawImpl()
                 r.range->active = true;
                 r.range->min = s;
                 r.range->max = e;
+                m_showRanges = true;
             }
         }
         ImGui::Unindent();

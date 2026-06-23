@@ -790,7 +790,8 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         if( ImGui::IsKeyDown( ImGuiKey_X ) ) m_propagateInlines = !m_propagateInlines;
     }
 
-    const bool limitView = view.m_statRange.active;
+    auto& range = view.GetRange( RangeId::Statistics );
+    const bool limitView = range.active;
     if( inlineList )
     {
         if( SmallCheckbox( ICON_FA_SITEMAP " Function:", &m_calcInlineStats ) )
@@ -1018,7 +1019,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         CountHwStats( as, worker, view );
     }
     const auto samplesReady = worker.AreSymbolSamplesReady();
-    if( ( as.ipTotalAsm.local + as.ipTotalAsm.ext ) > 0 || ( view.m_statRange.active && worker.GetSamplesForSymbol( m_baseAddr ) ) )
+    if( ( as.ipTotalAsm.local + as.ipTotalAsm.ext ) > 0 || ( range.active && worker.GetSamplesForSymbol( m_baseAddr ) ) )
     {
         ImGui::SameLine();
         ImGui::Spacing();
@@ -1141,7 +1142,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         ImGui::SameLine();
         if( !worker.AreSymbolSamplesReady() )
         {
-            view.m_statRange.active = false;
+            range.active = false;
             bool val = false;
             ImGui::PushItemFlag( ImGuiItemFlags_Disabled, true );
             ImGui::PushStyleVar( ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f );
@@ -1152,16 +1153,16 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         }
         else
         {
-            if( ImGui::Checkbox( "Limit range", &view.m_statRange.active ) )
+            if( ImGui::Checkbox( "Limit range", &range.active ) )
             {
-                if( view.m_statRange.active && view.m_statRange.min == 0 && view.m_statRange.max == 0 )
+                if( range.active && range.min == 0 && range.max == 0 )
                 {
                     const auto& vd = view.GetViewData();
-                    view.m_statRange.min = vd.zvStart;
-                    view.m_statRange.max = vd.zvEnd;
+                    range.min = vd.zvStart;
+                    range.max = vd.zvEnd;
                 }
             }
-            if( view.m_statRange.active )
+            if( range.active )
             {
                 ImGui::SameLine();
                 TextColoredUnformatted( 0xFF00FFFF, ICON_FA_TRIANGLE_EXCLAMATION );
@@ -1437,7 +1438,7 @@ static uint32_t GetGoodnessColor( float inRatio )
 void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker, View& view, bool hasInlines )
 {
     const auto scale = GetScale();
-    if( hasInlines && !m_calcInlineStats && ( ( as.ipTotalAsm.local + as.ipTotalAsm.ext ) > 0 || ( view.m_statRange.active && worker.GetSamplesForSymbol( m_baseAddr ) ) ) )
+    if( hasInlines && !m_calcInlineStats && ( ( as.ipTotalAsm.local + as.ipTotalAsm.ext ) > 0 || ( view.GetRange( RangeId::Statistics ).active && worker.GetSamplesForSymbol( m_baseAddr ) ) ) )
     {
         const auto samplesReady = worker.AreSymbolSamplesReady();
         if( !samplesReady )
@@ -2063,7 +2064,7 @@ void SourceView::AttachRangeToLlm( size_t start, size_t stop, Worker& worker, Vi
         symName = worker.GetString( sym->name );
     }
 
-    const bool limitView = view.m_statRange.active;
+    const bool limitView = view.GetRange( RangeId::Statistics ).active;
     AddrStatData as;
     if( m_calcInlineStats )
     {
@@ -3008,7 +3009,7 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
                         if( hw )
                         {
                             hasHwData = true;
-                            auto& statRange = view->m_statRange;
+                            auto& statRange = view->GetRange( RangeId::Statistics );
                             if( statRange.active )
                             {
                                 hw->sort();
@@ -3341,15 +3342,16 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
     size_t cycles = 0, retired = 0, cacheRef = 0, cacheMiss = 0, branchRetired = 0, branchMiss = 0;
     if( hw && ( !m_calcInlineStats || worker.GetInlineSymbolForAddress( line.addr ) == m_symAddr ) )
     {
-        if( view.m_statRange.active )
+        auto& range = view.GetRange( RangeId::Statistics );
+        if( range.active )
         {
             hw->sort();
-            cycles = CountHwSamples( hw->cycles, view.m_statRange );
-            retired = CountHwSamples( hw->retired, view.m_statRange );
-            cacheRef = CountHwSamples( hw->cacheRef, view.m_statRange );
-            cacheMiss = CountHwSamples( hw->cacheMiss, view.m_statRange );
-            branchRetired = CountHwSamples( hw->branchRetired, view.m_statRange );
-            branchMiss = CountHwSamples( hw->branchMiss, view.m_statRange );
+            cycles = CountHwSamples( hw->cycles, range );
+            retired = CountHwSamples( hw->retired, range );
+            cacheRef = CountHwSamples( hw->cacheRef, range );
+            cacheMiss = CountHwSamples( hw->cacheMiss, range );
+            branchRetired = CountHwSamples( hw->branchRetired, range );
+            branchMiss = CountHwSamples( hw->branchMiss, range );
         }
         else
         {
@@ -4736,18 +4738,19 @@ void SourceView::GatherIpHwStats( AddrStatData& as, Worker& worker, const View& 
         const auto hw = worker.GetHwSampleData( addr );
         if( !hw ) continue;
         uint64_t stat;
-        if( view.m_statRange.active )
+        auto& range = view.GetRange( RangeId::Statistics );
+        if( range.active )
         {
             switch( cost )
             {
-            case CostType::Cycles:          stat = CountHwSamples( hw->cycles, view.m_statRange ); break;
-            case CostType::Retirements:     stat = CountHwSamples( hw->retired, view.m_statRange ); break;
-            case CostType::BranchesTaken:   stat = CountHwSamples( hw->branchRetired, view.m_statRange ); break;
-            case CostType::BranchMiss:      stat = CountHwSamples( hw->branchMiss, view.m_statRange ); break;
-            case CostType::SlowBranches:    stat = sqrt( CountHwSamples( hw->branchMiss, view.m_statRange ) * CountHwSamples( hw->branchRetired, view.m_statRange ) ); break;
-            case CostType::CacheAccess:     stat = CountHwSamples( hw->cacheRef, view.m_statRange ); break;
-            case CostType::CacheMiss:       stat = CountHwSamples( hw->cacheMiss, view.m_statRange ); break;
-            case CostType::SlowCache:       stat = sqrt( CountHwSamples( hw->cacheMiss, view.m_statRange ) * CountHwSamples( hw->cacheRef, view.m_statRange ) ); break;
+            case CostType::Cycles:          stat = CountHwSamples( hw->cycles, range ); break;
+            case CostType::Retirements:     stat = CountHwSamples( hw->retired, range ); break;
+            case CostType::BranchesTaken:   stat = CountHwSamples( hw->branchRetired, range ); break;
+            case CostType::BranchMiss:      stat = CountHwSamples( hw->branchMiss, range ); break;
+            case CostType::SlowBranches:    stat = sqrt( CountHwSamples( hw->branchMiss, range ) * CountHwSamples( hw->branchRetired, range ) ); break;
+            case CostType::CacheAccess:     stat = CountHwSamples( hw->cacheRef, range ); break;
+            case CostType::CacheMiss:       stat = CountHwSamples( hw->cacheMiss, range ); break;
+            case CostType::SlowCache:       stat = sqrt( CountHwSamples( hw->cacheMiss, range ) * CountHwSamples( hw->cacheRef, range ) ); break;
             default: assert( false ); return;
             }
         }
@@ -4817,17 +4820,18 @@ void SourceView::CountHwStats( AddrStatData& as, Worker& worker, const View& vie
         const auto hw = worker.GetHwSampleData( addr );
         if( !hw ) continue;
         uint64_t branch, cache;
-        if( view.m_statRange.active )
+        auto& range = view.GetRange( RangeId::Statistics );
+        if( range.active )
         {
             if( hasBranchRetirement )
             {
-                branch = sqrt( CountHwSamples( hw->branchMiss, view.m_statRange ) * CountHwSamples( hw->branchRetired, view.m_statRange ) );
+                branch = sqrt( CountHwSamples( hw->branchMiss, range ) * CountHwSamples( hw->branchRetired, range ) );
             }
             else
             {
-                branch = CountHwSamples( hw->branchMiss, view.m_statRange );
+                branch = CountHwSamples( hw->branchMiss, range );
             }
-            cache = sqrt( CountHwSamples( hw->cacheMiss, view.m_statRange ) * CountHwSamples( hw->cacheRef, view.m_statRange ) );
+            cache = sqrt( CountHwSamples( hw->cacheMiss, range ) * CountHwSamples( hw->cacheRef, range ) );
         }
         else
         {
@@ -4895,9 +4899,10 @@ void SourceView::GatherChildStats( uint64_t baseAddr, unordered_flat_map<uint64_
         {
             auto cp = worker.GetChildSamples( ip );
             if( !cp ) continue;
-            auto it = std::lower_bound( cp->begin(), cp->end(), view.m_statRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+            auto& range = view.GetRange( RangeId::Statistics );
+            auto it = std::lower_bound( cp->begin(), cp->end(), range.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
             if( it == cp->end() ) continue;
-            auto end = std::lower_bound( it, cp->end(), view.m_statRange.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+            auto end = std::lower_bound( it, cp->end(), range.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
             while( it != end )
             {
                 auto child = worker.GetSymbolForAddress( it->addr );
@@ -4943,9 +4948,10 @@ uint32_t SourceView::CountAsmIpStats( uint64_t baseAddr, const Worker& worker, b
     {
         auto vec = worker.GetSamplesForSymbol( baseAddr );
         if( !vec ) return 0;
-        auto it = std::lower_bound( vec->begin(), vec->end(), view.m_statRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+        auto& range = view.GetRange( RangeId::Statistics );
+        auto it = std::lower_bound( vec->begin(), vec->end(), range.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
         if( it == vec->end() ) return 0;
-        auto end = std::lower_bound( it, vec->end(), view.m_statRange.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+        auto end = std::lower_bound( it, vec->end(), range.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
         return end - it;
     }
     else

@@ -197,9 +197,6 @@ public:
     const Range& GetRange( RangeId id ) const { return *m_ranges[size_t(id)].range; }
 
     bool m_showRanges = false;
-    Range m_statRange;
-    Range m_flameRange;
-    Range m_waitStackRange;
 
 private:
     enum class ShortcutAction : uint8_t
@@ -1028,6 +1025,10 @@ private:
             lastTime = 0;
         }
     } m_flameGraphInvariant;
+
+    Range m_statRange;
+    Range m_flameRange;
+    Range m_waitStackRange;
 
     std::array<RangeEntry, size_t( RangeId::NUM )> m_ranges;
 

@@ -717,7 +717,7 @@ nlohmann::json JsonDisassembly( uint64_t symAddr, Worker& worker, const View& vi
     auto data = Disassemble( symAddr, worker );
     if( data.lines.empty() ) return nlohmann::json { { "error", "Disassembly failed" } };
 
-    const bool limitView = view.m_statRange.active;
+    const bool limitView = view.GetRange( RangeId::Statistics ).active;
     AddrStatData as;
     GatherIpStats( symAddr, as, worker, limitView, view, nullptr, false );
     auto iptr = worker.GetInlineSymbolList( symAddr, data.codeLen );
@@ -758,9 +758,10 @@ void GatherIpStats( uint64_t baseAddr, AddrStatData& as, const Worker& worker, b
     {
         auto vec = worker.GetSamplesForSymbol( baseAddr );
         if( !vec ) return;
-        auto it = std::lower_bound( vec->begin(), vec->end(), view.m_statRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+        auto& range = view.GetRange( RangeId::Statistics );
+        auto it = std::lower_bound( vec->begin(), vec->end(), range.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
         if( it == vec->end() ) return;
-        auto end = std::lower_bound( it, vec->end(), view.m_statRange.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+        auto end = std::lower_bound( it, vec->end(), range.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
         as.ipTotalAsm.local += end - it;
         while( it != end )
         {
@@ -874,9 +875,10 @@ void GatherAdditionalIpStats( uint64_t baseAddr, AddrStatData& as, const Worker&
         {
             auto cp = worker.GetChildSamples( ip );
             if( !cp ) continue;
-            auto it = std::lower_bound( cp->begin(), cp->end(), view.m_statRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+            auto& range = view.GetRange( RangeId::Statistics );
+            auto it = std::lower_bound( cp->begin(), cp->end(), range.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
             if( it == cp->end() ) continue;
-            auto end = std::lower_bound( it, cp->end(), view.m_statRange.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+            auto end = std::lower_bound( it, cp->end(), range.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
             const auto ccnt = uint64_t( end - it );
             auto eit = as.ipCountAsm.find( ip );
             if( eit == as.ipCountAsm.end() )

@@ -6,6 +6,17 @@
 namespace tracy
 {
 
+void View::SetupRanges()
+{
+    m_ranges = {{
+        { &m_findZone.range, 0x4488DD88, ICON_FA_MAGNIFYING_GLASS " Find zone" },
+        { &m_statRange,      0x448888EE, ICON_FA_ARROW_UP_WIDE_SHORT " Statistics" },
+        { &m_flameRange,     0x4488B5EE, ICON_FA_FIRE_FLAME_CURVED " Flame graph" },
+        { &m_waitStackRange, 0x44EEB588, ICON_FA_HOURGLASS_HALF " Wait stacks" },
+        { &m_memInfo.range,  0x4488EEE3, ICON_FA_MEMORY " Memory" },
+    }};
+}
+
 void View::DrawRanges()
 {
     ImGui::Begin( "Time range limits", &m_showRanges, ImGuiWindowFlags_AlwaysAutoResize );

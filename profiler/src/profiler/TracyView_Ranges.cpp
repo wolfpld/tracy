@@ -43,14 +43,16 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, cons
             range.min = m_vd.zvStart;
             range.max = m_vd.zvEnd;
         }
-        TextFocused( "Time range:", TimeToStringExact( range.min ) );
+        TextFocused( ICON_FA_STOPWATCH " Time range:", TimeToStringExact( range.min ) );
         ImGui::SameLine();
         TextFocused( "-", TimeToStringExact( range.max ) );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%s)", TimeToString( range.max - range.min ) );
-        if( ImGui::SmallButton( ICON_FA_MICROSCOPE " Focus" ) ) ZoomToRange( range.min, range.max );
         ImGui::SameLine();
-        if( SmallButtonDisablable( ICON_FA_NOTE_STICKY " From annotation", m_annotations.empty() ) ) ImGui::OpenPopup( popupLabel );
+        if( ImGui::SmallButton( ICON_FA_MICROSCOPE " Focus" ) ) ZoomToRange( range.min, range.max );
+        ImGui::TextDisabled( ICON_FA_COPY " Copy from:" );
+        ImGui::SameLine();
+        if( SmallButtonDisablable( ICON_FA_NOTE_STICKY " Annotation", m_annotations.empty() ) ) ImGui::OpenPopup( popupLabel );
         if( ImGui::BeginPopup( popupLabel ) )
         {
             for( auto& v : m_annotations )
@@ -69,30 +71,12 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, cons
             }
             ImGui::EndPopup();
         }
-        if( id != 0 )
+        int idx = 0;
+        for( auto& r : m_ranges )
         {
+            if( idx++ == id ) continue;
             ImGui::SameLine();
-            if( SmallButtonDisablable( ICON_FA_MAGNIFYING_GLASS " Copy find zone", m_findZone.range.min == 0 && m_findZone.range.max == 0 ) ) range = m_findZone.range;
-        }
-        if( id != 1 )
-        {
-            ImGui::SameLine();
-            if( SmallButtonDisablable( ICON_FA_ARROW_UP_WIDE_SHORT " Copy statistics", m_statRange.min == 0 && m_statRange.max == 0 ) ) range = m_statRange;
-        }
-        if( id != 2 )
-        {
-            ImGui::SameLine();
-            if( SmallButtonDisablable( ICON_FA_FIRE_FLAME_CURVED " Copy flame", m_flameRange.min == 0 && m_flameRange.max == 0 ) ) range = m_flameRange;
-        }
-        if( id != 3 )
-        {
-            ImGui::SameLine();
-            if( SmallButtonDisablable( ICON_FA_HOURGLASS_HALF " Copy wait stacks", m_waitStackRange.min == 0 && m_waitStackRange.max == 0 ) ) range = m_waitStackRange;
-        }
-        if( id != 4 )
-        {
-            ImGui::SameLine();
-            if( SmallButtonDisablable( ICON_FA_MEMORY " Copy memory", m_memInfo.range.min == 0 && m_memInfo.range.max == 0 ) ) range = m_memInfo.range;
+            if( SmallButtonDisablable( r.name, r.range->min == 0 && r.range->max == 0 ) ) range = *r.range;
         }
     }
     ImGui::PopID();

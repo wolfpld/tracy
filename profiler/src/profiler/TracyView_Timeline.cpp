@@ -259,11 +259,7 @@ void View::DrawTimeline()
     m_cpuDataThread.Decay( 0 );
     m_zoneHover = nullptr;
     m_zoneHover2.Decay( nullptr );
-    m_findZone.range.StartFrame();
-    m_statRange.StartFrame();
-    m_flameRange.StartFrame();
-    m_waitStackRange.StartFrame();
-    m_memInfo.range.StartFrame();
+    for( auto& r : m_ranges ) r.range->StartFrame();
     m_yDelta = 0;
     m_nextLockHighlight = { -1 };
 
@@ -289,11 +285,7 @@ void View::DrawTimeline()
     const bool drawMouseLine = ImGui::IsWindowHovered( ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem ) && ImGui::IsMouseHoveringRect( winpos, winpos + winsize, false );
     if( drawMouseLine )
     {
-        HandleRange( m_findZone.range, timespan, ImGui::GetCursorScreenPos(), w );
-        HandleRange( m_statRange, timespan, ImGui::GetCursorScreenPos(), w );
-        HandleRange( m_flameRange, timespan, ImGui::GetCursorScreenPos(), w );
-        HandleRange( m_waitStackRange, timespan, ImGui::GetCursorScreenPos(), w );
-        HandleRange( m_memInfo.range, timespan, ImGui::GetCursorScreenPos(), w );
+        for( auto& r : m_ranges ) HandleRange( *r.range, timespan, ImGui::GetCursorScreenPos(), w );
         for( auto& v : m_annotations )
         {
             v->range.StartFrame();

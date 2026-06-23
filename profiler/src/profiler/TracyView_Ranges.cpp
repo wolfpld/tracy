@@ -17,12 +17,12 @@ void View::DrawRanges()
     {
         if( first ) first = false;
         else ImGui::Separator();
-        DrawRangeEntry( *r.range, r.name, r.color, r.name, idx++ );
+        DrawRangeEntry( *r.range, r.name, r.color, idx++ );
     }
     ImGui::End();
 }
 
-void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, const char* popupLabel, int id )
+void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, int id )
 {
     ImGui::PushID( id );
     SmallColorBox( color );
@@ -52,8 +52,8 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, cons
         if( ImGui::SmallButton( ICON_FA_MICROSCOPE " Focus" ) ) ZoomToRange( range.min, range.max );
         ImGui::TextDisabled( ICON_FA_COPY " Copy from:" );
         ImGui::SameLine();
-        if( SmallButtonDisablable( ICON_FA_NOTE_STICKY " Annotation", m_annotations.empty() ) ) ImGui::OpenPopup( popupLabel );
-        if( ImGui::BeginPopup( popupLabel ) )
+        if( SmallButtonDisablable( ICON_FA_NOTE_STICKY " Annotation", m_annotations.empty() ) ) ImGui::OpenPopup( label );
+        if( ImGui::BeginPopup( label ) )
         {
             for( auto& v : m_annotations )
             {

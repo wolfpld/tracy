@@ -328,7 +328,7 @@ private:
     void DrawAnnotationList();
     void DrawSampleParents();
     void DrawRanges();
-    void DrawRangeEntry( Range& range, const char* label, uint32_t color, const char* popupLabel, int id );
+    void DrawRangeEntry( Range& range, const char* label, uint32_t color, int id );
     void DrawWaitStacks();
     void DrawManual();
     void DrawFlameGraph();

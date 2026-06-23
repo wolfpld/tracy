@@ -10,15 +10,15 @@ void View::DrawRanges()
 {
     ImGui::Begin( "Time range limits", &m_showRanges, ImGuiWindowFlags_AlwaysAutoResize );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
-    DrawRangeEntry( m_findZone.range, ICON_FA_MAGNIFYING_GLASS " Find zone", 0x4488DD88, "RangeFindZoneCopyFrom", 0 );
-    ImGui::Separator();
-    DrawRangeEntry( m_statRange, ICON_FA_ARROW_UP_WIDE_SHORT " Statistics", 0x448888EE, "RangeStatisticsCopyFrom", 1 );
-    ImGui::Separator();
-    DrawRangeEntry( m_flameRange, ICON_FA_FIRE_FLAME_CURVED " Flame", 0x4488B5EE, "RangeFlameCopyFrom", 2 );
-    ImGui::Separator();
-    DrawRangeEntry( m_waitStackRange, ICON_FA_HOURGLASS_HALF " Wait stacks", 0x44EEB588, "RangeWaitStackCopyFrom", 3 );
-    ImGui::Separator();
-    DrawRangeEntry( m_memInfo.range, ICON_FA_MEMORY " Memory", 0x4488EEE3, "RangeMemoryCopyFrom", 4 );
+
+    int idx = 0;
+    bool first = true;
+    for( auto& r : m_ranges )
+    {
+        if( first ) first = false;
+        else ImGui::Separator();
+        DrawRangeEntry( *r.range, r.name, r.color, r.name, idx++ );
+    }
     ImGui::End();
 }
 

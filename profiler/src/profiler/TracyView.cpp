@@ -64,6 +64,7 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char*
 {
     InitTextEditor();
     SetupConfig();
+    SetupRanges();
 }
 
 View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, AchievementsMgr* amgr )
@@ -98,6 +99,7 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f
 
     InitTextEditor();
     SetupConfig();
+    SetupRanges();
 
     m_vd.zvStart = m_worker.GetFirstTime();
     m_vd.zvEnd = m_worker.GetLastTime();
@@ -144,6 +146,17 @@ void View::SetupConfig()
     m_vd.drawSamples = s_config.drawSamples;
     m_vd.drawContextSwitches = s_config.drawContextSwitches;
     m_vd.plotHeight = s_config.plotHeight;
+}
+
+void View::SetupRanges()
+{
+    m_ranges = {{
+        { &m_findZone.range, 0x4488DD88, ICON_FA_MAGNIFYING_GLASS " Find zone" },
+        { &m_statRange,      0x448888EE, ICON_FA_ARROW_UP_WIDE_SHORT " Statistics" },
+        { &m_flameRange,     0x4488B5EE, ICON_FA_FIRE_FLAME_CURVED " Flame graph" },
+        { &m_waitStackRange, 0x44EEB588, ICON_FA_HOURGLASS_HALF " Wait stacks" },
+        { &m_memInfo.range,  0x4488EEE3, ICON_FA_MEMORY " Memory" },
+    }};
 }
 
 void View::Achieve( const char* id )

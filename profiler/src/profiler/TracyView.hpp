@@ -193,6 +193,9 @@ public:
 
     nlohmann::json GetCallstackJson( const CallstackFrameId* data, size_t size ) const;
 
+    Range& GetRange( RangeId id ) { return *m_ranges[size_t(id)].range; }
+    const Range& GetRange( RangeId id ) const { return *m_ranges[size_t(id)].range; }
+
     bool m_showRanges = false;
     Range m_statRange;
     Range m_flameRange;
@@ -279,6 +282,7 @@ private:
 
     void InitTextEditor();
     void SetupConfig();
+    void SetupRanges();
     void Achieve( const char* id );
     void SaveUserData();
 
@@ -1024,6 +1028,8 @@ private:
             lastTime = 0;
         }
     } m_flameGraphInvariant;
+
+    std::array<RangeEntry, size_t( RangeId::NUM )> m_ranges;
 
 #ifndef __EMSCRIPTEN__
     TracyLlm m_llm;

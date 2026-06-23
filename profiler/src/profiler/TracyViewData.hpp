@@ -32,6 +32,23 @@ struct RangeSlim
     bool active = false;
 };
 
+struct RangeEntry
+{
+    Range* range;
+    uint32_t color;
+    const char* name;
+};
+
+enum class RangeId
+{
+    FindZone,
+    Statistics,
+    FlameGraph,
+    WaitStacks,
+    Memory,
+    NUM
+};
+
 
 struct ViewData
 {

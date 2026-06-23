@@ -1,6 +1,7 @@
 #include "TracyImGui.hpp"
 #include "TracyMouse.hpp"
 #include "TracyPrint.hpp"
+#include "TracySourceView.hpp"
 #include "TracyView.hpp"
 
 namespace tracy
@@ -15,6 +16,26 @@ void View::SetupRanges()
         { &m_waitStackRange, 0xEEB588, ICON_FA_HOURGLASS_HALF " Wait stacks" },
         { &m_memInfo.range,  0x88EEE3, ICON_FA_MEMORY " Memory" },
     }};
+}
+
+bool View::ShouldDrawRange( const RangeId& id ) const
+{
+    if( m_showRanges ) return true;
+    switch( id )
+    {
+    case RangeId::FindZone:
+        return m_findZone.show;
+    case RangeId::Statistics:
+        return m_showStatistics || ( m_sourceViewFile && m_sourceView->IsSymbolView() );
+    case RangeId::FlameGraph:
+        return m_showFlameGraph;
+    case RangeId::WaitStacks:
+        return m_showWaitStacks;
+    case RangeId::Memory:
+        return m_memInfo.show;
+    default:
+        return false;
+    }
 }
 
 void View::DrawRanges()

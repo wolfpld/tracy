@@ -329,6 +329,7 @@ private:
     void DrawSampleParents();
     void DrawRanges();
     void DrawRangeEntry( Range& range, const char* label, uint32_t color, int id );
+    bool ShouldDrawRange( const RangeId& id ) const;
     void DrawWaitStacks();
     void DrawManual();
     void DrawFlameGraph();

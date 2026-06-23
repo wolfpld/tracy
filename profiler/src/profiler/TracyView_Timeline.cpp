@@ -482,49 +482,18 @@ void View::DrawTimeline()
         draw->AddRect( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x4488DD88 );
     }
 
-    if( m_findZone.range.active && ( m_findZone.show || m_showRanges ) )
+    int idx = 0;
+    for( auto& r : m_ranges )
     {
-        const auto px0 = ( m_findZone.range.min - m_vd.zvStart ) * pxns;
-        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_findZone.range.max - m_vd.zvStart ) * pxns );
-        DrawStripedRect( draw, wpos, px0, linepos.y, px1, linepos.y + lineh, 10 * scale, 0x0688DD88, true, true );
-        DrawLine( draw, ImVec2( dpos.x + px0, linepos.y + 0.5f ), ImVec2( dpos.x + px0, linepos.y + lineh + 0.5f ), m_findZone.range.hiMin ? 0x9988DD88 : 0x5588DD88, m_findZone.range.hiMin ? 2 : 1 );
-        DrawLine( draw, ImVec2( dpos.x + px1, linepos.y + 0.5f ), ImVec2( dpos.x + px1, linepos.y + lineh + 0.5f ), m_findZone.range.hiMax ? 0x9988DD88 : 0x5588DD88, m_findZone.range.hiMax ? 2 : 1 );
-    }
-
-    if( m_statRange.active && ( m_showStatistics || m_showRanges || ( m_sourceViewFile && m_sourceView->IsSymbolView() ) ) )
-    {
-        const auto px0 = ( m_statRange.min - m_vd.zvStart ) * pxns;
-        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_statRange.max - m_vd.zvStart ) * pxns );
-        DrawStripedRect( draw, wpos, px0, linepos.y, px1, linepos.y + lineh, 10 * scale, 0x068888EE, true, false );
-        DrawLine( draw, ImVec2( dpos.x + px0, linepos.y + 0.5f ), ImVec2( dpos.x + px0, linepos.y + lineh + 0.5f ), m_statRange.hiMin ? 0x998888EE : 0x558888EE, m_statRange.hiMin ? 2 : 1 );
-        DrawLine( draw, ImVec2( dpos.x + px1, linepos.y + 0.5f ), ImVec2( dpos.x + px1, linepos.y + lineh + 0.5f ), m_statRange.hiMax ? 0x998888EE : 0x558888EE, m_statRange.hiMax ? 2 : 1 );
-    }
-
-    if( m_flameRange.active && ( m_showFlameGraph || m_showRanges ) )
-    {
-        const auto px0 = ( m_flameRange.min - m_vd.zvStart ) * pxns;
-        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_flameRange.max - m_vd.zvStart ) * pxns );
-        DrawStripedRect( draw, wpos, px0, linepos.y, px1, linepos.y + lineh, 10 * scale, 0x0688B5EE, true, false );
-        DrawLine( draw, ImVec2( dpos.x + px0, linepos.y + 0.5f ), ImVec2( dpos.x + px0, linepos.y + lineh + 0.5f ), m_flameRange.hiMin ? 0x9988B5EE : 0x5588B5EE, m_flameRange.hiMin ? 2 : 1 );
-        DrawLine( draw, ImVec2( dpos.x + px1, linepos.y + 0.5f ), ImVec2( dpos.x + px1, linepos.y + lineh + 0.5f ), m_flameRange.hiMax ? 0x9988B5EE : 0x5588B5EE, m_flameRange.hiMax ? 2 : 1 );
-    }
-
-    if( m_waitStackRange.active && ( m_showWaitStacks || m_showRanges ) )
-    {
-        const auto px0 = ( m_waitStackRange.min - m_vd.zvStart ) * pxns;
-        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_waitStackRange.max - m_vd.zvStart ) * pxns );
-        DrawStripedRect( draw, wpos, px0, linepos.y, px1, linepos.y + lineh, 10 * scale, 0x06EEB588, true, true );
-        DrawLine( draw, ImVec2( dpos.x + px0, linepos.y + 0.5f ), ImVec2( dpos.x + px0, linepos.y + lineh + 0.5f ), m_waitStackRange.hiMin ? 0x99EEB588 : 0x55EEB588, m_waitStackRange.hiMin ? 2 : 1 );
-        DrawLine( draw, ImVec2( dpos.x + px1, linepos.y + 0.5f ), ImVec2( dpos.x + px1, linepos.y + lineh + 0.5f ), m_waitStackRange.hiMax ? 0x99EEB588 : 0x55EEB588, m_waitStackRange.hiMax ? 2 : 1 );
-    }
-
-    if( m_memInfo.range.active && ( m_memInfo.show || m_showRanges ) )
-    {
-        const auto px0 = ( m_memInfo.range.min - m_vd.zvStart ) * pxns;
-        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_memInfo.range.max - m_vd.zvStart ) * pxns );
-        DrawStripedRect( draw, wpos, px0, linepos.y, px1, linepos.y + lineh, 10 * scale, 0x0688EEE3, true, false );
-        DrawLine( draw, ImVec2( dpos.x + px0, linepos.y + 0.5f ), ImVec2( dpos.x + px0, linepos.y + lineh + 0.5f ), m_memInfo.range.hiMin ? 0x9988EEE3 : 0x5588EEE3, m_memInfo.range.hiMin ? 2 : 1 );
-        DrawLine( draw, ImVec2( dpos.x + px1, linepos.y + 0.5f ), ImVec2( dpos.x + px1, linepos.y + lineh + 0.5f ), m_memInfo.range.hiMax ? 0x9988EEE3 : 0x5588EEE3, m_memInfo.range.hiMax ? 2 : 1 );
+        if( r.range->active && ShouldDrawRange( RangeId( idx ) ) )
+        {
+            const auto px0 = ( r.range->min - m_vd.zvStart ) * pxns;
+            const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( r.range->max - m_vd.zvStart ) * pxns );
+            DrawStripedRect( draw, wpos, px0, linepos.y, px1, linepos.y + lineh, 10 * scale, r.color | 0x06000000, true, idx % 2 == 0 );
+            DrawLine( draw, ImVec2( dpos.x + px0, linepos.y + 0.5f ), ImVec2( dpos.x + px0, linepos.y + lineh + 0.5f ), r.color | ( r.range->hiMin ? 0x99000000 : 0x55000000 ), r.range->hiMin ? 2 : 1 );
+            DrawLine( draw, ImVec2( dpos.x + px1, linepos.y + 0.5f ), ImVec2( dpos.x + px1, linepos.y + lineh + 0.5f ), r.color | ( r.range->hiMax ? 0x99000000 : 0x55000000 ), r.range->hiMax ? 2 : 1 );
+        }
+        idx++;
     }
 
     if( m_setRangePopup.active || m_setRangePopupOpen )

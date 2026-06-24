@@ -1,5 +1,6 @@
 #include "TracyPrint.hpp"
 #include "TracyView.hpp"
+#include "../Fonts.hpp"
 
 #include "tracy_pdqsort.h"
 
@@ -112,6 +113,19 @@ void View::DrawFrameStatistics()
             }
         }
         const auto vsz = m_frameSortData.data.size();
+        if( vsz == 0 )
+        {
+            TextFocused( "Count:", "0" );
+            ImGui::Separator();
+            ImGui::PushFont( g_fonts.normal, FontBig );
+            ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
+            TextCentered( ICON_FA_COW );
+            TextCentered( "No frames to show" );
+            ImGui::PopFont();
+            ImGui::End();
+            return;
+        }
+
         if( recalc )
         {
             auto& vec = m_frameSortData.data;

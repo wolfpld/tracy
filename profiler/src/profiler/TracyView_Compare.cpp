@@ -1001,7 +1001,7 @@ void View::DrawCompare()
                         {
                             const auto sz = sorted[0].size();
                             const auto avg = m_compare.average[0];
-                            const auto ss = sumSq0 - 2. * total0 * avg + avg * avg * sz;
+                            const auto ss = sumSq0 - 2. * total0 * avg + double( avg ) * avg * sz;
                             const auto sd = sqrt( ss / ( sz - 1 ) );
 
                             ImGui::SameLine();
@@ -1027,7 +1027,7 @@ void View::DrawCompare()
                         {
                             const auto sz = sorted[1].size();
                             const auto avg = m_compare.average[1];
-                            const auto ss = sumSq1 - 2. * total1 * avg + avg * avg * sz;
+                            const auto ss = sumSq1 - 2. * total1 * avg + double( avg ) * avg * sz;
                             const auto sd = sqrt( ss / ( sz - 1 ) );
 
                             ImGui::SameLine();

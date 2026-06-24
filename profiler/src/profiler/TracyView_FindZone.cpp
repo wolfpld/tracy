@@ -1115,7 +1115,7 @@ void View::DrawFindZone()
                         {
                             const auto sz = m_findZone.sorted.size();
                             const auto avg = m_findZone.average;
-                            const auto ss = zoneData.sumSq - 2. * zoneData.total * avg + avg * avg * sz;
+                            const auto ss = zoneData.sumSq - 2. * zoneData.total * avg + double( avg ) * avg * sz;
                             const auto sd = sqrt( ss / ( sz - 1 ) );
 
                             ImGui::SameLine();

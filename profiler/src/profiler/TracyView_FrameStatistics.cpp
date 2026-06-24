@@ -129,7 +129,7 @@ void View::DrawFrameStatistics()
             if( vsz > 1 )
             {
                 const auto avg = m_frameSortData.average;
-                const auto ss = m_frameSortData.sumSq - 2. * total * avg + avg * avg * vsz;
+                const auto ss = m_frameSortData.sumSq - 2. * total * avg + double( avg ) * avg * vsz;
                 m_frameSortData.sd = sqrt( ss / ( vsz - 1 ) );
             }
             else

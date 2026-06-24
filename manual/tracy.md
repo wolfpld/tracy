@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-06-24 <https://github.com/wolfpld/tracy>
+2026-06-25 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -4004,9 +4004,9 @@ Tracy displays a variety of statistical values regarding the selected function:
 
 - *mode* -- most common time value, quantized using histogram bins,
 
--  -- standard deviation,
+- *σ* -- standard deviation,
 
-- *coefficient of variation* -- relation of to mean,
+- *coefficient of variation* -- relation of σ to mean,
 
 - *P75* -- 75th percentile time value,
 

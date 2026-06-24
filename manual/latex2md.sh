@@ -12,6 +12,7 @@ sed -i -e 's@\\LMB{}~@@g' _tmp.tex
 sed -i -e 's@\\MMB{}~@@g' _tmp.tex
 sed -i -e 's@\\RMB{}~@@g' _tmp.tex
 sed -i -e 's@\\Scroll{}~@@g' _tmp.tex
+sed -i -e 's@\\textsigma@σ@g' _tmp.tex
 
 # Resolve \circled{} markers and lstlisting escapeinside (@...@) snippets, which
 # pandoc would otherwise emit verbatim or drop, to their Unicode equivalents.

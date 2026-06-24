@@ -951,6 +951,10 @@ private:
         int minBinVal = 1;
         double sumSq = 0;
         float sd = 0;
+        int64_t p75 = 0;
+        int64_t p90 = 0;
+        int64_t p99 = 0;
+        int64_t p99_9 = 0;
     } m_frameSortData;
 
     struct {

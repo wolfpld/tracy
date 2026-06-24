@@ -115,8 +115,13 @@ void View::DrawFrameStatistics()
         if( recalc )
         {
             auto& vec = m_frameSortData.data;
+            auto Percentile = [&vec, vsz]( double p ) { return vec[std::min<size_t>( vsz - 1, p * vsz )]; };
             m_frameSortData.average = float( total ) / vsz;
-            m_frameSortData.median = vec[vsz/2];
+            m_frameSortData.median = Percentile( 0.5 );
+            m_frameSortData.p75    = Percentile( 0.75 );
+            m_frameSortData.p90    = Percentile( 0.9 );
+            m_frameSortData.p99    = Percentile( 0.99 );
+            m_frameSortData.p99_9  = Percentile( 0.999 );
             m_frameSortData.total = total;
             m_frameSortData.sumSq = sumSq;
             m_frameSortData.frameNum = fsz;
@@ -349,6 +354,31 @@ void View::DrawFrameStatistics()
                     ImGui::SameLine();
                     ImGui::TextDisabled( "(%.2f%%)", 100.f * m_frameSortData.sd / m_frameSortData.average );
                     TooltipIfHovered( "Coefficient of variation" );
+
+                    constexpr auto PercentileLine = []( const char* label, int64_t t ) {
+                        TextFocused( label, TimeToString( t ) );
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / t ) ) );
+                        if( ImGui::IsItemHovered() )
+                        {
+                            ImGui::BeginTooltip();
+                            ImGui::Text( "%s FPS", RealToString( 1000000000.0 / t ) );
+                            ImGui::EndTooltip();
+                        }
+                    };
+                    PercentileLine( "P75:", m_frameSortData.p75 );
+                    ImGui::SameLine();
+                    ImGui::Spacing();
+                    ImGui::SameLine();
+                    PercentileLine( "P90:", m_frameSortData.p90 );
+                    ImGui::SameLine();
+                    ImGui::Spacing();
+                    ImGui::SameLine();
+                    PercentileLine( "P99:", m_frameSortData.p99 );
+                    ImGui::SameLine();
+                    ImGui::Spacing();
+                    ImGui::SameLine();
+                    PercentileLine( "P99.9:", m_frameSortData.p99_9 );
 
                     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
                     ImGui::Checkbox( "###draw1", &m_frameSortData.drawAvgMed );

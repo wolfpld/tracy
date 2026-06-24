@@ -949,6 +949,8 @@ private:
         bool limitToView = false;
         std::pair<int, int> limitRange = { -1, 0 };
         int minBinVal = 1;
+        double sumSq = 0;
+        float sd = 0;
     } m_frameSortData;
 
     struct {

@@ -11,7 +11,7 @@ extern double s_time;
 void View::DrawFrameStatistics()
 {
     const auto scale = GetScale();
-    ImGui::SetNextWindowSize( ImVec2( 550 * scale, 650 * scale ), ImGuiCond_FirstUseEver );
+    ImGui::SetNextWindowSize( ImVec2( 650 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Frame statistics", &m_showFrameStatistics );
 
     auto fsz = m_worker.GetFullFrameCount( *m_frames );
@@ -58,9 +58,11 @@ void View::DrawFrameStatistics()
             m_frameSortData.frameNum = 0;
             m_frameSortData.data.clear();
             m_frameSortData.total = 0;
+            m_frameSortData.sumSq = 0;
         }
         bool recalc = false;
         int64_t total = 0;
+        double sumSq = 0;
         if( !m_frameSortData.limitToView )
         {
             if( m_frameSortData.frameNum != fsz || m_frameSortData.limitRange.first != -1 )
@@ -69,6 +71,7 @@ void View::DrawFrameStatistics()
                 vec.reserve( fsz );
                 const auto midSz = vec.size();
                 total = m_frameSortData.total;
+                sumSq = m_frameSortData.sumSq;
                 for( size_t i=m_frameSortData.frameNum; i<fsz; i++ )
                 {
                     const auto t = m_worker.GetFrameTime( *m_frames, i );
@@ -76,6 +79,7 @@ void View::DrawFrameStatistics()
                     {
                         vec.emplace_back( t );
                         total += t;
+                        sumSq += double( t ) * t;
                     }
                 }
                 auto mid = vec.begin() + midSz;
@@ -99,6 +103,7 @@ void View::DrawFrameStatistics()
                     {
                         vec.emplace_back( t );
                         total += t;
+                        sumSq += double( t ) * t;
                     }
                 }
                 pdqsort_branchless( vec.begin(), vec.end() );
@@ -113,7 +118,19 @@ void View::DrawFrameStatistics()
             m_frameSortData.average = float( total ) / vsz;
             m_frameSortData.median = vec[vsz/2];
             m_frameSortData.total = total;
+            m_frameSortData.sumSq = sumSq;
             m_frameSortData.frameNum = fsz;
+
+            if( vsz > 1 )
+            {
+                const auto avg = m_frameSortData.average;
+                const auto ss = m_frameSortData.sumSq - 2. * total * avg + avg * avg * vsz;
+                m_frameSortData.sd = sqrt( ss / ( vsz - 1 ) );
+            }
+            else
+            {
+                m_frameSortData.sd = 0;
+            }
         }
 
         const auto profileSpan = m_worker.GetLastTime();
@@ -324,6 +341,11 @@ void View::DrawFrameStatistics()
                             ImGui::EndTooltip();
                         }
                     }
+                    ImGui::SameLine();
+                    ImGui::Spacing();
+                    ImGui::SameLine();
+                    TextFocused( "\xcf\x83:", TimeToString( m_frameSortData.sd ) );
+                    TooltipIfHovered( "Standard deviation" );
 
                     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
                     ImGui::Checkbox( "###draw1", &m_frameSortData.drawAvgMed );

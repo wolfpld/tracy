@@ -1122,6 +1122,9 @@ void View::DrawFindZone()
                             ImGui::SameLine();
                             TextFocused( "\xcf\x83:", TimeToString( sd ) );
                             TooltipIfHovered( "Standard deviation" );
+                            ImGui::SameLine();
+                            ImGui::TextDisabled( "(%.2f%%)", 100.f * sd / avg );
+                            TooltipIfHovered( "Coefficient of variation" );
                         }
                         TextFocused( "P75:", TimeToString( m_findZone.p75 ) );
                         ImGui::SameLine();

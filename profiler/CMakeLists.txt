@@ -101,6 +101,7 @@ set(SERVER_FILES
     TracyView_FindZone.cpp
     TracyView_FlameGraph.cpp
     TracyView_FrameOverview.cpp
+    TracyView_FrameStatistics.cpp
     TracyView_FrameTimeline.cpp
     TracyView_FrameTree.cpp
     TracyView_GpuTimeline.cpp

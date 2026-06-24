@@ -332,6 +332,7 @@ private:
     bool ShouldDrawRange( const RangeId& id ) const;
     void DrawWaitStacks();
     void DrawManual();
+    void DrawFrameStatistics();
     void DrawFlameGraph();
     void DrawFlameGraphHeader( int64_t vStart, int64_t vEnd, uint64_t period );
     void DrawFlameGraphLevel( const std::vector<FlameGraphItem>& data, FlameGraphContext& ctx, int depth, bool samples );
@@ -607,6 +608,7 @@ private:
     bool m_showFlameGraph = false;
     bool m_showManual = false;
     bool m_manualPositionReset = false;
+    bool m_showFrameStatistics = false;
 
     AccumulationMode m_statAccumulationMode = AccumulationMode::SelfOnly;
     bool m_statSampleTime = true;

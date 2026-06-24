@@ -981,6 +981,10 @@ bool View::DrawImpl()
         {
             m_showWaitStacks = true;
         }
+        if( ButtonDisablable( ICON_FA_IMAGES " Frame statistics", !m_worker.AreFramesUsed() ) )
+        {
+            m_showFrameStatistics = true;
+        }
         ImGui::EndPopup();
     }
     ImGui::SameLine();
@@ -1209,6 +1213,7 @@ bool View::DrawImpl()
     if( m_showRanges ) DrawRanges();
     if( m_showWaitStacks ) DrawWaitStacks();
     if( m_showManual ) DrawManual();
+    if( m_showFrameStatistics ) DrawFrameStatistics();
 #ifndef __EMSCRIPTEN__
     if( m_llm.m_show ) m_llm.Draw();
 #endif

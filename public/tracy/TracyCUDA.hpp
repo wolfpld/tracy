@@ -10,6 +10,10 @@
 #define TracyCUDAStartProfiling(ctx)
 #define TracyCUDAStopProfiling(ctx)
 
+#define TracyCUDAEnableKernelMetrics(ctx)
+#define TracyCUDADisableKernelMetrics(ctx)
+#define TracyCUDADumpKernelMetrics(ctx)
+
 #define TracyCUDACollect(ctx)
 
 namespace tracy{
@@ -56,6 +60,24 @@ using CUDACtx = std::nullptr_t;
 #ifndef TRACY_CUDA_ENABLE_CUDA_CALL_STATS
 #define TRACY_CUDA_ENABLE_CUDA_CALL_STATS (0)
 #endif//TRACY_CUDA_ENABLE_CUDA_CALL_STATS
+
+// Opt-in CUPTI Range Profiler support: collects hardware metrics for kernel
+// dispatches / graph launches and surfaces them as Tracy plots. OFF by default
+// because it pulls in an extra dependency (the NVPW host library) and may
+// require elevated GPU performance-counter permissions at runtime.
+#ifndef TRACY_CUDA_ENABLE_KERNEL_METRICS
+#define TRACY_CUDA_ENABLE_KERNEL_METRICS (0)
+#endif//TRACY_CUDA_ENABLE_KERNEL_METRICS
+
+#if TRACY_CUDA_ENABLE_KERNEL_METRICS
+#if CUDA_VERSION < 12060
+#error "kernel metrics require CUDA v12.6 (or later)"
+#endif
+#include <cupti_target.h>
+#include <cupti_profiler_target.h>
+#include <cupti_profiler_host.h>
+#include <cupti_range_profiler.h>
+#endif//TRACY_CUDA_ENABLE_KERNEL_METRICS
 
 namespace {
 
@@ -566,6 +588,22 @@ namespace tracy
             ZoneScoped;
             CUPTI::EndInstrumentation();
             printStats();
+        }
+
+        void EnableKernelMetrics()
+        {
+            ZoneScoped;
+            #if TRACY_CUDA_ENABLE_KERNEL_METRICS
+            CUPTI::BeginKernelMetrics(this);
+            #endif//TRACY_CUDA_ENABLE_KERNEL_METRICS
+        }
+
+        void DisableKernelMetrics()
+        {
+            ZoneScoped;
+            #if TRACY_CUDA_ENABLE_KERNEL_METRICS
+            CUPTI::EndKernelMetrics();
+            #endif//TRACY_CUDA_ENABLE_KERNEL_METRICS
         }
 
         void Name(const char *name, uint16_t len)
@@ -1263,6 +1301,262 @@ namespace tracy
             //CUPTI_ACTIVITY_KIND_DRIVER,
         };
 
+        #if TRACY_CUDA_ENABLE_KERNEL_METRICS
+        // Curated set of PerfWorks metrics collected per range (dispatch / graph
+        // launch). Kept deliberately small so the whole set fits in a SINGLE
+        // collection pass (no kernel replay): all are high-level "% of peak"
+        // rollups, so each maps to only a few raw counters. BeginKernelMetrics
+        // asserts the resulting config needs exactly one pass; trim this list if
+        // a given architecture's counter budget is exceeded. Note that some
+        // metric names can vary across GPU architectures.
+        static constexpr const char* kKernelMetricNames[] = {
+            // Compute efficiency
+            "sm__throughput.avg.pct_of_peak_sustained_elapsed",                 // overall SM/compute throughput
+            "smsp__inst_executed.avg.per_cycle_active",                         // instructions issued per active cycle (IPC)
+            // Memory utilization
+            "gpu__compute_memory_throughput.avg.pct_of_peak_sustained_elapsed", // overall memory-subsystem throughput
+            "dram__throughput.avg.pct_of_peak_sustained_elapsed",               // device-memory (DRAM) bandwidth
+            "lts__t_sector_hit_rate.pct",                                       // L2 cache hit rate
+            // Occupancy / latency hiding
+            "sm__warps_active.avg.pct_of_peak_sustained_active",                // achieved occupancy
+            // Stalls (issue-slot utilization: low value => warps stalled)
+            "smsp__issue_active.avg.pct_of_peak_sustained_active",
+        };
+        static constexpr size_t kKernelMetricCount = sizeof(kKernelMetricNames) / sizeof(kKernelMetricNames[0]);
+
+        // Upper bound on ranges (dispatches / graph launches) buffered in one
+        // counter-data image before it must be decoded and reset. Tunable; sizes
+        // the counter-data allocation and caps ranges-per-pass at SetConfig time.
+        static constexpr size_t kMaxRangesPerPass = 64;
+
+        // Range Profiler bring-up: one-time process-wide profiler init plus
+        // creation of a Range Profiler object bound to the current CUDA context.
+        // Metric configuration (chip name + curated single-pass metric list ->
+        // config image), cuptiRangeProfilerSetConfig() in user-range mode, and
+        // cuptiRangeProfilerStart() are wired up in a later step.
+        static void BeginKernelMetrics(CUDACtx* profilerHost) {
+            ZoneScoped;
+            UNREFERENCED(profilerHost);
+            auto& rangeProfiler = PersistentState::Get().rangeProfiler;
+            if (rangeProfiler != nullptr) {
+                return; // already initialized
+            }
+
+            // Process-wide CUPTI profiler initialization (idempotent).
+            CUpti_Profiler_Initialize_Params initParams = { CUpti_Profiler_Initialize_Params_STRUCT_SIZE };
+            CUPTI_API_CALL(cuptiProfilerInitialize(&initParams));
+
+            // Bind a Range Profiler object to the calling thread's current
+            // context (a null ctx tells CUPTI to use the current context).
+            CUcontext cuCtx = nullptr;
+            DRIVER_API_CALL(cuCtxGetCurrent(&cuCtx));
+            CUpti_RangeProfiler_Enable_Params createParams = { CUpti_RangeProfiler_Enable_Params_STRUCT_SIZE };
+            createParams.ctx = cuCtx;
+            CUPTI_API_CALL(cuptiRangeProfilerEnable(&createParams));
+            rangeProfiler = createParams.pRangeProfilerObject;
+
+            // Query the device chip name: the host profiler is chip-specific and
+            // needs it to resolve metric names into hardware counters.
+            CUdevice cuDevice = 0;
+            DRIVER_API_CALL(cuCtxGetDevice(&cuDevice));
+            CUpti_Device_GetChipName_Params chipNameParams = { CUpti_Device_GetChipName_Params_STRUCT_SIZE };
+            chipNameParams.deviceIndex = (size_t)cuDevice;
+            CUPTI_API_CALL(cuptiDeviceGetChipName(&chipNameParams));
+            auto& chipName = PersistentState::Get().chipName;
+            chipName = chipNameParams.pChipName;
+
+            // Snapshot which counters are actually available on this context so
+            // the host can reject unsupported metrics up front. The first call
+            // reports the image size; the second fills the allocated buffer.
+            auto& counterAvailabilityImage = PersistentState::Get().counterAvailabilityImage;
+            CUpti_Profiler_GetCounterAvailability_Params availabilityParams = { CUpti_Profiler_GetCounterAvailability_Params_STRUCT_SIZE };
+            availabilityParams.ctx = cuCtx;
+            CUPTI_API_CALL(cuptiProfilerGetCounterAvailability(&availabilityParams));
+            counterAvailabilityImage.resize(availabilityParams.counterAvailabilityImageSize);
+            availabilityParams.pCounterAvailabilityImage = counterAvailabilityImage.data();
+            CUPTI_API_CALL(cuptiProfilerGetCounterAvailability(&availabilityParams));
+
+            // Create the host profiler object: it builds metric config images
+            // and later evaluates counter data into metric values.
+            CUpti_Profiler_Host_Initialize_Params hostInitParams = { CUpti_Profiler_Host_Initialize_Params_STRUCT_SIZE };
+            hostInitParams.profilerType = CUPTI_PROFILER_TYPE_RANGE_PROFILER;
+            hostInitParams.pChipName = chipName.c_str();
+            hostInitParams.pCounterAvailabilityImage = counterAvailabilityImage.data();
+            CUPTI_API_CALL(cuptiProfilerHostInitialize(&hostInitParams));
+            auto* hostObject = hostInitParams.pHostObject;
+            PersistentState::Get().profilerHostObject = hostObject;
+
+            // Add the curated metric list to the host config and bake a config
+            // image describing the hardware counters to collect.
+            CUpti_Profiler_Host_ConfigAddMetrics_Params addMetricsParams = { CUpti_Profiler_Host_ConfigAddMetrics_Params_STRUCT_SIZE };
+            addMetricsParams.pHostObject = hostObject;
+            addMetricsParams.ppMetricNames = const_cast<const char**>(kKernelMetricNames);
+            addMetricsParams.numMetrics = kKernelMetricCount;
+            CUPTI_API_CALL(cuptiProfilerHostConfigAddMetrics(&addMetricsParams));
+
+            auto& configImage = PersistentState::Get().configImage;
+            CUpti_Profiler_Host_GetConfigImageSize_Params configSizeParams = { CUpti_Profiler_Host_GetConfigImageSize_Params_STRUCT_SIZE };
+            configSizeParams.pHostObject = hostObject;
+            CUPTI_API_CALL(cuptiProfilerHostGetConfigImageSize(&configSizeParams));
+            configImage.resize(configSizeParams.configImageSize);
+            CUpti_Profiler_Host_GetConfigImage_Params configImageParams = { CUpti_Profiler_Host_GetConfigImage_Params_STRUCT_SIZE };
+            configImageParams.pHostObject = hostObject;
+            configImageParams.pConfigImage = configImage.data();
+            configImageParams.configImageSize = configImage.size();
+            CUPTI_API_CALL(cuptiProfilerHostGetConfigImage(&configImageParams));
+
+            // Enforce the single-pass (no-replay) design constraint up front: if
+            // the selected metrics don't fit one pass, trim kKernelMetricNames.
+            CUpti_Profiler_Host_GetNumOfPasses_Params numPassesParams = { CUpti_Profiler_Host_GetNumOfPasses_Params_STRUCT_SIZE };
+            numPassesParams.pConfigImage = configImage.data();
+            numPassesParams.configImageSize = configImage.size();
+            CUPTI_API_CALL(cuptiProfilerHostGetNumOfPasses(&numPassesParams));
+            if (numPassesParams.numOfPasses != 1) {
+                fprintf(stderr, "ERROR:\tTracyCUDA kernel metrics need a single-pass config, "
+                    "but the selected metrics require %llu passes; trim kKernelMetricNames.\n",
+                    (unsigned long long)numPassesParams.numOfPasses);
+                assert(numPassesParams.numOfPasses == 1);
+            }
+
+            // Allocate and initialize the counter-data image the Range Profiler
+            // fills during collection (sized for the metric set and range batch).
+            auto& counterDataImage = PersistentState::Get().counterDataImage;
+            CUpti_RangeProfiler_GetCounterDataSize_Params counterDataSizeParams = { CUpti_RangeProfiler_GetCounterDataSize_Params_STRUCT_SIZE };
+            counterDataSizeParams.pRangeProfilerObject = rangeProfiler;
+            counterDataSizeParams.pMetricNames = const_cast<const char**>(kKernelMetricNames);
+            counterDataSizeParams.numMetrics = kKernelMetricCount;
+            counterDataSizeParams.maxNumOfRanges = kMaxRangesPerPass;
+            counterDataSizeParams.maxNumRangeTreeNodes = kMaxRangesPerPass;
+            CUPTI_API_CALL(cuptiRangeProfilerGetCounterDataSize(&counterDataSizeParams));
+            counterDataImage.resize(counterDataSizeParams.counterDataSize);
+            CUpti_RangeProfiler_CounterDataImage_Initialize_Params counterDataInitParams = { CUpti_RangeProfiler_CounterDataImage_Initialize_Params_STRUCT_SIZE };
+            counterDataInitParams.pRangeProfilerObject = rangeProfiler;
+            counterDataInitParams.counterDataSize = counterDataImage.size();
+            counterDataInitParams.pCounterData = counterDataImage.data();
+            CUPTI_API_CALL(cuptiRangeProfilerCounterDataImageInitialize(&counterDataInitParams));
+
+            // Bind config + counter-data to the Range Profiler in user-range mode.
+            // A single pass means the user-replay loop runs exactly once, so there
+            // is no kernel re-execution and no forced serialization of overlap.
+            CUpti_RangeProfiler_SetConfig_Params setConfigParams = { CUpti_RangeProfiler_SetConfig_Params_STRUCT_SIZE };
+            setConfigParams.pRangeProfilerObject = rangeProfiler;
+            setConfigParams.pConfig = configImage.data();
+            setConfigParams.configSize = configImage.size();
+            setConfigParams.pCounterDataImage = counterDataImage.data();
+            setConfigParams.counterDataImageSize = counterDataImage.size();
+            setConfigParams.range = CUPTI_UserRange;
+            setConfigParams.replayMode = CUPTI_UserReplay;
+            setConfigParams.maxRangesPerPass = kMaxRangesPerPass;
+            setConfigParams.numNestingLevels = 1;
+            setConfigParams.minNestingLevel = 1;
+            CUPTI_API_CALL(cuptiRangeProfilerSetConfig(&setConfigParams));
+        }
+
+        static void EndKernelMetrics() {
+            ZoneScoped;
+            auto& rangeProfiler = PersistentState::Get().rangeProfiler;
+            if (rangeProfiler == nullptr) {
+                return;
+            }
+            // TODO(metrics): cuptiRangeProfilerStop() once Start() is wired up.
+            CUpti_RangeProfiler_Disable_Params destroyParams = { CUpti_RangeProfiler_Disable_Params_STRUCT_SIZE };
+            destroyParams.pRangeProfilerObject = rangeProfiler;
+            CUPTI_API_CALL(cuptiRangeProfilerDisable(&destroyParams));
+            rangeProfiler = nullptr;
+
+            auto& profilerHostObject = PersistentState::Get().profilerHostObject;
+            if (profilerHostObject != nullptr) {
+                CUpti_Profiler_Host_Deinitialize_Params hostDeinitParams = { CUpti_Profiler_Host_Deinitialize_Params_STRUCT_SIZE };
+                hostDeinitParams.pHostObject = profilerHostObject;
+                CUPTI_API_CALL(cuptiProfilerHostDeinitialize(&hostDeinitParams));
+                profilerHostObject = nullptr;
+            }
+        }
+
+        // Debug utility: print host/chip information and the metrics available
+        // for collection on the current device. Self-contained — spins up a
+        // temporary host object and tears it down, so it is safe to call without
+        // an active profiling session. Output goes to stdout and can be verbose.
+        static void DumpAvailableMetrics() {
+            ZoneScoped;
+            CUcontext cuCtx = nullptr;
+            DRIVER_API_CALL(cuCtxGetCurrent(&cuCtx));
+            if (cuCtx == nullptr) {
+                fprintf(stderr, "TracyCUDA: no current CUDA context; cannot list metrics.\n");
+                return;
+            }
+
+            // Device identity (human-readable), independent of the profiler.
+            CUdevice cuDevice = 0;
+            DRIVER_API_CALL(cuCtxGetDevice(&cuDevice));
+            char deviceName[256] = {};
+            DRIVER_API_CALL(cuDeviceGetName(deviceName, sizeof(deviceName), cuDevice));
+            int ccMajor = 0, ccMinor = 0;
+            DRIVER_API_CALL(cuDeviceGetAttribute(&ccMajor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, cuDevice));
+            DRIVER_API_CALL(cuDeviceGetAttribute(&ccMinor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, cuDevice));
+
+            // Profiler-side chip name (what the host object keys metrics on).
+            CUpti_Profiler_Initialize_Params initParams = { CUpti_Profiler_Initialize_Params_STRUCT_SIZE };
+            CUPTI_API_CALL(cuptiProfilerInitialize(&initParams));
+            CUpti_Device_GetChipName_Params chipNameParams = { CUpti_Device_GetChipName_Params_STRUCT_SIZE };
+            chipNameParams.deviceIndex = (size_t)cuDevice;
+            CUPTI_API_CALL(cuptiDeviceGetChipName(&chipNameParams));
+
+            fprintf(stdout, "\nTracyCUDA kernel-metrics host info:\n");
+            fprintf(stdout, "  Device : %s (compute capability %d.%d)\n", deviceName, ccMajor, ccMinor);
+            fprintf(stdout, "  Chip   : %s\n", chipNameParams.pChipName);
+
+            // Listing metrics is a pure host-side query keyed on the chip name,
+            // so it must NOT touch the device: we deliberately skip
+            // cuptiProfilerGetCounterAvailability() (which reserves the perf
+            // counters and is admin-gated -> INSUFFICIENT_PRIVILEGES / HARDWARE_BUSY)
+            // and pass a null counter-availability image. Per the CUPTI docs the
+            // image is only required for chips newer than the CUPTI build; for a
+            // chip known at release time the name alone enumerates every metric.
+            // The listing therefore reflects everything the chip defines rather
+            // than what this context can currently collect — which is exactly
+            // what a static "available metrics" dump should report.
+            CUpti_Profiler_Host_Initialize_Params hostInitParams = { CUpti_Profiler_Host_Initialize_Params_STRUCT_SIZE };
+            hostInitParams.profilerType = CUPTI_PROFILER_TYPE_RANGE_PROFILER;
+            hostInitParams.pChipName = chipNameParams.pChipName;
+            hostInitParams.pCounterAvailabilityImage = nullptr;
+            CUPTI_API_CALL(cuptiProfilerHostInitialize(&hostInitParams));
+            auto* hostObject = hostInitParams.pHostObject;
+
+            // Enumerate base metrics per type, and each base metric's submetrics
+            // (the fully-qualified, collectible names like "<base>.avg.pct_...").
+            const CUpti_MetricType metricTypes[] = {
+                CUPTI_METRIC_TYPE_COUNTER,
+                CUPTI_METRIC_TYPE_RATIO,
+                CUPTI_METRIC_TYPE_THROUGHPUT,
+            };
+            const char* const metricTypeNames[] = { "counter", "ratio", "throughput" };
+            for (size_t t = 0; t < sizeof(metricTypes) / sizeof(metricTypes[0]); ++t) {
+                CUpti_Profiler_Host_GetBaseMetrics_Params baseParams = { CUpti_Profiler_Host_GetBaseMetrics_Params_STRUCT_SIZE };
+                baseParams.pHostObject = hostObject;
+                baseParams.metricType = metricTypes[t];
+                CUPTI_API_CALL(cuptiProfilerHostGetBaseMetrics(&baseParams));
+                fprintf(stdout, "\n  %zu %s metrics:\n", (size_t)baseParams.numMetrics, metricTypeNames[t]);
+                for (size_t i = 0; i < baseParams.numMetrics; ++i) {
+                    const char* baseName = baseParams.ppMetricNames[i];
+                    fprintf(stdout, "    %s\n", baseName);
+                    CUpti_Profiler_Host_GetSubMetrics_Params subParams = { CUpti_Profiler_Host_GetSubMetrics_Params_STRUCT_SIZE };
+                    subParams.pHostObject = hostObject;
+                    subParams.metricType = metricTypes[t];
+                    subParams.pMetricName = baseName;
+                    CUPTI_API_CALL(cuptiProfilerHostGetSubMetrics(&subParams));
+                    for (size_t s = 0; s < subParams.numOfSubmetrics; ++s) {
+                        fprintf(stdout, "      .%s\n", subParams.ppSubMetrics[s]);
+                    }
+                }
+            }
+
+            CUpti_Profiler_Host_Deinitialize_Params hostDeinitParams = { CUpti_Profiler_Host_Deinitialize_Params_STRUCT_SIZE };
+            hostDeinitParams.pHostObject = hostObject;
+            CUPTI_API_CALL(cuptiProfilerHostDeinitialize(&hostDeinitParams));
+        }
+        #endif//TRACY_CUDA_ENABLE_KERNEL_METRICS
+
         static void BeginInstrumentation(CUDACtx* profilerHost) {
             auto& currentProfilerHost = PersistentState::Get().profilerHost;
             if (currentProfilerHost != nullptr) {
@@ -1273,6 +1567,8 @@ namespace tracy
             // NOTE(frank): full-stop synchronization to ensure we only handle
             // CUDA API calls and device activities that happens past this point
             cudaDeviceSynchronize();
+
+            DumpAvailableMetrics();
 
             auto& subscriber = PersistentState::Get().subscriber;
             CUPTI_API_CALL(cuptiSubscribe(&subscriber, CUPTI::OnCallbackAPI, profilerHost));
@@ -1399,6 +1695,25 @@ namespace tracy
             CUpti_SubscriberHandle subscriber = {};
             CUDACtx* profilerHost = nullptr;
 
+            #if TRACY_CUDA_ENABLE_KERNEL_METRICS
+            // CUPTI Range Profiler object, created in BeginKernelMetrics() and
+            // destroyed in EndKernelMetrics(). nullptr when metrics are inactive.
+            CUpti_RangeProfiler_Object* rangeProfiler = nullptr;
+            // Host-side profiler object: builds metric config images from a
+            // metric list and decodes counter data into metric values. It is
+            // chip-specific, hence the cached chip name and counter availability
+            // snapshot it is initialized from.
+            CUpti_Profiler_Host_Object* profilerHostObject = nullptr;
+            std::string chipName;
+            std::vector<uint8_t> counterAvailabilityImage;
+            // Config image: which counters to collect (baked from the metric
+            // list). Counter-data image: where the Range Profiler writes the
+            // collected values. Both must outlive the active profiling session,
+            // as cuptiRangeProfilerSetConfig() retains pointers into them.
+            std::vector<uint8_t> configImage;
+            std::vector<uint8_t> counterDataImage;
+            #endif//TRACY_CUDA_ENABLE_KERNEL_METRICS
+
             Collector collector;
 
             static PersistentState& Get() {
@@ -1490,6 +1805,10 @@ namespace tracy
 
 #define TracyCUDAStartProfiling(ctx) ctx->StartProfiling()
 #define TracyCUDAStopProfiling(ctx) ctx->StopProfiling()
+
+#define TracyCUDAEnableKernelMetrics(ctx) ctx->EnableKernelMetrics()
+#define TracyCUDADisableKernelMetrics(ctx) ctx->DisableKernelMetrics()
+#define TracyCUDADumpKernelMetrics(ctx) ctx->DumpKernelMetrics()
 
 #define TracyCUDACollect(ctx) ctx->Collect()
 

@@ -143,7 +143,7 @@ void View::DrawAnnotationList()
         }
         if( !ctrl ) TooltipIfHovered( "Press ctrl key to enable removal" );
         ImGui::SameLine();
-        ImGui::ColorButton( "c", ImGui::ColorConvertU32ToFloat4( ann->color ), ImGuiColorEditFlags_NoTooltip );
+        ImGui::ColorButton( "c", ImGui::ColorConvertU32ToFloat4( ann->color | 0xFF000000 ), ImGuiColorEditFlags_NoTooltip );
         ImGui::SameLine();
         if( m_selectedAnnotation == ann.get() )
         {

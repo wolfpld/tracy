@@ -85,6 +85,7 @@ struct Annotation
     std::string text;
     Range range;
     uint32_t color;
+    bool visible = true;
 };
 
 struct SourceRegex

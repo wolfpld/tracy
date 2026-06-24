@@ -288,6 +288,7 @@ void View::DrawTimeline()
         for( auto& r : m_ranges ) HandleRange( *r.range, timespan, ImGui::GetCursorScreenPos(), w );
         for( auto& v : m_annotations )
         {
+            if( !v->visible ) continue;
             v->range.StartFrame();
             HandleRange( v->range, timespan, ImGui::GetCursorScreenPos(), w );
         }
@@ -296,7 +297,7 @@ void View::DrawTimeline()
             const auto ty = ImGui::GetTextLineHeight();
             for( auto& ann : m_annotations )
             {
-                if( ann->range.min >= m_vd.zvEnd || ann->range.max <= m_vd.zvStart ) continue;
+                if( !ann->visible || ann->range.min >= m_vd.zvEnd || ann->range.max <= m_vd.zvStart ) continue;
                 const auto aMin = ( ann->range.min - m_vd.zvStart ) * pxns;
                 const auto aMax = ( ann->range.max - m_vd.zvStart ) * pxns;
                 if( ImGui::IsMouseHoveringRect( linepos + ImVec2( aMin, lineh - ty * 1.5f ), linepos + ImVec2( aMax, lineh ) ) )
@@ -411,7 +412,7 @@ void View::DrawTimeline()
     const auto iconSize = ImGui::CalcTextSize( ICON_FA_NOTE_STICKY );
     for( auto& ann : m_annotations )
     {
-        if( ann->range.min < m_vd.zvEnd && ann->range.max > m_vd.zvStart )
+        if( ann->visible && ann->range.min < m_vd.zvEnd && ann->range.max > m_vd.zvStart )
         {
             uint32_t c0 = ( ann->color & 0xFFFFFF ) | ( m_selectedAnnotation == ann.get() ? 0x22000000 : 0x11000000 );
             uint32_t c1 = ( ann->color & 0xFFFFFF ) | ( m_selectedAnnotation == ann.get() ? 0x88000000 : 0x66000000 );

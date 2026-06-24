@@ -30,6 +30,8 @@ void View::DrawSelectedAnnotation()
     ImGui::Begin( "Annotation", &show, ImGuiWindowFlags_AlwaysAutoResize );
     if( !ImGui::GetCurrentWindowRead()->SkipItems )
     {
+        ImGui::Checkbox( "Visible", &m_selectedAnnotation->visible );
+        ImGui::SameLine();
         if( ImGui::Button( ICON_FA_MICROSCOPE " Zoom to annotation" ) )
         {
             ZoomToRange( m_selectedAnnotation->range.min, m_selectedAnnotation->range.max );
@@ -127,6 +129,8 @@ void View::DrawAnnotationList()
     for( auto& ann : m_annotations )
     {
         ImGui::PushID( idx );
+        ImGui::Checkbox( "##visible", &ann->visible );
+        ImGui::SameLine();
         if( ImGui::Button( ICON_FA_PEN_TO_SQUARE ) )
         {
             m_selectedAnnotation = ann.get();

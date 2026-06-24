@@ -199,7 +199,8 @@ bool UserData::Save()
                 { "text", v->text },
                 { "min", v->range.min },
                 { "max", v->range.max },
-                { "color", v->color }
+                { "color", v->color },
+                { "visible", v->visible },
             } );
         }
     }
@@ -295,6 +296,7 @@ bool UserData::Load()
                 LoadValue( v, "min", a->range.min );
                 LoadValue( v, "max", a->range.max );
                 LoadValue( v, "color", a->color );
+                LoadValue( v, "visible", a->visible );
                 a->range.active = true;
                 m_annotations.emplace_back( std::move( a ) );
             }

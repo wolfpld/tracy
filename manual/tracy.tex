@@ -1474,6 +1474,24 @@ Exiting the profiled application from inside a zone is not supported. When the c
 
 As a workaround, you may add a \texttt{try}/\texttt{catch} pair at the bottom of the function stack (for example in the \texttt{main()} function) and replace \texttt{exit()} calls with throwing a custom exception. When this exception is caught, you may call \texttt{exit()}, knowing that the application's data structures (including profiling zones) were properly cleaned up.
 
+\subsection{Marking sections}
+\label{markingsections}
+
+To provide a high-level overview of what your program is doing, you may mark sections of execution. For example, in a puzzle game, the main menu would be a section, and each of the levels would be a section on its own.
+
+To mark when a section starts, use the \texttt{TracySectionEnter(fmt, ...)} macro with printf-like formatting. The macro will return an \texttt{uint32\_t} identifier, which you must store and pass to the corresponding section-end macro, \texttt{TracySectionLeave(id)}. Here's an example of a simple RAII wrapper:
+
+\begin{lstlisting}
+struct TracySection
+{
+	explicit TracySection(const char* name) : idx(TracySectionEnter("%s", name)) {}
+	~TracySection() { TracySectionLeave(idx); }
+	uint32_t idx;
+};
+\end{lstlisting}
+
+Each of the sections you add is handled independently of any other section. Multiple sections may overlap, either with a hierarchical structure or with each section having a part that does not coincide with other sections.
+
 \subsection{Marking locks}
 
 Modern programs must use multi-threading to achieve the full performance capability of the CPU. However, correct execution requires claiming exclusive access to data shared between threads. When many threads want to simultaneously enter the same critical section, the application's multi-threaded performance advantage nullifies. To help solve this problem, Tracy can collect and display lock interactions in threads.
@@ -3595,7 +3613,7 @@ The main profiler window is split into three sections, as seen in figure~\ref{ma
 \draw[rounded corners=5pt] (1.3, -0.1) rectangle+(2.2, -0.5) node [midway] {\faComment{} Messages};
 \draw[rounded corners=5pt] (3.6, -0.1) rectangle+(1.3, -0.5) node [midway] {\faMagnifyingGlass{} Find};
 \draw[rounded corners=5pt] (5.0, -0.1) rectangle+(2, -0.5) node [midway] {\faArrowUpWideShort{} Statistics};
-\draw[rounded corners=5pt] (7.1, -0.1) rectangle+(1.5, -0.5) node [midway] {\faFire{} Flame};
+\draw[rounded corners=5pt] (7.1, -0.1) rectangle+(1.5, -0.5) node [midway] {\faFireFlameCurved{} Flame};
 \draw[rounded corners=5pt] (8.7, -0.1) rectangle+(2.1, -0.5) node [midway] {\faMemory{} Memory};
 \draw[rounded corners=5pt] (10.9, -0.1) rectangle+(2.1, -0.5) node [midway] {\faScaleBalanced{} Compare};
 \draw[rounded corners=5pt] (13.1, -0.1) rectangle+(1.2, -0.5) node [midway] {\faFingerprint{} Info};
@@ -3631,7 +3649,7 @@ The control menu (top row of buttons) provides access to various profiler featur
 \item \emph{\faComment{} Messages} -- Toggles the message log window (section~\ref{messages}), which displays custom messages sent by the client, as described in section~\ref{messagelog}.
 \item \emph{\faMagnifyingGlass{} Find} -- This buttons toggles the find zone window, which allows inspection of zone behavior statistics (section~\ref{findzone}).
 \item \emph{\faArrowUpWideShort{} Statistics} -- Toggles the statistics window, which displays zones sorted by their total time cost (section~\ref{statistics}).
-\item \emph{\faFire{} Flame} -- Enables the flame graph window (section~\ref{flamegraph}).
+\item \emph{\faFireFlameCurved{} Flame} -- Enables the flame graph window (section~\ref{flamegraph}).
 \item \emph{\faMemory{} Memory} -- Various memory profiling options may be accessed here (section~\ref{memorywindow}).
 \item \emph{\faScaleBalanced{} Compare} -- Toggles the trace compare window, which allows you to see the performance difference between two profiling runs (section~\ref{compare}).
 \item \emph{\faFingerprint{} Info} -- Show general information about the trace (section~\ref{traceinfo}).
@@ -3642,6 +3660,7 @@ The control menu (top row of buttons) provides access to various profiler featur
 \item \emph{\faNoteSticky{}~Annotations} -- If annotations have been made (section~\ref{annotatingtrace}), you can open a list of all annotations, described in chapter~\ref{annotationlist}.
 \item \emph{\faRuler{}~Limits} -- Displays time range limits window (section~\ref{timeranges}).
 \item \emph{\faHourglassHalf{}~Wait stacks} -- If sampling was performed, an option to display wait stacks may be available. See chapter~\ref{waitstacks} for more details.
+\item \emph{\faImages{}~Frame statistics} -- Display frame statistics window (section~\ref{framestatistics}).
 \end{itemize}
 \item \emph{ \faBook{}~User manual} -- Opens the user manual for quick reference. Note that the version of the user manual available directly in the profiler is an inferior quality version compared to the proper PDF.
 \item \emph{\faMagnifyingGlassPlus{}~Display scale} -- Enables run-time resizing of the displayed content. This may be useful in environments with potentially reduced visibility, e.g. during a presentation. Note that this setting is independent to the UI scaling coming from the system DPI settings. The scale will be preserved across multiple profiler sessions if the \emph{Save UI scale} option is selected in global settings.
@@ -3741,7 +3760,7 @@ Clicking the \LMB{}~left mouse button on the graph while the \keys{\ctrl}~key is
 
 \subsubsection{Timeline view}
 
-The timeline is the most crucial element of the profiler UI. All the captured data is displayed there, laid out on the horizontal axis, according to time flow. Where there was no profiling performed, the timeline is dimmed out. The view is split into three parts: the time scale, the frame sets, and the combined zones, locks, and plots display.
+The timeline is the most crucial element of the profiler UI. All the captured data is displayed there, laid out on the horizontal axis, according to time flow. Where there was no profiling performed, the timeline is dimmed out. The view is split into four parts: time scale, frame sets, sections, and the combined zones, locks, and plots display.
 
 \subparagraph{Collapsed items}
 \label{collapseditems}
@@ -3827,6 +3846,38 @@ Clicking the \MMB{}~middle mouse button on a frame will zoom the view to the ext
 If a frame has an associated frame image (see chapter~\ref{frameimages}), you can hold the \keys{\ctrl} key and click the \LMB{}~left mouse button on the frame to open the frame image playback window (see chapter~\ref{playback}) and set the playback to the selected frame.
 
 If the \emph{\faFlagCheckered{}~Draw frame targets} option is enabled (see section~\ref{options}), time regions in frames exceeding the set target value will be marked with a red background.
+
+\paragraph{Sections}
+\label{sections}
+
+If sections of program execution were marked (see chapter~\ref{markingsections}), the profiler will try to reconstruct a child-parent hierarchy between the sections, as presented on figure~\ref{figsections}.
+
+\begin{figure}[h]
+\centering\begin{tikzpicture}
+\draw(0, 0) rectangle+(2, -0.5) node[midway] {Menu};
+\draw(2, 0) rectangle+(10, -0.5) node[midway] {In-game};
+\draw(12, 0) rectangle+(1.5, -0.5) node[midway] {Menu};
+
+\draw(2, -0.5) rectangle+(3, -0.5) node[midway] {Level 1};
+\draw(5, -0.5) rectangle+(5, -0.5) node[midway] {Level 2};
+\draw(10, -0.5) rectangle+(2, -0.5) node[midway] {Level 3};
+\end{tikzpicture}
+\caption{Sections showing a hierarchy.}
+\label{figsections}
+\end{figure}
+
+With some data sets such reconstruction will not be possible, in which case sections may look as on figure~\ref{figsections2}.
+
+\begin{figure}[h]
+\centering\begin{tikzpicture}
+\draw(0, 0) rectangle+(8, -0.5) node[midway] {First section};
+\draw(3, -0.5) rectangle+(8, -0.5) node[midway] {Second section};
+\end{tikzpicture}
+\caption{Sections that cannot form a hierarchy.}
+\label{figsections2}
+\end{figure}
+
+Clicking the \MMB{}~middle mouse button on a section will zoom the view to the extent of the section.
 
 \paragraph{Zones, locks and plots display}
 \label{zoneslocksplots}
@@ -3923,7 +3974,7 @@ In an example in figure~\ref{zoneslocks} you can see that there are two threads:
 
 Meanwhile, the \emph{Streaming thread} is performing some \emph{Streaming jobs}. The first \emph{Streaming job} sent a message (section~\ref{messagelog}). In addition to being listed in the message log, it is indicated by a triangle over the thread separator. When multiple messages are in one place, the triangle outline shape changes to a filled triangle.
 
-The GPU zones are displayed just like CPU zones, with an OpenGL/Vulkan/Direct3D/Metal/OpenCL/CUDA/WebGPU context in place of a thread name.
+The GPU zones are displayed just like CPU zones, with an OpenGL / Vulkan / Direct3D / Metal / OpenCL / CUDA / WebGPU context in place of a thread name.
 
 Hovering the \faArrowPointer{} mouse pointer over a zone will highlight all other zones that have the exact source location with a white outline. Clicking the \LMB{}~left mouse button on a zone will open the zone information window (section~\ref{zoneinfo}). Holding the \keys{\ctrl} key and clicking the \LMB{}~left mouse button on a zone will open the zone statistics window (section~\ref{findzone}). Clicking the \MMB{}~middle mouse button on a zone will zoom the view to the extent of the zone.
 
@@ -4076,15 +4127,18 @@ Sometimes, you may want to specify a time range, such as limiting some statistic
 To define a time range, drag the \LMB{}~left mouse button over the timeline view while holding the \keys{\ctrl} key. When the mouse key is released, the profiler will mark the selected time extent with a blue striped pattern, and it will display a context menu with the following options:
 
 \begin{itemize}
-\item \emph{\faMagnifyingGlass{}~Limit find zone time range} -- this will limit find zone results. See chapter~\ref{findzone} for more details.
-\item \emph{\faArrowUpWideShort{}~Limit statistics time range} -- selecting this option will limit statistics results. See chapter~\ref{statistics} for more details.
-\item \emph{\faFire{}~Limit flame graph time range} -- limits flame graph results. Refer to chapter~\ref{flamegraph}.
-\item \emph{\faHourglassHalf{}~Limit wait stacks time range} -- limits wait stacks results. Refer to chapter~\ref{stackwindows}.
-\item \emph{\faMemory{}~Limit memory time range} -- limits memory results. Read more about this in chapter~\ref{memorywindow}.
+\item \faRuler{}~Set time range for:
+\begin{itemize}
+\item \emph{\faMagnifyingGlass{}~Find zone} -- this will limit find zone results. See chapter~\ref{findzone} for more details.
+\item \emph{\faArrowUpWideShort{}~Statistics} -- selecting this option will limit statistics results. See chapter~\ref{statistics} for more details.
+\item \emph{\faFireFlameCurved{}~Flame graph} -- limits flame graph results. Refer to chapter~\ref{flamegraph}.
+\item \emph{\faHourglassHalf{}~Wait stacks} -- limits wait stacks results. Refer to chapter~\ref{stackwindows}.
+\item \emph{\faMemory{}~Memory} -- limits memory results. Read more about this in chapter~\ref{memorywindow}.
+\end{itemize}
 \item \emph{\faNoteSticky{}~Add annotation} -- use to annotate regions of interest, as described in chapter~\ref{annotatingtrace}.
 \end{itemize}
 
-Alternatively, you may specify the time range by clicking the \RMB{}~right mouse button on a zone or a frame. The resulting time extent will match the selected item.
+Alternatively, you may specify the time range by clicking the \RMB{}~right mouse button on a zone, section or a frame. The resulting time extent will match the selected item.
 
 To reduce clutter, time range regions are only displayed if the windows they affect are open or if the time range limits control window is open (section~\ref{timerangelimits}). You can access the time range limits window through the \emph{\faScrewdriverWrench{} Tools} button on the control menu.
 
@@ -4097,15 +4151,14 @@ Tracy allows adding custom notes to the trace. For example, you may want to mark
 
 Methods of specifying the annotation region are described in section~\ref{timeranges}. When a new annotation is added, it is assigned a semi-unique random name to make it distinguishable. The settings window is also opened (section~\ref{annotationsettings}), allowing you to enter your own description of the annotation.
 
-Annotations are displayed on the timeline, as presented in figure~\ref{annotation}. Clicking on the circle next to the text description will open the annotation settings window, in which you can modify or remove the region. List of all annotations in the trace is available in the annotations list window described in section~\ref{annotationlist}, which is accessible through the \emph{\faScrewdriverWrench{} Tools} button on the control menu.
+Annotations are displayed on the timeline, as presented in figure~\ref{annotation}. Clicking on the text description area will open the annotation settings window, in which you can modify or remove the region. List of all annotations in the trace is available in the annotations list window described in section~\ref{annotationlist}, which is accessible through the \emph{\faScrewdriverWrench{} Tools} button on the control menu.
 
 \begin{figure}[h]
 \centering\begin{tikzpicture}
-\draw (0, 0.25) -- (0, 1) -- (5, 1) -- (5, 0.25);
-\draw[dotted] (0, -0.2) -- (0, 0.25);
-\draw[dotted] (5, -0.2) -- (5, 0.25);
-\draw (0.25, 0.75) circle(0.15);
-\draw (0.4, 0.7) node[anchor=west] {Description};
+\draw (0, -0.25) -- (0, -1) -- (5, -1) -- (5, -0.25);
+\draw[dotted] (0, 0.2) -- (0, -0.25);
+\draw[dotted] (5, 0.2) -- (5, -0.25);
+\draw (0, -0.8) node[anchor=west] {\faNoteSticky{}~Description};
 \end{tikzpicture}
 \caption{Annotation region.}
 \label{annotation}
@@ -4367,7 +4420,21 @@ Clicking the \LMB{}~left mouse button on the group name will highlight the group
 
 The call stack grouping mode has a different way of listing groups. Here only one group is displayed at any time due to the need to display the call stack frames. You can switch between call stack groups by using the~\faCaretLeft{}~and~\faCaretRight{} buttons. You can select the group by clicking on the~\emph{\faCheck{}~Select} button. You can open the call stack window (section~\ref{callstackwindow}) by pressing the~\emph{\faAlignJustify{}~Call~stack} button.
 
-Tracy displays a variety of statistical values regarding the selected function: mean (average value), median (middle value), mode (most common value, quantized using histogram bins), and \textsigma{} (standard deviation). The mean and median zone times are also displayed on the histogram as red (mean) and blue (median) vertical bars. Additional bars will indicate the mean group time (orange) and median group time (green). You can disable the drawing of either set of markers by clicking on the check-box next to the color legend.
+Tracy displays a variety of statistical values regarding the selected function:
+
+\begin{itemize}
+\item \emph{mean} -- average time value,
+\item \emph{median} -- middle time value (P50),
+\item \emph{mode} -- most common time value, quantized using histogram bins,
+\item \emph{\textsigma} -- standard deviation,
+\item \emph{coefficient of variation} -- relation of \textsigma{} to mean,
+\item \emph{P75} -- 75th percentile time value,
+\item \emph{P90} -- 90th percentile time value,
+\item \emph{P99} -- 99th percentile time value,
+\item \emph{P99.9} -- 99.9th percentile time value.
+\end{itemize}
+
+The mean and median zone times are also displayed on the histogram as red (mean) and blue (median) vertical bars. Additional bars will indicate the mean group time (orange) and median group time (green). You can disable the drawing of either set of markers by clicking on the check-box next to the color legend.
 
 Hovering the \faArrowPointer{}~mouse cursor over a zone on the timeline, which is currently selected in the find zone window, will display a pulsing vertical bar on the histogram, highlighting the bin to which the hovered zone has been assigned. In addition, it will also highlight zone entry on the zone list.
 
@@ -4614,8 +4681,6 @@ If the \emph{\faUserGear{}~Public sidecar} option is selected, the file containi
 
 Open the \emph{Trace statistics} section to see information about the trace, such as achieved timer resolution, number of captured zones, lock events, plot data points, memory allocations, etc.
 
-There's also a section containing the selected frame set timing statistics and histogram\footnote{See section~\ref{findzone} for a description of the histogram. Note that there are subtle differences in the available functionality.}. As a convenience, you can switch the active frame set here and limit the displayed frame statistics to the frame range visible on the screen.
-
 If \emph{CPU topology} data is available (see section~\ref{cputopology}), you will be able to view the package, core, and thread hierarchy.
 
 The \emph{Source location substitutions} section allows adapting the source file paths, as captured by the profiler, to the actual on-disk locations\footnote{This does not affect source files cached during the profiling run.}. You can create a new substitution by clicking the \emph{Add new substitution} button. This will add a new entry, with input fields for ECMAScript-conforming regular expression pattern and its corresponding replacement string. You can quickly test the outcome of substitutions in the \emph{example source location} input field, which will be transformed and displayed below, as \emph{result}.
@@ -4638,6 +4703,11 @@ By default, all source file modification times need to be older than the capture
 In this window, you can view the information about the machine on which the profiled application was running. This includes the operating system, used compiler, CPU name, total available RAM, etc. In addition, if application information was provided (see section~\ref{appinfo}), it will also be displayed here.
 
 If an application should crash during profiling (section~\ref{crashhandling}), the profiler will display the crash information in this window. It provides you information about the thread that has crashed, the crash reason, and the crash call stack (section~\ref{callstackwindow}).
+
+\subsection{Frame statistics window}
+\label{framestatistics}
+
+This windows shows statistical information about the selected frame set timing, and a histogram. See section~\ref{findzone} for a description of the displayed data. As a convenience, you can switch the active frame set here. Additionally, with the \emph{Limit to view} option you can restrict the displayed frame statistics to the frame range currently visible on the screen.
 
 \subsection{Zone information window}
 \label{zoneinfo}
@@ -4950,7 +5020,7 @@ The profiled program is highlighted using green color. Furthermore, the yellow h
 \subsection{Annotation settings window}
 \label{annotationsettings}
 
-In this window, you may modify how a timeline annotation (section~\ref{annotatingtrace}) is presented by setting its text description or selecting region highlight color. A random annotation description can be set with the \emph{\faDice{}~Generate name} button. If the note is no longer needed, you may also remove it here.
+In this window, you may modify how a timeline annotation (section~\ref{annotatingtrace}) is presented by setting its text description or selecting region highlight color. A random annotation description can be set with the \emph{\faDice{}~Generate name} button. If the note is no longer needed, you may also temporarily hide or remove it here.
 
 \subsection{Annotation list window}
 \label{annotationlist}
@@ -4958,15 +5028,17 @@ In this window, you may modify how a timeline annotation (section~\ref{annotatin
 This window lists all annotations marked on the timeline. Each annotation is presented, as shown on figure~\ref{figannlist}. From left to right the elements are:
 
 \begin{itemize}
-\item \emph{\faPenToSquare{} Edit} -- Opens the annotation settings window (section~\ref{annotationsettings}).
-\item \emph{\faMicroscope{} Zoom} -- Zooms timeline to the annotation extent.
-\item \emph{\faTrashCan{} Remove} -- Removes the annotation. You must press the \keys{\ctrl} key to enable this button.
+\item \emph{\faCheck{}~Visible} -- Makes the annotation visible or not on the timeline.
+\item \emph{\faPenToSquare{}~Edit} -- Opens the annotation settings window (section~\ref{annotationsettings}).
+\item \emph{\faMicroscope{}~Zoom} -- Zooms timeline to the annotation extent.
+\item \emph{\faTrashCan{}~Remove} -- Removes the annotation. You must press the \keys{\ctrl} key to enable this button.
 \item Colored box -- Color of the annotation.
 \item Text description of the annotation.
 \end{itemize}
 
 \begin{figure}[h]
 \centering\begin{tikzpicture}
+\draw[rounded corners=5pt] (-0.6, 0) rectangle+(0.5, -0.5) node [midway] {\faCheck};
 \draw[rounded corners=5pt] (0.0, 0) rectangle+(0.5, -0.5) node [midway] {\faPenToSquare};
 \draw[rounded corners=5pt] (0.6, 0) rectangle+(0.5, -0.5) node [midway] {\faMicroscope};
 \draw[rounded corners=5pt] (1.2, 0) rectangle+(0.5, -0.5) node [midway] {\faTrashCan};
@@ -4987,12 +5059,15 @@ This window displays information about time range limits (section~\ref{timerange
 \begin{itemize}
 \item \emph{Limit to view} -- Set the time range limit to current view.
 \item \emph{\faMicroscope{}~Focus} -- Set the timeline view to the time range extent.
-\item \emph{\faNoteSticky{}~From annotation} -- Allows using the annotation region for limiting purposes.
-\item \emph{\faMagnifyingGlass{}~Copy find zone} -- Copies the find zone time range limit.
-\item \emph{\faArrowUpWideShort{}~Copy statistics} -- Copies the statistics time range limit.
-\item \emph{\faFireFlameCurved{}~Copy flame} -- Copies the flame graph time range limit.
-\item \emph{\faHourglassHalf{}~Copy wait stacks} -- Copies the wait stacks time range limit.
-\item \emph{\faMemory{}~Copy memory} -- Copies the memory time range limit.
+\item \faCopy{}~Copy from:
+\begin{itemize}
+\item \emph{\faNoteSticky{}~Annotation} -- Allows using the annotation region for limiting purposes.
+\item \emph{\faMagnifyingGlass{}~Find zone} -- Copies the find zone time range limit.
+\item \emph{\faArrowUpWideShort{}~Statistics} -- Copies the statistics time range limit.
+\item \emph{\faFireFlameCurved{}~Flame graph} -- Copies the flame graph time range limit.
+\item \emph{\faHourglassHalf{}~Wait stacks} -- Copies the wait stacks time range limit.
+\item \emph{\faMemory{}~Memory} -- Copies the memory time range limit.
+\end{itemize}
 \end{itemize}
 
 Note that ranges displayed in the window have color hints that match the color of the striped regions on the timeline.

@@ -121,24 +121,7 @@ void View::DrawFrameStatistics()
         TextFocused( "Total time:", TimeToString( m_frameSortData.total ) );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%.2f%% of profile time span)", m_frameSortData.total / float( profileSpan ) * 100.f );
-        TextFocused( "Mean frame time:", TimeToString( m_frameSortData.average ) );
-        ImGui::SameLine();
-        ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / m_frameSortData.average ) ) );
-        if( ImGui::IsItemHovered() )
-        {
-            ImGui::BeginTooltip();
-            ImGui::Text( "%s FPS", RealToString( 1000000000.0 / m_frameSortData.average ) );
-            ImGui::EndTooltip();
-        }
-        TextFocused( "Median frame time:", TimeToString( m_frameSortData.median ) );
-        ImGui::SameLine();
-        ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / m_frameSortData.median ) ) );
-        if( ImGui::IsItemHovered() )
-        {
-            ImGui::BeginTooltip();
-            ImGui::Text( "%s FPS", RealToString( 1000000000.0 / m_frameSortData.median ) );
-            ImGui::EndTooltip();
-        }
+        ImGui::Separator();
 
         const auto ty = ImGui::GetTextLineHeight();
 
@@ -272,6 +255,28 @@ void View::DrawFrameStatistics()
                     }
 
                     TextFocused( "Max counts:", RealToString( maxVal ) );
+
+                    TextFocused( "Mean:", TimeToString( m_frameSortData.average ) );
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / m_frameSortData.average ) ) );
+                    if( ImGui::IsItemHovered() )
+                    {
+                        ImGui::BeginTooltip();
+                        ImGui::Text( "%s FPS", RealToString( 1000000000.0 / m_frameSortData.average ) );
+                        ImGui::EndTooltip();
+                    }
+                    ImGui::SameLine();
+                    ImGui::Spacing();
+                    ImGui::SameLine();
+                    TextFocused( "Median:", TimeToString( m_frameSortData.median ) );
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / m_frameSortData.median ) ) );
+                    if( ImGui::IsItemHovered() )
+                    {
+                        ImGui::BeginTooltip();
+                        ImGui::Text( "%s FPS", RealToString( 1000000000.0 / m_frameSortData.median ) );
+                        ImGui::EndTooltip();
+                    }
 
                     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
                     ImGui::Checkbox( "###draw1", &m_frameSortData.drawAvgMed );

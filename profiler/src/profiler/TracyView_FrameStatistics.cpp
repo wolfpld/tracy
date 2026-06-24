@@ -106,10 +106,10 @@ void View::DrawFrameStatistics()
                 m_frameSortData.limitRange = frameRange;
             }
         }
+        const auto vsz = m_frameSortData.data.size();
         if( recalc )
         {
             auto& vec = m_frameSortData.data;
-            const auto vsz = vec.size();
             m_frameSortData.average = float( total ) / vsz;
             m_frameSortData.median = vec[vsz/2];
             m_frameSortData.total = total;
@@ -117,7 +117,18 @@ void View::DrawFrameStatistics()
         }
 
         const auto profileSpan = m_worker.GetLastTime();
-        TextFocused( "Count:", RealToString( fsz ) );
+        TextFocused( "Count:", RealToString( vsz ) );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%.2f%%)", 100.f * vsz / fsz );
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            TextFocused( "Total count:", RealToString( fsz ) );
+            ImGui::EndTooltip();
+        }
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
         TextFocused( "Total time:", TimeToString( m_frameSortData.total ) );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%.2f%% of profile time span)", m_frameSortData.total / float( profileSpan ) * 100.f );

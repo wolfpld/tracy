@@ -83,8 +83,10 @@ vx.xx.x (2026-xx-xx)
   - Entry call stacks can be now attached (previously it was only regular
     call stacks).
   - Crash call stack attachments are now annotated with crash info.
+  - Wait stack attachments now contain wait metadata.
   - Source code can be attached (also with execution costs in symbol view).
   - Zone histogram data can be attached for analysis.
+- Added MCP server.
 - Markdown renderer improvements.
   - Tables are now properly rendered.
   - Tasklist rendering has been implemented.
@@ -108,6 +110,7 @@ vx.xx.x (2026-xx-xx)
   locations won't be fixed.
 - Call stack window will now display notification if viewing a crash call
   stack.
+- Call stack window will now show a proper label if viewing a wait stack.
 - Removal of Tracy crash handler stack from the reported crash call stack
   should now work again on Linux.
 - In disassembly line view, source file names are now displayed instead of
@@ -194,11 +197,31 @@ vx.xx.x (2026-xx-xx)
   with the TRACY_OPENGL_AUTO_CALIBRATION compilation define. Note that this
   requires a full CPU/GPU sync on each calibration event. These events will
   not fire more often than once every second.
+- Additional hardening of OpenGL tracing.
 - Added missing C API for shared locks.
 - Implemented semi-unique, nonsense random name generator.
   - Can be used to set a trace description.
   - Will be used to provide default description for newly added annotations.
 - Polished look and feel of annotation regions on the timeline.
+- Annotations can now be hidden.
+- Expanded available tests.
+  - The previously existing "test" program now lives in "tests/tracy".
+  - The tests directory also contains some repro cases for solved problems.
+- Expanded examples showing how to use the profiler.
+  - Includes "Dyna.net", a small 2D game that is a variation of Bomberman.
+- Made numeric input field for trace parameters usable again.
+- Added new type of trace parameter that exposes a trigger button.
+- Added "sections" feature for marking high-level sections of program
+  execution.
+  - For example, a game with multiple levels may have each of the levels
+    marked as a section.
+  - Each section is a distinct region not restricted by other sections.
+  - Multiple sections can overlap.
+- Find zone window now also displays coefficient of variation, in addition
+  to standard deviation.
+- Moved frame statistics from trace information window to its own window.
+  - Added various statistical data to bring frame statistics up to par with
+    the find zone window.
 
 
 v0.13.1 (2025-12-11)

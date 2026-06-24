@@ -542,12 +542,13 @@ void View::DrawFindZone()
                 const auto vsz = vec.size();
                 if( vsz != 0 )
                 {
+                    auto Percentile = [&vec, vsz]( double p ) { return vec[std::min<size_t>( vsz - 1, p * vsz )]; };
                     m_findZone.average = float( total ) / vsz;
-                    m_findZone.median = vec[vsz/2];
-                    m_findZone.p75 = vec[3 * (vsz / 4)];
-                    m_findZone.p90 = vec[vsz / 10 * 9];
-                    m_findZone.p99 = vec[size_t(float(vsz * 0.99))];
-                    m_findZone.p99_9 = vec[size_t(float(vsz * 0.999))];
+                    m_findZone.median = Percentile( 0.5 );
+                    m_findZone.p75    = Percentile( 0.75 );
+                    m_findZone.p90    = Percentile( 0.9 );
+                    m_findZone.p99    = Percentile( 0.99 );
+                    m_findZone.p99_9  = Percentile( 0.999 );
                     m_findZone.total = total;
                     m_findZone.sortedNum = i;
                     m_findZone.tmin = tmin;

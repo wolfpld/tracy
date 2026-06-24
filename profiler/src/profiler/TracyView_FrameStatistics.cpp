@@ -11,7 +11,7 @@ extern double s_time;
 void View::DrawFrameStatistics()
 {
     const auto scale = GetScale();
-    ImGui::SetNextWindowSize( ImVec2( 400 * scale, 650 * scale ), ImGuiCond_FirstUseEver );
+    ImGui::SetNextWindowSize( ImVec2( 550 * scale, 650 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Frame statistics", &m_showFrameStatistics );
 
     auto fsz = m_worker.GetFullFrameCount( *m_frames );
@@ -248,10 +248,15 @@ void View::DrawFrameStatistics()
                         bins[numBins-1] += std::distance( fit, framesEnd );
                     }
 
+                    int maxBin = 0;
                     int64_t maxVal = bins[0];
                     for( int i=1; i<numBins; i++ )
                     {
-                        maxVal = std::max( maxVal, bins[i] );
+                        if( maxVal < bins[i] )
+                        {
+                            maxVal = bins[i];
+                            maxBin = i;
+                        }
                     }
 
                     ImGui::SameLine();
@@ -279,6 +284,34 @@ void View::DrawFrameStatistics()
                         ImGui::BeginTooltip();
                         ImGui::Text( "%s FPS", RealToString( 1000000000.0 / m_frameSortData.median ) );
                         ImGui::EndTooltip();
+                    }
+                    ImGui::SameLine();
+                    ImGui::Spacing();
+                    ImGui::SameLine();
+                    {
+                        int64_t t0, t1;
+                        if( m_frameSortData.logTime )
+                        {
+                            const auto ltmin = log10( tmin );
+                            const auto ltmax = log10( tmax );
+                            t0 = int64_t( pow( 10, ltmin + double( maxBin )   / numBins * ( ltmax - ltmin ) ) );
+                            t1 = int64_t( pow( 10, ltmin + double( maxBin+1 ) / numBins * ( ltmax - ltmin ) ) );
+                        }
+                        else
+                        {
+                            t0 = int64_t( tmin + double( maxBin )   / numBins * ( tmax - tmin ) );
+                            t1 = int64_t( tmin + double( maxBin+1 ) / numBins * ( tmax - tmin ) );
+                        }
+                        const auto mode = ( t0 + t1 ) / 2;
+                        TextFocused( "Mode:", TimeToString( mode ) );
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / mode ) ) );
+                        if( ImGui::IsItemHovered() )
+                        {
+                            ImGui::BeginTooltip();
+                            ImGui::Text( "%s FPS", RealToString( 1000000000.0 / mode ) );
+                            ImGui::EndTooltip();
+                        }
                     }
 
                     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );

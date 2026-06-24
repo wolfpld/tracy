@@ -254,6 +254,9 @@ void View::DrawFrameStatistics()
                         maxVal = std::max( maxVal, bins[i] );
                     }
 
+                    ImGui::SameLine();
+                    ImGui::Spacing();
+                    ImGui::SameLine();
                     TextFocused( "Max counts:", RealToString( maxVal ) );
 
                     TextFocused( "Mean:", TimeToString( m_frameSortData.average ) );

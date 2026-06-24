@@ -11,7 +11,7 @@ extern double s_time;
 void View::DrawFrameStatistics()
 {
     const auto scale = GetScale();
-    ImGui::SetNextWindowSize( ImVec2( 650 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
+    ImGui::SetNextWindowSize( ImVec2( 700 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Frame statistics", &m_showFrameStatistics );
 
     auto fsz = m_worker.GetFullFrameCount( *m_frames );
@@ -346,6 +346,9 @@ void View::DrawFrameStatistics()
                     ImGui::SameLine();
                     TextFocused( "\xcf\x83:", TimeToString( m_frameSortData.sd ) );
                     TooltipIfHovered( "Standard deviation" );
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "(%.2f%%)", 100.f * m_frameSortData.sd / m_frameSortData.average );
+                    TooltipIfHovered( "Coefficient of variation" );
 
                     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
                     ImGui::Checkbox( "###draw1", &m_frameSortData.drawAvgMed );

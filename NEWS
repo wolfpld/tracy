@@ -204,6 +204,7 @@ vx.xx.x (2026-xx-xx)
   - Will be used to provide default description for newly added annotations.
 - Polished look and feel of annotation regions on the timeline.
 - Annotations can now be hidden.
+- It is now possible to create annotations from time range limits.
 - Expanded available tests.
   - The previously existing "test" program now lives in "tests/tracy".
   - The tests directory also contains some repro cases for solved problems.
@@ -222,6 +223,8 @@ vx.xx.x (2026-xx-xx)
 - Moved frame statistics from trace information window to its own window.
   - Added various statistical data to bring frame statistics up to par with
     the find zone window.
+  - Added a new time range limit for frame statistics. This accompanies the
+    previously existing "limit to view" option.
 
 
 v0.13.1 (2025-12-11)

@@ -75,6 +75,13 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, int 
             range.min = m_vd.zvStart;
             range.max = m_vd.zvEnd;
         }
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        if( ImGui::SmallButton( ICON_FA_NOTE_STICKY " Make annotation" ) )
+        {
+            AddAnnotation( range.min, range.max );
+        }
         TextFocused( ICON_FA_STOPWATCH " Time range:", TimeToStringExact( range.min ) );
         ImGui::SameLine();
         TextFocused( "-", TimeToStringExact( range.max ) );

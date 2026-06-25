@@ -46,14 +46,43 @@ void View::DrawFrameStatistics()
         ImGui::PopStyleVar();
         ImGui::SameLine();
         SmallCheckbox( "Limit to view", &m_frameSortData.limitToView );
-        if( m_frameSortData.limitToView )
+        ImGui::SameLine();
+        if( SmallCheckbox( "Limit range", &m_framesRange.active ) )
+        {
+            if( m_framesRange.active && m_framesRange.min == 0 && m_framesRange.max == 0 )
+            {
+                m_framesRange.min = m_vd.zvStart;
+                m_framesRange.max = m_vd.zvEnd;
+            }
+        }
+        const auto limitingRange = m_frameSortData.limitToView || m_framesRange.active;
+        if( limitingRange )
         {
             ImGui::SameLine();
             TextColoredUnformatted( 0xFF00FFFF, ICON_FA_TRIANGLE_EXCLAMATION );
         }
 
-        const auto frameRange = m_worker.GetFrameRange( *m_frames, m_vd.zvStart, m_vd.zvEnd );
-        if( m_frameSortData.frameSet != m_frames || ( m_frameSortData.limitToView && m_frameSortData.limitRange != frameRange ) || ( !m_frameSortData.limitToView && m_frameSortData.limitRange.first != -1 ) )
+        std::pair<int, int> frameRange = { -1, -1 };
+        if( limitingRange )
+        {
+            if( m_frameSortData.limitToView )
+            {
+                frameRange = m_worker.GetFrameRange( *m_frames, m_vd.zvStart, m_vd.zvEnd );
+                if( m_framesRange.active )
+                {
+                    const auto r = m_worker.GetFrameRange( *m_frames, m_framesRange.min, m_framesRange.max );
+                    if( r.first > frameRange.first ) frameRange.first = r.first;
+                    if( r.second < frameRange.second ) frameRange.second = r.second;
+                    if( frameRange.second < frameRange.first ) frameRange.second = frameRange.first;
+                }
+            }
+            else
+            {
+                assert( m_framesRange.active );
+                frameRange = m_worker.GetFrameRange( *m_frames, m_framesRange.min, m_framesRange.max );
+            }
+        }
+        if( m_frameSortData.frameSet != m_frames || ( limitingRange && m_frameSortData.limitRange != frameRange ) || ( !limitingRange && m_frameSortData.limitRange.first != -1 ) )
         {
             m_frameSortData.frameSet = m_frames;
             m_frameSortData.frameNum = 0;
@@ -64,7 +93,7 @@ void View::DrawFrameStatistics()
         bool recalc = false;
         int64_t total = 0;
         double sumSq = 0;
-        if( !m_frameSortData.limitToView )
+        if( !limitingRange )
         {
             if( m_frameSortData.frameNum != fsz || m_frameSortData.limitRange.first != -1 )
             {

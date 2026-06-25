@@ -46,6 +46,7 @@ enum class RangeId
     FlameGraph,
     WaitStacks,
     Memory,
+    FrameStatistics,
     NUM
 };
 

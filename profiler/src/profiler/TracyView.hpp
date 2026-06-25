@@ -1038,6 +1038,7 @@ private:
     Range m_statRange;
     Range m_flameRange;
     Range m_waitStackRange;
+    Range m_framesRange;
 
     std::array<RangeEntry, size_t( RangeId::NUM )> m_ranges;
 

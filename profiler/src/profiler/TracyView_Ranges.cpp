@@ -15,6 +15,7 @@ void View::SetupRanges()
         { &m_flameRange,     0x88B5EE, ICON_FA_FIRE_FLAME_CURVED " Flame graph" },
         { &m_waitStackRange, 0xEEB588, ICON_FA_HOURGLASS_HALF " Wait stacks" },
         { &m_memInfo.range,  0x88EEE3, ICON_FA_MEMORY " Memory" },
+        { &m_framesRange,    0xEE88EE, ICON_FA_IMAGES " Frame statistics" },
     }};
 }
 
@@ -33,6 +34,8 @@ bool View::ShouldDrawRange( const RangeId& id ) const
         return m_showWaitStacks;
     case RangeId::Memory:
         return m_memInfo.show;
+    case RangeId::FrameStatistics:
+        return m_showFrameStatistics;
     default:
         return false;
     }

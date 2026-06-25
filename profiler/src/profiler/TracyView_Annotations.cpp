@@ -97,7 +97,7 @@ void View::DrawAnnotationList()
     ImGui::Begin( "Annotation list", &m_showAnnotationList );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
 
-    if( ImGui::Button( ICON_FA_PLUS " Add annotation" ) )
+    if( ImGui::Button( ICON_FA_NOTE_STICKY " Add annotation" ) )
     {
         AddAnnotation( m_vd.zvStart, m_vd.zvEnd );
     }

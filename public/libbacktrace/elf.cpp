@@ -7410,9 +7410,17 @@ phdr_callback_mock (struct dl_phdr_info *info, size_t size ATTRIBUTE_UNUSED,
   ptr->dlpi_addr = info->dlpi_addr;
 
   // calculate the end address as well, so we can quickly determine if a PC is within the range of this image
-  ptr->dlpi_end_addr = uintptr_t(info->dlpi_addr) + (info->dlpi_phnum ? uintptr_t(
-                            info->dlpi_phdr[info->dlpi_phnum - 1].p_vaddr + 
-                            info->dlpi_phdr[info->dlpi_phnum - 1].p_memsz) : 0);
+  // headers aren't guaranteed to be in address order; find the max
+  ptr->dlpi_end_addr = uintptr_t(info->dlpi_addr);
+  for (uint32_t i = 0; i < info->dlpi_phnum; i++)
+    {
+      const auto &phdr = info->dlpi_phdr[i];
+      if (phdr.p_type != PT_LOAD)
+        continue;
+
+      const auto phdr_end = uintptr_t(info->dlpi_addr + phdr.p_vaddr + phdr.p_memsz);
+      ptr->dlpi_end_addr = std::max(phdr_end, ptr->dlpi_end_addr);
+    }
 
   return 0;
 }

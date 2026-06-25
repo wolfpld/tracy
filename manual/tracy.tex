@@ -4134,6 +4134,7 @@ To define a time range, drag the \LMB{}~left mouse button over the timeline view
 \item \emph{\faFireFlameCurved{}~Flame graph} -- limits flame graph results. Refer to chapter~\ref{flamegraph}.
 \item \emph{\faHourglassHalf{}~Wait stacks} -- limits wait stacks results. Refer to chapter~\ref{stackwindows}.
 \item \emph{\faMemory{}~Memory} -- limits memory results. Read more about this in chapter~\ref{memorywindow}.
+\item \emph{\faImages{}~Frame statistics} -- limits frame statistics. Section~\ref{framestatistics} has more information.
 \end{itemize}
 \item \emph{\faNoteSticky{}~Add annotation} -- use to annotate regions of interest, as described in chapter~\ref{annotatingtrace}.
 \end{itemize}
@@ -4707,7 +4708,9 @@ If an application should crash during profiling (section~\ref{crashhandling}), t
 \subsection{Frame statistics window}
 \label{framestatistics}
 
-This windows shows statistical information about the selected frame set timing, and a histogram. See section~\ref{findzone} for a description of the displayed data. As a convenience, you can switch the active frame set here. Additionally, with the \emph{Limit to view} option you can restrict the displayed frame statistics to the frame range currently visible on the screen.
+This windows shows statistical information about the selected frame set timing, and a histogram. See section~\ref{findzone} for a description of the displayed data. As a convenience, you can switch the active frame set here.
+
+You can restrict the displayed frame statistics to the frame range currently visible on the screen with the \emph{Limit to view} option, while the \emph{Limit range} switch limits the active range to a preset time limit, as described in chapter~\ref{timerangelimits}. If both limit options are active, the resulting frame range is the intersection of both ranges.
 
 \subsection{Zone information window}
 \label{zoneinfo}
@@ -5058,6 +5061,7 @@ This window displays information about time range limits (section~\ref{timerange
 
 \begin{itemize}
 \item \emph{Limit to view} -- Set the time range limit to current view.
+\item \emph{\faNoteSticky{}~Make annotation} -- Create a new annotation matching the time range.
 \item \emph{\faMicroscope{}~Focus} -- Set the timeline view to the time range extent.
 \item \faCopy{}~Copy from:
 \begin{itemize}
@@ -5067,6 +5071,7 @@ This window displays information about time range limits (section~\ref{timerange
 \item \emph{\faFireFlameCurved{}~Flame graph} -- Copies the flame graph time range limit.
 \item \emph{\faHourglassHalf{}~Wait stacks} -- Copies the wait stacks time range limit.
 \item \emph{\faMemory{}~Memory} -- Copies the memory time range limit.
+\item \emph{\faImages{}~Frame statistics} -- Copies the frame statistics range limit.
 \end{itemize}
 \end{itemize}
 

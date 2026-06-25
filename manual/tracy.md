@@ -3674,6 +3674,8 @@ To define a time range, drag the left mouse button over the timeline view while 
 
   - * Memory* -- limits memory results. Read more about this in chapter [5.10](#memorywindow).
 
+  - * Frame statistics* -- limits frame statistics. Section [5.14](#framestatistics) has more information.
+
 - * Add annotation* -- use to annotate regions of interest, as described in chapter [5.3.1](#annotatingtrace).
 
 Alternatively, you may specify the time range by clicking the right mouse button on a zone, section or a frame. The resulting time extent will match the selected item.
@@ -3691,6 +3693,7 @@ You can freely adjust each time range on the timeline by clicking the left mouse
  - Fire Flame Curved icon
  - Hourglass Half icon
  - Memory icon
+ - Images icon
  - Note Sticky icon
  - Screwdriver Wrench icon
 
@@ -4298,7 +4301,9 @@ If an application should crash during profiling (section [2.5](#crashhandling))
 
 ## Frame statistics window {#framestatistics}
 
-This windows shows statistical information about the selected frame set timing, and a histogram. See section [5.7](#findzone) for a description of the displayed data. As a convenience, you can switch the active frame set here. Additionally, with the *Limit to view* option you can restrict the displayed frame statistics to the frame range currently visible on the screen.
+This windows shows statistical information about the selected frame set timing, and a histogram. See section [5.7](#findzone) for a description of the displayed data. As a convenience, you can switch the active frame set here.
+
+You can restrict the displayed frame statistics to the frame range currently visible on the screen with the *Limit to view* option, while the *Limit range* switch limits the active range to a preset time limit, as described in chapter [5.24](#timerangelimits). If both limit options are active, the resulting frame range is the intersection of both ranges.
 
 ## Zone information window {#zoneinfo}
 
@@ -4733,7 +4738,7 @@ This window lists all annotations marked on the timeline. Each annotation is pre
 <figcaption>Annotation list entry</figcaption>
 </figure>
 
-A new view-sized annotation can be added in this window by pressing the *+ Add annotation* button. This effectively saves your current viewport for further reference.
+A new view-sized annotation can be added in this window by pressing the * Add annotation* button. This effectively saves your current viewport for further reference.
 
 
 -----
@@ -4742,12 +4747,15 @@ A new view-sized annotation can be added in this window by pressing the *+ Add a
  - Pen To Square icon
  - Microscope icon
  - Trash Can icon
+ - Note Sticky icon
 
 ## Time range limits {#timerangelimits}
 
 This window displays information about time range limits (section [5.3](#timeranges)) for find zone (section [5.7](#findzone)), statistics (section [5.6](#statistics)), flame graph (section [5.9](#flamegraph)), memory (section [5.10](#memorywindow)) and wait stacks (section [5.18](#stackwindows)) results. Each limit can be enabled or disabled and adjusted through the following options:
 
 - *Limit to view* -- Set the time range limit to current view.
+
+- * Make annotation* -- Create a new annotation matching the time range.
 
 - * Focus* -- Set the timeline view to the time range extent.
 
@@ -4765,19 +4773,22 @@ This window displays information about time range limits (section [5.3](#timera
 
   - * Memory* -- Copies the memory time range limit.
 
+  - * Frame statistics* -- Copies the frame statistics range limit.
+
 Note that ranges displayed in the window have color hints that match the color of the striped regions on the timeline.
 
 
 -----
 
+ - Note Sticky icon
  - Microscope icon
  - Copy icon
- - Note Sticky icon
  - Magnifying Glass icon
  - Arrow Up Wide Short icon
  - Fire Flame Curved icon
  - Hourglass Half icon
  - Memory icon
+ - Images icon
 
 # Tracy Assist {#tracyassist}
 

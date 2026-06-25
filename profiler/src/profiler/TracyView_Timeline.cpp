@@ -490,7 +490,8 @@ void View::DrawTimeline()
         {
             const auto px0 = ( r.range->min - m_vd.zvStart ) * pxns;
             const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( r.range->max - m_vd.zvStart ) * pxns );
-            DrawStripedRect( draw, wpos, px0, linepos.y, px1, linepos.y + lineh, 10 * scale, r.color | 0x06000000, true, idx % 2 == 0 );
+            const auto alpha = ( r.range->hiMin || r.range->hiMax ) ? 0x12000000 : 0x06000000;
+            DrawStripedRect( draw, wpos, px0, linepos.y, px1, linepos.y + lineh, 10 * scale, r.color | alpha, true, idx % 2 == 0 );
             DrawLine( draw, ImVec2( dpos.x + px0, linepos.y + 0.5f ), ImVec2( dpos.x + px0, linepos.y + lineh + 0.5f ), r.color | ( r.range->hiMin ? 0x99000000 : 0x55000000 ), r.range->hiMin ? 2 : 1 );
             DrawLine( draw, ImVec2( dpos.x + px1, linepos.y + 0.5f ), ImVec2( dpos.x + px1, linepos.y + lineh + 0.5f ), r.color | ( r.range->hiMax ? 0x99000000 : 0x55000000 ), r.range->hiMax ? 2 : 1 );
         }

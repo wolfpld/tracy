@@ -163,7 +163,7 @@ void View::DrawTimelineFrames( const FrameData& frames )
                     {
                         m_showPlayback = true;
                         m_playback.pause = true;
-                        SetPlaybackFrame( frames.frames[i].frameImage );
+                        SetPlaybackFrame( frames.frames[i].frameImage, true );
                     }
                 }
                 ImGui::EndTooltip();

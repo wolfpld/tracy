@@ -444,7 +444,7 @@ private:
     template<typename Adapter, typename V>
     void CalcZoneTimeDataImpl( const V& children, const ContextSwitch* ctx, unordered_flat_map<int16_t, ZoneTimeData>& data, int64_t& ztime );
 
-    void SetPlaybackFrame( uint32_t idx );
+    void SetPlaybackFrame( uint32_t idx, bool mayExtend );
     int GetPlaybackFrameBegin() const;
     int GetPlaybackFrameEnd() const;
 
@@ -977,6 +977,8 @@ private:
         bool sync = false;
         bool zoom = false;
         bool loop = false;
+        bool limitRange = false;
+        std::pair<int, int> range = { -1, -1 };
     } m_playback;
 
     struct TimeDistribution {

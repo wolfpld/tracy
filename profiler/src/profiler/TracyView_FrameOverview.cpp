@@ -207,7 +207,7 @@ void View::DrawFrames()
                     {
                         m_showPlayback = true;
                         m_playback.pause = true;
-                        SetPlaybackFrame( m_frames->frames[sel].frameImage );
+                        SetPlaybackFrame( m_frames->frames[sel].frameImage, true );
                     }
                 }
                 else

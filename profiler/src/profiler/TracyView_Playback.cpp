@@ -8,20 +8,26 @@ namespace tracy
 
 int View::GetPlaybackFrameBegin() const
 {
-    return 0;
+    return m_playback.limitRange ? m_playback.range.first : 0;
 }
 
 int View::GetPlaybackFrameEnd() const
 {
-    return m_worker.GetFrameImageCount();
+    return m_playback.limitRange ? m_playback.range.second + 1 : m_worker.GetFrameImageCount();
 }
 
-void View::SetPlaybackFrame( uint32_t idx )
+void View::SetPlaybackFrame( uint32_t idx, bool mayExtend )
 {
     const auto frameSet = m_worker.GetFramesBase();
     const auto& frameImages = m_worker.GetFrameImages();
-    const auto begin = GetPlaybackFrameBegin();
-    const auto end = GetPlaybackFrameEnd();
+    auto begin = GetPlaybackFrameBegin();
+    auto end = GetPlaybackFrameEnd();
+    if( mayExtend && ( idx < begin || idx >= end ) )
+    {
+        m_playback.limitRange = false;
+        begin = GetPlaybackFrameBegin();
+        end = GetPlaybackFrameEnd();
+    }
     assert( idx >= begin && idx < end );
 
     m_playback.frame = idx;
@@ -96,11 +102,11 @@ void View::DrawPlayback()
                 if( m_playback.frame + 1 == end )
                 {
                     assert( m_playback.loop );
-                    SetPlaybackFrame( begin );
+                    SetPlaybackFrame( begin, false );
                 }
                 else
                 {
-                    SetPlaybackFrame( m_playback.frame + 1 );
+                    SetPlaybackFrame( m_playback.frame + 1, false );
                 }
             }
         }
@@ -154,7 +160,7 @@ void View::DrawPlayback()
     {
         if( (uint32_t)tmp < begin + 1 ) tmp = begin + 1;
         else if( (uint32_t)tmp > end ) tmp = end;
-        SetPlaybackFrame( uint32_t( tmp - 1 ) );
+        SetPlaybackFrame( uint32_t( tmp - 1 ), false );
         m_playback.pause = true;
     }
     ImGui::SliderFloat( "Playback speed", &m_playback.speed, 0.1f, 4, "%.2f" );
@@ -171,7 +177,7 @@ void View::DrawPlayback()
     {
         if( m_playback.frame > begin )
         {
-            SetPlaybackFrame( m_playback.frame - 1 );
+            SetPlaybackFrame( m_playback.frame - 1, false );
             m_playback.pause = true;
         }
     }
@@ -180,7 +186,7 @@ void View::DrawPlayback()
     {
         if( m_playback.frame < end - 1 )
         {
-            SetPlaybackFrame( m_playback.frame + 1 );
+            SetPlaybackFrame( m_playback.frame + 1, false );
             m_playback.pause = true;
         }
     }
@@ -215,6 +221,36 @@ void View::DrawPlayback()
     ImGui::Checkbox( "Zoom 2\xc3\x97", &m_playback.zoom );
     ImGui::SameLine();
     ImGui::Checkbox( "Loop", &m_playback.loop );
+    bool limitChanged = SmallCheckbox( "Limit frame range", &m_playback.limitRange );
+    if( m_playback.limitRange )
+    {
+        if( m_playback.range.first < 0 ) m_playback.range = { 0, m_worker.GetFrameImageCount() - 1 };
+
+        ImGui::Indent();
+        int r0 = m_playback.range.first + 1;
+        int r1 = m_playback.range.second + 1;
+        if( ImGui::DragIntRange2( "##range", &r0, &r1, 1, 1, m_worker.GetFrameImageCount(), "%d" ) )
+        {
+            m_playback.range = { r0 - 1, r1 - 1 };
+            limitChanged = true;
+        }
+        ImGui::Unindent();
+
+        if( limitChanged )
+        {
+            if( m_playback.frame < m_playback.range.first )
+            {
+                m_playback.pause = true;
+                SetPlaybackFrame( m_playback.range.first, false );
+            }
+            else if( m_playback.frame > m_playback.range.second )
+            {
+                m_playback.pause = true;
+                SetPlaybackFrame( m_playback.range.second, false );
+            }
+        }
+    }
+    ImGui::Separator();
     TextFocused( "Timestamp:", TimeToString( tstart ) );
     TooltipIfHovered( TimeToStringExact( tstart ) );
     ImGui::SameLine();

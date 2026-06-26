@@ -4685,9 +4685,11 @@ This window presents information and statistics about a lock. The lock events co
 
 ## Frame image playback window {#playback}
 
-You may view a live replay of the profiled application screen captures (see section [3.3.3](#frameimages)) using this window. Playback is controlled by the * Play* and * Pause* buttons and the *Frame image* slider can be used to scrub to the desired timestamp. Alternatively you may use the ** and ** buttons to change single frame back or forward.
+You may view a live replay of the profiled application screen captures (see section [3.3.3](#frameimages)) using this window. Playback is controlled by the * Play* and * Pause* buttons, and the *Frame image* slider can be used to scrub to the desired timestamp. Alternatively, you may use the ** and ** buttons, or use the mouse wheel on either the *Frame image* slider or the displayed frame image to change a single frame backward or forward.
 
 If the *Sync timeline* option is selected, the profiler will focus the timeline view on the frame corresponding to the currently displayed screenshot. The *Zoom 2×* option enlarges the image for easier viewing.
+
+Enabling the *Limit frame range* option allows you to manually set the frame image playback region. Adjustments can be made using the start and end sliders or by copying the time range from either an annotation (section [5.23](#annotationlist)) or one of the time range limits (section [5.24](#timerangelimits)).
 
 The following parameters also accompany each displayed frame image: *timestamp*, showing at which time the image was captured, *frame*, displaying the numerical value of the corresponding frame, and *ratio*, telling how well the in-memory loss-less compression was able to reduce the image data size.
 

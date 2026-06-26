@@ -5003,9 +5003,11 @@ This window presents information and statistics about a lock. The lock events co
 \subsection{Frame image playback window}
 \label{playback}
 
-You may view a live replay of the profiled application screen captures (see section~\ref{frameimages}) using this window. Playback is controlled by the \emph{\faPlay~Play} and \emph{\faPause~Pause} buttons and the \emph{Frame image} slider can be used to scrub to the desired timestamp. Alternatively you may use the \emph{\faCaretLeft} and \emph{\faCaretRight} buttons to change single frame back or forward.
+You may view a live replay of the profiled application screen captures (see section~\ref{frameimages}) using this window. Playback is controlled by the \emph{\faPlay~Play} and \emph{\faPause~Pause} buttons, and the \emph{Frame image} slider can be used to scrub to the desired timestamp. Alternatively, you may use the \emph{\faCaretLeft} and \emph{\faCaretRight} buttons, or use the \Scroll{}~mouse wheel on either the \emph{Frame image} slider or the displayed frame image to change a single frame backward or forward.
 
 If the \emph{Sync timeline} option is selected, the profiler will focus the timeline view on the frame corresponding to the currently displayed screenshot. The \emph{Zoom 2$\times$} option enlarges the image for easier viewing.
+
+Enabling the \emph{Limit frame range} option allows you to manually set the frame image playback region. Adjustments can be made using the start and end sliders or by copying the time range from either an annotation (section~\ref{annotationlist}) or one of the time range limits (section~\ref{timerangelimits}).
 
 The following parameters also accompany each displayed frame image: \emph{timestamp}, showing at which time the image was captured, \emph{frame}, displaying the numerical value of the corresponding frame, and \emph{ratio}, telling how well the in-memory loss-less compression was able to reduce the image data size.
 

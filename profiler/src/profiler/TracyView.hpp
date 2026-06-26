@@ -447,6 +447,7 @@ private:
     void SetPlaybackFrame( uint32_t idx, bool mayExtend );
     int GetPlaybackFrameBegin() const;
     int GetPlaybackFrameEnd() const;
+    std::pair<int, int> GetPlaybackFrameRangeFromTime( int64_t tmin, int64_t tmax ) const;
 
     bool Save( const char* fn, FileCompression comp, int zlevel, bool buildDict, int streams );
 

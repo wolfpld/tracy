@@ -16,6 +16,26 @@ int View::GetPlaybackFrameEnd() const
     return m_playback.limitRange ? m_playback.range.second + 1 : m_worker.GetFrameImageCount();
 }
 
+std::pair<int, int> View::GetPlaybackFrameRangeFromTime( int64_t tmin, int64_t tmax ) const
+{
+    const auto frameSet = m_worker.GetFramesBase();
+    const auto& frameImages = m_worker.GetFrameImages();
+    const int count = (int)frameImages.size();
+    if( count == 0 ) return { -1, -1 };
+
+    int lo = -1, hi = -1;
+    for( int i=0; i<count; i++ )
+    {
+        const auto t = m_worker.GetFrameBegin( *frameSet, frameImages[i]->frameRef );
+        if( t > tmax ) break;
+        if( t <= tmin ) lo = i;     // last image already on screen at tmin
+        hi = i;                     // last image started by tmax
+    }
+    if( hi < 0 ) return { 0, 0 };   // whole range is before the first frame image
+    if( lo < 0 ) lo = 0;            // range starts before the first frame image
+    return { lo, hi };
+}
+
 void View::SetPlaybackFrame( uint32_t idx, bool mayExtend )
 {
     const auto frameSet = m_worker.GetFramesBase();

@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-06-25 <https://github.com/wolfpld/tracy>
+2026-06-26 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -4395,7 +4395,7 @@ External frames from system libraries are hidden by default. Enabling the * E
 
 The * Short images* option shortens the displayed executable image name to only the file name. The full path is available in the tooltip.
 
-If the displayed call stack is a sampled call stack (chapter [3.18.5](#sampling)), an additional button may be available, * Entry stacks*. Clicking it will open the sample entry stacks window (chapter [5.18](#stackwindows)) for the current call stack.
+If the displayed call stack is a sampled call stack (chapter [3.18.5](#sampling)), an additional button may be available, * Entry stacks*. Clicking it will open the sample entry stacks window (chapter [5.18](#stackwindows)) for the current call stack.
 
 Clicking on the * Copy to clipboard* button will copy call stack to the clipboard.
 
@@ -4412,7 +4412,7 @@ Clicking on the * Summary* button will use Tracy Assist to generate a brief s
  - Arrow Pointer icon
  - Shield Halved icon
  - Scissors icon
- - Door Open icon
+ - Arrow Down Short Wide icon
  - Clipboard icon
  - Robot icon
  - Tag icon
@@ -4469,7 +4469,7 @@ In source view mode, you can view the source code of the profiled application to
 
 A much more capable symbol view mode is available if the inspected source location has an associated symbol context (i.e., if it comes from a call stack capture, from call stack sampling, etc.). A symbol is a unit of machine code, basically a callable function. It may be generated using multiple source files and may consist of numerous inlined functions. A list of all captured symbols is available in the statistics window, as described in chapter [5.6.2](#statisticssampling).
 
-The header of symbol view window contains a name of the selected * symbol*, a list of * functions* that contribute to the symbol, and information such as count of probed * Samples*. The entry stacks (section [5.18](#stackwindows)) of the symbol can be viewed by clicking on the *Entry stacks* button.
+The header of symbol view window contains a name of the selected * symbol*, a list of * functions* that contribute to the symbol, and information such as count of probed * Samples*. The entry stacks (section [5.18](#stackwindows)) of the symbol can be viewed by clicking on the * Entry stacks* button.
 
 Additionally, you may use the *Mode* selector to decide what content should be displayed in the panels below:
 
@@ -4487,6 +4487,7 @@ Some modes may be unavailable in some circumstances (missing or outdated source 
  - Puzzle Piece icon
  - Sitemap icon
  - Eye Dropper icon
+ - Arrow Down Short Wide icon
 
 #### Source mode
 

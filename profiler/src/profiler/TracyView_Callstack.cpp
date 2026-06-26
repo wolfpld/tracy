@@ -246,7 +246,7 @@ void View::DrawCallstackTable( const CallstackFrameId* data, size_t size, uint64
                 ImGui::SameLine();
                 ImGui::Spacing();
                 ImGui::SameLine();
-                if( ImGui::Button( ICON_FA_DOOR_OPEN " Entry stacks" ) )
+                if( ImGui::Button( ICON_FA_ARROW_DOWN_SHORT_WIDE " Entry stacks" ) )
                 {
                     ShowSampleParents( frame->data[0].symAddr, true );
                 }

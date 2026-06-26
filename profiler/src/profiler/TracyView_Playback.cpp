@@ -6,22 +6,33 @@
 namespace tracy
 {
 
+int View::GetPlaybackFrameBegin() const
+{
+    return 0;
+}
+
+int View::GetPlaybackFrameEnd() const
+{
+    return m_worker.GetFrameImageCount();
+}
+
 void View::SetPlaybackFrame( uint32_t idx )
 {
     const auto frameSet = m_worker.GetFramesBase();
     const auto& frameImages = m_worker.GetFrameImages();
-    const auto ficnt = m_worker.GetFrameImageCount();
-    assert( idx < ficnt );
+    const auto begin = GetPlaybackFrameBegin();
+    const auto end = GetPlaybackFrameEnd();
+    assert( idx >= begin && idx < end );
 
     m_playback.frame = idx;
 
-    if( ficnt == 1 || ( idx == ficnt - 1 && !m_playback.loop ) )
+    if( end - begin <= 1 || ( idx == end - 1 && !m_playback.loop ) )
     {
         m_playback.pause = true;
     }
     else
     {
-        if( idx == ficnt - 1 ) idx--;
+        if( idx == end - 1 ) idx--;
         const auto t0 = m_worker.GetFrameBegin( *frameSet, frameImages[idx]->frameRef );
         const auto t1 = m_worker.GetFrameBegin( *frameSet, frameImages[idx+1]->frameRef );
         m_playback.timeLeft = ( t1 - t0 ) / 1000000000.f;
@@ -45,7 +56,8 @@ void View::DrawPlayback()
     const auto frameSet = m_worker.GetFramesBase();
     const auto& frameImages = m_worker.GetFrameImages();
     const auto& fi = frameImages[m_playback.frame];
-    const auto ficnt = m_worker.GetFrameImageCount();
+    const auto begin = GetPlaybackFrameBegin();
+    const auto end = GetPlaybackFrameEnd();
 
     const auto tstart = m_worker.GetFrameBegin( *frameSet, fi->frameRef );
 
@@ -81,10 +93,10 @@ void View::DrawPlayback()
             m_playback.timeLeft -= dt;
             if( m_playback.timeLeft == 0 )
             {
-                if( m_playback.frame + 1 == ficnt )
+                if( m_playback.frame + 1 == end )
                 {
                     assert( m_playback.loop );
-                    SetPlaybackFrame( 0 );
+                    SetPlaybackFrame( begin );
                 }
                 else
                 {
@@ -124,7 +136,7 @@ void View::DrawPlayback()
         tmp -= (int)wheel;
         changed = true;
     }
-    changed |= ImGui::SliderInt( "Frame image", &tmp, 1, ficnt, "%d" );
+    changed |= ImGui::SliderInt( "Frame image", &tmp, begin + 1, end, "%d" );
     ImGui::SetItemKeyOwner( ImGuiKey_MouseWheelY );
     if( wheel && ImGui::IsItemHovered() )
     {
@@ -140,8 +152,8 @@ void View::DrawPlayback()
     }
     if( changed )
     {
-        if( tmp < 1 ) tmp = 1;
-        else if( (uint32_t)tmp > ficnt ) tmp = ficnt;
+        if( (uint32_t)tmp < begin + 1 ) tmp = begin + 1;
+        else if( (uint32_t)tmp > end ) tmp = end;
         SetPlaybackFrame( uint32_t( tmp - 1 ) );
         m_playback.pause = true;
     }
@@ -157,7 +169,7 @@ void View::DrawPlayback()
 
     if( ImGui::Button( " " ICON_FA_CARET_LEFT " " ) )
     {
-        if( m_playback.frame > 0 )
+        if( m_playback.frame > begin )
         {
             SetPlaybackFrame( m_playback.frame - 1 );
             m_playback.pause = true;
@@ -166,7 +178,7 @@ void View::DrawPlayback()
     ImGui::SameLine();
     if( ImGui::Button( " " ICON_FA_CARET_RIGHT " " ) )
     {
-        if( m_playback.frame < ficnt - 1 )
+        if( m_playback.frame < end - 1 )
         {
             SetPlaybackFrame( m_playback.frame + 1 );
             m_playback.pause = true;
@@ -175,7 +187,7 @@ void View::DrawPlayback()
     ImGui::SameLine();
     if( m_playback.pause )
     {
-        const auto disabled = !m_playback.loop && ( m_playback.frame == frameImages.size() - 1 );
+        const auto disabled = !m_playback.loop && ( m_playback.frame == end - 1 );
         if( disabled ) ImGui::BeginDisabled();
         if( ImGui::Button( PlaybackWindowButtons[0], ImVec2( bw, 0 ) ) ) m_playback.pause = false;
         if( disabled ) ImGui::EndDisabled();

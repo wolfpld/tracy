@@ -165,10 +165,10 @@ void View::DrawPlayback()
     ImGui::SameLine();
     if( m_playback.pause )
     {
-        if( ImGui::Button( PlaybackWindowButtons[0], ImVec2( bw, 0 ) ) && m_playback.frame != frameImages.size() - 1 )
-        {
-            m_playback.pause = false;
-        }
+        const auto disabled = m_playback.frame == frameImages.size() - 1;
+        if( disabled ) ImGui::BeginDisabled();
+        if( ImGui::Button( PlaybackWindowButtons[0], ImVec2( bw, 0 ) ) ) m_playback.pause = false;
+        if( disabled ) ImGui::EndDisabled();
     }
     else
     {

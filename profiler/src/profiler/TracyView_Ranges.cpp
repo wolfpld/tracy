@@ -101,7 +101,7 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, int 
             {
                 SmallColorBox( v->color );
                 ImGui::SameLine();
-                if( ImGui::Selectable( v->text.c_str() ) )
+                if( ImGui::Selectable( v->text.empty() ? "<unnamed>" : v->text.c_str() ) )
                 {
                     range.min = v->range.min;
                     range.max = v->range.max;

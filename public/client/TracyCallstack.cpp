@@ -237,9 +237,18 @@ private:
         if( cache->ContainsImage( startAddress ) ) return 0;
 
         const uint32_t headerCount = info->dlpi_phnum;
-        assert( headerCount > 0);
-        const auto endAddress = static_cast<uint64_t>( info->dlpi_addr +
-            info->dlpi_phdr[info->dlpi_phnum - 1].p_vaddr + info->dlpi_phdr[info->dlpi_phnum - 1].p_memsz);
+        assert( headerCount > 0 );
+
+        // headers aren't guaranteed to be in address order; find the max
+        uint64_t endAddress = startAddress;
+        for( uint32_t i=0; i<headerCount; i++ )
+        {
+            const auto& phdr = info->dlpi_phdr[i];
+            if( phdr.p_type != PT_LOAD ) continue;
+
+            const auto phdrEnd = static_cast<uint64_t>( info->dlpi_addr + phdr.p_vaddr + phdr.p_memsz );
+            endAddress = std::max( phdrEnd, endAddress );
+        }
 
         ImageEntry image{};
         image.m_startAddress = startAddress;

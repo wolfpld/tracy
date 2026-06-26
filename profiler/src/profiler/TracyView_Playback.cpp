@@ -254,6 +254,37 @@ void View::DrawPlayback()
             m_playback.range = { r0 - 1, r1 - 1 };
             limitChanged = true;
         }
+
+        ImGui::TextDisabled( ICON_FA_COPY " Copy from:" );
+        ImGui::SameLine();
+        if( SmallButtonDisablable( ICON_FA_NOTE_STICKY " Annotation", m_annotations.empty() ) ) ImGui::OpenPopup( "PlaybackRangeAnnotation" );
+        if( ImGui::BeginPopup( "PlaybackRangeAnnotation" ) )
+        {
+            for( auto& v : m_annotations )
+            {
+                SmallColorBox( v->color );
+                ImGui::SameLine();
+                if( ImGui::Selectable( v->text.empty() ? "<unnamed>" : v->text.c_str() ) )
+                {
+                    m_playback.range = GetPlaybackFrameRangeFromTime( v->range.min, v->range.max );
+                    limitChanged = true;
+                }
+                ImGui::SameLine();
+                ImGui::Spacing();
+                ImGui::SameLine();
+                ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v->range.min ), TimeToStringExact( v->range.max ), TimeToString( v->range.max - v->range.min ) );
+            }
+            ImGui::EndPopup();
+        }
+        for( auto& r : m_ranges )
+        {
+            ImGui::SameLine();
+            if( SmallButtonDisablable( r.name, r.range->min == 0 && r.range->max == 0 ) )
+            {
+                m_playback.range = GetPlaybackFrameRangeFromTime( r.range->min, r.range->max );
+                limitChanged = true;
+            }
+        }
         ImGui::Unindent();
 
         if( limitChanged )

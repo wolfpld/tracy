@@ -866,8 +866,12 @@ v0.8.0 (2022-03-28)
   trees.
 - Updated project build files to MSVC 2022.
 - Call stack tooltips now also show the executable image name.
-- Playback frames can be now changed by interacting with the frame image
-  slider using the mouse wheel.
+- Frame image playback improvements.
+  - Frames can be now changed by interacting with the frame image slider
+    using the mouse wheel.
+  - Playback can be looped.
+  - The range of played frame images can be limited, either manually, or
+    copying annotations time range or time range limit.
 - Signal used to handle crashes on Linux can be now redefined.
 - Various DPI scaling improvements.
 - User interface can be now scaled in run time.

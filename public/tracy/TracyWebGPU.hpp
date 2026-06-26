@@ -86,8 +86,8 @@ extern "C" int32_t IsDebuggerPresent(void);
 #define TracyWebGPUAssert(predicate, ...) assert(predicate);
 #endif
 
-#define TracyWebGPULog(severity, msg) fprintf(stdout, "%s", msg), tracy::Profiler::LogString( tracy::MessageSourceType::Tracy, tracy::MessageSeverity::severity, tracy::Color::Red4, 0, msg );
-#define TracyWebGPUPanic(msg, ...) do { TracyWebGPULog(Error, msg); TracyWebGPUAssert(false && "TracyWebGPU: " msg); __VA_ARGS__; } while(false);
+#define TracyWebGPULog(severity, msg) do { char buffer [1024]; int len = snprintf(buffer, sizeof(buffer), "TracyWebGPU: %s", msg); tracy::Profiler::LogString( tracy::MessageSourceType::Tracy, tracy::MessageSeverity::severity, tracy::Color::Red4, 0, len, buffer ); } while(false)
+#define TracyWebGPUPanic(msg, ...) do { TracyWebGPULog(Error, msg); TracyWebGPUAssert(false && "TracyWebGPU: " msg); __VA_ARGS__; } while(false)
 
 namespace tracy
 {
@@ -431,9 +431,9 @@ namespace tracy
             static bool VerifyDevice(WGPUDevice device)
             {
                 if (device == nullptr)
-                    return false;
+                    TracyWebGPUPanic("Invalid WGPUDevice.", return false);
                 if (wgpuDeviceHasFeature(device, WGPUFeatureName_TimestampQuery) == WGPU_FALSE)
-                    return false;
+                    TracyWebGPUPanic("Device is missing feature WGPUFeatureName_TimestampQuery.", return false);
 #               if (TRACY_WEBGPU_DAWN_NATIVE)
                     bool hasDisableConversion = false, hasQuantization = false;
                     for (const char* t : ::dawn::native::GetTogglesUsed(device))
@@ -443,13 +443,15 @@ namespace tracy
                         if (strcmp(t, "timestamp_quantization") == 0)
                             hasQuantization = true;
                     }
-                    return hasDisableConversion && !hasQuantization;
+                    if (!hasDisableConversion)
+                        TracyWebGPUPanic("Device must toggle disable_timestamp_query_conversion (Dawn).", return false);
+                    if (hasQuantization)
+                        TracyWebGPUPanic("Device must disable timestamp_quantization (Dawn).", return false);
 #               elif (TRACY_WEBGPU_WGPU_NATIVE)
                     if (wgpuDeviceHasFeature(device, (WGPUFeatureName)WGPUNativeFeature_TimestampQueryInsideEncoders) == WGPU_FALSE)
-                        return false;
-                    return true;
+                        TracyWebGPUPanic("Device is missing feature WGPUNativeFeature_TimestampQueryInsideEncoders (wgpu-native).", return false);
 #               endif
-                return false;
+                return true;
             }
 
             void ApplyToDeviceDescriptor(WGPUDeviceDescriptor& deviceDescriptor)
@@ -477,7 +479,7 @@ namespace tracy
             ZoneScopedC(Color::Red4);
 
             if (!Requirements::VerifyDevice(device))
-                TracyWebGPUPanic("GPU profiling disabled because the device did not enable the necessary features.", return)
+                TracyWebGPUPanic("GPU profiling disabled: the device did not set the required features.", return);
 
             TracyWebGPUAssert(instance); wgpuInstanceAddRef(instance); m_instance = instance;
             TracyWebGPUAssert(device);   wgpuDeviceAddRef(device);     m_device   = device;

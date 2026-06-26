@@ -4382,6 +4382,7 @@ elf_zstd_decompress_frame (const unsigned char **ppin,
   uint32_t repeated_offset3;
   uint16_t *scratch;
   unsigned char hdr;
+  int single_segment;
   int has_checksum;
   uint64_t content_size;
   int last_block;
@@ -4440,12 +4441,18 @@ elf_zstd_decompress_frame (const unsigned char **ppin,
 
   hdr = *pin++;
 
-  /* We expect a single frame.  */
-  if (unlikely ((hdr & (1 << 5)) == 0))
+  single_segment = (hdr & (1 << 5)) != 0;
+  if (!single_segment)
     {
-      elf_uncompress_failed ();
-      return 0;
+      if (unlikely (pin >= pinend))
+        {
+          elf_uncompress_failed ();
+          return 0;
+        }
+      /* skip Window_Descriptor */
+      pin++;
     }
+
   /* Reserved bit must be zero.  */
   if (unlikely ((hdr & (1 << 3)) != 0))
     {
@@ -4462,13 +4469,22 @@ elf_zstd_decompress_frame (const unsigned char **ppin,
   switch (hdr >> 6)
     {
     case 0:
-      if (unlikely (pin >= pinend))
-	{
-	  elf_uncompress_failed ();
-	  return 0;
-	}
-      content_size = (uint64_t) *pin++;
-      break;
+      if (single_segment)
+        {
+          if (unlikely (pin >= pinend))
+	    {
+	      elf_uncompress_failed ();
+	      return 0;
+	    }
+          content_size = (uint64_t) *pin++;
+          break;
+        }
+      else
+        {
+          /* no Frame_Content_Size; use the remaining size as the upper bound */
+          content_size = (uint64_t) sout;
+          break;
+        }
     case 1:
       if (unlikely (pin + 1 >= pinend))
 	{

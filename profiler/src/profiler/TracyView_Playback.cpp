@@ -10,16 +10,18 @@ void View::SetPlaybackFrame( uint32_t idx )
 {
     const auto frameSet = m_worker.GetFramesBase();
     const auto& frameImages = m_worker.GetFrameImages();
-    assert( idx < frameImages.size() );
+    const auto ficnt = m_worker.GetFrameImageCount();
+    assert( idx < ficnt );
 
     m_playback.frame = idx;
 
-    if( idx == frameImages.size() - 1 )
+    if( ficnt == 1 || ( idx == ficnt - 1 && !m_playback.loop ) )
     {
         m_playback.pause = true;
     }
     else
     {
+        if( idx == ficnt - 1 ) idx--;
         const auto t0 = m_worker.GetFrameBegin( *frameSet, frameImages[idx]->frameRef );
         const auto t1 = m_worker.GetFrameBegin( *frameSet, frameImages[idx+1]->frameRef );
         m_playback.timeLeft = ( t1 - t0 ) / 1000000000.f;
@@ -79,7 +81,15 @@ void View::DrawPlayback()
             m_playback.timeLeft -= dt;
             if( m_playback.timeLeft == 0 )
             {
-                SetPlaybackFrame( m_playback.frame + 1 );
+                if( m_playback.frame + 1 == ficnt )
+                {
+                    assert( m_playback.loop );
+                    SetPlaybackFrame( 0 );
+                }
+                else
+                {
+                    SetPlaybackFrame( m_playback.frame + 1 );
+                }
             }
         }
     }
@@ -165,7 +175,7 @@ void View::DrawPlayback()
     ImGui::SameLine();
     if( m_playback.pause )
     {
-        const auto disabled = m_playback.frame == frameImages.size() - 1;
+        const auto disabled = !m_playback.loop && ( m_playback.frame == frameImages.size() - 1 );
         if( disabled ) ImGui::BeginDisabled();
         if( ImGui::Button( PlaybackWindowButtons[0], ImVec2( bw, 0 ) ) ) m_playback.pause = false;
         if( disabled ) ImGui::EndDisabled();
@@ -191,6 +201,8 @@ void View::DrawPlayback()
     }
     ImGui::SameLine();
     ImGui::Checkbox( "Zoom 2\xc3\x97", &m_playback.zoom );
+    ImGui::SameLine();
+    ImGui::Checkbox( "Loop", &m_playback.loop );
     TextFocused( "Timestamp:", TimeToString( tstart ) );
     TooltipIfHovered( TimeToStringExact( tstart ) );
     ImGui::SameLine();

@@ -973,6 +973,7 @@ private:
         bool pause = true;
         bool sync = false;
         bool zoom = false;
+        bool loop = false;
     } m_playback;
 
     struct TimeDistribution {

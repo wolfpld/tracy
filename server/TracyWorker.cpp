@@ -7749,15 +7749,20 @@ void Worker::UpdateSampleStatisticsPostponed( decltype(Worker::DataBlock::postpo
 
 void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint16_t framesCount, uint32_t count, const VarArray<CallstackFrameId>& cs )
 {
+    thread_local unordered_flat_set<uint64_t> seen;
+    seen.clear();
+
     const auto fexcl = frames[0];
     const auto fxsz = fexcl->size;
     const auto& frame0 = fexcl->data[0];
     auto sym0 = m_data.symbolStats.find( frame0.symAddr );
     if( sym0 == m_data.symbolStats.end() ) sym0 = m_data.symbolStats.emplace( frame0.symAddr, SymbolStats { 0, 0 } ).first;
     sym0->second.excl += count;
+    seen.emplace( frame0.symAddr );
     for( uint8_t f=1; f<fxsz; f++ )
     {
         const auto& frame = fexcl->data[f];
+        if( !seen.emplace( frame.symAddr ).second ) continue;
         auto sym = m_data.symbolStats.find( frame.symAddr );
         if( sym == m_data.symbolStats.end() ) sym = m_data.symbolStats.emplace( frame.symAddr, SymbolStats { 0, 0 } ).first;
         sym->second.incl += count;
@@ -7769,6 +7774,7 @@ void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint
         for( uint8_t f=0; f<fsz; f++ )
         {
             const auto& frame = fincl->data[f];
+            if( !seen.emplace( frame.symAddr ).second ) continue;
             auto sym = m_data.symbolStats.find( frame.symAddr );
             if( sym == m_data.symbolStats.end() ) sym = m_data.symbolStats.emplace( frame.symAddr, SymbolStats { 0, 0 } ).first;
             sym->second.incl += count;

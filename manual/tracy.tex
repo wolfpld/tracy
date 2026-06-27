@@ -3998,7 +3998,15 @@ Clicking the \LMB{}~left mouse button on a ghost zone will open the correspondin
 
 \subparagraph{Call stack samples}
 
-The row of dots right below the \emph{Main thread} label shows call stack sample points, which may have been automatically captured (see chapter~\ref{sampling} for more detail). Hovering the \faArrowPointer{}~mouse pointer over each dot will display a short call stack summary while clicking on the dot with the \LMB{}~left mouse button will open a more detailed call stack information window (see section~\ref{callstackwindow}).
+The row of dots right below the thread label (\emph{Main thread} in the example) shows call stack sample points, which may have been automatically captured (see chapter~\ref{sampling} for more detail). Each sample is color-coded as follows:
+
+\begin{itemize}
+\item \emph{Green} -- shows samples inside the profiled program.
+\item \emph{Blue} -- indicates samples belonging to external libraries.
+\item \emph{Red} -- used for samples captured in the kernel.
+\end{itemize}
+
+Hovering the \faArrowPointer{}~mouse pointer over each dot displays a short call stack summary, while clicking the dot with the \LMB{}~left mouse button opens a more detailed call stack information window (see section~\ref{callstackwindow}).
 
 \subparagraph{Context switches}
 

@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-06-26 <https://github.com/wolfpld/tracy>
+2026-06-27 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -3541,7 +3541,15 @@ Clicking the left mouse button on a ghost zone will open the corresponding sourc
 
 ##### Call stack samples
 
-The row of dots right below the *Main thread* label shows call stack sample points, which may have been automatically captured (see chapter [3.18.5](#sampling) for more detail). Hovering the  mouse pointer over each dot will display a short call stack summary while clicking on the dot with the left mouse button will open a more detailed call stack information window (see section [5.16](#callstackwindow)).
+The row of dots right below the thread label (*Main thread* in the example) shows call stack sample points, which may have been automatically captured (see chapter [3.18.5](#sampling) for more detail). Each sample is color-coded as follows:
+
+- *Green* -- shows samples inside the profiled program.
+
+- *Blue* -- indicates samples belonging to external libraries.
+
+- *Red* -- used for samples captured in the kernel.
+
+Hovering the  mouse pointer over each dot displays a short call stack summary, while clicking the dot with the left mouse button opens a more detailed call stack information window (see section [5.16](#callstackwindow)).
 
 
 -----

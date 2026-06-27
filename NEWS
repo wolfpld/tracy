@@ -23,6 +23,10 @@ vx.xx.x (2026-xx-xx)
   - Call stack window.
   - Statistics window (sampling mode).
 - External frames are now dimmed out in call stacks in various parts of UI.
+- Sample markers on the timeline are now colored according to sample type:
+  - Green for samples in the profiled program,
+  - Blue for samples in external code,
+  - Red for samples in kernel.
 - Single-line call stacks now have ellipsis at the end, if there are frames
   remaining.
 - System tracing on Windows has been refactored to be more robust.

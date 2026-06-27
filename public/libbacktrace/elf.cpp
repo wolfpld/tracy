@@ -4320,6 +4320,7 @@ elf_zstd_unpack_seq_decode (int mode,
 	decode->table_bits = 0;
 	if (!conv (&entry, 0, table))
 	  return 0;
+	decode->table = table;
       }
       break;
 

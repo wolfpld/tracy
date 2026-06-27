@@ -61,7 +61,14 @@ void View::DrawSampleList( const TimelineContext& ctx, const std::vector<Samples
         }
         else
         {
-            draw->AddCircleFilled( wpos + ImVec2( px0, ty0375 ), ty02, 0xFFDD8888 );
+            uint32_t color;
+            switch( v.type )
+            {
+                case SampleType::Own:       color = 0xFF88DD99; break;
+                case SampleType::External:  color = 0xFFDD6666; break;
+                case SampleType::Kernel:    color = 0xFF6666DD; break;
+            }
+            draw->AddCircleFilled( wpos + ImVec2( px0, ty0375 ), ty02, color );
             if( !tooltipDisplayed && hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0 - ty02 - 2, y0 ), wpos + ImVec2( px0 + ty02 + 1, y1 ) ) )
             {
                 tooltipDisplayed = true;

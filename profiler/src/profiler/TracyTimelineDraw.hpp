@@ -43,10 +43,18 @@ struct ContextSwitchDraw
 };
 
 
+enum class SampleType
+{
+    Own,
+    External,
+    Kernel
+};
+
 struct SamplesDraw
 {
     uint32_t num;
     uint32_t idx;
+    SampleType type;
 };
 
 

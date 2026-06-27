@@ -625,7 +625,39 @@ void TimelineItemThread::PreprocessSamples( const TimelineContext& ctx, const Ve
                 nextTime = nt + MinVisNs;
             }
         }
-        m_samplesDraw.emplace_back( SamplesDraw { uint32_t( next - it - 1 ), uint32_t( it - vec.begin() ) } );
+        const auto num = uint32_t( next - it - 1 );
+        const auto idx = uint32_t( it - vec.begin() );
+        if( num == 0 )
+        {
+            auto type = SampleType::Own;
+            auto& cs = m_worker.GetCallstack( it->callstack.Val() );
+            auto frameData = m_worker.GetCallstackFrame( cs[0] );
+            if( frameData )
+            {
+                const auto& frame = frameData->data[0];
+                if( frame.symAddr >> 63 != 0 )
+                {
+                    type = SampleType::Kernel;
+                }
+                else if( m_worker.IsFrameExternal( frame.file, frameData->imageName ) )
+                {
+                    type = SampleType::External;
+                }
+            }
+
+            m_samplesDraw.emplace_back( SamplesDraw {
+                .num = 0,
+                .idx = idx,
+                .type = type
+            } );
+        }
+        else
+        {
+            m_samplesDraw.emplace_back( SamplesDraw {
+                .num = num,
+                .idx = idx
+            } );
+        }
         it = next;
     }
 }

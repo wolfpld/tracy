@@ -7758,6 +7758,7 @@ void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint
     auto sym0 = m_data.symbolStats.find( frame0.symAddr );
     if( sym0 == m_data.symbolStats.end() ) sym0 = m_data.symbolStats.emplace( frame0.symAddr, SymbolStats { 0, 0 } ).first;
     sym0->second.excl += count;
+    sym0->second.incl += count;
     seen.emplace( frame0.symAddr );
     for( uint8_t f=1; f<fxsz; f++ )
     {

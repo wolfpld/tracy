@@ -1019,7 +1019,7 @@ void View::DrawFlameGraph()
     ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
     ImGui::SameLine();
 
-    if( ImGui::SmallButton( "Reset view" ) )
+    if( ImGui::Button( "Reset view" ) )
     {
         m_flameGraphViewStart = 0;
         m_flameGraphViewEnd = 0;

@@ -284,6 +284,8 @@ void View::DrawPlayback()
                     limitChanged = true;
                 }
             }
+            ImGui::Separator();
+            SmallCheckbox( "Require frame coverage", &m_playback.requireCoverage );
             ImGui::EndPopup();
         }
 

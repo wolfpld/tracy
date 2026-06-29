@@ -979,6 +979,7 @@ private:
         bool zoom = false;
         bool loop = false;
         bool limitRange = false;
+        bool requireCoverage = true;
         std::pair<int, int> range = { -1, -1 };
     } m_playback;
 

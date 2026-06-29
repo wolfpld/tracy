@@ -4149,7 +4149,7 @@ To define a time range, drag the \LMB{}~left mouse button over the timeline view
 
 Alternatively, you may specify the time range by clicking the \RMB{}~right mouse button on a zone, section or a frame. The resulting time extent will match the selected item.
 
-To reduce clutter, time range regions are only displayed if the windows they affect are open or if the time range limits control window is open (section~\ref{timerangelimits}). You can access the time range limits window through the \emph{\faScrewdriverWrench{} Tools} button on the control menu.
+To reduce clutter, time range regions are only displayed if the windows they affect are open or if the time range limits control window is open (section~\ref{timerangelimits}). You can access the time range limits window through the \emph{\faScrewdriverWrench{} Tools} button on the control menu. Time range limits can also be disabled or enabled in the windows showing the data they affect.
 
 You can freely adjust each time range on the timeline by clicking the \LMB{}~left mouse button on the range's edge and dragging the mouse.
 
@@ -5067,12 +5067,12 @@ A new view-sized annotation can be added in this window by pressing the \emph{\f
 \subsection{Time range limits}
 \label{timerangelimits}
 
-This window displays information about time range limits (section~\ref{timeranges}) for find zone (section~\ref{findzone}), statistics (section~\ref{statistics}), flame graph (section~\ref{flamegraph}), memory (section~\ref{memorywindow}) and wait stacks (section~\ref{stackwindows}) results. Each limit can be enabled or disabled and adjusted through the following options:
+This window displays information about time range limits (section~\ref{timeranges}) for find zone (section~\ref{findzone}), statistics (section~\ref{statistics}), flame graph (section~\ref{flamegraph}), wait stacks (section~\ref{stackwindows}), memory (section~\ref{memorywindow}) and frame statistics (section~\ref{framestatistics}) results. Each limit can be enabled or disabled and adjusted through the following options:
 
 \begin{itemize}
-\item \emph{Limit to view} -- Set the time range limit to current view.
-\item \emph{\faNoteSticky{}~Make annotation} -- Create a new annotation matching the time range.
 \item \emph{\faMicroscope{}~Focus} -- Set the timeline view to the time range extent.
+\item \emph{\faArrowsLeftRightToLine{}~Limit to view} -- Set the time range limit to current view.
+\item \emph{\faNoteSticky{}~Add annotation} -- Create a new annotation matching the time range.
 \item \faCopy{}~Copy from:
 \begin{itemize}
 \item \emph{\faNoteSticky{}~Annotation} -- Allows using the annotation region for limiting purposes.

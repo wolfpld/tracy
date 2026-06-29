@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-06-27 <https://github.com/wolfpld/tracy>
+2026-06-29 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -3688,7 +3688,7 @@ To define a time range, drag the left mouse button over the timeline view while 
 
 Alternatively, you may specify the time range by clicking the right mouse button on a zone, section or a frame. The resulting time extent will match the selected item.
 
-To reduce clutter, time range regions are only displayed if the windows they affect are open or if the time range limits control window is open (section [5.24](#timerangelimits)). You can access the time range limits window through the * Tools* button on the control menu.
+To reduce clutter, time range regions are only displayed if the windows they affect are open or if the time range limits control window is open (section [5.24](#timerangelimits)). You can access the time range limits window through the * Tools* button on the control menu. Time range limits can also be disabled or enabled in the windows showing the data they affect.
 
 You can freely adjust each time range on the timeline by clicking the left mouse button on the range's edge and dragging the mouse.
 
@@ -3894,7 +3894,7 @@ The *Name* column contains name of the symbol in which the sampling was done. Ke
 
 By default, each inlining of a function is listed separately. If you prefer to combine the measurements for functions that are inlined multiple times within a function, you can do so by enabling the * Aggregate* option. You cannot view sample entry stacks of inlined functions when this grouping method is enabled.
 
-In some cases it may be more interesting to see the most time consuming inline within the symbol rather than the symbol name. If you enable the *\* Top inline* option, the name of the busiest inline function will be displayed in the *Name* column.
+In some cases it may be more interesting to see the most time consuming inline within the symbol rather than the symbol name. If you enable the * Top inline* option, the name of the busiest inline function will be displayed in the *Name* column.
 
 If the * Inlines* option is enabled, the list will show all functions without grouping them by symbol. In this mode, inline functions are preceded by a  symbol and their parent function name is displayed in parentheses.
 
@@ -4762,13 +4762,13 @@ A new view-sized annotation can be added in this window by pressing the * Add
 
 ## Time range limits {#timerangelimits}
 
-This window displays information about time range limits (section [5.3](#timeranges)) for find zone (section [5.7](#findzone)), statistics (section [5.6](#statistics)), flame graph (section [5.9](#flamegraph)), memory (section [5.10](#memorywindow)) and wait stacks (section [5.18](#stackwindows)) results. Each limit can be enabled or disabled and adjusted through the following options:
-
-- *Limit to view* -- Set the time range limit to current view.
-
-- * Make annotation* -- Create a new annotation matching the time range.
+This window displays information about time range limits (section [5.3](#timeranges)) for find zone (section [5.7](#findzone)), statistics (section [5.6](#statistics)), flame graph (section [5.9](#flamegraph)), wait stacks (section [5.18](#stackwindows)), memory (section [5.10](#memorywindow)) and frame statistics (section [5.14](#framestatistics)) results. Each limit can be enabled or disabled and adjusted through the following options:
 
 - * Focus* -- Set the timeline view to the time range extent.
+
+- * Limit to view* -- Set the time range limit to current view.
+
+- * Add annotation* -- Create a new annotation matching the time range.
 
 -  Copy from:
 
@@ -4791,8 +4791,9 @@ Note that ranges displayed in the window have color hints that match the color o
 
 -----
 
- - Note Sticky icon
  - Microscope icon
+ - Arrows Left Right To Line icon
+ - Note Sticky icon
  - Copy icon
  - Magnifying Glass icon
  - Arrow Up Wide Short icon

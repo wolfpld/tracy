@@ -246,6 +246,45 @@ void View::DrawPlayback()
     {
         if( m_playback.range.first < 0 ) m_playback.range = { 0, m_worker.GetFrameImageCount() - 1 };
 
+        ImGui::SameLine();
+        if( ImGui::SmallButton( ICON_FA_COPY " Copy from" ) ) ImGui::OpenPopup( "playbackCopyFrom" );
+        if( ImGui::BeginPopup( "playbackCopyFrom" ) )
+        {
+            if( m_annotations.empty() )
+            {
+                TextDisabledUnformatted( ICON_FA_NOTE_STICKY " Annotation" );
+            }
+            else if( ImGui::BeginMenu( ICON_FA_NOTE_STICKY " Annotation" ) )
+            {
+                for( auto& v : m_annotations )
+                {
+                    SmallColorBox( v->color );
+                    ImGui::SameLine();
+                    if( ImGui::MenuItem( v->text.empty() ? "<unnamed>" : v->text.c_str() ) )
+                    {
+                        m_playback.range = GetPlaybackFrameRangeFromTime( v->range.min, v->range.max );
+                        limitChanged = true;
+                    }
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v->range.min ), TimeToStringExact( v->range.max ), TimeToString( v->range.max - v->range.min ) );
+                }
+                ImGui::EndMenu();
+            }
+            for( auto& r : m_ranges )
+            {
+                if( r.range->min == 0 && r.range->max == 0 )
+                {
+                    TextDisabledUnformatted( r.name );
+                }
+                else if( ImGui::MenuItem( r.name ) )
+                {
+                    m_playback.range = GetPlaybackFrameRangeFromTime( r.range->min, r.range->max );
+                    limitChanged = true;
+                }
+            }
+            ImGui::EndPopup();
+        }
+
         ImGui::Indent();
         int r0 = m_playback.range.first + 1;
         int r1 = m_playback.range.second + 1;
@@ -253,37 +292,6 @@ void View::DrawPlayback()
         {
             m_playback.range = { r0 - 1, r1 - 1 };
             limitChanged = true;
-        }
-
-        ImGui::TextDisabled( ICON_FA_COPY " Copy from:" );
-        ImGui::SameLine();
-        if( SmallButtonDisablable( ICON_FA_NOTE_STICKY " Annotation", m_annotations.empty() ) ) ImGui::OpenPopup( "PlaybackRangeAnnotation" );
-        if( ImGui::BeginPopup( "PlaybackRangeAnnotation" ) )
-        {
-            for( auto& v : m_annotations )
-            {
-                SmallColorBox( v->color );
-                ImGui::SameLine();
-                if( ImGui::Selectable( v->text.empty() ? "<unnamed>" : v->text.c_str() ) )
-                {
-                    m_playback.range = GetPlaybackFrameRangeFromTime( v->range.min, v->range.max );
-                    limitChanged = true;
-                }
-                ImGui::SameLine();
-                ImGui::Spacing();
-                ImGui::SameLine();
-                ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v->range.min ), TimeToStringExact( v->range.max ), TimeToString( v->range.max - v->range.min ) );
-            }
-            ImGui::EndPopup();
-        }
-        for( auto& r : m_ranges )
-        {
-            ImGui::SameLine();
-            if( SmallButtonDisablable( r.name, r.range->min == 0 && r.range->max == 0 ) )
-            {
-                m_playback.range = GetPlaybackFrameRangeFromTime( r.range->min, r.range->max );
-                limitChanged = true;
-            }
         }
         ImGui::Unindent();
 

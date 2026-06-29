@@ -248,6 +248,8 @@ void View::DrawPlayback()
 
         ImGui::SameLine();
         if( ImGui::SmallButton( ICON_FA_COPY " Copy from" ) ) ImGui::OpenPopup( "playbackCopyFrom" );
+        ImGui::SameLine();
+        if( ImGui::SmallButton( "Reset" ) ) m_playback.range = { 0, m_worker.GetFrameImageCount() - 1 };
         if( ImGui::BeginPopup( "playbackCopyFrom" ) )
         {
             if( m_annotations.empty() )

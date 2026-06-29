@@ -4697,7 +4697,7 @@ You may view a live replay of the profiled application screen captures (see sect
 
 If the *Sync timeline* option is selected, the profiler will focus the timeline view on the frame corresponding to the currently displayed screenshot. The *Zoom 2×* option enlarges the image for easier viewing.
 
-Enabling the *Limit frame range* option allows you to manually set the frame image playback region. Adjustments can be made using the start and end sliders or by copying the time range from either an annotation (section [5.23](#annotationlist)) or one of the time range limits (section [5.24](#timerangelimits)).
+Enabling the *Limit frame range* option allows you to manually set the frame image playback region. Adjustments can be made using the start and end sliders or by copying the time range from either an annotation (section [5.23](#annotationlist)) or one of the time range limits (section [5.24](#timerangelimits)). If the *Require frame coverage* option is enabled, source regions must cover at least 75% of the frame. Otherwise any amount of overlap is sufficient.
 
 The following parameters also accompany each displayed frame image: *timestamp*, showing at which time the image was captured, *frame*, displaying the numerical value of the corresponding frame, and *ratio*, telling how well the in-memory loss-less compression was able to reduce the image data size.
 

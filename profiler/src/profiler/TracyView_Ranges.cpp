@@ -72,6 +72,13 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, int 
     }
     if( range.active )
     {
+        TextFocused( ICON_FA_STOPWATCH " Time range:", TimeToStringExact( range.min ) );
+        ImGui::SameLine();
+        TextFocused( "-", TimeToStringExact( range.max ) );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%s)", TimeToString( range.max - range.min ) );
+
+        if( ImGui::SmallButton( ICON_FA_MICROSCOPE " Focus" ) ) ZoomToRange( range.min, range.max );
         ImGui::SameLine();
         if( ImGui::SmallButton( "Limit to view" ) )
         {
@@ -79,46 +86,46 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, int 
             range.max = m_vd.zvEnd;
         }
         ImGui::SameLine();
-        ImGui::Spacing();
+        if( ImGui::SmallButton( ICON_FA_NOTE_STICKY " Add annotation" ) ) AddAnnotation( range.min, range.max );
         ImGui::SameLine();
-        if( ImGui::SmallButton( ICON_FA_NOTE_STICKY " Make annotation" ) )
-        {
-            AddAnnotation( range.min, range.max );
-        }
-        TextFocused( ICON_FA_STOPWATCH " Time range:", TimeToStringExact( range.min ) );
-        ImGui::SameLine();
-        TextFocused( "-", TimeToStringExact( range.max ) );
-        ImGui::SameLine();
-        ImGui::TextDisabled( "(%s)", TimeToString( range.max - range.min ) );
-        ImGui::SameLine();
-        if( ImGui::SmallButton( ICON_FA_MICROSCOPE " Focus" ) ) ZoomToRange( range.min, range.max );
-        ImGui::TextDisabled( ICON_FA_COPY " Copy from:" );
-        ImGui::SameLine();
-        if( SmallButtonDisablable( ICON_FA_NOTE_STICKY " Annotation", m_annotations.empty() ) ) ImGui::OpenPopup( label );
+        if( ImGui::SmallButton( ICON_FA_COPY " Copy from" ) ) ImGui::OpenPopup( label );
         if( ImGui::BeginPopup( label ) )
         {
-            for( auto& v : m_annotations )
+            if( m_annotations.empty() )
             {
-                SmallColorBox( v->color );
-                ImGui::SameLine();
-                if( ImGui::Selectable( v->text.empty() ? "<unnamed>" : v->text.c_str() ) )
+                TextDisabledUnformatted( ICON_FA_NOTE_STICKY " Annotation" );
+            }
+            else if( ImGui::BeginMenu( ICON_FA_NOTE_STICKY " Annotation" ) )
+            {
+                for( auto& v : m_annotations )
                 {
-                    range.min = v->range.min;
-                    range.max = v->range.max;
+                    SmallColorBox( v->color );
+                    ImGui::SameLine();
+                    if( ImGui::MenuItem( v->text.empty() ? "<unnamed>" : v->text.c_str() ) )
+                    {
+                        range.min = v->range.min;
+                        range.max = v->range.max;
+                    }
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v->range.min ), TimeToStringExact( v->range.max ), TimeToString( v->range.max - v->range.min ) );
                 }
-                ImGui::SameLine();
-                ImGui::Spacing();
-                ImGui::SameLine();
-                ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v->range.min ), TimeToStringExact( v->range.max ), TimeToString( v->range.max - v->range.min ) );
+                ImGui::EndMenu();
+            }
+
+            int idx = 0;
+            for( auto& r : m_ranges )
+            {
+                if( idx++ == id ) continue;
+                if( r.range->min == 0 && r.range->max == 0 )
+                {
+                    TextDisabledUnformatted( r.name );
+                }
+                else if( ImGui::MenuItem( r.name ) )
+                {
+                    range = *r.range;
+                }
             }
             ImGui::EndPopup();
-        }
-        int idx = 0;
-        for( auto& r : m_ranges )
-        {
-            if( idx++ == id ) continue;
-            ImGui::SameLine();
-            if( SmallButtonDisablable( r.name, r.range->min == 0 && r.range->max == 0 ) ) range = *r.range;
         }
     }
     ImGui::PopID();

@@ -61,6 +61,13 @@ void View::DrawFrameStatistics()
             ImGui::SameLine();
             TextColoredUnformatted( 0xFF00FFFF, ICON_FA_TRIANGLE_EXCLAMATION );
         }
+        if( m_framesRange.active )
+        {
+            ImGui::SameLine();
+            ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+            ToggleButton( ICON_FA_RULER " Limits", m_showRanges );
+            ImGui::PopStyleVar();
+        }
 
         std::pair<int, int> frameRange = { -1, -1 };
         if( limitingRange )

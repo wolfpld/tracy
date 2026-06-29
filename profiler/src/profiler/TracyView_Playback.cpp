@@ -184,6 +184,8 @@ void View::DrawPlayback()
         m_playback.pause = true;
     }
     ImGui::SliderFloat( "Playback speed", &m_playback.speed, 0.1f, 4, "%.2f" );
+    ImGui::SameLine();
+    if( ImGui::SmallButton( "Reset##speed" ) ) m_playback.speed = 1;
 
     const auto th = ImGui::GetTextLineHeight();
     float bw = 0;
@@ -249,7 +251,7 @@ void View::DrawPlayback()
         ImGui::SameLine();
         if( ImGui::SmallButton( ICON_FA_COPY " Copy from" ) ) ImGui::OpenPopup( "playbackCopyFrom" );
         ImGui::SameLine();
-        if( ImGui::SmallButton( "Reset" ) ) m_playback.range = { 0, m_worker.GetFrameImageCount() - 1 };
+        if( ImGui::SmallButton( "Reset##range" ) ) m_playback.range = { 0, m_worker.GetFrameImageCount() - 1 };
         if( ImGui::BeginPopup( "playbackCopyFrom" ) )
         {
             if( m_annotations.empty() )

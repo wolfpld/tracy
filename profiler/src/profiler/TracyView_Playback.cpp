@@ -16,7 +16,7 @@ int View::GetPlaybackFrameEnd() const
     return m_playback.limitRange ? m_playback.range.second + 1 : m_worker.GetFrameImageCount();
 }
 
-std::pair<int, int> View::GetPlaybackFrameRangeFromTime( int64_t tmin, int64_t tmax ) const
+std::pair<int, int> View::GetPlaybackFrameRangeFromTime( int64_t tmin, int64_t tmax, bool requireCoverage ) const
 {
     const auto& frameImages = m_worker.GetFrameImages();
     const int count = (int)frameImages.size();
@@ -26,11 +26,32 @@ std::pair<int, int> View::GetPlaybackFrameRangeFromTime( int64_t tmin, int64_t t
     const auto cmp = [this, &frameSet]( int64_t t, const auto& fi ) { return t < m_worker.GetFrameBegin( frameSet, fi->frameRef ); };
 
     auto it = std::upper_bound( frameImages.begin(), frameImages.end(), tmax, cmp );
-    const auto hi = (int)std::distance( frameImages.begin(), it ) - 1;
+    auto hi = (int)std::distance( frameImages.begin(), it ) - 1;
     if( hi < 0 ) return { 0, 0 };
 
     it = std::upper_bound( frameImages.begin(), it, tmin, cmp );
-    const auto lo = std::max<int>( 0, (int)std::distance( frameImages.begin(), it ) - 1 );
+    auto lo = std::max<int>( 0, (int)std::distance( frameImages.begin(), it ) - 1 );
+
+    if( requireCoverage )
+    {
+        const auto lo0 = m_worker.GetFrameBegin( frameSet, frameImages[lo]->frameRef );
+        if( lo0 < tmin )
+        {
+            const auto lo1 = m_worker.GetFrameEnd( frameSet, frameImages[lo]->frameRef );
+            const auto span = lo1 - lo0;
+            const auto overlap = std::min( lo1, tmax ) - tmin;
+            if( overlap * 4 < span * 3 ) lo++;
+        }
+        const auto hi1 = m_worker.GetFrameEnd( frameSet, frameImages[hi]->frameRef );
+        if( hi1 > tmax )
+        {
+            const auto hi0 = m_worker.GetFrameBegin( frameSet, frameImages[hi]->frameRef );
+            const auto span = hi1 - hi0;
+            const auto overlap = tmax - std::max( hi0, tmin );
+            if( overlap * 4 < span * 3 ) hi--;
+        }
+        if( lo > hi ) return { 0, 0 };
+    }
 
     return { lo, hi };
 }
@@ -265,7 +286,7 @@ void View::DrawPlayback()
                     ImGui::SameLine();
                     if( ImGui::MenuItem( v->text.empty() ? "<unnamed>" : v->text.c_str() ) )
                     {
-                        m_playback.range = GetPlaybackFrameRangeFromTime( v->range.min, v->range.max );
+                        m_playback.range = GetPlaybackFrameRangeFromTime( v->range.min, v->range.max, m_playback.requireCoverage );
                         limitChanged = true;
                     }
                     ImGui::SameLine();
@@ -281,7 +302,7 @@ void View::DrawPlayback()
                 }
                 else if( ImGui::MenuItem( r.name ) )
                 {
-                    m_playback.range = GetPlaybackFrameRangeFromTime( r.range->min, r.range->max );
+                    m_playback.range = GetPlaybackFrameRangeFromTime( r.range->min, r.range->max, m_playback.requireCoverage );
                     limitChanged = true;
                 }
             }

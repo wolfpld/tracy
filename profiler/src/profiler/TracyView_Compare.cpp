@@ -318,6 +318,7 @@ void View::DrawCompare()
     ImGui::RadioButton( "Frames", &m_compare.compareMode, 1 );
     ImGui::SameLine();
     ImGui::RadioButton( "Source diff", &m_compare.compareMode, 2 );
+    ImGui::Separator();
     if( oldMode != m_compare.compareMode )
     {
         m_compare.Reset();
@@ -325,7 +326,6 @@ void View::DrawCompare()
 
     if( m_compare.compareMode == 2 )
     {
-        ImGui::Separator();
         ImGui::BeginChild( "##compare" );
 
         TextDisabledUnformatted( "Diff direction: " );
@@ -588,8 +588,6 @@ void View::DrawCompare()
         else
         {
             assert( m_compare.compareMode == 1 );
-
-            ImGui::Separator();
             ImGui::BeginChild( "##compare" );
             if( ImGui::TreeNodeEx( "Frame sets", ImGuiTreeNodeFlags_DefaultOpen ) )
             {

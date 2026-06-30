@@ -347,18 +347,19 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
             }
         }
 
+        const auto period = worker.GetSamplingPeriod();
         auto vec = &data;
         for( auto& v : cache )
         {
             auto it = std::find_if( vec->begin(), vec->end(), [symaddr = v.symaddr]( const auto& v ) { return v.srcloc == symaddr; } );
             if( it == vec->end() )
             {
-                vec->emplace_back( FlameGraphItem { (int64_t)v.symaddr, 1, v.name } );
+                vec->emplace_back( FlameGraphItem { (int64_t)v.symaddr, period, v.name } );
                 vec = &vec->back().children;
             }
             else
             {
-                it->time++;
+                it->time += period;
                 vec = &it->children;
             }
         }
@@ -620,11 +621,10 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
                 }
                 TextFocused( "Image:", m_worker.GetString( sym->imageName ) );
                 ImGui::Separator();
-                const auto period = m_worker.GetSamplingPeriod();
-                TextFocused( "Execution time:", TimeToString( item.time * period ) );
+                TextFocused( "Execution time:", TimeToString( item.time ) );
                 if( !item.children.empty() )
                 {
-                    TextFocused( "Self time:", TimeToString( self * period ) );
+                    TextFocused( "Self time:", TimeToString( self ) );
                     char buf[64];
                     PrintStringPercent( buf, 100.f * self / item.time );
                     ImGui::SameLine();
@@ -671,10 +671,9 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
     DrawFlameGraphLevel( item.children, ctx, depth+1, samples );
 }
 
-void View::DrawFlameGraphHeader( int64_t vStart, int64_t vEnd, uint64_t period )
+void View::DrawFlameGraphHeader( int64_t vStart, int64_t vEnd )
 {
     assert( vStart < vEnd );
-    assert( period > 0 );
 
     const auto wpos = ImGui::GetCursorScreenPos();
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
@@ -692,7 +691,7 @@ void View::DrawFlameGraphHeader( int64_t vStart, int64_t vEnd, uint64_t period )
     }
 
     const auto timespan = vEnd - vStart;
-    const auto pxns = w / ( double( timespan ) * period );
+    const auto pxns = w / double( timespan );
     const auto nspx = 1.0 / pxns;
     const auto scale = std::max( 0.0, round( log10( nspx ) + 2 ) );
     const auto step = pow( 10, scale );
@@ -752,11 +751,10 @@ static bool ApplyFlameGraphPan( int64_t& start, int64_t& end, double& pan, doubl
     return true;
 }
 
-static bool DrawFlameGraphHorizontalPosition( int64_t& vStart, int64_t& vEnd, double& pan, int64_t totalSpan, uint64_t period )
+static bool DrawFlameGraphHorizontalPosition( int64_t& vStart, int64_t& vEnd, double& pan, int64_t totalSpan )
 {
     assert( vStart < vEnd );
     assert( totalSpan > 0 );
-    assert( period > 0 );
 
     const auto wpos = ImGui::GetCursorScreenPos();
     const auto w = ImGui::GetContentRegionAvail().x;
@@ -805,7 +803,7 @@ static bool DrawFlameGraphHorizontalPosition( int64_t& vStart, int64_t& vEnd, do
     if( hover )
     {
         ImGui::BeginTooltip();
-        TextFocused( "View span:", TimeToString( ( vEnd - vStart ) * period ) );
+        TextFocused( "View span:", TimeToString( vEnd - vStart ) );
         ImGui::EndTooltip();
     }
 
@@ -1243,9 +1241,8 @@ void View::DrawFlameGraph()
         UpdateZoomAnimation( m_flameGraphZoomAnim, m_flameGraphViewStart, m_flameGraphViewEnd, ImGui::GetIO().DeltaTime );
         ClampFlameGraphViewport( m_flameGraphViewStart, m_flameGraphViewEnd, zsz );
 
-        const auto period = m_flameMode == 0 ? 1 : m_worker.GetSamplingPeriod();
-        DrawFlameGraphHeader( m_flameGraphViewStart, m_flameGraphViewEnd, period );
-        if( DrawFlameGraphHorizontalPosition( m_flameGraphViewStart, m_flameGraphViewEnd, m_flameGraphPan, zsz, period ) )
+        DrawFlameGraphHeader( m_flameGraphViewStart, m_flameGraphViewEnd );
+        if( DrawFlameGraphHorizontalPosition( m_flameGraphViewStart, m_flameGraphViewEnd, m_flameGraphPan, zsz ) )
         {
             m_flameGraphZoomAnim.active = false;
             ClampFlameGraphViewport( m_flameGraphViewStart, m_flameGraphViewEnd, zsz );

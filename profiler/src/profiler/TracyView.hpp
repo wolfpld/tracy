@@ -334,7 +334,7 @@ private:
     void DrawManual();
     void DrawFrameStatistics();
     void DrawFlameGraph();
-    void DrawFlameGraphHeader( int64_t vStart, int64_t vEnd, uint64_t period );
+    void DrawFlameGraphHeader( int64_t vStart, int64_t vEnd );
     void DrawFlameGraphLevel( const std::vector<FlameGraphItem>& data, FlameGraphContext& ctx, int depth, bool samples );
     void DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ctx, int depth, bool samples );
     void BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& data, const Vector<short_ptr<ZoneEvent>>& zones );

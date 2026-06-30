@@ -67,6 +67,25 @@ struct LockDraw;
 struct PlotDraw;
 struct FlameGraphContext;
 
+struct CallstackViewWait
+{
+    int64_t time;
+    const char* reason;
+    const char* reasonCode;
+    const char* state;
+    const char* stateCode;
+};
+
+struct CallstackTableParams
+{
+    uint64_t thread = 0;
+    CallstackViewWait wait = {};
+    bool entryStacks = false;
+    bool showThread = false;
+    bool hasCrashed = false;
+    int64_t callstack = -1;
+};
+
 
 class View
 {
@@ -261,15 +280,6 @@ private:
         uint32_t count;
     };
 
-    struct CallstackViewWait
-    {
-        int64_t time;
-        const char* reason;
-        const char* reasonCode;
-        const char* state;
-        const char* stateCode;
-    };
-
     struct CallstackView
     {
         uint32_t id;
@@ -316,8 +326,8 @@ private:
     void DrawAllocList();
     void DrawCompare();
     void DrawCallstackWindow();
-    void DrawCallstackTable( uint32_t callstack, uint64_t thread = 0, const CallstackViewWait& wait = {}, bool globalEntriesButton = false, bool showThread = false );
-    void DrawCallstackTable( const CallstackFrameId* data, size_t size, uint64_t thread = 0, const CallstackViewWait& wait = {}, bool globalEntriesButton = false, bool showThread = false, bool hasCrashed = false, int64_t callstack = -1 );
+    void DrawCallstackTable( uint32_t callstack, const CallstackTableParams& params = {} );
+    void DrawCallstackTable( const CallstackFrameId* data, size_t size, const CallstackTableParams& params = {} );
     void DrawMemoryAllocWindow();
     void DrawInfo();
     void DrawTextEditor();

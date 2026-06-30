@@ -321,6 +321,7 @@ void View::DrawCompare()
     if( ImGui::BeginTabItem( "Frames" ) )
     {
         m_compare.compareMode = 1;
+        m_compare.cumulateTime = false;
         ImGui::EndTabItem();
     }
     if( ImGui::BeginTabItem( "Source diff" ) )
@@ -814,8 +815,11 @@ void View::DrawCompare()
             ImGui::SameLine();
             SmallCheckbox( "Log time", &m_compare.logTime );
             ImGui::SameLine();
-            SmallCheckbox( "Cumulate time", &m_compare.cumulateTime );
-            ImGui::SameLine();
+            if( m_compare.compareMode == 0 )
+            {
+                SmallCheckbox( "Cumulate time", &m_compare.cumulateTime );
+                ImGui::SameLine();
+            }
             DrawHelpMarker( "Show total time taken by calls in each bin instead of call counts." );
             ImGui::SameLine();
             SmallCheckbox( "Normalize values", &m_compare.normalize );

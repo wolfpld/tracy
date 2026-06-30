@@ -83,12 +83,12 @@ void TimelineItem::Draw( bool firstFrame, const TimelineContext& ctx, int yOffse
         }
         const auto label = HeaderLabel();
         labelWidth = ImGui::CalcTextSize( label ).x;
-        DrawTextContrast( draw, wpos + ImVec2( ty, hdrOffset ), m_showFull ? color : colorInactive, label );
         if( m_showFull )
         {
             DrawLine( draw, dpos + ImVec2( 0, hdrOffset + ty - 1 ), dpos + ImVec2( w, hdrOffset + ty - 1 ), HeaderLineColor() );
             HeaderExtraContents( ctx, hdrOffset, labelWidth );
         }
+        DrawTextContrast( draw, wpos + ImVec2( ty, hdrOffset ), m_showFull ? color : colorInactive, label );
 
         if( ctx.hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, hdrOffset ), wpos + ImVec2( ty + labelWidth, hdrOffset + ty ) ) )
         {

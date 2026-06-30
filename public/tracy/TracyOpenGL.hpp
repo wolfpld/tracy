@@ -52,9 +52,24 @@ public:
 #if !defined GL_TIMESTAMP && defined GL_TIMESTAMP_EXT
 #  define GL_TIMESTAMP GL_TIMESTAMP_EXT
 #  define GL_QUERY_COUNTER_BITS GL_QUERY_COUNTER_BITS_EXT
+#  define GL_QUERY_RESULT GL_QUERY_RESULT_EXT
+#  define GL_QUERY_RESULT_AVAILABLE GL_QUERY_RESULT_AVAILABLE_EXT
+#  define glGenQueries glGenQueriesEXT
+#  define glGetQueryiv glGetQueryivEXT
 #  define glGetQueryObjectiv glGetQueryObjectivEXT
 #  define glGetQueryObjectui64v glGetQueryObjectui64vEXT
+#  define glGetInteger64v glGetInteger64vEXT
 #  define glQueryCounter glQueryCounterEXT
+#endif
+
+#ifndef GL_MAJOR_VERSION
+#  define GL_MAJOR_VERSION 0x821B
+#endif
+#ifndef GL_NUM_EXTENSIONS
+#  define GL_NUM_EXTENSIONS 0x821D
+#endif
+#ifndef GL_QUERY_RESULT_NO_WAIT
+#  define GL_QUERY_RESULT_NO_WAIT 0x9194
 #endif
 
 #define TracyGpuContext tracy::GetGpuCtx().ptr = (tracy::GpuCtx*)tracy::tracy_malloc( sizeof( tracy::GpuCtx ) ); new(tracy::GetGpuCtx().ptr) tracy::GpuCtx;
@@ -102,15 +117,24 @@ public:
         : m_context( GetGpuCtxCounter().fetch_add( 1, std::memory_order_relaxed ) )
         , m_head( 0 )
         , m_tail( 0 )
+        , m_supportsQueryBufferObject( false )
     {
         ZoneScopedC( Color::Red4 );
 
         assert( m_context != 255 );
 
-        if( !CheckFeature( "GL_ARB_timer_query" ) )
+        if( !CheckFeature( "GL_ARB_timer_query" ) && !CheckFeature( "GL_EXT_disjoint_timer_query" ) )
         {
             Profiler::LogString( MessageSourceType::Tracy, MessageSeverity::Warning, Color::Tomato, 0,
-                    "OpenGL context does not support GL_ARB_timer_query." );
+                    "OpenGL context does not support timer queries." );
+        }
+
+        // check for GL_QUERY_RESULT_NO_WAIT support
+        m_supportsQueryBufferObject = CheckFeature( "GL_ARB_query_buffer_object" );
+        if( !m_supportsQueryBufferObject )
+        {
+            Profiler::LogString( MessageSourceType::Tracy, MessageSeverity::Info, 0, 0,
+                    "OpenGL context does not support GL_ARB_query_buffer_object." );
         }
 
         GLint bits;
@@ -197,12 +221,8 @@ public:
 
         while( m_tail != m_head )
         {
-            GLint available;
-            glGetQueryObjectiv( m_query[m_tail], GL_QUERY_RESULT_AVAILABLE, &available );
-            if( !available ) return;
-
             uint64_t time;
-            glGetQueryObjectui64v( m_query[m_tail], GL_QUERY_RESULT, &time );
+            if( !GetTimestamp(time, m_tail) ) return;
 
             TracyLfqPrepare( QueueType::GpuTime );
             MemWrite( &item->gpuTime.gpuTime, (int64_t)time );
@@ -222,6 +242,8 @@ private:
         glGetIntegerv( GL_MAJOR_VERSION, &major );
         if( glGetError() != GL_NO_ERROR ) major = 0;   // pre-3.0: enum not supported
 
+#if defined(GL_VERSION_3_0) || defined(GL_ES_VERSION_3_0)
+        // GL 3 onwards: glGetStringi
         if( major >= 3 )
         {
             GLint numExt = 0;
@@ -233,10 +255,33 @@ private:
             }
             return false;
         }
+#endif
 
         // pre GL3 fallback:
         auto exts = (const char*)glGetString( GL_EXTENSIONS );
         return exts && strstr( exts, feature ) != nullptr;
+    }
+
+    tracy_force_inline bool GetTimestamp( uint64_t& timestamp, unsigned int queryId )
+    {
+        if( m_supportsQueryBufferObject )
+        {
+            constexpr uint64_t sentinel = ~uint64_t(0);
+            uint64_t time = sentinel;
+            glGetQueryObjectui64v( m_query[queryId], GL_QUERY_RESULT_NO_WAIT, &time );
+            if ( time == sentinel ) return false;
+            timestamp = time;
+        }
+        else
+        {
+            GLint available;
+            glGetQueryObjectiv( m_query[queryId], GL_QUERY_RESULT_AVAILABLE, &available );
+            if( available == GL_FALSE ) return false;
+            uint64_t time;
+            glGetQueryObjectui64v( m_query[queryId], GL_QUERY_RESULT, &time );
+            timestamp = time;
+        }
+        return true;
     }
 
 #ifdef TRACY_OPENGL_AUTO_CALIBRATION
@@ -298,6 +343,8 @@ private:
 #ifdef TRACY_OPENGL_AUTO_CALIBRATION
     int64_t m_prevCalibration; // host-ns timestamp of the last emitted calibration
 #endif
+
+    bool m_supportsQueryBufferObject;
 };
 
 class GpuCtxScope

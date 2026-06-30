@@ -311,14 +311,24 @@ void View::DrawCompare()
     ImGui::Spacing();
     ImGui::SameLine();
     ImGui::Text( "Compare mode: " );
-    ImGui::SameLine();
     const auto oldMode = m_compare.compareMode;
-    ImGui::RadioButton( "Zones", &m_compare.compareMode, 0 );
-    ImGui::SameLine();
-    ImGui::RadioButton( "Frames", &m_compare.compareMode, 1 );
-    ImGui::SameLine();
-    ImGui::RadioButton( "Source diff", &m_compare.compareMode, 2 );
-    ImGui::Separator();
+    ImGui::BeginTabBar( "compareTabs", ImGuiTabBarFlags_DrawSelectedOverline );
+    if( ImGui::BeginTabItem( "Zones" ) )
+    {
+        m_compare.compareMode = 0;
+        ImGui::EndTabItem();
+    }
+    if( ImGui::BeginTabItem( "Frames" ) )
+    {
+        m_compare.compareMode = 1;
+        ImGui::EndTabItem();
+    }
+    if( ImGui::BeginTabItem( "Source diff" ) )
+    {
+        m_compare.compareMode = 2;
+        ImGui::EndTabItem();
+    }
+    ImGui::EndTabBar();
     if( oldMode != m_compare.compareMode )
     {
         m_compare.Reset();

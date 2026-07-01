@@ -1065,6 +1065,9 @@ void View::DrawCompare()
                         ImGui::SameLine();
                         TextFocused( "\xcf\x83 (this):", TimeToString( sd ) );
                         TooltipIfHovered( "Standard deviation" );
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(%.2f%%)", 100.f * sd / m_compare.average[0] );
+                        TooltipIfHovered( "Coefficient of variation" );
                     }
 
 
@@ -1113,6 +1116,9 @@ void View::DrawCompare()
                         ImGui::SameLine();
                         TextFocused( "\xcf\x83 (ext.):", TimeToString( sd ) );
                         TooltipIfHovered( "Standard deviation" );
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(%.2f%%)", 100.f * sd / m_compare.average[1] );
+                        TooltipIfHovered( "Coefficient of variation" );
                     }
                     ImGui::Indent();
                     PrintSpeedupOrSlowdown( m_compare.average[0], m_compare.average[1], "Mean" );

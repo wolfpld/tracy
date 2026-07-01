@@ -168,10 +168,22 @@ static void PrintSpeedupOrSlowdown( double time_this, double time_external, cons
     if( time_external >= time_this )
     {
         label = "less";
-        color = ImVec4( 0.1f, 0.6f, 0.1f, 1.0f );
-    } else {
+        const auto mix = std::clamp( 2 * ( 1 - factor ), 0., 1. );
+        color = ImVec4(
+            std::lerp( 0.5f, 0.1f, mix ),
+            std::lerp( 0.5f, 0.6f, mix ),
+            std::lerp( 0.5f, 0.1f, mix ),
+            1.f );
+    }
+    else
+    {
         label = "more";
-        color = ImVec4( 0.8f, 0.1f, 0.1f, 1.0f );
+        const auto mix = std::clamp( factor - 1, 0., 1. );
+        color = ImVec4(
+            std::lerp( 0.5f, 0.8f, mix ),
+            std::lerp( 0.5f, 0.1f, mix ),
+            std::lerp( 0.5f, 0.1f, mix ),
+            1.f );
     }
     ImGui::TextDisabled( "%s:", metric );
     ImGui::SameLine();

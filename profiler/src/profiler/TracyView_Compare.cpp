@@ -986,16 +986,38 @@ void View::DrawCompare()
 
                     TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
                     ImGui::SameLine();
-                    TextFocused( "Total time (this):", TimeToString( total0 * adj0 ) );
+                    if( zonesMode )
+                    {
+                        TextFocused( "Total time (this):", TimeToString( total0 * adj0 ) );
+                    }
+                    else
+                    {
+                        const auto tmin = sorted[0].front();
+                        const auto tmax = sorted[0].back();
+                        TextDisabledUnformatted( "FPS range (this):" );
+                        ImGui::SameLine();
+                        ImGui::Text( "%s FPS - %s FPS", RealToString( round( 1000000000.0 / tmin ) ), RealToString( round( 1000000000.0 / tmax ) ) );
+                    }
                     ImGui::SameLine();
                     ImGui::Spacing();
                     ImGui::SameLine();
                     TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                     ImGui::SameLine();
-                    TextFocused( "Total time (ext.):", TimeToString( total1 * adj1 ) );
-                    ImGui::Indent();
-                    PrintSpeedupOrSlowdown( total0 * adj0, total1 * adj1, "Total time" );
-                    ImGui::Unindent();
+                    if( zonesMode )
+                    {
+                        TextFocused( "Total time (ext.):", TimeToString( total1 * adj1 ) );
+                        ImGui::Indent();
+                        PrintSpeedupOrSlowdown( total0 * adj0, total1 * adj1, "Total time" );
+                        ImGui::Unindent();
+                    }
+                    else
+                    {
+                        const auto tmin = sorted[1].front();
+                        const auto tmax = sorted[1].back();
+                        TextDisabledUnformatted( "FPS range (ext.):" );
+                        ImGui::SameLine();
+                        ImGui::Text( "%s FPS - %s FPS", RealToString( round( 1000000000.0 / tmin ) ), RealToString( round( 1000000000.0 / tmax ) ) );
+                    }
                     TextFocused( "Max counts:", cumulateTime ? TimeToString( maxVal ) : RealToString( floor( maxVal ) ) );
 
                     TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );

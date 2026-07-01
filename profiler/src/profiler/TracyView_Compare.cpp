@@ -1020,6 +1020,7 @@ void View::DrawCompare()
                     }
                     TextFocused( "Max counts:", cumulateTime ? TimeToString( maxVal ) : RealToString( floor( maxVal ) ) );
 
+                    float sd_[2];
                     TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
                     ImGui::SameLine();
                     TextFocused( "Mean (this):", TimeToString( m_compare.average[0] ) );
@@ -1057,6 +1058,7 @@ void View::DrawCompare()
                         const auto avg = m_compare.average[0];
                         const auto ss = sumSq0 - 2. * total0 * avg + double( avg ) * avg * sz;
                         const auto sd = sqrt( ss / ( sz - 1 ) );
+                        sd_[0] = sd;
 
                         ImGui::SameLine();
                         ImGui::Spacing();
@@ -1108,6 +1110,7 @@ void View::DrawCompare()
                         const auto avg = m_compare.average[1];
                         const auto ss = sumSq1 - 2. * total1 * avg + double( avg ) * avg * sz;
                         const auto sd = sqrt( ss / ( sz - 1 ) );
+                        sd_[1] = sd;
 
                         ImGui::SameLine();
                         ImGui::Spacing();
@@ -1123,6 +1126,10 @@ void View::DrawCompare()
                     ImGui::Indent();
                     PrintSpeedupOrSlowdown( m_compare.average[0], m_compare.average[1], "Mean" );
                     PrintSpeedupOrSlowdown( m_compare.median[0], m_compare.median[1], "Median" );
+                    if( sorted[0].size() > 1 && sorted[1].size() > 1 )
+                    {
+                        PrintSpeedupOrSlowdown( sd_[0], sd_[1], "\xcf\x83" );
+                    }
                     ImGui::Unindent();
 
                     ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ) );

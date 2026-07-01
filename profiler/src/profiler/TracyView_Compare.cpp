@@ -170,9 +170,9 @@ static void PrintSpeedupOrSlowdown( double time_this, double time_external, cons
         label = "less";
         const auto mix = std::clamp( 2 * ( 1 - factor ), 0., 1. );
         color = ImVec4(
-            std::lerp( 0.5f, 0.1f, mix ),
-            std::lerp( 0.5f, 0.6f, mix ),
-            std::lerp( 0.5f, 0.1f, mix ),
+            std::lerp( 0.5f, 0.2f, mix ),
+            std::lerp( 0.5f, 1.0f, mix ),
+            std::lerp( 0.5f, 0.2f, mix ),
             1.f );
     }
     else
@@ -180,9 +180,9 @@ static void PrintSpeedupOrSlowdown( double time_this, double time_external, cons
         label = "more";
         const auto mix = std::clamp( factor - 1, 0., 1. );
         color = ImVec4(
-            std::lerp( 0.5f, 0.8f, mix ),
-            std::lerp( 0.5f, 0.1f, mix ),
-            std::lerp( 0.5f, 0.1f, mix ),
+            std::lerp( 0.5f, 1.0f, mix ),
+            std::lerp( 0.5f, 0.2f, mix ),
+            std::lerp( 0.5f, 0.2f, mix ),
             1.f );
     }
     ImGui::TextDisabled( "%s:", metric );

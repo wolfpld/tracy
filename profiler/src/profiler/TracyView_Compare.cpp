@@ -1130,6 +1130,81 @@ void View::DrawCompare()
                     }
                     ImGui::Unindent();
 
+                    auto Percentile = []( const std::vector<int64_t>& vec, double p ) {
+                        const auto vsz = vec.size();
+                        return vec[std::min<size_t>( vsz - 1, p * vsz )];
+                    };
+                    const int64_t p75[2] = { Percentile( sorted[0], 0.75 ), Percentile( sorted[1], 0.75 ) };
+                    const int64_t p90[2] = { Percentile( sorted[0], 0.9 ), Percentile( sorted[1], 0.9 ) };
+                    const int64_t p99[2] = { Percentile( sorted[0], 0.99 ), Percentile( sorted[1], 0.99 ) };
+                    const int64_t p99_9[2] = { Percentile( sorted[0], 0.999 ), Percentile( sorted[1], 0.999 ) };
+
+                    auto PercentileLine = [zonesMode]( const char* label, int64_t t ) {
+                        TextFocused( label, TimeToString( t ) );
+                        if( !zonesMode )
+                        {
+                            ImGui::SameLine();
+                            ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / t ) ) );
+                            if( ImGui::IsItemHovered() )
+                            {
+                                ImGui::BeginTooltip();
+                                ImGui::Text( "%s FPS", RealToString( 1000000000.0 / t ) );
+                                ImGui::EndTooltip();
+                            }
+                        }
+                    };
+
+                    TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
+                    ImGui::SameLine();
+                    PercentileLine( "P75:", p75[0] );
+                    ImGui::SameLine();
+                    ImGui::Spacing();
+                    ImGui::SameLine();
+                    TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
+                    ImGui::SameLine();
+                    PercentileLine( "P90:", p90[0] );
+                    ImGui::SameLine();
+                    ImGui::Spacing();
+                    ImGui::SameLine();
+                    TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
+                    ImGui::SameLine();
+                    PercentileLine( "P99:", p99[0] );
+                    ImGui::SameLine();
+                    ImGui::Spacing();
+                    ImGui::SameLine();
+                    TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
+                    ImGui::SameLine();
+                    PercentileLine( "P99.9:", p99_9[0] );
+
+                    TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
+                    ImGui::SameLine();
+                    PercentileLine( "P75:", p75[1] );
+                    ImGui::SameLine();
+                    ImGui::Spacing();
+                    ImGui::SameLine();
+                    TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
+                    ImGui::SameLine();
+                    PercentileLine( "P90:", p90[1] );
+                    ImGui::SameLine();
+                    ImGui::Spacing();
+                    ImGui::SameLine();
+                    TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
+                    ImGui::SameLine();
+                    PercentileLine( "P99:", p99[1] );
+                    ImGui::SameLine();
+                    ImGui::Spacing();
+                    ImGui::SameLine();
+                    TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
+                    ImGui::SameLine();
+                    PercentileLine( "P99.9:", p99_9[1] );
+
+                    ImGui::Indent();
+                    PrintSpeedupOrSlowdown( p75[0], p75[1], "P75" );
+                    PrintSpeedupOrSlowdown( p90[0], p90[1], "P90" );
+                    PrintSpeedupOrSlowdown( p99[0], p99[1], "P99" );
+                    PrintSpeedupOrSlowdown( p99_9[0], p99_9[1], "P99.9" );
+                    ImGui::Unindent();
+
                     ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ) );
                     ImGui::PushStyleColor( ImGuiCol_Button, ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ) );
                     ImGui::PushStyleColor( ImGuiCol_ButtonHovered, ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ) );

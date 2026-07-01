@@ -26,6 +26,7 @@ namespace tracy
 {
 static constexpr bool has_callstack() { return false; }
 static tracy_force_inline void* Callstack( int32_t /*depth*/ ) { return nullptr; }
+TRACY_API const char* QuerySymbolName(void* address);
 }
 
 #else
@@ -87,6 +88,7 @@ void InitCallstack();
 void InitCallstackCritical();
 void EndCallstack();
 const char* GetKernelModulePath( uint64_t addr );
+TRACY_API const char* QuerySymbolName(void* address);
 
 #ifdef __linux__
 void InitExternalImageCache( pid_t pid );

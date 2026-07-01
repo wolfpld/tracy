@@ -10,6 +10,9 @@
 #include "../common/TracyAlloc.hpp"
 #include "../common/TracySystem.hpp"
 
+#include <shared_mutex>
+#include <string>
+#include <unordered_map>
 
 #ifdef TRACY_HAS_CALLSTACK
 
@@ -1951,6 +1954,33 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 }
 
 #endif
+
+TRACY_API const char* QuerySymbolName(void* ptr)
+{
+#ifndef TRACY_HAS_CALLSTACK
+    return "[unavailable]";
+#else
+    uint64_t address = uint64_t(ptr);
+
+    static std::unordered_map<uint64_t, std::string> s_cache;
+    static std::shared_mutex s_mutex;
+
+    {
+        std::shared_lock lock(s_mutex);
+        auto it = s_cache.find(address);
+        if (it != s_cache.end()) return it->second.c_str();
+    }
+
+    std::unique_lock lock(s_mutex);
+    auto [it, inserted] = s_cache.try_emplace(address);
+    if (inserted)
+    {
+        const char* symbol = DecodeCallstackPtrFast(address);
+        it->second = symbol;
+    }
+    return it->second.c_str();
+#endif
+}
 
 }
 

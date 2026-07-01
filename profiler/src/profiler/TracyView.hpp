@@ -638,6 +638,7 @@ private:
     bool m_showAllSymbols = false;
     int m_showCallstackFrameAddress = 0;
     bool m_showExternalFrames = false;
+    bool m_showExternalFramesWaitStacks = true;
     bool m_statSeparateInlines = false;
     bool m_mergeInlines = false;
     bool m_relativeInlines = false;

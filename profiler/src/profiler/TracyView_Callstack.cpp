@@ -189,7 +189,14 @@ void View::DrawCallstackTable( const CallstackFrameId* data, size_t size, const 
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
-    SmallCheckbox( ICON_FA_SHIELD_HALVED " External", &m_showExternalFrames );
+    if( params.wait.time != 0 )
+    {
+        SmallCheckbox( ICON_FA_SHIELD_HALVED " External", &m_showExternalFramesWaitStacks );
+    }
+    else
+    {
+        SmallCheckbox( ICON_FA_SHIELD_HALVED " External", &m_showExternalFrames );
+    }
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
@@ -421,6 +428,8 @@ void View::DrawCallstackTable( const CallstackFrameId* data, size_t size, const 
         ImGui::TableSetupColumn( "Image" );
         ImGui::TableHeadersRow();
 
+        const bool showExternal = params.wait.time != 0 ? m_showExternalFramesWaitStacks : m_showExternalFrames;
+
         int external = 0;
         int fidx = 0;
         int bidx = 0;
@@ -430,7 +439,7 @@ void View::DrawCallstackTable( const CallstackFrameId* data, size_t size, const 
             auto frameData = m_worker.GetCallstackFrame( entry );
             if( !frameData )
             {
-                if( !m_showExternalFrames )
+                if( !showExternal )
                 {
                     external++;
                     continue;
@@ -474,7 +483,7 @@ void View::DrawCallstackTable( const CallstackFrameId* data, size_t size, const 
                     const bool isExternal = m_worker.IsFrameExternal( frame.file, frameData->imageName );
                     if( isExternal )
                     {
-                        if( !m_showExternalFrames )
+                        if( !showExternal )
                         {
                             if( f == fsz-1 ) fidx++;
                             external++;

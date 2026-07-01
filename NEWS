@@ -22,6 +22,9 @@ vx.xx.x (2026-xx-xx)
   - Flame graph window.
   - Call stack window.
   - Statistics window (sampling mode).
+- Wait stacks have a separate setting for external frames, as you would
+  typically want to know what caused the wait state, which can be inferred
+  from the external code.
 - External frames are now dimmed out in call stacks in various parts of UI.
 - Sample markers on the timeline are now colored according to sample type:
   - Green for samples in the profiled program,
@@ -229,6 +232,14 @@ vx.xx.x (2026-xx-xx)
     the find zone window.
   - Added a new time range limit for frame statistics. This accompanies the
     previously existing "limit to view" option.
+- More robust statistics for functions that recursively call themselves.
+- General uplift of the compare traces window.
+  - Added all the statistical parameters displayed in find zone window that
+    were missing here.
+  - Frame comparison now also displays FPS values.
+  - The "more" and "less" indicators are now color coded to show their
+    importance. The amount of color these keywords are printed with is now
+    dependant on how divergent the numeric values are.
 
 
 v0.13.1 (2025-12-11)
@@ -875,7 +886,9 @@ v0.8.0 (2022-03-28)
     using the mouse wheel.
   - Playback can be looped.
   - The range of played frame images can be limited, either manually, or
-    copying annotations time range or time range limit.
+    copying annotations time range or time range limit. There's an "require
+    frame coverage" option to only include frames that are at least 75%
+    within the source region.
 - Signal used to handle crashes on Linux can be now redefined.
 - Various DPI scaling improvements.
 - User interface can be now scaled in run time.

@@ -88,6 +88,7 @@ static bool OpenFileImpl( const char* ext, const char* desc, const std::function
     const nfdopendialogu8args_t args = {
         .filterList = &filter,
         .filterCount = 1,
+        .parentWindow = s_windowHandle,
     };
     const auto res = NFD_OpenDialogU8_With( &fn, &args );
     if( res == NFD_OKAY )
@@ -113,6 +114,7 @@ static bool SaveFileImpl( const char* ext, const char* desc, const std::function
     const nfdsavedialogu8args_t args = {
         .filterList = &filter,
         .filterCount = 1,
+        .parentWindow = s_windowHandle,
     };
     const auto res = NFD_SaveDialogU8_With( &fn, &args );
     if( res == NFD_OKAY )

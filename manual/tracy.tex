@@ -4499,11 +4499,27 @@ You can further narrow down the list of samples by selecting a time range on the
 
 Comparing the performance impact of the optimization work is not an easy thing to do. Benchmarking is often inconclusive, if even possible, in the case of interactive applications, where the benchmarked function might not have a visible impact on frame render time. Furthermore, doing isolated micro-benchmarks loses the application's execution environment, in which many different parts compete for limited system resources.
 
-Tracy solves this problem by providing a compare traces functionality, very similar to the find zone window, described in section~\ref{findzone}. You can compare traces either by zone or frame timing data.
+Tracy solves this problem by providing a compare traces functionality, which is very similar to the find zone window. There are three tabs in this window, for three modes of comparison:
 
-You would begin your work by recording a reference trace that represents the usual behavior of the program. Then, after the optimization of the code is completed, you record another trace, doing roughly what you did for the reference one. Finally, having the optimized trace open, you select the \emph{\faFolderOpen{}~Open second trace} option in the compare traces window and load the reference trace.
+\begin{itemize}
+\item \emph{Zones} -- closely matches the find zone window, described in section~\ref{findzone}.
+\item \emph{Frames} -- shows frame rate data, following the frame statistics window described in section~\ref{framestatistics}.
+\item \emph{Source diff} -- displays differences in source code, covered in section~\ref{sourcefilesdiff}.
+\end{itemize}
 
-Now things start to get familiar. You search for a zone, similarly like in the find zone window, choose the one you want in the \emph{matched source locations} drop-down, and then you look at the histogram\footnote{When comparing frame times you are presented with a list of available frame sets, without the search box.}. This time there are two overlaid graphs, one representing the current trace and the second one representing the external (reference) trace (figure~\ref{comparehistogram}). You can easily see how the performance characteristics of the zone were affected by your modifications.
+To gather the data, you would start by recording a reference trace that represents the usual behavior of the program. Then, after the optimization of the code is completed, you record another trace, doing roughly what you did for the reference one. Finally, having the optimized trace open, you select the \emph{\faFolderOpen{}~Open second trace} option in the compare traces window and load the reference trace.
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bclampe
+]{Trace descriptions}
+Set custom trace descriptions (see section~\ref{traceinfo}) to easily differentiate the two loaded traces. If no trace description is set, the name of the profiled program will be displayed along with the capture time.
+\end{bclogo}
+
+Now things start to get familiar. In the zone comparison mode, you search for a zone, similarly like in the find zone window, choose the one you want in the \emph{matched source locations} drop-down, and then you look at the histogram. When comparing frame times you are presented with a list of available frame sets, without the search box.
+
+In the compare traces window there are two overlaid graphs, one representing the current trace and the second one representing the external (reference) trace (figure~\ref{comparehistogram}). You can easily see how the performance characteristics of the zone were affected by your modifications.
 
 \begin{figure}[h]
 \centering\begin{tikzpicture}
@@ -4540,15 +4556,10 @@ When searching for source locations it's not uncommon to match more than one zon
 
 It may be difficult, if not impossible, to perform identical runs of a program. This means that the number of collected zones may differ in both traces, influencing the displayed results. To fix this problem, enable the \emph{Normalize values} option, which will adjust the displayed results as if both traces had the same number of recorded zones.
 
-\begin{bclogo}[
-noborder=true,
-couleur=black!5,
-logo=\bclampe
-]{Trace descriptions}
-Set custom trace descriptions (see section~\ref{traceinfo}) to easily differentiate the two loaded traces. If no trace description is set, the name of the profiled program will be displayed along with the capture time.
-\end{bclogo}
+The window shows statistical data for both traces, with the values described in chapter~\ref{findzone}. Each value is also compared against the other trace, showing both the absolute and relative differences. The keywords \emph{less} and \emph{more} are color coded to note significance. When the two readings are almost the same, the keywords will be printed in gray. As the values diverge, the amount of color (either green or red) increases, maxing out at twice the difference. This allows quick eyeballing of where the difference is.
 
 \subsubsection{Source files diff}
+\label{sourcefilesdiff}
 
 To see what changes were made in the source code between the two compared traces, select the \emph{Source diff} compare mode. This will display a list of deleted, added, and changed files. By default, the difference is calculated from the older trace to the newer one. You can reverse this by clicking on the \emph{Switch} button.
 
@@ -4990,7 +5001,7 @@ The profiler can group call stacks leading to certain events and display the res
 
 \begin{itemize}
 \item \textbf{Sample entry stacks} -- this window shows all the paths that lead to execution of the selected symbol. Requires sampling (chapter~\ref{sampling}) to be active.
-\item \textbf{Wait stacks} -- this windows shows all the places where the application was sleeping. See chapter~\ref{waitstacks} for more information.
+\item \textbf{Wait stacks} -- this windows shows all the places where the application was sleeping. See chapter~\ref{waitstacks} for more information. Note that wait stacks have separate setting for the \emph{\faShieldHalved{}~External} option, as it is generally beneficial to see the external code when determining the cause of program interruption.
 \end{itemize}
 
 The call stack paths may be displayed in the following ways:

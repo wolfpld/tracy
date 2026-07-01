@@ -824,7 +824,7 @@ void View::DrawCompare()
             ImGui::SameLine();
             SmallCheckbox( "Normalize values", &m_compare.normalize );
             ImGui::SameLine();
-            DrawHelpMarker( "Normalization will rescale the total time of the external trace to match the count of this trace. This will skew reported total values!" );
+            DrawHelpMarker( "Normalization will rescale the total time and event counts of the smaller trace to match the count of the larger trace. This will skew reported total values!" );
 
             const auto cumulateTime = m_compare.cumulateTime;
 

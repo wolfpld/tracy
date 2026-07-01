@@ -26,6 +26,9 @@ public:
 
     float GetDpiScale();
 
+    size_t HandleType();
+    void* Handle();
+
 private:
     WindowPosition m_winPos;
     int m_w, m_h;

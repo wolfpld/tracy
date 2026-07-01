@@ -1,12 +1,13 @@
 #ifndef __TRACYFILESELECTOR_HPP__
 #define __TRACYFILESELECTOR_HPP__
 
+#include <stddef.h>
 #include <functional>
 
 namespace tracy::Fileselector
 {
 
-void Init();
+void Init( size_t type, void* handle );
 void Shutdown();
 bool HasFailed();
 

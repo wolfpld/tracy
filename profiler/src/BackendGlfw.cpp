@@ -21,6 +21,17 @@
 #  include "icon.hpp"
 #endif
 
+#if !defined TRACY_NO_FILESELECTOR
+#  if defined WIN32
+#    define GLFW_EXPOSE_NATIVE_WIN32
+#  elif defined __APPLE__
+#    define GLFW_EXPOSE_NATIVE_COCOA
+#  else
+#    define GLFW_EXPOSE_NATIVE_X11
+#  endif
+#  include <nfd_glfw3.h>
+#endif
+
 
 static GLFWwindow* s_window;
 static std::function<void()> s_redraw;
@@ -281,5 +292,27 @@ float Backend::GetDpiScale()
     return x;
 #else
     return 1;
+#endif
+}
+
+size_t Backend::HandleType()
+{
+#ifdef TRACY_NO_FILESELECTOR
+    return 0;
+#else
+    nfdwindowhandle_t handle = {};
+    NFD_GetNativeWindowFromGLFWWindow( s_window, &handle );
+    return handle.type;
+#endif
+}
+
+void* Backend::Handle()
+{
+#ifdef TRACY_NO_FILESELECTOR
+    return nullptr;
+#else
+    nfdwindowhandle_t handle = {};
+    NFD_GetNativeWindowFromGLFWWindow( s_window, &handle );
+    return handle.handle;
 #endif
 }

@@ -388,3 +388,13 @@ float Backend::GetDpiScale()
 {
     return EM_ASM_DOUBLE( { return window.devicePixelRatio; } );
 }
+
+size_t Backend::HandleType()
+{
+    return 0;
+}
+
+void* Backend::Handle()
+{
+    return nullptr;
+}

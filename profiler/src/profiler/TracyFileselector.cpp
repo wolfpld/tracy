@@ -13,10 +13,18 @@ namespace tracy::Fileselector
 
 static bool s_hasFailed = false;
 
-void Init()
+#if !defined TRACY_NO_FILESELECTOR && !defined __EMSCRIPTEN__
+static nfdwindowhandle_t s_windowHandle;
+#endif
+
+void Init( size_t type, void* handle )
 {
 #if !defined TRACY_NO_FILESELECTOR && !defined __EMSCRIPTEN__
     NFD_Init();
+    s_windowHandle = {
+        .type = type,
+        .handle = handle
+    };
 #endif
 }
 

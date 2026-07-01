@@ -1372,3 +1372,13 @@ float Backend::GetDpiScale()
 {
     return s_maxScale / 120.f;
 }
+
+size_t Backend::HandleType()
+{
+    return 0;
+}
+
+void* Backend::Handle()
+{
+    return nullptr;
+}

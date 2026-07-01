@@ -361,7 +361,7 @@ int main( int argc, char** argv )
         view.store( std::make_shared<tracy::View>( RunOnMainThread, connectTo, port, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements ), std::memory_order_release );
     }
 
-    tracy::Fileselector::Init();
+    tracy::Fileselector::Init( backend.HandleType(), backend.Handle() );
     s_isElevated = IsElevated();
 
     backend.Show();

@@ -1174,8 +1174,9 @@ void TracyLlm::SendMessage()
         auto& content = chat[1]["content"].get_ref<std::string&>();
         if( content.size() <= 30 )
         {
-            m_summary = content;
             needSummary = false;
+            std::lock_guard lock( m_chatLock );
+            m_summary = content;
         }
     }
 

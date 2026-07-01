@@ -15,10 +15,10 @@
 #include "RunQueue.hpp"
 
 #ifdef __APPLE__
-#include <objc/objc.h>
-#include <objc/message.h>
-#include <objc/runtime.h>
-#include "icon.hpp"
+#  include <objc/objc.h>
+#  include <objc/message.h>
+#  include <objc/runtime.h>
+#  include "icon.hpp"
 #endif
 
 

@@ -1022,13 +1022,35 @@ void View::DrawCompare()
 
                     TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
                     ImGui::SameLine();
-                    TextFocused( "Mean time (this):", TimeToString( m_compare.average[0] ) );
+                    TextFocused( "Mean (this):", TimeToString( m_compare.average[0] ) );
+                    if( !zonesMode )
+                    {
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / m_compare.average[0] ) ) );
+                        if( ImGui::IsItemHovered() )
+                        {
+                            ImGui::BeginTooltip();
+                            ImGui::Text( "%s FPS", RealToString( 1000000000.0 / m_compare.average[0] ) );
+                            ImGui::EndTooltip();
+                        }
+                    }
                     ImGui::SameLine();
                     ImGui::Spacing();
                     ImGui::SameLine();
                     TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
                     ImGui::SameLine();
-                    TextFocused( "Median time (this):", TimeToString( m_compare.median[0] ) );
+                    TextFocused( "Median (this):", TimeToString( m_compare.median[0] ) );
+                    if( !zonesMode )
+                    {
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / m_compare.median[0] ) ) );
+                        if( ImGui::IsItemHovered() )
+                        {
+                            ImGui::BeginTooltip();
+                            ImGui::Text( "%s FPS", RealToString( 1000000000.0 / m_compare.median[0] ) );
+                            ImGui::EndTooltip();
+                        }
+                    }
                     if( sorted[0].size() > 1 )
                     {
                         const auto sz = sorted[0].size();
@@ -1048,13 +1070,35 @@ void View::DrawCompare()
 
                     TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                     ImGui::SameLine();
-                    TextFocused( "Mean time (ext.):", TimeToString( m_compare.average[1] ) );
+                    TextFocused( "Mean (ext.):", TimeToString( m_compare.average[1] ) );
+                    if( !zonesMode )
+                    {
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / m_compare.average[1] ) ) );
+                        if( ImGui::IsItemHovered() )
+                        {
+                            ImGui::BeginTooltip();
+                            ImGui::Text( "%s FPS", RealToString( 1000000000.0 / m_compare.average[1] ) );
+                            ImGui::EndTooltip();
+                        }
+                    }
                     ImGui::SameLine();
                     ImGui::Spacing();
                     ImGui::SameLine();
                     TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                     ImGui::SameLine();
-                    TextFocused( "Median time (ext.):", TimeToString( m_compare.median[1] ) );
+                    TextFocused( "Median (ext.):", TimeToString( m_compare.median[1] ) );
+                    if( !zonesMode )
+                    {
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / m_compare.median[1] ) ) );
+                        if( ImGui::IsItemHovered() )
+                        {
+                            ImGui::BeginTooltip();
+                            ImGui::Text( "%s FPS", RealToString( 1000000000.0 / m_compare.median[1] ) );
+                            ImGui::EndTooltip();
+                        }
+                    }
                     if( sorted[1].size() > 1 )
                     {
                         const auto sz = sorted[1].size();
@@ -1071,8 +1115,8 @@ void View::DrawCompare()
                         TooltipIfHovered( "Standard deviation" );
                     }
                     ImGui::Indent();
-                    PrintSpeedupOrSlowdown( m_compare.average[0], m_compare.average[1], "Mean time" );
-                    PrintSpeedupOrSlowdown( m_compare.median[0], m_compare.median[1], "Median time" );
+                    PrintSpeedupOrSlowdown( m_compare.average[0], m_compare.average[1], "Mean" );
+                    PrintSpeedupOrSlowdown( m_compare.median[0], m_compare.median[1], "Median" );
                     ImGui::Unindent();
 
                     ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ) );

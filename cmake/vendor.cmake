@@ -218,7 +218,7 @@ CPMAddPackage(
 CPMAddPackage(
     NAME md4c
     GITHUB_REPOSITORY mity/md4c
-    GIT_TAG 755ce49acdc7cd682d4502b4796db5ed6a1230fb
+    GIT_TAG 65c6c9d72cebd9a731aaa5597414ce04d9ea5de3
     OPTIONS
         "BUILD_SHARED_LIBS OFF"
     EXCLUDE_FROM_ALL TRUE

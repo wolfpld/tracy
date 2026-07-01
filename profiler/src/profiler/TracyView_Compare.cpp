@@ -181,8 +181,6 @@ static void PrintSpeedupOrSlowdown( double time_this, double time_external, cons
     ImGui::SameLine();
     TextDisabledUnformatted( "than external" );
     ImGui::SameLine();
-    ImGui::Spacing();
-    ImGui::SameLine();
 
     TextDisabledUnformatted("(");
     ImGui::SameLine( 0, 0 );

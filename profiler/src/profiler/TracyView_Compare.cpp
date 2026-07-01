@@ -481,9 +481,12 @@ void View::DrawCompare()
     }
     else
     {
+        assert( m_compare.compareMode == 0 || m_compare.compareMode == 1 );
+        const bool zonesMode = m_compare.compareMode == 0;
+
         bool findClicked = false;
 
-        if( m_compare.compareMode == 0 )
+        if( zonesMode )
         {
             ImGui::PushItemWidth( -0.01f );
             findClicked |= ImGui::InputTextWithHint( "###compare", "Enter zone name to search for", m_compare.pattern, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
@@ -598,7 +601,6 @@ void View::DrawCompare()
         }
         else
         {
-            assert( m_compare.compareMode == 1 );
             ImGui::BeginChild( "##compare" );
             if( ImGui::TreeNodeEx( "Frame sets", ImGuiTreeNodeFlags_DefaultOpen ) )
             {
@@ -705,7 +707,7 @@ void View::DrawCompare()
         int64_t total0, total1;
         double sumSq0, sumSq1;
 
-        if( m_compare.compareMode == 0 )
+        if( zonesMode )
         {
             auto& zoneData0 = m_worker.GetZonesForSourceLocation( m_compare.match[0][m_compare.selMatch[0]] );
             auto& zoneData1 = m_compare.second->GetZonesForSourceLocation( m_compare.match[1][m_compare.selMatch[1]] );
@@ -754,8 +756,6 @@ void View::DrawCompare()
         }
         else
         {
-            assert( m_compare.compareMode == 1 );
-
             const auto& f0 = m_worker.GetFrames()[m_compare.selMatch[0]];
             const auto& f1 = m_compare.second->GetFrames()[m_compare.selMatch[1]];
 
@@ -815,7 +815,7 @@ void View::DrawCompare()
             ImGui::SameLine();
             SmallCheckbox( "Log time", &m_compare.logTime );
             ImGui::SameLine();
-            if( m_compare.compareMode == 0 )
+            if( zonesMode )
             {
                 SmallCheckbox( "Cumulate time", &m_compare.cumulateTime );
                 ImGui::SameLine();

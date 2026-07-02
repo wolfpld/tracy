@@ -44,6 +44,8 @@ public:
     bool IsSidecarPublic() const { return m_sidecarPublic; }
     void SetSidecarPublic( bool state );
 
+    const std::vector<std::shared_ptr<Annotation>>& GetAnnotations() const { return m_annotations; }
+
 private:
     FILE* OpenFile( bool write );
     FILE* OpenFileLegacy( const char* filename );

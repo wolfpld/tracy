@@ -911,6 +911,8 @@ private:
         std::vector<const char*> thisUnique;
         std::vector<const char*> secondUnique;
         std::vector<std::pair<const char*, std::string>> diffs;
+        Range range[2];
+        bool limitRange = false;
 
         void ResetSelection()
         {
@@ -936,6 +938,12 @@ private:
             thisUnique.clear();
             secondUnique.clear();
             diffs.clear();
+        }
+
+        void ResetLimitRange()
+        {
+            limitRange = false;
+            for( int i=0; i<2; i++ ) range[i] = {};
         }
     } m_compare;
 

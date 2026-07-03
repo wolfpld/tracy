@@ -1551,6 +1551,14 @@ void View::DrawCompare()
                 }
             }
         }
+        else
+        {
+            ImGui::PushFont( g_fonts.normal, FontBig );
+            ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
+            TextCentered( ICON_FA_FROG );
+            TextCentered( "No data to compare" );
+            ImGui::PopFont();
+        }
     }
 
     ImGui::EndChild();

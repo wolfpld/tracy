@@ -323,6 +323,7 @@ void View::DrawCompare()
     ImGui::SameLine();
     if( ImGui::Checkbox( "Limit range", &m_compare.limitRange ) )
     {
+        m_compare.ResetSelection();
         if( m_compare.range[0].min == 0 && m_compare.range[0].max == 0 )
         {
             m_compare.range[0].min = m_worker.GetFirstTime();
@@ -371,6 +372,7 @@ void View::DrawCompare()
                     {
                         m_compare.range[0].min = v->range.min;
                         m_compare.range[0].max = v->range.max;
+                        m_compare.ResetSelection();
                     }
                     ImGui::SameLine();
                     ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v->range.min ), TimeToStringExact( v->range.max ), TimeToString( v->range.max - v->range.min ) );
@@ -396,6 +398,7 @@ void View::DrawCompare()
                     {
                         m_compare.range[1].min = v->range.min;
                         m_compare.range[1].max = v->range.max;
+                        m_compare.ResetSelection();
                     }
                     ImGui::SameLine();
                     ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v->range.min ), TimeToStringExact( v->range.max ), TimeToString( v->range.max - v->range.min ) );

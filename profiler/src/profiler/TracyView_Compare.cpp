@@ -365,8 +365,10 @@ void View::DrawCompare()
             }
             else if( ImGui::BeginMenu( ICON_FA_NOTE_STICKY " Annotation" ) )
             {
+                int id = 0;
                 for( auto& v : m_annotations )
                 {
+                    ImGui::PushID( id++ );
                     SmallColorBox( v->color );
                     ImGui::SameLine();
                     if( ImGui::MenuItem( v->text.empty() ? "<unnamed>" : v->text.c_str() ) )
@@ -375,6 +377,7 @@ void View::DrawCompare()
                         m_compare.range[0].max = v->range.max;
                         m_compare.ResetSelection();
                     }
+                    ImGui::PopID();
                     ImGui::SameLine();
                     ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v->range.min ), TimeToStringExact( v->range.max ), TimeToString( v->range.max - v->range.min ) );
                 }
@@ -391,8 +394,10 @@ void View::DrawCompare()
             }
             else if( ImGui::BeginMenu( ICON_FA_NOTE_STICKY " Annotation" ) )
             {
+                int id = 0;
                 for( auto& v : ann )
                 {
+                    ImGui::PushID( id++ );
                     SmallColorBox( v->color );
                     ImGui::SameLine();
                     if( ImGui::MenuItem( v->text.empty() ? "<unnamed>" : v->text.c_str() ) )
@@ -401,6 +406,7 @@ void View::DrawCompare()
                         m_compare.range[1].max = v->range.max;
                         m_compare.ResetSelection();
                     }
+                    ImGui::PopID();
                     ImGui::SameLine();
                     ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v->range.min ), TimeToStringExact( v->range.max ), TimeToString( v->range.max - v->range.min ) );
                 }

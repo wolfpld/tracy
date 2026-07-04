@@ -904,6 +904,7 @@ private:
         float average[2];
         float median[2];
         int64_t total[2];
+        double sumSq[2];
         int minBinVal = 1;
         int compareMode = 0;
         bool diffDone = false;
@@ -923,6 +924,7 @@ private:
                 average[i] = 0;
                 median[i] = 0;
                 total[i] = 0;
+                sumSq[i] = 0;
             }
         }
 

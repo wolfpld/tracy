@@ -345,6 +345,12 @@ void View::DrawCompare()
         ImGui::SameLine();
         if( ImGui::SmallButton( ICON_FA_COPY " Copy from##this" ) ) ImGui::OpenPopup( "compareCopyFromThis" );
         ImGui::SameLine();
+        if( ImGui::SmallButton( "Reset##this" ) )
+        {
+            m_compare.range[0].min = m_worker.GetFirstTime();
+            m_compare.range[0].max = m_worker.GetLastTime();
+        }
+        ImGui::SameLine();
         TextDisabledUnformatted( "This range:" );
         ImGui::SameLine();
         ImGui::Text( "%s - %s (%s)", TimeToStringExact( m_compare.range[0].min ), TimeToStringExact( m_compare.range[0].max ), TimeToString( m_compare.range[0].max - m_compare.range[0].min ) );
@@ -352,6 +358,12 @@ void View::DrawCompare()
         TextColoredUnformatted( ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ICON_FA_GEM );
         ImGui::SameLine();
         if( ImGui::SmallButton( ICON_FA_COPY " Copy from##ext" ) ) ImGui::OpenPopup( "compareCopyFromExt" );
+        ImGui::SameLine();
+        if( ImGui::SmallButton( "Reset##ext" ) )
+        {
+            m_compare.range[1].min = m_compare.second->GetFirstTime();
+            m_compare.range[1].max = m_compare.second->GetLastTime();
+        }
         ImGui::SameLine();
         TextDisabledUnformatted( "External range:" );
         ImGui::SameLine();

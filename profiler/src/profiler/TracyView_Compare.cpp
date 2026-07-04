@@ -814,41 +814,105 @@ void View::DrawCompare()
             zones0.ensure_sorted();
             zones1.ensure_sorted();
 
-            tmin = std::min( zoneData0.min, zoneData1.min );
-            tmax = std::max( zoneData0.max, zoneData1.max );
-
-            size0 = zones0.size();
-            size1 = zones1.size();
-            total0 = zoneData0.total;
-            total1 = zoneData1.total;
-            sumSq0 = zoneData0.sumSq;
-            sumSq1 = zoneData1.sumSq;
-
-            const size_t zsz[2] = { size0, size1 };
-            for( int k=0; k<2; k++ )
+            if( m_compare.limitRange )
             {
-                if( m_compare.sortedNum[k] != zsz[k] )
-                {
-                    auto& zones = k == 0 ? zones0 : zones1;
-                    auto& vec = m_compare.sorted[k];
-                    vec.reserve( zsz[k] );
-                    int64_t total = m_compare.total[k];
-                    size_t i;
-                    for( i=m_compare.sortedNum[k]; i<zsz[k]; i++ )
-                    {
-                        auto& zone = *zones[i].Zone();
-                        const auto t = zone.End() - zone.Start();
-                        vec.emplace_back( t );
-                        total += t;
-                    }
-                    auto mid = vec.begin() + m_compare.sortedNum[k];
-                    pdqsort_branchless( mid, vec.end() );
-                    std::inplace_merge( vec.begin(), mid, vec.end() );
+                constexpr auto cmp = []( const auto& e, int64_t v ){ return e.Zone()->Start() < v; };
+                auto lo0It = std::lower_bound( zones0.begin(), zones0.end(), m_compare.range[0].min, cmp );
+                auto hi0It = std::lower_bound( lo0It, zones0.end(), m_compare.range[0].max, cmp );
+                auto lo1It = std::lower_bound( zones1.begin(), zones1.end(), m_compare.range[1].min, cmp );
+                auto hi1It = std::lower_bound( lo1It, zones1.end(), m_compare.range[1].max, cmp );
+                const size_t lo0 = std::distance( zones0.begin(), lo0It );
+                const size_t hi0 = std::distance( zones0.begin(), hi0It );
+                const size_t lo1 = std::distance( zones1.begin(), lo1It );
+                const size_t hi1 = std::distance( zones1.begin(), hi1It );
+                size0 = hi0 - lo0;
+                size1 = hi1 - lo1;
+                const size_t zsz[2] = { size0, size1 };
+                const size_t lo[2] = { lo0, lo1 };
 
-                    m_compare.average[k] = float( total ) / i;
-                    m_compare.median[k] = vec[i/2];
-                    m_compare.total[k] = total;
-                    m_compare.sortedNum[k] = i;
+                for( int k=0; k<2; k++ )
+                {
+                    if( m_compare.sortedNum[k] != zsz[k] )
+                    {
+                        auto& zones = k == 0 ? zones0 : zones1;
+                        auto& vec = m_compare.sorted[k];
+                        vec.clear();
+                        vec.reserve( zsz[k] );
+                        int64_t total = 0;
+                        double sumSq = 0;
+                        for( size_t i = 0; i < zsz[k]; i++ )
+                        {
+                            auto& zone = *zones[lo[k] + i].Zone();
+                            const auto t = zone.End() - zone.Start();
+                            vec.emplace_back( t );
+                            total += t;
+                            sumSq += double(t) * t;
+                        }
+                        pdqsort_branchless( vec.begin(), vec.end() );
+                        if( !vec.empty() )
+                        {
+                            m_compare.average[k] = float( total ) / vec.size();
+                            m_compare.median[k] = vec[vec.size() / 2];
+                        }
+                        m_compare.total[k] = total;
+                        m_compare.sumSq[k] = sumSq;
+                        m_compare.sortedNum[k] = vec.size();
+                    }
+                }
+
+                total0 = m_compare.total[0];
+                total1 = m_compare.total[1];
+                sumSq0 = m_compare.sumSq[0];
+                sumSq1 = m_compare.sumSq[1];
+                if( !m_compare.sorted[0].empty() && !m_compare.sorted[1].empty() )
+                {
+                    tmin = std::min( m_compare.sorted[0].front(), m_compare.sorted[1].front() );
+                    tmax = std::max( m_compare.sorted[0].back(), m_compare.sorted[1].back() );
+                }
+                else
+                {
+                    tmin = std::numeric_limits<int64_t>::max();
+                    tmax = std::numeric_limits<int64_t>::min();
+                }
+            }
+            else
+            {
+                tmin = std::min( zoneData0.min, zoneData1.min );
+                tmax = std::max( zoneData0.max, zoneData1.max );
+
+                size0 = zones0.size();
+                size1 = zones1.size();
+                total0 = zoneData0.total;
+                total1 = zoneData1.total;
+                sumSq0 = zoneData0.sumSq;
+                sumSq1 = zoneData1.sumSq;
+
+                const size_t zsz[2] = { size0, size1 };
+                for( int k=0; k<2; k++ )
+                {
+                    if( m_compare.sortedNum[k] != zsz[k] )
+                    {
+                        auto& zones = k == 0 ? zones0 : zones1;
+                        auto& vec = m_compare.sorted[k];
+                        vec.reserve( zsz[k] );
+                        int64_t total = m_compare.total[k];
+                        size_t i;
+                        for( i=m_compare.sortedNum[k]; i<zsz[k]; i++ )
+                        {
+                            auto& zone = *zones[i].Zone();
+                            const auto t = zone.End() - zone.Start();
+                            vec.emplace_back( t );
+                            total += t;
+                        }
+                        auto mid = vec.begin() + m_compare.sortedNum[k];
+                        pdqsort_branchless( mid, vec.end() );
+                        std::inplace_merge( vec.begin(), mid, vec.end() );
+
+                        m_compare.average[k] = float( total ) / i;
+                        m_compare.median[k] = vec[i/2];
+                        m_compare.total[k] = total;
+                        m_compare.sortedNum[k] = i;
+                    }
                 }
             }
         }

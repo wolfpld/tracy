@@ -383,6 +383,29 @@ void View::DrawCompare()
                 }
                 ImGui::EndMenu();
             }
+            auto& sections = m_worker.GetSections();
+            if( sections.empty() )
+            {
+                TextDisabledUnformatted( "Sections" );
+            }
+            else if( ImGui::BeginMenu( "Sections" ) )
+            {
+                int id = 0;
+                for( auto& v : sections )
+                {
+                    ImGui::PushID( id++ );
+                    if( ImGui::MenuItem( m_worker.GetString( v.text ) ) )
+                    {
+                        m_compare.range[0].min = v.start.Val();
+                        m_compare.range[0].max = v.end.Val();
+                        m_compare.ResetSelection();
+                    }
+                    ImGui::PopID();
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v.start.Val() ), TimeToStringExact( v.end.Val() ), TimeToString( v.end.Val() - v.start.Val() ) );
+                }
+                ImGui::EndMenu();
+            }
             ImGui::EndPopup();
         }
         if( ImGui::BeginPopup( "compareCopyFromExt" ) )
@@ -409,6 +432,29 @@ void View::DrawCompare()
                     ImGui::PopID();
                     ImGui::SameLine();
                     ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v->range.min ), TimeToStringExact( v->range.max ), TimeToString( v->range.max - v->range.min ) );
+                }
+                ImGui::EndMenu();
+            }
+            auto& sections = m_compare.second->GetSections();
+            if( sections.empty() )
+            {
+                TextDisabledUnformatted( "Sections" );
+            }
+            else if( ImGui::BeginMenu( "Sections" ) )
+            {
+                int id = 0;
+                for( auto& v : sections )
+                {
+                    ImGui::PushID( id++ );
+                    if( ImGui::MenuItem( m_compare.second->GetString( v.text ) ) )
+                    {
+                        m_compare.range[1].min = v.start.Val();
+                        m_compare.range[1].max = v.end.Val();
+                        m_compare.ResetSelection();
+                    }
+                    ImGui::PopID();
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v.start.Val() ), TimeToStringExact( v.end.Val() ), TimeToString( v.end.Val() - v.start.Val() ) );
                 }
                 ImGui::EndMenu();
             }

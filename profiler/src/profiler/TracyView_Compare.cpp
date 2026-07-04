@@ -347,7 +347,7 @@ void View::DrawCompare()
         ImGui::SameLine();
         TextDisabledUnformatted( "This range:" );
         ImGui::SameLine();
-        ImGui::Text( "%s - %s", TimeToString( m_compare.range[0].min ), TimeToString( m_compare.range[0].max ) );
+        ImGui::Text( "%s - %s (%s)", TimeToStringExact( m_compare.range[0].min ), TimeToStringExact( m_compare.range[0].max ), TimeToString( m_compare.range[0].max - m_compare.range[0].min ) );
 
         TextColoredUnformatted( ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ICON_FA_GEM );
         ImGui::SameLine();
@@ -355,7 +355,7 @@ void View::DrawCompare()
         ImGui::SameLine();
         TextDisabledUnformatted( "External range:" );
         ImGui::SameLine();
-        ImGui::Text( "%s - %s", TimeToString( m_compare.range[1].min ), TimeToString( m_compare.range[1].max ) );
+        ImGui::Text( "%s - %s (%s)", TimeToStringExact( m_compare.range[1].min ), TimeToStringExact( m_compare.range[1].max ), TimeToString( m_compare.range[1].max - m_compare.range[1].min ) );
 
         if( ImGui::BeginPopup( "compareCopyFromThis" ) )
         {

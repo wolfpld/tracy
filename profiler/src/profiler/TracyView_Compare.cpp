@@ -340,6 +340,7 @@ void View::DrawCompare()
         ImGui::SameLine();
         TextColoredUnformatted( 0xFF00FFFF, ICON_FA_TRIANGLE_EXCLAMATION );
 
+        ImGui::Indent();
         TextColoredUnformatted( ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ICON_FA_LEMON );
         ImGui::SameLine();
         if( ImGui::SmallButton( ICON_FA_COPY " Copy from##this" ) ) ImGui::OpenPopup( "compareCopyFromThis" );
@@ -407,6 +408,7 @@ void View::DrawCompare()
             }
             ImGui::EndPopup();
         }
+        ImGui::Unindent();
     }
 
     const auto oldMode = m_compare.compareMode;

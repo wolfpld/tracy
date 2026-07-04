@@ -921,42 +921,107 @@ void View::DrawCompare()
             const auto& f0 = m_worker.GetFrames()[m_compare.selMatch[0]];
             const auto& f1 = m_compare.second->GetFrames()[m_compare.selMatch[1]];
 
-            tmin = std::min( f0->min, f1->min );
-            tmax = std::max( f0->max, f1->max );
-
-            size0 = f0->frames.size();
-            size1 = f1->frames.size();
-            total0 = f0->total;
-            total1 = f1->total;
-            sumSq0 = f0->sumSq;
-            sumSq1 = f1->sumSq;
-
-            const size_t zsz[2] = { size0, size1 };
-            for( int k=0; k<2; k++ )
+            if( m_compare.limitRange )
             {
-                if( m_compare.sortedNum[k] != zsz[k] )
-                {
-                    auto& frameSet = k == 0 ? f0 : f1;
-                    auto worker = k == 0 ? &m_worker : m_compare.second.get();
-                    auto& vec = m_compare.sorted[k];
-                    vec.reserve( zsz[k] );
-                    int64_t total = m_compare.total[k];
-                    size_t i;
-                    for( i=m_compare.sortedNum[k]; i<zsz[k]; i++ )
-                    {
-                        if( worker->GetFrameEnd( *frameSet, i ) == worker->GetLastTime() ) break;
-                        const auto t = worker->GetFrameTime( *frameSet, i );
-                        vec.emplace_back( t );
-                        total += t;
-                    }
-                    auto mid = vec.begin() + m_compare.sortedNum[k];
-                    pdqsort_branchless( mid, vec.end() );
-                    std::inplace_merge( vec.begin(), mid, vec.end() );
+                constexpr auto cmp = []( const FrameEvent& e, int64_t v ){ return e.start < v; };
+                auto lo0It = std::lower_bound( f0->frames.begin(), f0->frames.end(), m_compare.range[0].min, cmp );
+                auto hi0It = std::lower_bound( lo0It, f0->frames.end(), m_compare.range[0].max, cmp );
+                auto lo1It = std::lower_bound( f1->frames.begin(), f1->frames.end(), m_compare.range[1].min, cmp );
+                auto hi1It = std::lower_bound( lo1It, f1->frames.end(), m_compare.range[1].max, cmp );
+                const size_t lo0 = std::distance( f0->frames.begin(), lo0It );
+                const size_t hi0 = std::distance( f0->frames.begin(), hi0It );
+                const size_t lo1 = std::distance( f1->frames.begin(), lo1It );
+                const size_t hi1 = std::distance( f1->frames.begin(), hi1It );
+                size0 = hi0 - lo0;
+                size1 = hi1 - lo1;
+                const size_t zsz[2] = { size0, size1 };
+                const size_t lo[2] = { lo0, lo1 };
 
-                    m_compare.average[k] = float( total ) / i;
-                    m_compare.median[k] = vec[i/2];
-                    m_compare.total[k] = total;
-                    m_compare.sortedNum[k] = i;
+                for( int k=0; k<2; k++ )
+                {
+                    if( m_compare.sortedNum[k] != zsz[k] )
+                    {
+                        auto& frameSet = k == 0 ? f0 : f1;
+                        auto worker = k == 0 ? &m_worker : m_compare.second.get();
+                        auto& vec = m_compare.sorted[k];
+                        vec.clear();
+                        vec.reserve( zsz[k] );
+                        int64_t total = 0;
+                        double sumSq = 0;
+                        for( size_t i = 0; i < zsz[k]; i++ )
+                        {
+                            if( worker->GetFrameEnd( *frameSet, lo[k] + i ) == worker->GetLastTime() ) break;
+                            const auto t = worker->GetFrameTime( *frameSet, lo[k] + i );
+                            vec.emplace_back( t );
+                            total += t;
+                            sumSq += double(t) * t;
+                        }
+                        pdqsort_branchless( vec.begin(), vec.end() );
+                        if( !vec.empty() )
+                        {
+                            m_compare.average[k] = float( total ) / vec.size();
+                            m_compare.median[k] = vec[vec.size() / 2];
+                        }
+                        m_compare.total[k] = total;
+                        m_compare.sumSq[k] = sumSq;
+                        m_compare.sortedNum[k] = vec.size();
+                    }
+                }
+
+                total0 = m_compare.total[0];
+                total1 = m_compare.total[1];
+                sumSq0 = m_compare.sumSq[0];
+                sumSq1 = m_compare.sumSq[1];
+                if( !m_compare.sorted[0].empty() && !m_compare.sorted[1].empty() )
+                {
+                    tmin = std::min( m_compare.sorted[0].front(), m_compare.sorted[1].front() );
+                    tmax = std::max( m_compare.sorted[0].back(), m_compare.sorted[1].back() );
+                }
+                else
+                {
+                    tmin = std::numeric_limits<int64_t>::max();
+                    tmax = std::numeric_limits<int64_t>::min();
+                }
+            }
+            else
+            {
+                tmin = std::min( f0->min, f1->min );
+                tmax = std::max( f0->max, f1->max );
+
+                size0 = f0->frames.size();
+                size1 = f1->frames.size();
+                total0 = f0->total;
+                total1 = f1->total;
+                sumSq0 = f0->sumSq;
+                sumSq1 = f1->sumSq;
+
+                const size_t zsz[2] = { size0, size1 };
+                for( int k=0; k<2; k++ )
+                {
+                    if( m_compare.sortedNum[k] != zsz[k] )
+                    {
+                        auto& frameSet = k == 0 ? f0 : f1;
+                        auto worker = k == 0 ? &m_worker : m_compare.second.get();
+                        auto& vec = m_compare.sorted[k];
+                        vec.reserve( zsz[k] );
+                        int64_t total = m_compare.total[k];
+                        size_t i;
+                        for( i=m_compare.sortedNum[k]; i<zsz[k]; i++ )
+                        {
+                            if( worker->GetFrameEnd( *frameSet, i ) == worker->GetLastTime() ) break;
+                            const auto t = worker->GetFrameTime( *frameSet, i );
+                            vec.emplace_back( t );
+                            total += t;
+                        }
+                        auto mid = vec.begin() + m_compare.sortedNum[k];
+                        pdqsort_branchless( mid, vec.end() );
+                        std::inplace_merge( vec.begin(), mid, vec.end() );
+
+                        m_compare.average[k] = float( total ) / i;
+                        m_compare.median[k] = vec[i/2];
+                        m_compare.total[k] = total;
+                        m_compare.sortedNum[k] = i;
+                    }
                 }
             }
         }

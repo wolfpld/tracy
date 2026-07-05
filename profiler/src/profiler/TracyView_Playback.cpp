@@ -306,14 +306,15 @@ void View::DrawPlayback()
                 for( auto& v : sections )
                 {
                     ImGui::PushID( id++ );
+                    const auto end = v.end.IsNonNegative() ? v.end.Val() : m_worker.GetLastTime();
                     if( ImGui::MenuItem( m_worker.GetString( v.text ) ) )
                     {
-                        m_playback.range = GetPlaybackFrameRangeFromTime( v.start.Val(), v.end.Val(), m_playback.requireCoverage );
+                        m_playback.range = GetPlaybackFrameRangeFromTime( v.start.Val(), end, m_playback.requireCoverage );
                         limitChanged = true;
                     }
                     ImGui::PopID();
                     ImGui::SameLine();
-                    ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v.start.Val() ), TimeToStringExact( v.end.Val() ), TimeToString( v.end.Val() - v.start.Val() ) );
+                    ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v.start.Val() ), TimeToStringExact( end ), TimeToString( end - v.start.Val() ) );
                 }
                 ImGui::EndMenu();
             }

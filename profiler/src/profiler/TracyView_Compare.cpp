@@ -406,15 +406,16 @@ void View::DrawCompare()
                 for( auto& v : sections )
                 {
                     ImGui::PushID( id++ );
+                    const auto end = v.end.IsNonNegative() ? v.end.Val() : m_worker.GetLastTime();
                     if( ImGui::MenuItem( m_worker.GetString( v.text ) ) )
                     {
                         m_compare.range[0].min = v.start.Val();
-                        m_compare.range[0].max = v.end.Val();
+                        m_compare.range[0].max = end;
                         m_compare.ResetSelection();
                     }
                     ImGui::PopID();
                     ImGui::SameLine();
-                    ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v.start.Val() ), TimeToStringExact( v.end.Val() ), TimeToString( v.end.Val() - v.start.Val() ) );
+                    ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v.start.Val() ), TimeToStringExact( end ), TimeToString( end - v.start.Val() ) );
                 }
                 ImGui::EndMenu();
             }
@@ -458,15 +459,16 @@ void View::DrawCompare()
                 for( auto& v : sections )
                 {
                     ImGui::PushID( id++ );
+                    const auto end = v.end.IsNonNegative() ? v.end.Val() : m_compare.second->GetLastTime();
                     if( ImGui::MenuItem( m_compare.second->GetString( v.text ) ) )
                     {
                         m_compare.range[1].min = v.start.Val();
-                        m_compare.range[1].max = v.end.Val();
+                        m_compare.range[1].max = end;
                         m_compare.ResetSelection();
                     }
                     ImGui::PopID();
                     ImGui::SameLine();
-                    ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v.start.Val() ), TimeToStringExact( v.end.Val() ), TimeToString( v.end.Val() - v.start.Val() ) );
+                    ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v.start.Val() ), TimeToStringExact( end ), TimeToString( end - v.start.Val() ) );
                 }
                 ImGui::EndMenu();
             }

@@ -123,14 +123,15 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, int 
                 for( auto& v : sections )
                 {
                     ImGui::PushID( id++ );
+                    const auto end = v.end.IsNonNegative() ? v.end.Val() : m_worker.GetLastTime();
                     if( ImGui::MenuItem( m_worker.GetString( v.text ) ) )
                     {
                         range.min = v.start.Val();
-                        range.max = v.end.Val();
+                        range.max = end;
                     }
                     ImGui::PopID();
                     ImGui::SameLine();
-                    ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v.start.Val() ), TimeToStringExact( v.end.Val() ), TimeToString( v.end.Val() - v.start.Val() ) );
+                    ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v.start.Val() ), TimeToStringExact( end ), TimeToString( end - v.start.Val() ) );
                 }
                 ImGui::EndMenu();
             }

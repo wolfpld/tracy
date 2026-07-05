@@ -925,7 +925,7 @@ void View::DrawZoneInfoWindow()
             if( hover )
             {
                 m_zoneHighlight = v;
-                if( IsMouseClicked( 2 ) )
+                if( IsMouseClicked( ImGuiMouseButton_Middle ) )
                 {
                     ZoomToZone( *v );
                 }
@@ -1185,7 +1185,7 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
                 if( ImGui::IsItemHovered() )
                 {
                     m_zoneHighlight = &cev;
-                    if( IsMouseClicked( 2 ) )
+                    if( IsMouseClicked( ImGuiMouseButton_Middle ) )
                     {
                         ZoomToZone( cev );
                     }
@@ -1254,7 +1254,7 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
                         if( ImGui::IsItemHovered() )
                         {
                             m_zoneHighlight = &cev;
-                            if( IsMouseClicked( 2 ) )
+                            if( IsMouseClicked( ImGuiMouseButton_Middle ) )
                             {
                                 ZoomToZone( cev );
                             }
@@ -1320,7 +1320,7 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
                 if( ImGui::IsItemHovered() )
                 {
                     m_zoneHighlight = &cev;
-                    if( IsMouseClicked( 2 ) )
+                    if( IsMouseClicked( ImGuiMouseButton_Middle ) )
                     {
                         ZoomToZone( cev );
                     }
@@ -1533,7 +1533,7 @@ void View::DrawGpuInfoWindow()
             if( hover )
             {
                 m_gpuHighlight = v;
-                if( IsMouseClicked( 2 ) )
+                if( IsMouseClicked( ImGuiMouseButton_Middle ) )
                 {
                     ZoomToZone( *v );
                 }
@@ -1659,7 +1659,7 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
                 if( ImGui::IsItemHovered() )
                 {
                     m_gpuHighlight = &cev;
-                    if( IsMouseClicked( 2 ) )
+                    if( IsMouseClicked( ImGuiMouseButton_Middle ) )
                     {
                         ZoomToZone( cev );
                     }
@@ -1722,7 +1722,7 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
                     if( ImGui::IsItemHovered() )
                     {
                         m_gpuHighlight = &cev;
-                        if( IsMouseClicked( 2 ) )
+                        if( IsMouseClicked( ImGuiMouseButton_Middle ) )
                         {
                             ZoomToZone( cev );
                         }
@@ -1778,7 +1778,7 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
             if( ImGui::IsItemHovered() )
             {
                 m_gpuHighlight = &cev;
-                if( IsMouseClicked( 2 ) )
+                if( IsMouseClicked( ImGuiMouseButton_Middle ) )
                 {
                     ZoomToZone( cev );
                 }

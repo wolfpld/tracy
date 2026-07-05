@@ -221,7 +221,7 @@ void View::DrawZoneList( int id, const Vector<short_ptr<ZoneEvent>>& zones )
             if( ImGui::IsItemHovered() )
             {
                 m_zoneHighlight = ev;
-                if( IsMouseClicked( 2 ) )
+                if( IsMouseClicked( ImGuiMouseButton_Middle ) )
                 {
                     ZoomToZone( *ev );
                 }
@@ -1456,12 +1456,12 @@ void View::DrawFindZone()
                             TextFocused( "Time spent in the right bins:", TimeToString( tAfter ) );
                             ImGui::EndTooltip();
 
-                            if( IsMouseClicked( 1 ) )
+                            if( IsMouseClicked( ImGuiMouseButton_Right ) )
                             {
                                 m_findZone.highlight.active = false;
                                 m_findZone.ResetGroups();
                             }
-                            else if( IsMouseClicked( 0 ) )
+                            else if( IsMouseClicked( ImGuiMouseButton_Left ) )
                             {
                                 m_findZone.highlight.active = true;
                                 m_findZone.highlight.start = t0;
@@ -1469,7 +1469,7 @@ void View::DrawFindZone()
                                 m_findZone.hlOrig_t0 = t0;
                                 m_findZone.hlOrig_t1 = t1;
                             }
-                            else if( IsMouseDragging( 0 ) )
+                            else if( IsMouseDragging( ImGuiMouseButton_Left ) )
                             {
                                 if( t0 < m_findZone.hlOrig_t0 )
                                 {

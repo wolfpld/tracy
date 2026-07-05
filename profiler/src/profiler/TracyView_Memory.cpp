@@ -614,7 +614,7 @@ void View::DrawMemoryAllocWindow()
             if( hover )
             {
                 m_zoneHighlight = zoneAlloc;
-                if( IsMouseClicked( 2 ) )
+                if( IsMouseClicked( ImGuiMouseButton_Middle ) )
                 {
                     ZoomToZone( *zoneAlloc );
                 }
@@ -639,7 +639,7 @@ void View::DrawMemoryAllocWindow()
                 if( hover )
                 {
                     m_zoneHighlight = zoneFree;
-                    if( IsMouseClicked( 2 ) )
+                    if( IsMouseClicked( ImGuiMouseButton_Middle ) )
                     {
                         ZoomToZone( *zoneFree );
                     }
@@ -829,7 +829,7 @@ void View::ListMemData( std::vector<const MemEvent*>& vec, const std::function<v
                     if( hover )
                     {
                         m_zoneHighlight = zone;
-                        if( IsMouseClicked( 2 ) )
+                        if( IsMouseClicked( ImGuiMouseButton_Middle ) )
                         {
                             ZoomToZone( *zone );
                         }
@@ -873,7 +873,7 @@ void View::ListMemData( std::vector<const MemEvent*>& vec, const std::function<v
                         if( hover )
                         {
                             m_zoneHighlight = zoneFree;
-                            if( IsMouseClicked( 2 ) )
+                            if( IsMouseClicked( ImGuiMouseButton_Middle ) )
                             {
                                 ZoomToZone( *zoneFree );
                             }

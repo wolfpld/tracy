@@ -262,7 +262,7 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
                     }
                     tooltip = true;
 
-                    if( IsMouseClicked( 2 ) )
+                    if( IsMouseClicked( ImGuiMouseButton_Middle ) )
                     {
                         ZoomToRange( prev.End(), ev.WakeupVal() );
                     }
@@ -274,7 +274,7 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
                     TextFocused( "Thread is", "waking up" );
                     TextFocused( "Scheduling delay:", TimeToString( ev.Start() - ev.WakeupVal() ) );
                     TextFocused( "CPU:", RealToString( ev.Cpu() ) );
-                    if( IsMouseClicked( 2 ) )
+                    if( IsMouseClicked( ImGuiMouseButton_Middle ) )
                     {
                         ZoomToRange( prev.End(), ev.WakeupVal() );
                     }
@@ -289,7 +289,7 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
                         ImGui::Separator();
                         TextDisabledUnformatted( ICON_FA_HOURGLASS_HALF " Wait stack:" );
                         CallstackTooltipContents( waitStack );
-                        if( ImGui::IsMouseClicked( 0 ) )
+                        if( ImGui::IsMouseClicked( ImGuiMouseButton_Left ) )
                         {
                             m_callstackView = {
                                 .id = waitStack,
@@ -340,7 +340,7 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
                     }
                     ImGui::EndTooltip();
 
-                    if( IsMouseClicked( 2 ) )
+                    if( IsMouseClicked( ImGuiMouseButton_Middle ) )
                     {
                         ZoomToRange( ev.Start(), end );
                     }
@@ -357,7 +357,7 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
                     TextFocused( "Time:", TimeToString( end - ev.Start() ) );
                     ImGui::EndTooltip();
 
-                    if( IsMouseClicked( 2 ) )
+                    if( IsMouseClicked( ImGuiMouseButton_Middle ) )
                     {
                         ZoomToRange( ev.Start(), end );
                     }
@@ -391,7 +391,7 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
                 }
                 ImGui::EndTooltip();
 
-                if( IsMouseClicked( 2 ) )
+                if( IsMouseClicked( ImGuiMouseButton_Middle ) )
                 {
                     ZoomToRange( ev.Start(), end );
                 }

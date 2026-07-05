@@ -631,7 +631,7 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
                     TextDisabledUnformatted( buf );
                 }
 
-                if( IsMouseClicked( 0 ) )
+                if( IsMouseClicked( ImGuiMouseButton_Left ) )
                 {
                     ViewDispatch( file, line, symAddr );
                 }
@@ -661,7 +661,7 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
             }
             ImGui::EndTooltip();
 
-            if( IsMouseClicked( 0 ) )
+            if( IsMouseClicked( ImGuiMouseButton_Left ) )
             {
                 m_findZone.ShowZone( item.srcloc, slName );
             }
@@ -807,7 +807,7 @@ static bool DrawFlameGraphHorizontalPosition( int64_t& vStart, int64_t& vEnd, do
         ImGui::EndTooltip();
     }
 
-    if( active && ImGui::IsMouseDragging( 0 ) )
+    if( active && ImGui::IsMouseDragging( ImGuiMouseButton_Left ) )
     {
         const auto delta = ImGui::GetIO().MouseDelta.x;
         ApplyFlameGraphPan( vStart, vEnd, pan, delta * totalSpan / w );
@@ -1269,9 +1269,9 @@ void View::DrawFlameGraph()
             ImGui::IsMouseHoveringRect( ImVec2( wpos.x, clipMin.y ), ImVec2( wpos.x + w, clipMax.y ), false );
 
         const bool wheel_scroll = fabs( io.MouseWheelH ) > fabs( io.MouseWheel );
-        if( hover && ( IsMouseDragging( 1 ) || wheel_scroll ) )
+        if( hover && ( IsMouseDragging( ImGuiMouseButton_Right ) || wheel_scroll ) )
         {
-            const auto delta = GetMouseDragDelta( 1 );
+            const auto delta = GetMouseDragDelta( ImGuiMouseButton_Right );
             const auto hwheel_delta = io.MouseWheelH * 50.f * m_horizontalScrollMultiplier;
             if( delta.x != 0 || hwheel_delta != 0 )
             {

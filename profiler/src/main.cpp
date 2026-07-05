@@ -1383,7 +1383,7 @@ Would you like to enable achievements?
         if( ( animStage == 0 || animStage == 2 ) && ImGui::IsMouseHoveringRect( cursorScreen - ImVec2( dpiScale * 2, dpiScale * 2 ), cursorScreen + starSize + ImVec2( dpiScale * 4, dpiScale * 4 ) ) )
         {
             color = 0xFFFFFFFF;
-            if( ImGui::IsMouseClicked( 0 ) )
+            if( ImGui::IsMouseClicked( ImGuiMouseButton_Left ) )
             {
                 if( animStage == 0 )
                 {
@@ -1414,7 +1414,7 @@ Would you like to enable achievements?
             ImGui::PopFont();
             if( animStage == 2 )
             {
-                if( ImGui::IsMouseHoveringRect( dismiss - ImVec2( 0, dpiScale * 6 ), dismiss + ImVec2( aSize, th * 1.5f + dpiScale * 4 ) ) && ImGui::IsMouseClicked( 0 ) )
+                if( ImGui::IsMouseHoveringRect( dismiss - ImVec2( 0, dpiScale * 6 ), dismiss + ImVec2( aSize, th * 1.5f + dpiScale * 4 ) ) && ImGui::IsMouseClicked( ImGuiMouseButton_Left ) )
                 {
                     s_achievementItem = aItem;
                     s_switchAchievementCategory = true;

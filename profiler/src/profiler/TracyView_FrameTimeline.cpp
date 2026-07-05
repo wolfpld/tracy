@@ -146,7 +146,7 @@ void View::DrawTimelineFrames( const FrameData& frames )
             if( ImGui::IsMouseHoveringRect( wpos + ImVec2( x0, 0 ), wpos + ImVec2( x1, ty ) ) )
             {
                 tooltipDisplayed = true;
-                if( IsMouseClickReleased( 1 ) ) m_setRangePopup = RangeSlim { fbegin, fend, true };
+                if( IsMouseClickReleased( ImGuiMouseButton_Right ) ) m_setRangePopup = RangeSlim { fbegin, fend, true };
 
                 ImGui::BeginTooltip();
                 ImGui::TextUnformatted( GetFrameText( frames, i, ftime ) );
@@ -159,7 +159,7 @@ void View::DrawTimelineFrames( const FrameData& frames )
                     ImGui::Separator();
                     DrawFrameImage( m_FrameTextureCache, *fi );
 
-                    if( ImGui::GetIO().KeyCtrl && IsMouseClicked( 0 ) )
+                    if( ImGui::GetIO().KeyCtrl && IsMouseClicked( ImGuiMouseButton_Left ) )
                     {
                         m_showPlayback = true;
                         m_playback.pause = true;
@@ -168,7 +168,7 @@ void View::DrawTimelineFrames( const FrameData& frames )
                 }
                 ImGui::EndTooltip();
 
-                if( IsMouseClicked( 2 ) )
+                if( IsMouseClicked( ImGuiMouseButton_Middle ) )
                 {
                     ZoomToRange( fbegin, fend );
                 }
@@ -315,7 +315,7 @@ void View::DrawTimelineFrames( const FrameData& frames )
             ImGui::TextUnformatted( GetFrameSetName( frames ) );
             ImGui::EndTooltip();
         }
-        if( IsMouseClicked( 0 ) )
+        if( IsMouseClicked( ImGuiMouseButton_Left ) )
         {
             m_frames = &frames;
         }
@@ -467,8 +467,8 @@ void View::DrawTimelineSections()
                         TextFocused( "Execution time:", TimeToString( groupEnd - start ) );
                         ImGui::EndTooltip();
 
-                        if( IsMouseClickReleased( 1 ) ) m_setRangePopup = RangeSlim { start, groupEnd, true };
-                        if( IsMouseClicked( 2 ) ) ZoomToRange( start, groupEnd );
+                        if( IsMouseClickReleased( ImGuiMouseButton_Right ) ) m_setRangePopup = RangeSlim { start, groupEnd, true };
+                        if( IsMouseClicked( ImGuiMouseButton_Middle ) ) ZoomToRange( start, groupEnd );
                     }
                     else
                     {
@@ -479,8 +479,8 @@ void View::DrawTimelineSections()
                         TextFocused( "Time from start of program:", TimeToStringExact( start ) );
                         ImGui::EndTooltip();
 
-                        if( IsMouseClickReleased( 1 ) ) m_setRangePopup = RangeSlim { start, end, true };
-                        if( IsMouseClicked( 2 ) ) ZoomToRange( start, end );
+                        if( IsMouseClickReleased( ImGuiMouseButton_Right ) ) m_setRangePopup = RangeSlim { start, end, true };
+                        if( IsMouseClicked( ImGuiMouseButton_Middle ) ) ZoomToRange( start, end );
                     }
                 }
 
@@ -533,8 +533,8 @@ void View::DrawTimelineSections()
                     TextFocused( "Time from start of program:", TimeToStringExact( start ) );
                     ImGui::EndTooltip();
 
-                    if( IsMouseClickReleased( 1 ) ) m_setRangePopup = RangeSlim { start, end, true };
-                    if( IsMouseClicked( 2 ) ) ZoomToRange( start, end );
+                    if( IsMouseClickReleased( ImGuiMouseButton_Right ) ) m_setRangePopup = RangeSlim { start, end, true };
+                    if( IsMouseClicked( ImGuiMouseButton_Middle ) ) ZoomToRange( start, end );
                 }
 
                 ++i;

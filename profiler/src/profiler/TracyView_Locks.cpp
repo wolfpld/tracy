@@ -95,11 +95,11 @@ void View::DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLoca
             TextFocused( "Lock events:", RealToString( lockmap.timeline.size() ) );
             ImGui::EndTooltip();
 
-            if( IsMouseClicked( 0 ) )
+            if( IsMouseClicked( ImGuiMouseButton_Left ) )
             {
                 m_lockInfoWindow = id;
             }
-            if( IsMouseClicked( 2 ) )
+            if( IsMouseClicked( ImGuiMouseButton_Middle ) )
             {
                 ZoomToRange( range.start, range.end );
             }
@@ -159,11 +159,11 @@ int View::DrawLocks( const TimelineContext& ctx, const std::vector<std::unique_p
             bool itemHovered = hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + ostep ) );
             if( itemHovered )
             {
-                if( IsMouseClicked( 0 ) )
+                if( IsMouseClicked( ImGuiMouseButton_Left ) )
                 {
                     m_lockInfoWindow = lock.id;
                 }
-                if( IsMouseClicked( 2 ) )
+                if( IsMouseClicked( ImGuiMouseButton_Middle ) )
                 {
                     ZoomToRange( t0, t1 );
                 }

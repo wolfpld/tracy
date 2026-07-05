@@ -107,7 +107,7 @@ void TimelineController::End( double pxns, const ImVec2& wpos, bool hover, bool 
         const auto mouseMoved = mouseDelta.x != 0.0f || mouseDelta.y != 0.0f;
         const auto& mousePos = ImGui::GetIO().MousePos;
         const auto mouseVisible = ImGui::IsMousePosValid( &mousePos );
-        return ( ( imguiChangedScroll || mouseMoved || !mouseVisible ) && !ImGui::IsMouseDown( 1 ) ) || !m_centerItemkey;
+        return ( ( imguiChangedScroll || mouseMoved || !mouseVisible ) && !ImGui::IsMouseDown( ImGuiMouseButton_Right ) ) || !m_centerItemkey;
     };
 
     if( !vcenter )

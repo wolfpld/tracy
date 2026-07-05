@@ -371,7 +371,7 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
                     m_memoryAllocHover = std::distance( mem.data.begin(), ev );
                     m_memoryAllocHoverWait = 2;
                     m_memoryAllocHoverPool = name;
-                    if( IsMouseClicked( 0 ) )
+                    if( IsMouseClicked( ImGuiMouseButton_Left ) )
                     {
                         m_memoryAllocInfoWindow = m_memoryAllocHover;
                         m_memoryAllocInfoPool = name;

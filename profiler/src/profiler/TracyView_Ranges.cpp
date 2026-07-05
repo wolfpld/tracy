@@ -133,7 +133,7 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, int 
 
 void View::HandleRange( Range& range, int64_t timespan, const ImVec2& wpos, float w )
 {
-    if( !IsMouseDown( 0 ) ) range.modMin = range.modMax = false;
+    if( !IsMouseDown( ImGuiMouseButton_Left ) ) range.modMin = range.modMax = false;
     if( !range.active ) return;
     auto& io = ImGui::GetIO();
 
@@ -142,7 +142,7 @@ void View::HandleRange( Range& range, int64_t timespan, const ImVec2& wpos, floa
         const auto nspx = double( timespan ) / w;
         range.min = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
         range.hiMin = true;
-        ConsumeMouseEvents( 0 );
+        ConsumeMouseEvents( ImGuiMouseButton_Left );
         ImGui::SetMouseCursor( ImGuiMouseCursor_ResizeEW );
         if( range.min > range.max )
         {
@@ -156,7 +156,7 @@ void View::HandleRange( Range& range, int64_t timespan, const ImVec2& wpos, floa
         const auto nspx = double( timespan ) / w;
         range.max = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
         range.hiMax = true;
-        ConsumeMouseEvents( 0 );
+        ConsumeMouseEvents( ImGuiMouseButton_Left );
         ImGui::SetMouseCursor( ImGuiMouseCursor_ResizeEW );
         if( range.min > range.max )
         {
@@ -173,11 +173,11 @@ void View::HandleRange( Range& range, int64_t timespan, const ImVec2& wpos, floa
         {
             range.hiMin = true;
             ImGui::SetMouseCursor( ImGuiMouseCursor_ResizeEW );
-            if( IsMouseClicked( 0 ) )
+            if( IsMouseClicked( ImGuiMouseButton_Left ) )
             {
                 range.modMin = true;
                 range.min = m_vd.zvStart + ( io.MousePos.x - wpos.x ) / pxns;
-                ConsumeMouseEvents( 0 );
+                ConsumeMouseEvents( ImGuiMouseButton_Left );
                 if( range.min > range.max )
                 {
                     std::swap( range.min, range.max );
@@ -193,11 +193,11 @@ void View::HandleRange( Range& range, int64_t timespan, const ImVec2& wpos, floa
             {
                 range.hiMax = true;
                 ImGui::SetMouseCursor( ImGuiMouseCursor_ResizeEW );
-                if( IsMouseClicked( 0 ) )
+                if( IsMouseClicked( ImGuiMouseButton_Left ) )
                 {
                     range.modMax = true;
                     range.max = m_vd.zvStart + ( io.MousePos.x - wpos.x ) / pxns;
-                    ConsumeMouseEvents( 0 );
+                    ConsumeMouseEvents( ImGuiMouseButton_Left );
                     if( range.min > range.max )
                     {
                         std::swap( range.min, range.max );

@@ -249,7 +249,7 @@ void TimelineItemThread::HeaderExtraContents( const TimelineContext& ctx, int of
 
         if( ctx.hover && ImGui::IsMouseHoveringRect( ctx.wpos + ImVec2( 1.5f * ty + labelWidth, offset ), ctx.wpos + ImVec2( 1.5f * ty + labelWidth + ghostSz, offset + ty ) ) )
         {
-            if( IsMouseClicked( 0 ) )
+            if( IsMouseClicked( ImGuiMouseButton_Left ) )
             {
                 m_ghost = !m_ghost;
             }

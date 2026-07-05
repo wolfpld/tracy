@@ -53,7 +53,7 @@ void View::DrawSampleList( const TimelineContext& ctx, const std::vector<Samples
                 TextFocused( "Number of samples:", RealToString( v.num + 1 ) );
                 ImGui::EndTooltip();
 
-                if( IsMouseClicked( 2 ) )
+                if( IsMouseClicked( ImGuiMouseButton_Middle ) )
                 {
                     ZoomToRange( t0, t1 );
                 }
@@ -73,7 +73,7 @@ void View::DrawSampleList( const TimelineContext& ctx, const std::vector<Samples
             {
                 tooltipDisplayed = true;
                 CallstackTooltip( it->callstack.Val() );
-                if( IsMouseClicked( 0 ) )
+                if( IsMouseClicked( ImGuiMouseButton_Left ) )
                 {
                     m_callstackView = {
                         .id = it->callstack.Val(),

@@ -740,11 +740,11 @@ void View::DrawOptions()
                     ImGui::BeginTooltip();
                     ImGui::TextUnformatted( "Crashed" );
                     ImGui::EndTooltip();
-                    if( IsMouseClicked( 0 ) )
+                    if( IsMouseClicked( ImGuiMouseButton_Left ) )
                     {
                         m_showInfo = true;
                     }
-                    if( IsMouseClicked( 2 ) )
+                    if( IsMouseClicked( ImGuiMouseButton_Middle ) )
                     {
                         CenterAtTime( crash.time );
                     }

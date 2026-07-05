@@ -1271,7 +1271,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                                 UnsetFont();
                                 ImGui::EndTooltip();
                             }
-                            if( ImGui::IsMouseClicked( 1 ) )
+                            if( ImGui::IsMouseClicked( ImGuiMouseButton_Right ) )
                             {
                                 OpenSymbol( fileName, sd->line, v.addr, v.addr, worker, view );
                             }
@@ -2428,13 +2428,13 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                         }
                         ImGui::EndTooltip();
                         SetFont();
-                        if( ImGui::IsMouseClicked( 0 ) )
+                        if( ImGui::IsMouseClicked( ImGuiMouseButton_Left ) )
                         {
                             m_targetAddr = v.first;
                             m_selectedAddresses.clear();
                             m_selectedAddresses.emplace( v.first );
                         }
-                        else if( ImGui::IsMouseClicked( 1 ) )
+                        else if( ImGui::IsMouseClicked( ImGuiMouseButton_Right ) )
                         {
                             ImGui::OpenPopup( "jumpPopup" );
                             m_jumpPopupAddr = v.first;
@@ -3109,7 +3109,7 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
                 ImGui::EndTooltip();
                 SetFont();
 
-                if( ImGui::IsMouseClicked( 0 ) )
+                if( ImGui::IsMouseClicked( ImGuiMouseButton_Left ) )
                 {
                     mouseHandled = true;
                     auto& io = ImGui::GetIO();
@@ -3158,7 +3158,7 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
                         m_srcGroupSelect = lineNum;
                     }
                 }
-                else if( ImGui::IsMouseClicked( 1 ) )
+                else if( ImGui::IsMouseClicked( ImGuiMouseButton_Right ) )
                 {
                     mouseHandled = true;
                     m_srcSampleSelect.clear();
@@ -3277,10 +3277,10 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
     if( match > 0 && ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( w, ty ) ) )
     {
         draw->AddRectFilled( wpos + ImVec2( 0, 1 ), wpos + ImVec2( w, ty ), 0x11FFFFFF );
-        if( !mouseHandled && ( ImGui::IsMouseClicked( 0 ) || ImGui::IsMouseClicked( 1 ) ) )
+        if( !mouseHandled && ( ImGui::IsMouseClicked( ImGuiMouseButton_Left ) || ImGui::IsMouseClicked( ImGuiMouseButton_Right ) ) )
         {
             m_displayMode = DisplayMixed;
-            SelectLine( lineNum, worker, ImGui::IsMouseClicked( 0 ) );
+            SelectLine( lineNum, worker, ImGui::IsMouseClicked( ImGuiMouseButton_Left ) );
         }
         else
         {
@@ -3462,7 +3462,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                 ImGui::EndTooltip();
                 SetFont();
 
-                if( ImGui::IsMouseClicked( 0 ) )
+                if( ImGui::IsMouseClicked( ImGuiMouseButton_Left ) )
                 {
                     auto& io = ImGui::GetIO();
                     if( io.KeyCtrl )
@@ -3510,12 +3510,12 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                         m_asmGroupSelect = idx;
                     }
                 }
-                else if( ImGui::IsMouseClicked( 1 ) )
+                else if( ImGui::IsMouseClicked( ImGuiMouseButton_Right ) )
                 {
                     m_asmSampleSelect.clear();
                     m_asmGroupSelect = -1;
                 }
-                else if( stats && !stats->parents.empty() && ImGui::IsMouseClicked( 2 ) )
+                else if( stats && !stats->parents.empty() && ImGui::IsMouseClicked( ImGuiMouseButton_Middle ) )
                 {
                     view.ShowSampleParents( symAddrParents, false );
                 }
@@ -4264,7 +4264,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                 SetFont();
             }
         }
-        if( ImGui::IsMouseClicked( 0 ) )
+        if( ImGui::IsMouseClicked( ImGuiMouseButton_Left ) )
         {
             m_asmSelected = asmIdx;
             ResetAsm();
@@ -4297,7 +4297,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                 FollowRead( asmIdx, line.writeX86[idx++], 64 );
             }
         }
-        else if( ImGui::IsMouseClicked( 1 ) )
+        else if( ImGui::IsMouseClicked( ImGuiMouseButton_Right ) )
         {
             m_asmSelected = -1;
             ResetAsm();

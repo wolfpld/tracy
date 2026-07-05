@@ -195,7 +195,7 @@ int View::DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
                     TextFocused( "Execution time:", TimeToString( rend - start ) );
                     ImGui::EndTooltip();
 
-                    if( IsMouseClicked( 2 ) && rend - start > 0 )
+                    if( IsMouseClicked( ImGuiMouseButton_Middle ) && rend - start > 0 )
                     {
                         ZoomToRange( start, rend );
                     }
@@ -205,11 +205,11 @@ int View::DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
                     const auto zoneThread = thread != 0 ? thread : m_worker.DecompressThread( ev.Thread() );
                     ZoneTooltip( ev );
 
-                    if( IsMouseClicked( 2 ) && rend - start > 0 )
+                    if( IsMouseClicked( ImGuiMouseButton_Middle ) && rend - start > 0 )
                     {
                         ZoomToZone( ev );
                     }
-                    if( IsMouseClicked( 0 ) )
+                    if( IsMouseClicked( ImGuiMouseButton_Left ) )
                     {
                         ShowZoneInfo( ev, zoneThread );
                     }
@@ -291,11 +291,11 @@ int View::DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
                 const auto zoneThread = thread != 0 ? thread : m_worker.DecompressThread( ev.Thread() );
                 ZoneTooltip( ev );
 
-                if( !m_zoomAnim.active && IsMouseClicked( 2 ) )
+                if( !m_zoomAnim.active && IsMouseClicked( ImGuiMouseButton_Middle ) )
                 {
                     ZoomToZone( ev );
                 }
-                if( IsMouseClicked( 0 ) )
+                if( IsMouseClicked( ImGuiMouseButton_Left ) )
                 {
                     ShowZoneInfo( ev, zoneThread );
                 }

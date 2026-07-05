@@ -94,11 +94,11 @@ void TimelineItem::Draw( bool firstFrame, const TimelineContext& ctx, int yOffse
         {
             HeaderTooltip( label );
 
-            if( IsMouseClicked( 0 ) )
+            if( IsMouseClicked( ImGuiMouseButton_Left ) )
             {
                 m_showFull = !m_showFull;
             }
-            if( IsMouseClicked( 2 ) )
+            if( IsMouseClicked( ImGuiMouseButton_Middle ) )
             {
                 const auto t0 = RangeBegin();
                 const auto t1 = RangeEnd();
@@ -107,7 +107,7 @@ void TimelineItem::Draw( bool firstFrame, const TimelineContext& ctx, int yOffse
                     m_view.ZoomToRange( t0, t1 );
                 }
             }
-            if( IsMouseClicked( 1 ) )
+            if( IsMouseClicked( ImGuiMouseButton_Right ) )
             {
                 ImGui::OpenPopup( "menuPopup" );
             }

@@ -112,6 +112,29 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, int 
                 ImGui::EndMenu();
             }
 
+            auto& sections = m_worker.GetSections();
+            if( sections.empty() )
+            {
+                TextDisabledUnformatted( "Sections" );
+            }
+            else if( ImGui::BeginMenu( "Sections" ) )
+            {
+                int id = 0;
+                for( auto& v : sections )
+                {
+                    ImGui::PushID( id++ );
+                    if( ImGui::MenuItem( m_worker.GetString( v.text ) ) )
+                    {
+                        range.min = v.start.Val();
+                        range.max = v.end.Val();
+                    }
+                    ImGui::PopID();
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v.start.Val() ), TimeToStringExact( v.end.Val() ), TimeToString( v.end.Val() - v.start.Val() ) );
+                }
+                ImGui::EndMenu();
+            }
+
             int idx = 0;
             for( auto& r : m_ranges )
             {

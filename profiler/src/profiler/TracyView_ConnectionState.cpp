@@ -105,7 +105,7 @@ bool View::DrawConnection()
     }
 
     ImGui::Separator();
-    if( ImGui::Button( ICON_FA_FLOPPY_DISK " Save trace" ) && m_saveThreadState.load( std::memory_order_relaxed ) == SaveThreadState::Inert )
+    if( ImGui::Button( ICON_FA_FLOPPY_DISK " Save trace…" ) && m_saveThreadState.load( std::memory_order_relaxed ) == SaveThreadState::Inert )
     {
         auto cb = [this]( const char* fn ) {
             const auto sz = strlen( fn );

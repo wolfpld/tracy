@@ -343,7 +343,7 @@ void View::DrawCompare()
         ImGui::Indent();
         TextColoredUnformatted( ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ICON_FA_LEMON );
         ImGui::SameLine();
-        if( ImGui::SmallButton( ICON_FA_COPY " Copy from##this" ) ) ImGui::OpenPopup( "compareCopyFromThis" );
+        if( ImGui::SmallButton( ICON_FA_COPY " Copy from…##this" ) ) ImGui::OpenPopup( "compareCopyFromThis" );
         ImGui::SameLine();
         if( ImGui::SmallButton( "Reset##this" ) )
         {
@@ -357,7 +357,7 @@ void View::DrawCompare()
 
         TextColoredUnformatted( ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ICON_FA_GEM );
         ImGui::SameLine();
-        if( ImGui::SmallButton( ICON_FA_COPY " Copy from##ext" ) ) ImGui::OpenPopup( "compareCopyFromExt" );
+        if( ImGui::SmallButton( ICON_FA_COPY " Copy from…##ext" ) ) ImGui::OpenPopup( "compareCopyFromExt" );
         ImGui::SameLine();
         if( ImGui::SmallButton( "Reset##ext" ) )
         {

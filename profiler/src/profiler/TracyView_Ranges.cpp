@@ -88,7 +88,7 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, int 
         ImGui::SameLine();
         if( ImGui::SmallButton( ICON_FA_NOTE_STICKY " Add annotation" ) ) AddAnnotation( range.min, range.max );
         ImGui::SameLine();
-        if( ImGui::SmallButton( ICON_FA_COPY " Copy from" ) ) ImGui::OpenPopup( label );
+        if( ImGui::SmallButton( ICON_FA_COPY " Copy from…" ) ) ImGui::OpenPopup( label );
         if( ImGui::BeginPopup( label ) )
         {
             if( m_annotations.empty() )

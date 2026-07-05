@@ -269,7 +269,7 @@ void View::DrawPlayback()
         if( m_playback.range.first < 0 ) m_playback.range = { 0, m_worker.GetFrameImageCount() - 1 };
 
         ImGui::SameLine();
-        if( ImGui::SmallButton( ICON_FA_COPY " Copy from" ) ) ImGui::OpenPopup( "playbackCopyFrom" );
+        if( ImGui::SmallButton( ICON_FA_COPY " Copy from…" ) ) ImGui::OpenPopup( "playbackCopyFrom" );
         ImGui::SameLine();
         if( ImGui::SmallButton( "Reset##range" ) ) m_playback.range = { 0, m_worker.GetFrameImageCount() - 1 };
         if( ImGui::BeginPopup( "playbackCopyFrom" ) )

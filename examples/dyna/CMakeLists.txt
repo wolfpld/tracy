@@ -10,6 +10,14 @@ set(CMAKE_COLOR_DIAGNOSTICS ON)
 
 include(cmake/CPM.cmake)
 
+if(TRACY_ENABLE)
+  if(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    add_compile_options(-fno-omit-frame-pointer)
+  else()
+    message(WARNING "Tracy builds should be RelWithDebInfo!")
+  endif()
+endif()
+
 CPMAddPackage(
   NAME glad
   VERSION 2.0.8

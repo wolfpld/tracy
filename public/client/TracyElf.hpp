@@ -3,11 +3,6 @@
 
 #include <stdint.h>
 
-#if !defined(__GLIBC__) && !defined(__WORDSIZE)
-// include __WORDSIZE headers for musl
-#  include <bits/reg.h>
-#endif
-
 namespace tracy
 {
 
@@ -15,14 +10,14 @@ using elf_half = uint16_t;
 using elf_word = uint32_t;
 using elf_sword = int32_t;
 
-#if __WORDSIZE == 32
-    using elf_addr = uint32_t;
-    using elf_off = uint32_t;
-    using elf_xword = uint32_t;
-#else
+#if __SIZEOF_POINTER__ == 8
     using elf_addr = uint64_t;
     using elf_off = uint64_t;
     using elf_xword = uint64_t;
+#else
+    using elf_addr = uint32_t;
+    using elf_off = uint32_t;
+    using elf_xword = uint32_t;
 #endif
 
 struct elf_ehdr

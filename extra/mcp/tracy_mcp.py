@@ -15,7 +15,7 @@ import struct
 import sys
 import time
 import uuid
-from contextlib import redirect_stdout
+from contextlib import asynccontextmanager, redirect_stdout
 
 import mcp.server.fastmcp as fastmcp
 
@@ -219,8 +219,9 @@ except ImportError:
     except ImportError:
         tracy_server = None
 
-mcp_server = fastmcp.FastMCP("Tracy Profiler")
-executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
+_MAX_INSTANCES = int(os.environ.get("TRACY_MCP_MAX_INSTANCES", "4"))
+_DISCONNECTED_TTL_S = float(os.environ.get("TRACY_MCP_DISCONNECTED_TTL_S", "1800"))
+_SWEEP_INTERVAL_S = float(os.environ.get("TRACY_MCP_SWEEP_INTERVAL_S", "300"))
 
 
 class Task:
@@ -240,7 +241,108 @@ class TracyInstance:
         self.worker = worker
         self.path = None
         self.mtime = None
+        self.last_used = time.time()
+        # Wall-clock time the instance was first observed disconnected (live
+        # instances only). None while connected or for file-loaded captures.
+        self.disconnected_since: float | None = None
 
+    def touch(self) -> None:
+        self.last_used = time.time()
+
+    def is_evictable(self) -> bool:
+        """True if this instance is safe to drop without losing in-progress data.
+
+        A live instance still connected is actively recording — never evict it
+        automatically. Everything else (file captures, disconnected live
+        instances) is fair game for the LRU cap.
+        """
+        if self.worker is not None and self.path is None:
+            try:
+                return not self.worker.is_connected()
+            except Exception:
+                return True
+        return True
+
+
+def _shutdown_worker(worker: object | None) -> None:
+    if worker is None:
+        return
+    try:
+        worker.shutdown()
+    except Exception:
+        pass
+
+
+def _evict_disconnected_idle() -> list[str]:
+    """Unload live instances that disconnected and have sat idle past the TTL.
+
+    Runs on the periodic sweep. A grace period (_DISCONNECTED_TTL_S) is kept
+    so a capture is still around for post-session analysis right after the
+    target disconnects — this only reclaims sessions that were forgotten.
+    """
+    now = time.time()
+    evicted = []
+    for name, inst in list(instances.items()):
+        if inst.path is not None or inst.worker is None:
+            continue
+        try:
+            connected = inst.worker.is_connected()
+        except Exception:
+            connected = False
+        if connected:
+            inst.disconnected_since = None
+            continue
+        if inst.disconnected_since is None:
+            inst.disconnected_since = now
+            continue
+        if now - inst.disconnected_since >= _DISCONNECTED_TTL_S:
+            del instances[name]
+            _shutdown_worker(inst.worker)
+            evicted.append(name)
+    return evicted
+
+
+def _evict_for_capacity(exclude: str | None = None) -> str | None:
+    """If at/over _MAX_INSTANCES, drop the least-recently-used evictable
+    instance to make room for a new one. Returns the evicted name, if any."""
+    if len(instances) < _MAX_INSTANCES:
+        return None
+    candidates = [
+        inst for name, inst in instances.items()
+        if name != exclude and inst.is_evictable()
+    ]
+    if not candidates:
+        return None
+    victim = min(candidates, key=lambda inst: inst.last_used)
+    del instances[victim.name]
+    _shutdown_worker(victim.worker)
+    return victim.name
+
+
+async def _sweep_loop() -> None:
+    while True:
+        await asyncio.sleep(_SWEEP_INTERVAL_S)
+        try:
+            _evict_disconnected_idle()
+        except Exception:
+            pass
+
+
+@asynccontextmanager
+async def _lifespan(_server: fastmcp.FastMCP):
+    sweep_task = asyncio.create_task(_sweep_loop())
+    try:
+        yield
+    finally:
+        sweep_task.cancel()
+        try:
+            await sweep_task
+        except asyncio.CancelledError:
+            pass
+
+
+mcp_server = fastmcp.FastMCP("Tracy Profiler", lifespan=_lifespan)
+executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
 instances: dict[str, TracyInstance] = {}
 tasks: dict[str, Task] = {}
@@ -273,13 +375,26 @@ async def list_captures() -> list[str]:
 
 @mcp_server.tool()
 async def list_instances() -> list[dict]:
-    """List all loaded Tracy instances and captures with metadata."""
+    """List all loaded Tracy instances and captures with metadata.
+
+    Each full trace stays resident in memory for as long as this server
+    process runs (it's a singleton shared across all MCP clients) until
+    unloaded. `idle_seconds` is how long since this instance was last used
+    via `eval`/`save_trace` — call `unload_capture` on ones you no longer
+    need instead of waiting for automatic eviction. Automatic eviction only
+    kicks in at the `TRACY_MCP_MAX_INSTANCES` cap (LRU, connected live
+    instances are never evicted) or after a disconnected live instance sits
+    idle past `TRACY_MCP_DISCONNECTED_TTL_S`.
+    """
+    now = time.time()
     return [
         {
             "id": name,
             "path": inst.path,
             "mtime": inst.mtime,
-            "live": inst.path is None
+            "live": inst.path is None,
+            "connected": inst.worker.is_connected() if inst.path is None and inst.worker else None,
+            "idle_seconds": now - inst.last_used,
         }
         for name, inst in instances.items()
     ]
@@ -382,9 +497,13 @@ async def live_connect(address: str = "127.0.0.1", port: int = 8086, alias: str 
         )
 
     name = alias or f"live_{address}_{port}"
+    if name in instances:
+        _shutdown_worker(instances[name].worker)
+    evicted = _evict_for_capacity(exclude=name)
     instances[name] = TracyInstance(name, w)
+    note = f" (evicted idle instance '{evicted}' to stay under the {_MAX_INSTANCES}-instance cap)" if evicted else ""
     return (
-        f"Connected to live instance as '{name}'. "
+        f"Connected to live instance as '{name}'{note}. "
         f"Before your first eval, read resources tracy://prompt "
         f"(analysis guidance) and tracy://eval-guide (ctx object model, "
         f"ns time units, srcloc IDs)."
@@ -418,7 +537,11 @@ async def load_capture(path: str, alias: str | None = None) -> str:
         if name in instances:
             inst = instances[name]
             if inst.path == path and inst.mtime == mtime:
+                inst.touch()
                 return f"Instance '{name}' is already loaded and up to date."
+            _shutdown_worker(inst.worker)
+
+        evicted = _evict_for_capacity(exclude=name)
 
         f = tracy_server.open_file(path)
         w = tracy_server.create_worker_from_file(f)
@@ -426,8 +549,9 @@ async def load_capture(path: str, alias: str | None = None) -> str:
         inst.path = path
         inst.mtime = mtime
         instances[name] = inst
+        note = f" (evicted idle instance '{evicted}' to stay under the {_MAX_INSTANCES}-instance cap)" if evicted else ""
         return (
-            f"Loaded as '{name}'. "
+            f"Loaded as '{name}'{note}. "
             f"Before your first eval, read resources tracy://prompt "
             f"(analysis guidance) and tracy://eval-guide (ctx object model, "
             f"ns time units, srcloc IDs)."
@@ -476,6 +600,7 @@ async def save_trace(
     instance = instances[instance_id]
     if not instance.worker:
         return f"Error: Instance '{instance_id}' has no worker."
+    instance.touch()
 
     if not os.path.isabs(path):
         if captures_dir and os.path.basename(path) == path:
@@ -542,9 +667,18 @@ async def _execute_save(worker: object, path: str, level: int, streams: int, fi_
 
 @mcp_server.tool()
 async def unload_capture(instance_id: str) -> str:
-    """Unload a Tracy instance and release its memory."""
+    """Unload a Tracy instance and release its memory.
+
+    Prefer calling this as soon as you're done analyzing a capture — every
+    loaded instance holds the *entire* trace (zones, messages, callstacks,
+    memory events) in memory for as long as this server process runs, and
+    the server is a long-lived singleton shared across all MCP clients.
+    Automatic eviction exists as a backstop (see `list_instances`), not a
+    substitute for unloading what you no longer need.
+    """
     if instance_id in instances:
-        del instances[instance_id]
+        inst = instances.pop(instance_id)
+        _shutdown_worker(inst.worker)
         return f"Instance '{instance_id}' unloaded."
     return f"Instance '{instance_id}' not found."
 
@@ -566,6 +700,7 @@ async def tracy_eval(code: str, instance_id: str, async_mode: bool = False) -> o
     instance = instances[instance_id]
     if not instance.worker:
         return f"Error: Instance '{instance_id}' has no worker."
+    instance.touch()
 
     if not async_mode:
         return await _execute_eval(code, instance.worker)

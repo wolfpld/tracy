@@ -1,0 +1,42 @@
+name: android
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+env:
+  CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm-cache
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    steps:
+    - name: Install dependencies
+      run: pacman -Syu --noconfirm && pacman -S --noconfirm --needed cmake git ninja nodejs unzip
+    - name: Setup NDK
+      uses: nttld/setup-ndk@v1
+      id: setup-ndk
+      with:
+        ndk-version: r29
+    - run: echo "ANDROID_NDK_ROOT=${{ steps.setup-ndk.outputs.ndk-path }}" >> $GITHUB_ENV
+    - name: Trust git repo
+      run: git config --global --add safe.directory '*'
+    - uses: actions/checkout@v4
+    - name: Cache CPM packages
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.CPM_SOURCE_CACHE }}
+        key: ${{ runner.os }}-cpm-${{ hashFiles('**/vendor.cmake', '**/CMakeLists.txt') }}
+        restore-keys: ${{ runner.os }}-cpm-
+    - name: Library v7
+      run: |
+        cmake -B build-v7 -DCMAKE_BUILD_TYPE=Release -DTRACY_ENABLE=ON -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_ROOT}/build/cmake/android.toolchain.cmake -DANDROID_ABI=armeabi-v7a
+        cmake --build build-v7
+    - name: Library v8
+      run: |
+        cmake -B build-v8 -DCMAKE_BUILD_TYPE=Release -DTRACY_ENABLE=ON -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_ROOT}/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a
+        cmake --build build-v8

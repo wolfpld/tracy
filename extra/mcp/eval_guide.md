@@ -72,3 +72,26 @@ stats = ctx.get_zone_stats(sid)
 For long-running queries pass `async_mode=True` to `eval`; it returns
 `{task_id, status: "running"}`. Poll with the `task` tool
 (`action="poll", task_id=...`).
+
+## Instance lifecycle
+
+`tracy_mcp.py` runs as a long-lived singleton process shared across every
+MCP client (all VS Code windows), and every `live_connect`/`load_capture`
+instance holds its *entire* trace — zones, messages, callstacks, memory
+events — resident in memory for as long as that process runs. Nothing
+frees it just because your conversation ends.
+
+- Call `unload_capture(instance_id)` as soon as you're done analyzing a
+  capture. Don't rely on automatic eviction as your primary cleanup path —
+  treat it as a backstop for forgotten sessions, not a substitute.
+- `list_instances` reports `idle_seconds` and `connected` per instance; use
+  it to spot stale ones before starting a new session, especially if you're
+  about to load several captures for comparison.
+- The server does provide two backstops, both configurable via environment
+  variables at startup: it evicts the least-recently-used *evictable*
+  instance (disconnected live sessions, or any loaded file capture — never
+  a still-connected live one) once the instance count reaches
+  `TRACY_MCP_MAX_INSTANCES` (default 4), and it drops a disconnected live
+  instance that's sat idle for `TRACY_MCP_DISCONNECTED_TTL_S` (default
+  1800s / 30 min) so a session is still there for analysis right after the
+  target disconnects, but doesn't linger forever if forgotten.

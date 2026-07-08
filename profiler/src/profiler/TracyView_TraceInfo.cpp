@@ -265,6 +265,10 @@ void View::DrawInfo()
                 draw->AddText( dpos, 0xFFFFFFFF, buf );
                 dpos.y += ty;
 
+                const auto ppos = dpos;
+                float packageWidth = 0;
+                dpos.x += margin;
+
                 std::vector<decltype(package->second.begin())> dsort;
                 dsort.reserve( package->second.size() );
                 for( auto it = package->second.begin(); it != package->second.end(); ++it ) dsort.emplace_back( it );
@@ -280,13 +284,14 @@ void View::DrawInfo()
                     const auto coreWidth = inCoreWidth + 2 * margin;
                     const auto inCoreHeight = margin + 2 * small + ty;
                     const auto coreHeight = inCoreHeight + ty;
-                    const auto cpl = std::max( 1, (int)floor( ( remainingWidth - 2 * margin ) / coreWidth ) );
+                    const auto cpl = std::max( 1, (int)floor( ( remainingWidth - 4 * margin ) / coreWidth ) );
                     const auto cl = ( die->second.size() + cpl - 1 ) / cpl;
-                    const auto pw = cpl * coreWidth + 2 * margin;
                     const auto ph = margin + cl * coreHeight;
-                    if( pw > width ) width = pw;
 
-                    draw->AddRect( dpos, dpos + ImVec2( margin + coreWidth * std::min<size_t>( cpl, die->second.size() ), ph ), 0xFFFFFFFF );
+                    const auto dieWidth = margin + coreWidth * std::min<size_t>( cpl, die->second.size() );
+                    if( dieWidth > packageWidth ) packageWidth = dieWidth;
+
+                    draw->AddRect( dpos, dpos + ImVec2( dieWidth, ph ), 0xFFFFFFFF );
 
                     std::vector<decltype(die->second.begin())> csort;
                     csort.reserve( die->second.size() );
@@ -319,6 +324,12 @@ void View::DrawInfo()
                     }
                     dpos.y += ph;
                 }
+
+                dpos.x -= margin;
+                dpos.y += margin;
+                const auto pw = packageWidth + 2 * margin;
+                draw->AddRect( ppos, ImVec2( ppos.x + pw, dpos.y ), 0xFFFFFFFF );
+                if( pw > width ) width = pw;
             }
             ImGui::ItemSize( ImVec2( width, dpos.y - origy ) );
             ImGui::TreePop();

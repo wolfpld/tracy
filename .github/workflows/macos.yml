@@ -25,6 +25,10 @@ jobs:
       run: brew install pkg-config glfw meson
     - name: Trust git repo
       run: git config --global --add safe.directory '*'
+    - name: Build library
+      run: meson setup -Dprefix=$GITHUB_WORKSPACE/bin/lib -Dtracy_enable=true build && meson compile -C build && meson install -C build
+    - name: Test application
+      uses: ./.github/actions/test-tracy
     - name: Build profiler
       run: |
         cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
@@ -49,10 +53,6 @@ jobs:
       run: |
         cmake -B merge/build -S merge -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
         cmake --build merge/build --parallel --config Release
-    - name: Build library
-      run: meson setup -Dprefix=$GITHUB_WORKSPACE/bin/lib -Dtracy_enable=true build && meson compile -C build && meson install -C build
-    - name: Test application
-      uses: ./.github/actions/test-tracy
     - name: Package artifacts
       run: |
         mkdir -p bin

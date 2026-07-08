@@ -29,6 +29,8 @@ jobs:
     - run: pip install meson ninja
     - name: Trust git repo
       run: git config --global --add safe.directory '*'
+    - name: Test application
+      uses: ./.github/actions/test-tracy
     - name: Build profiler
       run: |
         cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
@@ -53,8 +55,6 @@ jobs:
       run: |
         cmake -B merge/build -S merge -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
         cmake --build merge/build --parallel --config Release
-    - name: Test application
-      uses: ./.github/actions/test-tracy
     - name: Package artifacts
       run: |
         mkdir bin

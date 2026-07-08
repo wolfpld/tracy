@@ -16,7 +16,7 @@ jobs:
     container: archlinux:base-devel
     steps:
     - name: Install dependencies
-      run: pacman -Syu --noconfirm && pacman -S --noconfirm --needed freetype2 debuginfod wayland dbus libxkbcommon libglvnd meson cmake git wayland-protocols nodejs lua
+      run: pacman -Syu --noconfirm && pacman -S --noconfirm --needed freetype2 debuginfod wayland dbus libxkbcommon libglvnd meson cmake git wayland-protocols nodejs lua clang sdl3_image python-jinja
     - name: Trust git repo
       run: git config --global --add safe.directory '*'
     - uses: actions/checkout@v4
@@ -26,6 +26,14 @@ jobs:
         path: ${{ env.CPM_SOURCE_CACHE }}
         key: ${{ runner.os }}-cpm-${{ hashFiles('**/vendor.cmake', '**/CMakeLists.txt') }}
         restore-keys: ${{ runner.os }}-cpm-
+    - name: Dyna example / clang
+      run: |
+        CC=clang CXX=clang++ cmake -B examples/dyna/build-clang -S examples/dyna -DCMAKE_BUILD_TYPE=Release
+        cmake --build examples/dyna/build-clang
+    - name: Dyna example / gcc
+      run: |
+        CC=gcc CXX=g++ cmake -B examples/dyna/build-gcc -S examples/dyna -DCMAKE_BUILD_TYPE=Release
+        cmake --build examples/dyna/build-gcc
     - name: Profiler GUI
       run: |
         cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}

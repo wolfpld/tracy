@@ -795,7 +795,7 @@ public:
     }
 #endif
 
-    static tracy_force_inline uint32_t SectionEnter( const char* fmt, ... ) TRACY_ATTRIBUTE_FORMAT_PRINTF( 1, 2 )
+    static uint32_t SectionEnter( const char* fmt, ... ) TRACY_ATTRIBUTE_FORMAT_PRINTF( 1, 2 )
     {
         auto& profiler = GetProfiler();
 #ifdef TRACY_ON_DEMAND

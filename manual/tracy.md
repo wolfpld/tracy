@@ -2205,82 +2205,84 @@ An especially powerful feature is the ability to profile Python code and any oth
 
 An example of how to use the Tracy-Client bindings is shown below:
 
-    #!/usr/bin/env python3
-    # -*- coding: utf-8 -*-
+``` {.python language="Python"}
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
-    from time import sleep
+from time import sleep
 
-    import numpy as np
+import numpy as np
 
-    import tracy_client as tracy
-
-
-    @tracy.ScopedFrameDecorator("framed")
-    @tracy.ScopedZoneDecorator(name="work", color=tracy.ColorType.Red4)
-    def work():
-        sleep(0.05)
+import tracy_client as tracy
 
 
-    def main():
-        assert tracy.program_name("MyApp")
-        assert tracy.app_info("this is a python app")
+@tracy.ScopedFrameDecorator("framed")
+@tracy.ScopedZoneDecorator(name="work", color=tracy.ColorType.Red4)
+def work():
+    sleep(0.05)
 
-        tracy.thread_name("python")  # main thread so bit useless
 
-        plot_id = tracy.plot_config("plot", tracy.PlotFormatType.Number)
-        assert plot_id is not None
+def main():
+    assert tracy.program_name("MyApp")
+    assert tracy.app_info("this is a python app")
 
-        mem_id = None
+    tracy.thread_name("python")  # main thread so bit useless
 
-        index = 0
-        while True:
-            with tracy.ScopedZone(name="test", color=tracy.ColorType.Coral) as zone:
-                index += 1
+    plot_id = tracy.plot_config("plot", tracy.PlotFormatType.Number)
+    assert plot_id is not None
 
-                tracy.frame_mark()
+    mem_id = None
 
-                inner = tracy.ScopedZone(depth=5, color=tracy.ColorType.Coral)
-                inner.color(index % 5)
-                inner.name(str(index))
-                inner.enter()
+    index = 0
+    while True:
+        with tracy.ScopedZone(name="test", color=tracy.ColorType.Coral) as zone:
+            index += 1
 
-                if index % 2:
-                    tracy.alloc(44, index)
+            tracy.frame_mark()
+
+            inner = tracy.ScopedZone(depth=5, color=tracy.ColorType.Coral)
+            inner.color(index % 5)
+            inner.name(str(index))
+            inner.enter()
+
+            if index % 2:
+                tracy.alloc(44, index)
+            else:
+                tracy.free(44)
+
+            if not index % 2:
+                if mem_id is None:
+                    mem_id = tracy.alloc(1337000000, index, name="named", depth=4)
+                    assert mem_id is not None
                 else:
-                    tracy.free(44)
+                    tracy.alloc(1337000000, index, id=mem_id, depth=4)
+            else:
+                tracy.free(1337000000, mem_id, 4)
 
-                if not index % 2:
-                    if mem_id is None:
-                        mem_id = tracy.alloc(1337000000, index, name="named", depth=4)
-                        assert mem_id is not None
-                    else:
-                        tracy.alloc(1337000000, index, id=mem_id, depth=4)
-                else:
-                    tracy.free(1337000000, mem_id, 4)
+            with tracy.ScopedFrame("custom"):
 
-                with tracy.ScopedFrame("custom"):
+                image = np.full([400, 400, 4], index, dtype=np.uint8)
+                assert tracy.frame_image(image.tobytes(), 400, 400)
 
-                    image = np.full([400, 400, 4], index, dtype=np.uint8)
-                    assert tracy.frame_image(image.tobytes(), 400, 400)
+            inner.exit()
 
-                inner.exit()
+            zone.text(index)
 
-                zone.text(index)
+            assert tracy.message(f"we are at index {index}")
+            assert tracy.message(f"we are at index {index}", tracy.ColorType.Coral)
 
-                assert tracy.message(f"we are at index {index}")
-                assert tracy.message(f"we are at index {index}", tracy.ColorType.Coral)
+            assert tracy.plot(plot_id, index)
 
-                assert tracy.plot(plot_id, index)
+            work()
 
-                work()
-
-                sleep(0.1)
+            sleep(0.1)
 
 
-    if __name__ == "__main__":
-        main()
+if __name__ == "__main__":
+    main()
+```
 
-Please not the use of ids as way to cope with the need for unique pointers for certain features of the Tracy profiler, see section [3.1.2](#uniquepointers).
+Please note the use of ids as way to cope with the need for unique pointers for certain features of the Tracy profiler, see section [3.1.2](#uniquepointers).
 
 ### Building the Python package
 

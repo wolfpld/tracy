@@ -19,6 +19,8 @@ sed -i -e 's@\\textsigma@σ@g' _tmp.tex
 sed -i -e 's|@\\circled{a}@|(a)|g' -e 's|@\\circled{b}@|(b)|g' -e 's|@\\circled{c}@|(c)|g' _tmp.tex
 sed -i -e 's|\\circled{a}|(a)|g' -e 's|\\circled{b}|(b)|g' -e 's|\\circled{c}|(c)|g' _tmp.tex
 sed -i -e 's|@\\ldots@|…|g' _tmp.tex
+# pandoc doens't recognize this lstlisting option and emits it verbatim
+sed -i -e 's|,\?escapeinside={}{}||g' _tmp.tex
 
 sed -i -e 's@\\nameref{quicklook}@A quick look at Tracy Profiler@g' _tmp.tex
 sed -i -e 's@\\nameref{firststeps}@First steps@g' _tmp.tex

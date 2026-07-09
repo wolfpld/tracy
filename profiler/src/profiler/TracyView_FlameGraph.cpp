@@ -1069,6 +1069,16 @@ void View::DrawFlameGraph()
             m_flameGraphViewEnd = 0;
             m_flameGraphPan = 0;
         }
+        ImGui::SameLine();
+        if( ImGui::SmallButton( "Sort" ) )
+        {
+            pdqsort_branchless( m_threadOrder.begin(), m_threadOrder.end(), [this] ( const auto& lhs, const auto& rhs ) {
+                if( lhs->groupHint != rhs->groupHint ) return lhs->groupHint < rhs->groupHint;
+                const auto cmp = strcmp( m_worker.GetThreadName( lhs->id ), m_worker.GetThreadName( rhs->id ) );
+                if( cmp != 0 ) return cmp < 0;
+                return lhs->id < rhs->id;
+            } );
+        }
 
         const auto& style = ImGui::GetStyle();
         float probe = 0;
@@ -1084,7 +1094,7 @@ void View::DrawFlameGraph()
         const auto rows = ( tsz + cols - 1 ) / cols;
         const auto rowsVisible = std::min<float>( rows, 7.5f );
         const auto rowsHeight = ImGui::GetTextLineHeightWithSpacing() * rowsVisible;
-        ImGui::BeginChild( "###flamegraphthreadrows", ImVec2( -1, rowsHeight ) );
+        ImGui::BeginChild( "###flamegraphthreadrows", ImVec2( -1, rowsHeight ), false, ImGuiWindowFlags_AlwaysVerticalScrollbar );
 
         int idx = 0;
         ImGui::BeginTable( "##flamegraphthreadcols", cols, ImGuiTableFlags_NoSavedSettings );

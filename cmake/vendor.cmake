@@ -188,6 +188,7 @@ if(NOT NO_FILESELECTOR AND NOT EMSCRIPTEN)
         GIT_TAG 3cd252a8f7ca32419b1ca235c2990ba6a0ecba7c
         EXCLUDE_FROM_ALL TRUE
         OPTIONS
+            "BUILD_SHARED_LIBS OFF"
             "NFD_PORTAL ${NFD_PORTAL}"
     )
 endif()

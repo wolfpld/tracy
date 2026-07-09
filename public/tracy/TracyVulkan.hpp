@@ -91,7 +91,11 @@ class VkCtx
 {
     friend class VkCtxScope;
 
+#if !defined __APPLE__
     static constexpr size_t QueryCount = 64 * 1024;
+#else
+    static constexpr size_t QueryCount = 4 * 1024;
+#endif
 
 public:
 #if defined TRACY_VK_USE_SYMBOL_TABLE

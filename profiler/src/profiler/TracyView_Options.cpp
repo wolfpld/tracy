@@ -698,12 +698,7 @@ void View::DrawOptions()
         ImGui::SameLine();
         if( ImGui::SmallButton( "Sort" ) )
         {
-            pdqsort_branchless( m_threadOrder.begin(), m_threadOrder.end(), [this] ( const auto& lhs, const auto& rhs ) {
-                if( lhs->groupHint != rhs->groupHint ) return lhs->groupHint < rhs->groupHint;
-                const auto cmp = strcmp( m_worker.GetThreadName( lhs->id ), m_worker.GetThreadName( rhs->id ) );
-                if( cmp != 0 ) return cmp < 0;
-                return lhs->id < rhs->id;
-            } );
+            SortThreads();
         }
 
         const auto wposx = ImGui::GetCursorScreenPos().x;

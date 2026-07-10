@@ -320,6 +320,11 @@ public:
         return m_zoneId.fetch_add( 1, std::memory_order_relaxed );
     }
 
+    tracy_force_inline uint32_t GetNextSectionId()
+    {
+        return m_sectionId.fetch_add( 1, std::memory_order_relaxed );
+    }
+
     static tracy_force_inline QueueItem* QueueSerial()
     {
         auto& p = GetProfiler();
@@ -813,7 +818,7 @@ public:
         vsnprintf( ptr, size_t( size ) + 1, fmt, args );
         va_end( args );
 
-        const auto id = profiler.m_sectionId.fetch_add( 1, std::memory_order_relaxed );
+        const auto id = profiler.GetNextSectionId();
         TracyLfqPrepare( QueueType::SectionEnter );
         MemWrite( &item->sectionEnterFat.time, GetTime() );
         MemWrite( &item->sectionEnterFat.id, id );

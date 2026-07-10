@@ -335,6 +335,8 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
                         ImGui::SameLine();
                         ImGui::TextDisabled( "(this event)" );
                     }
+                    auto csAlloc = ev->CsAlloc();
+                    if( csAlloc != 0 ) DrawCallstackCalls( csAlloc, 4 );
                     if( ev->TimeFree() < 0 )
                     {
                         ImGui::TextUnformatted( "Allocation still active" );
@@ -347,6 +349,8 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
                             ImGui::SameLine();
                             TextDisabledUnformatted( "(this event)" );
                         }
+                        auto csFree = ev->csFree.Val();
+                        if( csFree != 0 ) DrawCallstackCalls( csFree, 4 );
                         TextFocused( "Duration:", TimeToString( ev->TimeFree() - ev->TimeAlloc() ) );
                     }
                     uint64_t tid;

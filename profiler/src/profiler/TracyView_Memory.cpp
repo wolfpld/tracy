@@ -564,7 +564,7 @@ void View::DrawMemoryAllocWindow()
             const auto cs = ev.CsAlloc();
             SmallCallstackButton( ICON_FA_ALIGN_JUSTIFY, cs, idx, tidAlloc );
             ImGui::SameLine();
-            DrawCallstackCalls( cs, 4 );
+            DrawCallstackCalls( cs, 6 );
         }
         if( ev.TimeFree() < 0 )
         {
@@ -590,7 +590,7 @@ void View::DrawMemoryAllocWindow()
                 const auto cs = ev.csFree.Val();
                 SmallCallstackButton( ICON_FA_ALIGN_JUSTIFY, cs, idx, tidFree );
                 ImGui::SameLine();
-                DrawCallstackCalls( cs, 4 );
+                DrawCallstackCalls( cs, 6 );
             }
             TextFocused( "Duration:", TimeToString( ev.TimeFree() - ev.TimeAlloc() ) );
         }

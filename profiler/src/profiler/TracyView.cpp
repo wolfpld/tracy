@@ -1485,6 +1485,9 @@ bool View::Save( const char* fn, FileCompression comp, int zlevel, bool buildDic
     std::unique_ptr<FileWrite> f( FileWrite::Open( fn, comp, zlevel, streams ) );
     if( !f ) return false;
 
+    m_filename = fn;
+    if( m_stcb ) UpdateTitle();
+
     m_userData.StateShouldBePreserved();
     m_userData.SetFilePath( fn );
     m_saveThreadState.store( SaveThreadState::Saving, std::memory_order_relaxed );

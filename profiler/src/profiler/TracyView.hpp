@@ -31,6 +31,7 @@
 #include "../server/TracyWorker.hpp"
 #include "../server/tracy_robin_hood.h"
 #include "../server/TracyVector.hpp"
+#include "../server/tracy_pdqsort.h"
 
 #ifndef __EMSCRIPTEN__
 #  include "TracyLlm.hpp"
@@ -515,6 +516,16 @@ private:
             it = m_gpuDrift.emplace( ptr, 0 ).first;
         }
         return it->second;
+    }
+
+    tracy_force_inline void SortThreads()
+    {
+        pdqsort_branchless( m_threadOrder.begin(), m_threadOrder.end(), [this] ( const auto& lhs, const auto& rhs ) {
+            if( lhs->groupHint != rhs->groupHint ) return lhs->groupHint < rhs->groupHint;
+            const auto cmp = strcmp( m_worker.GetThreadName( lhs->id ), m_worker.GetThreadName( rhs->id ) );
+            if( cmp != 0 ) return cmp < 0;
+            return lhs->id < rhs->id;
+        } );
     }
 
     static int64_t AdjustGpuTime( int64_t time, int64_t begin, int drift );

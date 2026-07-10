@@ -1069,6 +1069,11 @@ void View::DrawFlameGraph()
             m_flameGraphViewEnd = 0;
             m_flameGraphPan = 0;
         }
+        ImGui::SameLine();
+        if( ImGui::SmallButton( "Sort" ) )
+        {
+            SortThreads();
+        }
 
         const auto& style = ImGui::GetStyle();
         float probe = 0;
@@ -1084,7 +1089,7 @@ void View::DrawFlameGraph()
         const auto rows = ( tsz + cols - 1 ) / cols;
         const auto rowsVisible = std::min<float>( rows, 7.5f );
         const auto rowsHeight = ImGui::GetTextLineHeightWithSpacing() * rowsVisible;
-        ImGui::BeginChild( "###flamegraphthreadrows", ImVec2( -1, rowsHeight ) );
+        ImGui::BeginChild( "###flamegraphthreadrows", ImVec2( -1, rowsHeight ), false, ImGuiWindowFlags_AlwaysVerticalScrollbar );
 
         int idx = 0;
         ImGui::BeginTable( "##flamegraphthreadcols", cols, ImGuiTableFlags_NoSavedSettings );

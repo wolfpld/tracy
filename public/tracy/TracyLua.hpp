@@ -13,6 +13,7 @@ namespace tracy
 namespace detail
 {
 static inline int noop( lua_State* L ) { return 0; }
+static inline int zero( lua_State* L ) { lua_pushinteger( L, 0 ); return 1; }
 }
 
 static inline void LuaRegister( lua_State* L )
@@ -34,6 +35,10 @@ static inline void LuaRegister( lua_State* L )
     lua_setfield( L, -2, "ZoneName" );
     lua_pushcfunction( L, detail::noop );
     lua_setfield( L, -2, "Message" );
+    lua_pushcfunction( L, detail::zero );
+    lua_setfield( L, -2, "SectionEnter" );
+    lua_pushcfunction( L, detail::noop );
+    lua_setfield( L, -2, "SectionLeave" );
     lua_setglobal( L, "tracy" );
 }
 
@@ -105,6 +110,19 @@ static inline void LuaRemove( char* script )
             else if( strncmp( script + 6, "Message(", 8 ) == 0 )
             {
                 auto end = FindEnd( script + 14 );
+                memset( script, ' ', end - script );
+                script = end;
+            }
+            else if( strncmp( script + 6, "SectionEnter(", 13 ) == 0 )
+            {
+                auto end = FindEnd( script + 19 );
+                *script = '0';
+                memset( script + 1, ' ', end - script - 1 );
+                script = end;
+            }
+            else if( strncmp( script + 6, "SectionLeave(", 13 ) == 0 )
+            {
+                auto end = FindEnd( script + 19 );
                 memset( script, ' ', end - script );
                 script = end;
             }
@@ -416,6 +434,52 @@ static inline int LuaMessage( lua_State* L )
     return 0;
 }
 
+static inline int LuaSectionEnter( lua_State* L )
+{
+    auto& profiler = GetProfiler();
+#ifdef TRACY_ON_DEMAND
+    if( !profiler.IsConnected() )
+    {
+        lua_pushinteger( L, 0 );
+        return 1;
+    }
+#endif
+
+    auto txt = lua_tostring( L, 1 );
+    const auto size = strlen( txt );
+    assert( size < (std::numeric_limits<uint16_t>::max)() );
+
+    auto ptr = (char*)tracy_malloc( size );
+    memcpy( ptr, txt, size );
+
+    const auto id = profiler.GetNextSectionId();
+    TracyLfqPrepare( QueueType::SectionEnter );
+    MemWrite( &item->sectionEnterFat.time, Profiler::GetTime() );
+    MemWrite( &item->sectionEnterFat.id, id );
+    MemWrite( &item->sectionEnterFat.text, (uint64_t)ptr );
+    MemWrite( &item->sectionEnterFat.size, (uint16_t)size );
+    TracyLfqCommit;
+
+    lua_pushinteger( L, id );
+    return 1;
+}
+
+static inline int LuaSectionLeave( lua_State* L )
+{
+#ifdef TRACY_ON_DEMAND
+    if( !GetProfiler().IsConnected() ) return 0;
+#endif
+
+    const auto id = uint32_t( lua_tointeger( L, 1 ) );
+    if( id == 0 ) return 0;
+
+    TracyLfqPrepare( QueueType::SectionLeave );
+    MemWrite( &item->sectionLeave.time, Profiler::GetTime() );
+    MemWrite( &item->sectionLeave.id, id );
+    TracyLfqCommit;
+    return 0;
+}
+
 }
 
 static inline void LuaRegister( lua_State* L )
@@ -444,6 +508,10 @@ static inline void LuaRegister( lua_State* L )
     lua_setfield( L, -2, "ZoneName" );
     lua_pushcfunction( L, detail::LuaMessage );
     lua_setfield( L, -2, "Message" );
+    lua_pushcfunction( L, detail::LuaSectionEnter );
+    lua_setfield( L, -2, "SectionEnter" );
+    lua_pushcfunction( L, detail::LuaSectionLeave );
+    lua_setfield( L, -2, "SectionLeave" );
     lua_setglobal( L, "tracy" );
 }
 

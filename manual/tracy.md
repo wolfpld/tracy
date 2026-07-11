@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-06-29 <https://github.com/wolfpld/tracy>
+2026-07-11 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -3010,7 +3010,7 @@ You can also adjust some settings that affect global profiler behavior in this w
 
 If this is a real-time capture, you will also have access to the connection information pop-up (figure [9](#connectioninfo)) through the * Connection* button, with the capture status similar to the one displayed by the command-line utility. This dialog also shows the connection speed graphed over time and the profiled application's current frames per second and frame time measurements. The *Query backlog* consists of two numbers. The first represents the number of queries that were held back due to the bandwidth volume overwhelming the available network send buffer. The second one shows how many queries are in-flight, meaning requests sent to the client but not yet answered. While these numbers drain down to zero, the performance of real time profiling may be temporarily compromised. The circle displayed next to the bandwidth graph signals the connection status. If it's red, the connection is active. If it's gray, the client has disconnected.
 
-You can use the  *Save trace* button to save the current profile data to a file[^69]. The available compression modes are discussed in sections [4.7.1](#archival) and [4.7.3](#fidict). Use the  *Stop* button to disconnect from the client[^70]. The  *Discard* button is used to discard current trace.
+You can use the  *Save trace\...* button to save the current profile data to a file[^69]. The available compression modes are discussed in sections [4.7.1](#archival) and [4.7.3](#fidict). Use the  *Stop* button to disconnect from the client[^70]. The  *Discard* button is used to discard current trace.
 
 [^69]: You should take this literally. If a live capture is in progress and a save is performed, some data may be missing from the capture and won't be saved.
 
@@ -3812,7 +3812,7 @@ It is possible to store defaults for the settings marked with a *\** to the glob
 
 ## Messages window {#messages}
 
-In this window, you can see all the messages that were sent by the client application, as described in section [3.8](#messagelog). The window is split into four columns: *time*, *thread*, *message* and *call stack*. Hovering the  mouse cursor over a message will highlight it on the timeline view. Clicking the left mouse button on a message will center the timeline view on the selected message.
+In this window, you can see all the messages that were sent by the client application, as described in section [3.8](#messagelog). The window is split into four columns: *time*, *thread*, *message* and *call stack*. Hovering the  mouse cursor over a message will highlight it on the timeline view. Clicking the left mouse button on a message will center the timeline view on the selected message. Clicking the right mouse button on a message will display context menu with a * Copy message* option, which copies the message text to clipboard.
 
 The *call stack* column is filled only if a call stack capture was requested, as described in section [3.12](#collectingcallstacks). A single entry consists of the * Show* button, which opens the call stack information window (chapter [5.16](#callstackwindow)) and of abbreviated information about the call path.
 
@@ -3834,6 +3834,7 @@ You can filter the message list in the following ways:
 -----
 
  - Arrow Pointer icon
+ - Clipboard icon
  - Align Justify icon
  - Image icon
  - Shuffle icon
@@ -4094,13 +4095,24 @@ You can further narrow down the list of samples by selecting a time range on the
 
 Comparing the performance impact of the optimization work is not an easy thing to do. Benchmarking is often inconclusive, if even possible, in the case of interactive applications, where the benchmarked function might not have a visible impact on frame render time. Furthermore, doing isolated micro-benchmarks loses the application's execution environment, in which many different parts compete for limited system resources.
 
-Tracy solves this problem by providing a compare traces functionality, very similar to the find zone window, described in section [5.7](#findzone). You can compare traces either by zone or frame timing data.
+Tracy solves this problem by providing a compare traces functionality, which is very similar to the find zone window. There are three tabs in this window, for three modes of comparison:
 
-You would begin your work by recording a reference trace that represents the usual behavior of the program. Then, after the optimization of the code is completed, you record another trace, doing roughly what you did for the reference one. Finally, having the optimized trace open, you select the * Open second trace* option in the compare traces window and load the reference trace.
+- *Zones* -- closely matches the find zone window, described in section [5.7](#findzone).
 
-Now things start to get familiar. You search for a zone, similarly like in the find zone window, choose the one you want in the *matched source locations* drop-down, and then you look at the histogram[^84]. This time there are two overlaid graphs, one representing the current trace and the second one representing the external (reference) trace (figure [26](#comparehistogram)). You can easily see how the performance characteristics of the zone were affected by your modifications.
+- *Frames* -- shows frame rate data, following the frame statistics window described in section [5.14](#framestatistics).
 
-[^84]: When comparing frame times you are presented with a list of available frame sets, without the search box.
+- *Source diff* -- displays differences in source code, covered in section [5.8.1](#sourcefilesdiff).
+
+To gather the data, you would start by recording a reference trace that represents the usual behavior of the program. Then, after the optimization of the code is completed, you record another trace, doing roughly what you did for the reference one. Finally, having the optimized trace open, you select the * Open second trace* option in the compare traces window and load the reference trace.
+
+> [!TIP]
+> **Trace descriptions**
+>
+> Set custom trace descriptions (see section [5.13](#traceinfo)) to easily differentiate the two loaded traces. If no trace description is set, the name of the profiled program will be displayed along with the capture time.
+
+Now things start to get familiar. In the zone comparison mode, you search for a zone, similarly like in the find zone window, choose the one you want in the *matched source locations* drop-down, and then you look at the histogram. When comparing frame times you are presented with a list of available frame sets, without the search box.
+
+In the compare traces window there are two overlaid graphs, one representing the current trace and the second one representing the external (reference) trace (figure [26](#comparehistogram)). You can easily see how the performance characteristics of the zone were affected by your modifications.
 
 <figure id="comparehistogram" data-latex-placement="h">
 
@@ -4113,10 +4125,9 @@ When searching for source locations it's not uncommon to match more than one zon
 
 It may be difficult, if not impossible, to perform identical runs of a program. This means that the number of collected zones may differ in both traces, influencing the displayed results. To fix this problem, enable the *Normalize values* option, which will adjust the displayed results as if both traces had the same number of recorded zones.
 
-> [!TIP]
-> **Trace descriptions**
->
-> Set custom trace descriptions (see section [5.13](#traceinfo)) to easily differentiate the two loaded traces. If no trace description is set, the name of the profiled program will be displayed along with the capture time.
+The window shows statistical data for both traces, with the values described in chapter [5.7](#findzone). Each value is also compared against the other trace, showing both the absolute and relative differences. The keywords *less* and *more* are color coded to note significance. When the two readings are almost the same, the keywords will be printed in gray. As the values diverge, the amount of color (either green or red) increases, maxing out at twice the difference. This allows quick eyeballing of where the difference is.
+
+In some cases you may want to compare only specific parts of traces, not the whole performance profile. To do so, you can enable the *Limit range* option, which will then present you with time range limiting options for both traces. Use the * Copy from\...* button to choose a time range limit from a list of annotations (chapter [5.3.1](#annotatingtrace)) or sections (chapter [5.2.3.3](#sections)). To remove the limit, you can click on the *Reset* button.
 
 
 -----
@@ -4124,8 +4135,9 @@ It may be difficult, if not impossible, to perform identical runs of a program. 
  - Folder Open icon
  - Lemon icon
  - Gem icon
+ - Copy icon
 
-### Source files diff
+### Source files diff {#sourcefilesdiff}
 
 To see what changes were made in the source code between the two compared traces, select the *Source diff* compare mode. This will display a list of deleted, added, and changed files. By default, the difference is calculated from the older trace to the newer one. You can reverse this by clicking on the *Switch* button.
 
@@ -4146,9 +4158,9 @@ There are two different *Raycast* zones on the graph. This is because there are 
 <figcaption>Flame graph.</figcaption>
 </figure>
 
-The default sorting order of the zones on a flame graph *approximates* the real call ordering. The program will call *Init* before entering *Game loop*, and each frame update will call *Logic update* before doing *Render*. This order is preserved. However, the logic update function may need to interleave the processing of AI entities and projectile movement[^85]. This interleaving won't be represented on the graph. Each zone will be placed in the appropriate bin in a first-come, first-served manner.
+The default sorting order of the zones on a flame graph *approximates* the real call ordering. The program will call *Init* before entering *Game loop*, and each frame update will call *Logic update* before doing *Render*. This order is preserved. However, the logic update function may need to interleave the processing of AI entities and projectile movement[^84]. This interleaving won't be represented on the graph. Each zone will be placed in the appropriate bin in a first-come, first-served manner.
 
-[^85]: Such design would be less than ideal, but sometimes that's how you have to go.
+[^84]: Such design would be less than ideal, but sometimes that's how you have to go.
 
 You can use an alternative sorting method by enabling the *Sort by time* option. This will place the most time-consuming zones first (to the left) on the graph.
 
@@ -4172,19 +4184,19 @@ The flame graph can be restricted to a specific time extent using the *Limit ran
 
 You can view the data gathered by profiling memory usage (section [3.9](#memoryprofiling)) in the memory window. If the profiler tracked more than one memory pool during the capture, you would be able to select which collection you want to look at, using the * Memory pool* selection box.
 
-The top row contains statistics, such as *total allocations* count, number of *active allocations*, current *memory usage* and process *memory span*[^86].
+The top row contains statistics, such as *total allocations* count, number of *active allocations*, current *memory usage* and process *memory span*[^85].
 
-[^86]: Memory span describes the address space consumed by the program. It is calculated as a difference between the maximum and minimum observed in-use memory address.
+[^85]: Memory span describes the address space consumed by the program. It is calculated as a difference between the maximum and minimum observed in-use memory address.
 
-The lists of captured memory allocations are displayed in a common multi-column format through the profiler. The first column specifies the memory address of an allocation or an address and an offset if the address is not at the start of the allocation. Clicking the left mouse button on an address will open the memory allocation information window[^87] (see section [5.12](#memallocinfo)). Clicking the middle mouse button on an address will zoom the timeline view to memory allocation's range. The next column contains the allocation size.
+The lists of captured memory allocations are displayed in a common multi-column format through the profiler. The first column specifies the memory address of an allocation or an address and an offset if the address is not at the start of the allocation. Clicking the left mouse button on an address will open the memory allocation information window[^86] (see section [5.12](#memallocinfo)). Clicking the middle mouse button on an address will zoom the timeline view to memory allocation's range. The next column contains the allocation size.
 
-[^87]: While the allocation information window is opened, the address will be highlighted on the list.
+[^86]: While the allocation information window is opened, the address will be highlighted on the list.
 
 The allocation's timing data is contained in two columns: *appeared at* and *duration*. Clicking the left mouse button on the first one will center the timeline view at the beginning of allocation, and likewise, clicking on the second one will center the timeline view at the end of allocation. Note that allocations that have not yet been freed will have their duration displayed in green color.
 
-The memory event location in the code is displayed in the last four columns. The *thread* column contains the thread where the allocation was made and freed (if applicable), or an *alloc / free* pair of the threads if it was allocated in one thread and freed in another. The *zone alloc* contains the zone in which the allocation was performed[^88], or `-` if there was no active zone in the given thread at the time of allocation. Clicking the left mouse button on the zone name will open the zone information window (section [5.15](#zoneinfo)). Similarly, the *zone free* column displays the zone which freed the allocation, which may be colored yellow, if it is the same zone that did the allocation. Alternatively, if the zone has not yet been freed, a green *active* text is displayed. The last column contains the *alloc* and *free* call stack buttons, or their placeholders, if no call stack is available (see section [3.12](#collectingcallstacks) for more information). Clicking on either of the buttons will open the call stack window (section [5.16](#callstackwindow)). Note that the call stack buttons that match the information window will be highlighted.
+The memory event location in the code is displayed in the last four columns. The *thread* column contains the thread where the allocation was made and freed (if applicable), or an *alloc / free* pair of the threads if it was allocated in one thread and freed in another. The *zone alloc* contains the zone in which the allocation was performed[^87], or `-` if there was no active zone in the given thread at the time of allocation. Clicking the left mouse button on the zone name will open the zone information window (section [5.15](#zoneinfo)). Similarly, the *zone free* column displays the zone which freed the allocation, which may be colored yellow, if it is the same zone that did the allocation. Alternatively, if the zone has not yet been freed, a green *active* text is displayed. The last column contains the *alloc* and *free* call stack buttons, or their placeholders, if no call stack is available (see section [3.12](#collectingcallstacks) for more information). Clicking on either of the buttons will open the call stack window (section [5.16](#callstackwindow)). Note that the call stack buttons that match the information window will be highlighted.
 
-[^88]: The actual allocation is typically a couple functions deeper in the call stack.
+[^87]: The actual allocation is typically a couple functions deeper in the call stack.
 
 The memory window is split into the following sections:
 
@@ -4221,9 +4233,9 @@ This view may help assess the general memory behavior of the application or in d
 
 The * Bottom-up call stack tree* pane is only available, if the memory events were collecting the call stack data (section [3.12](#collectingcallstacks)). In this view, you are presented with a tree of memory allocations, starting at the call stack entry point and going up to the allocation's pinpointed place. Each tree level is sorted according to the number of bytes allocated in the given branch.
 
-Each tree node consists of the function name, the source file location, and the memory allocation data. The memory allocation data is either yellow *inclusive* events count (allocations performed by children) or the cyan *exclusive* events count (allocations that took place in the node)[^89]. Two values are counted: total memory size and number of allocations.
+Each tree node consists of the function name, the source file location, and the memory allocation data. The memory allocation data is either yellow *inclusive* events count (allocations performed by children) or the cyan *exclusive* events count (allocations that took place in the node)[^88]. Two values are counted: total memory size and number of allocations.
 
-[^89]: Due to the way call stacks work, there is no possibility for an entry to have both inclusive and exclusive counts, in an adequately instrumented program.
+[^88]: Due to the way call stacks work, there is no possibility for an entry to have both inclusive and exclusive counts, in an adequately instrumented program.
 
 See chapter [5.18](#stackwindows) for description of the * Group by function name* option.
 
@@ -4284,9 +4296,9 @@ Open the *Trace statistics* section to see information about the trace, such as 
 
 If *CPU topology* data is available (see section [3.18.4](#cputopology)), you will be able to view the package, core, and thread hierarchy.
 
-The *Source location substitutions* section allows adapting the source file paths, as captured by the profiler, to the actual on-disk locations[^90]. You can create a new substitution by clicking the *Add new substitution* button. This will add a new entry, with input fields for ECMAScript-conforming regular expression pattern and its corresponding replacement string. You can quickly test the outcome of substitutions in the *example source location* input field, which will be transformed and displayed below, as *result*.
+The *Source location substitutions* section allows adapting the source file paths, as captured by the profiler, to the actual on-disk locations[^89]. You can create a new substitution by clicking the *Add new substitution* button. This will add a new entry, with input fields for ECMAScript-conforming regular expression pattern and its corresponding replacement string. You can quickly test the outcome of substitutions in the *example source location* input field, which will be transformed and displayed below, as *result*.
 
-[^90]: This does not affect source files cached during the profiling run.
+[^89]: This does not affect source files cached during the profiling run.
 
 > [!TIP]
 > **Quick example**
@@ -4323,7 +4335,7 @@ The zone information window displays detailed information about a single zone. T
 
 - Timing information.
 
-- If the profiler performed context switch capture (section [3.18.3](#contextswitches)) and a thread was suspended during zone execution, a list of wait regions will be displayed, with complete information about the timing, CPU migrations, and wait reasons. If CPU topology data is available (section [3.18.4](#cputopology)), the profiler will mark zone migrations across cores with "C" and migrations across packages -- with "P." In some cases, context switch data might be incomplete[^91], in which case a warning message will be displayed.
+- If the profiler performed context switch capture (section [3.18.3](#contextswitches)) and a thread was suspended during zone execution, a list of wait regions will be displayed, with complete information about the timing, CPU migrations, and wait reasons. If CPU topology data is available (section [3.18.4](#cputopology)), the profiler will mark zone migrations across cores with "C" and migrations across packages -- with "P." In some cases, context switch data might be incomplete[^90], in which case a warning message will be displayed.
 
 - Memory events list, both summarized and a list of individual allocation/free events (see section [5.10](#memorywindow) for more information on the memory events list).
 
@@ -4337,7 +4349,7 @@ The zone information window displays detailed information about a single zone. T
 
 - Time distribution in child zones, which expands the information provided in the child zones list by processing *all* zone children (including multiple levels of grandchildren). This results in a statistical list of zones that were really doing the work in the current zone's time span. If a group of zones is selected on this list, the find zone window (section [5.7](#findzone)) will open, with a time range limited to show only the children of the current zone.
 
-[^91]: For example, when capture is ongoing and context switch information has not yet been received.
+[^90]: For example, when capture is ongoing and context switch information has not yet been received.
 
 > [!TIP]
 > **Call stack reconstruction**
@@ -4377,13 +4389,13 @@ Clicking on the * Copy to clipboard* buttons will copy the appropriate data t
 
 ## Call stack window {#callstackwindow}
 
-This window shows the frames contained in the selected call stack. Information about the originating thread is included. Each frame is described by a function name, source file location, and originating image[^92] name. Function frames originating from the kernel are marked with a red color. Clicking the left mouse button on either the function name of source file location will copy the name to the clipboard. Clicking the right mouse button on the source file location will open the source file view window (if applicable, see section [5.17](#sourceview)).
+This window shows the frames contained in the selected call stack. Information about the originating thread is included. Each frame is described by a function name, source file location, and originating image[^91] name. Function frames originating from the kernel are marked with a red color. Clicking the left mouse button on either the function name of source file location will copy the name to the clipboard. Clicking the right mouse button on the source file location will open the source file view window (if applicable, see section [5.17](#sourceview)).
 
-[^92]: Executable images are called *modules* by Microsoft.
+[^91]: Executable images are called *modules* by Microsoft.
 
-A single stack frame may have multiple function call places associated with it. This happens in the case of inlined function calls. Such entries will be displayed in the call stack window, with *inline* in place of frame number[^93].
+A single stack frame may have multiple function call places associated with it. This happens in the case of inlined function calls. Such entries will be displayed in the call stack window, with *inline* in place of frame number[^92].
 
-[^93]: Or "" icon in case of call stack tooltips.
+[^92]: Or "" icon in case of call stack tooltips.
 
 If the call stack shows a crash (see section [2.5](#crashhandling)), a red * Crash* label will be displayed. Clicking it will center the timeline on the crash. Note that the crash stack may contain OS or Tracy frames where the crash was intercepted and processed.
 
@@ -4448,9 +4460,9 @@ Let's say you are looking at the call stack of some function called within `Appl
 
 At the first glance it may look like `unique_ptr::reset` was the *call site* of the `Application::Run`, which would make no sense, but this is not the case here. When you remember these are the *function return points*, it becomes much more clear what is happening. As an optimization, `Application::Run` is returning directly into `unique_ptr::reset`, skipping the return to `main` and an unnecessary `reset` function call.
 
-Moreover, the linker may determine in some rare cases that any two functions in your program are identical[^94]. As a result, only one copy of the binary code will be provided in the executable for both functions to share. While this optimization produces more compact programs, it also means that there's no way to distinguish the two functions apart in the resulting machine code. In effect, some call stacks may look nonsensical until you perform a small investigation.
+Moreover, the linker may determine in some rare cases that any two functions in your program are identical[^93]. As a result, only one copy of the binary code will be provided in the executable for both functions to share. While this optimization produces more compact programs, it also means that there's no way to distinguish the two functions apart in the resulting machine code. In effect, some call stacks may look nonsensical until you perform a small investigation.
 
-[^94]: For example, if all they do is zero-initialize a region of memory. As some constructors would do.
+[^93]: For example, if all they do is zero-initialize a region of memory. As some constructors would do.
 
 ## Source view window {#sourceview}
 
@@ -4522,9 +4534,9 @@ Selecting the * Raw code* option will enable the display of raw machine code 
 
 If any instruction would jump to a predefined address, the symbolic name of the jump target will be additionally displayed. If the destination location is within the currently displayed symbol, an `->` arrow will be prepended to the name. Hovering the  mouse pointer over such symbol name will highlight the target location. Clicking on it with the left mouse button will focus the view on the destination instruction or switch view to the destination symbol.
 
-Enabling the * Jumps* option will show jumps within the symbol code as a series of arrows from the jump source to the jump target, and hovering the  mouse pointer over a jump arrow will display a jump information tooltip. It will also draw the jump range on the scroll bar as a green line. A horizontal green line will mark the jump target location. Clicking on a jump arrow with the left mouse button will focus the view on the target location. The right mouse button opens a jump context menu, which allows inspection and navigation to the target location or any of the source locations. Jumps going out of the symbol[^95] will be indicated by a smaller arrow pointing away from the code.
+Enabling the * Jumps* option will show jumps within the symbol code as a series of arrows from the jump source to the jump target, and hovering the  mouse pointer over a jump arrow will display a jump information tooltip. It will also draw the jump range on the scroll bar as a green line. A horizontal green line will mark the jump target location. Clicking on a jump arrow with the left mouse button will focus the view on the target location. The right mouse button opens a jump context menu, which allows inspection and navigation to the target location or any of the source locations. Jumps going out of the symbol[^94] will be indicated by a smaller arrow pointing away from the code.
 
-[^95]: This includes jumps, procedure calls, and returns. For example, in x86 assembly the respective operand names can be: `jmp`, `call`, `ret`.
+[^94]: This includes jumps, procedure calls, and returns. For example, in x86 assembly the respective operand names can be: `jmp`, `call`, `ret`.
 
 Portions of the executable used to show the symbol view are stored within the captured profile and don't rely on the available local disk files.
 
@@ -4550,15 +4562,15 @@ If the listed assembly code targets x86 or x64 instruction set architectures, ho
 
 - *Ports* -- Which ports (execution units) are required for dispatch of microinstructions. For example, `2*p0+1*p015` would mean that out of the three microinstructions implementing the assembly instruction, two can only be executed on port 0, and one microinstruction can be executed on ports 0, 1, or 5. The number of available ports and their capabilities varies between different processors architectures. Refer to <https://wikichip.org/> for more information.
 
-Selection of the CPU microarchitecture can be performed using the * μarch* drop-down. Each architecture is accompanied by the name of an example CPU implementing it. If the current selection matches the microarchitecture on which the profiled application was running, the  icon will be green[^96]. Otherwise, it will be red[^97]. Clicking on the  icon when it is red will reset the selected microarchitecture to the one the profiled application was running on.
+Selection of the CPU microarchitecture can be performed using the * μarch* drop-down. Each architecture is accompanied by the name of an example CPU implementing it. If the current selection matches the microarchitecture on which the profiled application was running, the  icon will be green[^95]. Otherwise, it will be red[^96]. Clicking on the  icon when it is red will reset the selected microarchitecture to the one the profiled application was running on.
 
-[^96]: Comparing sampled instruction counts with microarchitectural details only makes sense when this selection is properly matched.
+[^95]: Comparing sampled instruction counts with microarchitectural details only makes sense when this selection is properly matched.
 
-[^97]: You can use this to gain insight into how the code *may* behave on other processors.
+[^96]: You can use this to gain insight into how the code *may* behave on other processors.
 
-Clicking on the * Save* button lets you write the disassembly listing to a file. You can then manually extract some critical loop kernel and pass it to a CPU simulator, such as *LLVM Machine Code Analyzer* (`llvm-mca`)[^98], to see how the code is executed and if there are any pipeline bubbles. Consult the `llvm-mca` documentation for more details. Alternatively, you might click the right mouse button on a jump arrow and save only the instructions within the jump range, using the * Save jump range* button.
+Clicking on the * Save* button lets you write the disassembly listing to a file. You can then manually extract some critical loop kernel and pass it to a CPU simulator, such as *LLVM Machine Code Analyzer* (`llvm-mca`)[^97], to see how the code is executed and if there are any pipeline bubbles. Consult the `llvm-mca` documentation for more details. Alternatively, you might click the right mouse button on a jump arrow and save only the instructions within the jump range, using the * Save jump range* button.
 
-[^98]: <https://llvm.org/docs/CommandGuide/llvm-mca.html>
+[^97]: <https://llvm.org/docs/CommandGuide/llvm-mca.html>
 
 
 -----
@@ -4581,9 +4593,9 @@ The selected instruction will be highlighted in white, while its dependencies wi
 
 - *Yellow* -- Register is read and then modified.
 
-- *Grey* -- Value in a register is either discarded (overwritten) or was already consumed by an earlier instruction (i.e., it is readily available[^99]). The profiler will not follow the dependency chain further.
+- *Grey* -- Value in a register is either discarded (overwritten) or was already consumed by an earlier instruction (i.e., it is readily available[^98]). The profiler will not follow the dependency chain further.
 
-[^99]: This is actually a bit of simplification. Run a pipeline simulator, e.g., `llvm-mca` for a better analysis.
+[^98]: This is actually a bit of simplification. Run a pipeline simulator, e.g., `llvm-mca` for a better analysis.
 
 Search for dependencies follows program control flow, so there may be multiple producers and consumers for any single register. While the *after* and *before* guidelines mentioned above hold in the general case, things may be more complicated when there's a large number of conditional jumps in the code. Note that dependencies further away than 64 instructions are not displayed.
 
@@ -4602,11 +4614,11 @@ In this mode, the source and assembly panes will be displayed together, providin
 
 If automated call stack sampling (see chapter [3.18.5](#sampling)) was performed, additional profiling information will be available. The first column of source and assembly views will contain percentage counts of collected instruction pointer samples for each displayed line, both in numerical and graphical bar form. You can use this information to determine which function line takes the most time. The displayed percentage values are heat map color-coded, with the lowest values mapped to dark red and the highest to bright yellow. The color code will appear next to the percentage value and on the scroll bar so that you can identify "hot" places in the code at a glance.
 
-By default, samples are displayed only within the selected symbol, in isolation. In some cases, you may, however, want to include samples from functions that the selected symbol called. To do so, enable the * Child calls* option, which you may also temporarily toggle by holding the Z key. You can also click the  drop down control to display a child call distribution list[^100], which shows each known function[^101] that the symbol called. Make sure to familiarize yourself with section [5.16.1](#readingcallstacks) to be able to read the results correctly. Each child call on the list has an attributed time cost, which is also displayed as a percentage of the child calls ("% Calls") and the percentage of the total symbol time ("% Total").
+By default, samples are displayed only within the selected symbol, in isolation. In some cases, you may, however, want to include samples from functions that the selected symbol called. To do so, enable the * Child calls* option, which you may also temporarily toggle by holding the Z key. You can also click the  drop down control to display a child call distribution list[^99], which shows each known function[^100] that the symbol called. Make sure to familiarize yourself with section [5.16.1](#readingcallstacks) to be able to read the results correctly. Each child call on the list has an attributed time cost, which is also displayed as a percentage of the child calls ("% Calls") and the percentage of the total symbol time ("% Total").
 
-[^100]: The height of the list can be changed by dragging the separator bar.
+[^99]: The height of the list can be changed by dragging the separator bar.
 
-[^101]: You should remember that these are results of random sampling. Some function calls may be missing here.
+[^100]: You should remember that these are results of random sampling. Some function calls may be missing here.
 
 The total number of collected samples is displayed in the UI under the * Samples* label and converted to a time approximation at the * Time* label. The displayed values show the local count if child calls are disabled and the total count if the option is enabled. In either case, the number of samples attributed only to the child calls is displayed in parentheses with the + or - symbol and as a percentage of the total symbol time.
 
@@ -4668,7 +4680,7 @@ The profiler can group call stacks leading to certain events and display the res
 
 - **Sample entry stacks** -- this window shows all the paths that lead to execution of the selected symbol. Requires sampling (chapter [3.18.5](#sampling)) to be active.
 
-- **Wait stacks** -- this windows shows all the places where the application was sleeping. See chapter [3.18.5.1](#waitstacks) for more information.
+- **Wait stacks** -- this windows shows all the places where the application was sleeping. See chapter [3.18.5.1](#waitstacks) for more information. Note that wait stacks have separate setting for the * External* option, as it is generally beneficial to see the external code when determining the cause of program interruption.
 
 The call stack paths may be displayed in the following ways:
 
@@ -4683,6 +4695,7 @@ The * Group by function name* option controls how tree nodes are grouped. If 
 
 -----
 
+ - Shield Halved icon
  - Table icon
  - Tree icon
  - Arrow Up icon
@@ -4699,7 +4712,7 @@ You may view a live replay of the profiled application screen captures (see sect
 
 If the *Sync timeline* option is selected, the profiler will focus the timeline view on the frame corresponding to the currently displayed screenshot. The *Zoom 2×* option enlarges the image for easier viewing.
 
-Enabling the *Limit frame range* option allows you to manually set the frame image playback region. Adjustments can be made using the start and end sliders or by copying the time range from either an annotation (section [5.23](#annotationlist)) or one of the time range limits (section [5.24](#timerangelimits)). If the *Require frame coverage* option is enabled, source regions must cover at least 75% of the frame. Otherwise any amount of overlap is sufficient.
+Enabling the *Limit frame range* option allows you to manually set the frame image playback region. Adjustments can be made using the start and end sliders or by copying the time range from either an annotation (section [5.23](#annotationlist)), a section (chapter [5.2.3.3](#sections)), or one of the time range limits (section [5.24](#timerangelimits)). If the *Require frame coverage* option is enabled, source regions must cover at least 75% of the frame. Otherwise any amount of overlap is sufficient.
 
 The following parameters also accompany each displayed frame image: *timestamp*, showing at which time the image was captured, *frame*, displaying the numerical value of the corresponding frame, and *ratio*, telling how well the in-memory loss-less compression was able to reduce the image data size.
 
@@ -4770,11 +4783,13 @@ This window displays information about time range limits (section [5.3](#timera
 
 - * Limit to view* -- Set the time range limit to current view.
 
-- * Add annotation* -- Create a new annotation matching the time range.
+- * Add annotation* -- Create a new annotation matching the time range. See section [5.3.1](#annotatingtrace) for more information.
 
--  Copy from:
+-  Copy from\...:
 
   - * Annotation* -- Allows using the annotation region for limiting purposes.
+
+  - *Sections* -- Copies time range of a section. See section [5.2.3.3](#sections) for more information.
 
   - * Find zone* -- Copies the find zone time range limit.
 
@@ -4862,9 +4877,9 @@ If you have the resources available you may try replacing `unsloth/Qwen3.6-35B-A
 
 ## Service provider
 
-To get started, you will need to install an LLM[^102] provider on your system. Any service that's compatible with the standard API should work, but some may work better than others. The LLM field is advancing quickly, with new models frequently being released that often require specific support from provider services to deliver the best experience.
+To get started, you will need to install an LLM[^101] provider on your system. Any service that's compatible with the standard API should work, but some may work better than others. The LLM field is advancing quickly, with new models frequently being released that often require specific support from provider services to deliver the best experience.
 
-[^102]: Large Language Model.
+[^101]: Large Language Model.
 
 The ideal LLM provider should be a system service that loads and unloads models on demand and swaps between them as needed. It should provide a service to a variety of user-facing applications running on the system. The ideal provider should also implement a time-to-live mechanism that unloads models after a period of inactivity to make resources available to other programs. The user should be able to use the ideal provider to find and download models that they can run on their hardware.
 
@@ -5114,7 +5129,7 @@ Tracy can import data generated by other profilers. This external data cannot be
       $ tracy-profiler mytracefile.tracy
   ```
 
-- Fuchsia's tracing format[^103] data through the `tracy-import-fuchsia` utility. This format has many commonalities with the chrome:tracing format, but it uses a compact and efficient binary encoding that can help lower tracing overhead. The file extension is `.fxt` or `.fxt.zst`.
+- Fuchsia's tracing format[^102] data through the `tracy-import-fuchsia` utility. This format has many commonalities with the chrome:tracing format, but it uses a compact and efficient binary encoding that can help lower tracing overhead. The file extension is `.fxt` or `.fxt.zst`.
 
   To this this tool, assuming it's compiled, run:
 
@@ -5123,7 +5138,7 @@ Tracy can import data generated by other profilers. This external data cannot be
       $ tracy-profiler mytracefile.tracy
   ```
 
-[^103]: <https://fuchsia.dev/fuchsia-src/reference/tracing/trace-format>
+[^102]: <https://fuchsia.dev/fuchsia-src/reference/tracing/trace-format>
 
 > [!TIP]
 > **Compressed traces**

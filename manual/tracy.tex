@@ -3334,7 +3334,7 @@ You can also adjust some settings that affect global profiler behavior in this w
 
 If this is a real-time capture, you will also have access to the connection information pop-up (figure~\ref{connectioninfo}) through the \emph{\faWifi{}~Connection} button, with the capture status similar to the one displayed by the command-line utility. This dialog also shows the connection speed graphed over time and the profiled application's current frames per second and frame time measurements. The \emph{Query backlog} consists of two numbers. The first represents the number of queries that were held back due to the bandwidth volume overwhelming the available network send buffer. The second one shows how many queries are in-flight, meaning requests sent to the client but not yet answered. While these numbers drain down to zero, the performance of real time profiling may be temporarily compromised. The circle displayed next to the bandwidth graph signals the connection status. If it's red, the connection is active. If it's gray, the client has disconnected.
 
-You can use the \faFloppyDisk{}~\emph{Save trace} button to save the current profile data to a file\footnote{You should take this literally. If a live capture is in progress and a save is performed, some data may be missing from the capture and won't be saved.}. The available compression modes are discussed in sections~\ref{archival} and~\ref{fidict}. Use the \faPlug{}~\emph{Stop} button to disconnect from the client\footnote{While requesting disconnect stops retrieval of any new events, the profiler will wait for any data that is still pending for the current set of events.}. The \faTriangleExclamation{}~\emph{Discard} button is used to discard current trace.
+You can use the \faFloppyDisk{}~\emph{Save trace...} button to save the current profile data to a file\footnote{You should take this literally. If a live capture is in progress and a save is performed, some data may be missing from the capture and won't be saved.}. The available compression modes are discussed in sections~\ref{archival} and~\ref{fidict}. Use the \faPlug{}~\emph{Stop} button to disconnect from the client\footnote{While requesting disconnect stops retrieval of any new events, the profiler will wait for any data that is still pending for the current set of events.}. The \faTriangleExclamation{}~\emph{Discard} button is used to discard current trace.
 
 \begin{figure}[h]
 \centering\begin{tikzpicture}
@@ -4232,7 +4232,7 @@ For now, restoring the defaults can be done by deleting the configuration file.
 \subsection{Messages window}
 \label{messages}
 
-In this window, you can see all the messages that were sent by the client application, as described in section~\ref{messagelog}. The window is split into four columns: \emph{time}, \emph{thread}, \emph{message} and \emph{call stack}. Hovering the \faArrowPointer{}~mouse cursor over a message will highlight it on the timeline view. Clicking the \LMB{}~left mouse button on a message will center the timeline view on the selected message.
+In this window, you can see all the messages that were sent by the client application, as described in section~\ref{messagelog}. The window is split into four columns: \emph{time}, \emph{thread}, \emph{message} and \emph{call stack}. Hovering the \faArrowPointer{}~mouse cursor over a message will highlight it on the timeline view. Clicking the \LMB{}~left mouse button on a message will center the timeline view on the selected message. Clicking the \RMB{}~right mouse button on a message will display context menu with a \emph{\faClipboard{}~Copy message} option, which copies the message text to clipboard.
 
 The \emph{call stack} column is filled only if a call stack capture was requested, as described in section~\ref{collectingcallstacks}. A single entry consists of the \emph{\faAlignJustify{}~Show} button, which opens the call stack information window (chapter~\ref{callstackwindow}) and of abbreviated information about the call path.
 
@@ -4557,6 +4557,8 @@ When searching for source locations it's not uncommon to match more than one zon
 It may be difficult, if not impossible, to perform identical runs of a program. This means that the number of collected zones may differ in both traces, influencing the displayed results. To fix this problem, enable the \emph{Normalize values} option, which will adjust the displayed results as if both traces had the same number of recorded zones.
 
 The window shows statistical data for both traces, with the values described in chapter~\ref{findzone}. Each value is also compared against the other trace, showing both the absolute and relative differences. The keywords \emph{less} and \emph{more} are color coded to note significance. When the two readings are almost the same, the keywords will be printed in gray. As the values diverge, the amount of color (either green or red) increases, maxing out at twice the difference. This allows quick eyeballing of where the difference is.
+
+In some cases you may want to compare only specific parts of traces, not the whole performance profile. To do so, you can enable the \emph{Limit range} option, which will then present you with time range limiting options for both traces. Use the \emph{\faCopy{}~Copy from...} button to choose a time range limit from a list of annotations (chapter~\ref{annotatingtrace}) or sections (chapter~\ref{sections}). To remove the limit, you can click on the \emph{Reset} button.
 
 \subsubsection{Source files diff}
 \label{sourcefilesdiff}
@@ -5026,7 +5028,7 @@ You may view a live replay of the profiled application screen captures (see sect
 
 If the \emph{Sync timeline} option is selected, the profiler will focus the timeline view on the frame corresponding to the currently displayed screenshot. The \emph{Zoom 2$\times$} option enlarges the image for easier viewing.
 
-Enabling the \emph{Limit frame range} option allows you to manually set the frame image playback region. Adjustments can be made using the start and end sliders or by copying the time range from either an annotation (section~\ref{annotationlist}) or one of the time range limits (section~\ref{timerangelimits}). If the \emph{Require frame coverage} option is enabled, source regions must cover at least 75\% of the frame. Otherwise any amount of overlap is sufficient.
+Enabling the \emph{Limit frame range} option allows you to manually set the frame image playback region. Adjustments can be made using the start and end sliders or by copying the time range from either an annotation (section~\ref{annotationlist}), a section (chapter~\ref{sections}), or one of the time range limits (section~\ref{timerangelimits}). If the \emph{Require frame coverage} option is enabled, source regions must cover at least 75\% of the frame. Otherwise any amount of overlap is sufficient.
 
 The following parameters also accompany each displayed frame image: \emph{timestamp}, showing at which time the image was captured, \emph{frame}, displaying the numerical value of the corresponding frame, and \emph{ratio}, telling how well the in-memory loss-less compression was able to reduce the image data size.
 
@@ -5083,10 +5085,11 @@ This window displays information about time range limits (section~\ref{timerange
 \begin{itemize}
 \item \emph{\faMicroscope{}~Focus} -- Set the timeline view to the time range extent.
 \item \emph{\faArrowsLeftRightToLine{}~Limit to view} -- Set the time range limit to current view.
-\item \emph{\faNoteSticky{}~Add annotation} -- Create a new annotation matching the time range.
-\item \faCopy{}~Copy from:
+\item \emph{\faNoteSticky{}~Add annotation} -- Create a new annotation matching the time range. See section~\ref{annotatingtrace} for more information.
+\item \faCopy{}~Copy from...:
 \begin{itemize}
 \item \emph{\faNoteSticky{}~Annotation} -- Allows using the annotation region for limiting purposes.
+\item \emph{Sections} -- Copies time range of a section. See section~\ref{sections} for more information.
 \item \emph{\faMagnifyingGlass{}~Find zone} -- Copies the find zone time range limit.
 \item \emph{\faArrowUpWideShort{}~Statistics} -- Copies the statistics time range limit.
 \item \emph{\faFireFlameCurved{}~Flame graph} -- Copies the flame graph time range limit.

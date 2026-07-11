@@ -43,7 +43,8 @@ vx.xx.x (2026-xx-xx)
 - Added inline call stack list to the zone information window.
   - The "call stack" button for opening the call stack in a separate window
     is still there.
-- Call stacks are now also displayed in zone tooltips (single-line).
+- Call stacks are now also displayed in zone and memory allocation tooltips
+  (single-line).
 - Implemented heuristic reconstruction of zone call stacks for zones that
   were captured without call stacks.
   - Requires sampling to be enabled, and at least one sample in the zone
@@ -158,8 +159,9 @@ vx.xx.x (2026-xx-xx)
   - Mismatched versions will break at linking.
   - As a reminder, Tracy *always* required using the same set of compilation
     options for the entire program.
-- Message windows will now properly show full message in a tooltip for
-  multi-line messages.
+- Message windows were improved.
+  - Full message will be now displayed in a tooltip for multi-line messages.
+  - Added right click context menu with option to copy message to clipboard.
 - Greatly improved the in-profiler user manual.
   - There is now chapter tree and the manual contents are displayed section
     by section.
@@ -225,6 +227,8 @@ vx.xx.x (2026-xx-xx)
     marked as a section.
   - Each section is a distinct region not restricted by other sections.
   - Multiple sections can overlap.
+  - Can be used to set time range limits.
+  - Exposed via Lua bindings.
 - Find zone window now also displays coefficient of variation, in addition
   to standard deviation.
 - Moved frame statistics from trace information window to its own window.
@@ -240,6 +244,8 @@ vx.xx.x (2026-xx-xx)
   - The "more" and "less" indicators are now color coded to show their
     importance. The amount of color these keywords are printed with is now
     dependant on how divergent the numeric values are.
+  - It is now possible to limit time range for both traces that are compared
+    to their respective annotations or sections.
 
 
 v0.13.1 (2025-12-11)
@@ -885,8 +891,8 @@ v0.8.0 (2022-03-28)
   - Frames can be now changed by interacting with the frame image slider
     using the mouse wheel.
   - Playback can be looped.
-  - The range of played frame images can be limited, either manually, or
-    copying annotations time range or time range limit. There's an "require
+  - The range of played frame images can be limited, either manually, or by
+    copying annotation, section, or time range limit. There's an "require
     frame coverage" option to only include frames that are at least 75%
     within the source region.
 - Signal used to handle crashes on Linux can be now redefined.

@@ -370,7 +370,6 @@ void View::DrawMessageLine( const MessageData& msg, bool hasCallstack, int& idx 
         m_msgToFocus.Decay( nullptr );
         m_messagesScrollBottom = false;
     }
-    ImGui::PopID();
     ImGui::TableNextColumn();
     SmallColorBox( GetThreadColor( tid, 0 ) );
     ImGui::SameLine();
@@ -399,6 +398,16 @@ void View::DrawMessageLine( const MessageData& msg, bool hasCallstack, int& idx 
         ImGui::EndTooltip();
     }
     ImGui::PopStyleColor();
+    if( ImGui::IsItemClicked( ImGuiMouseButton_Right ) ) ImGui::OpenPopup( "MessageContext" );
+    if( ImGui::BeginPopup( "MessageContext" ) )
+    {
+        if( ImGui::Selectable( ICON_FA_CLIPBOARD " Copy message" ) )
+        {
+            ImGui::SetClipboardText( text );
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
     if( hasCallstack )
     {
         ImGui::TableNextColumn();
@@ -410,6 +419,7 @@ void View::DrawMessageLine( const MessageData& msg, bool hasCallstack, int& idx 
             DrawCallstackCalls( cs, 6 );
         }
     }
+    ImGui::PopID();
 }
 
 }

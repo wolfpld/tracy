@@ -845,7 +845,6 @@ void View::DrawZoneInfoWindow()
                                 {
                                     m_msgHighlight = *msgit;
                                 }
-                                ImGui::PopID();
                                 ImGui::TableNextColumn();
                                 ImGui::PushStyleColor( ImGuiCol_Text, (*msgit)->color );
                                 const auto text = m_worker.GetString( (*msgit)->ref );
@@ -862,6 +861,17 @@ void View::DrawZoneInfoWindow()
                                     ImGui::EndTooltip();
                                 }
                                 ImGui::PopStyleColor();
+                                if( ImGui::IsItemClicked( ImGuiMouseButton_Right ) ) ImGui::OpenPopup( "MessageContext" );
+                                if( ImGui::BeginPopup( "MessageContext" ) )
+                                {
+                                    if( ImGui::Selectable( ICON_FA_CLIPBOARD " Copy message" ) )
+                                    {
+                                        ImGui::SetClipboardText( text );
+                                        ImGui::CloseCurrentPopup();
+                                    }
+                                    ImGui::EndPopup();
+                                }
+                                ImGui::PopID();
                             }
                             while( ++msgit != msgend );
                             ImGui::EndTable();

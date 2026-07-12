@@ -7782,8 +7782,10 @@ void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint
         }
     }
 
+    const bool topFrameHasInlines = fxsz != 1;
+
     CallstackFrameId parentFrameId;
-    if( fxsz != 1 )
+    if( topFrameHasInlines )
     {
         auto cfdata = (CallstackFrame*)alloca( uint8_t( fxsz-1 ) * sizeof( CallstackFrame ) );
         for( int i=0; i<fxsz-1; i++ )
@@ -7818,13 +7820,13 @@ void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint
 
     uint32_t parentIdx;
     {
-        const auto sz = framesCount - ( fxsz == 1 );
+        const auto sz = framesCount - !topFrameHasInlines;
         const auto memsize = sizeof( VarArray<CallstackFrameId> ) + sz * sizeof( CallstackFrameId );
         auto mem = (char*)m_slab.AllocRaw( memsize );
 
         auto data = (CallstackFrameId*)mem;
         auto dst = data;
-        if( fxsz == 1 )
+        if( !topFrameHasInlines )
         {
             for( int i=0; i<sz; i++ )
             {

@@ -3452,10 +3452,10 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                 if( hw ) PrintHwSampleTooltip( cycles, retired, cacheRef, cacheMiss, branchRetired, branchMiss, false );
 
                 const auto stats = worker.GetSymbolStats( symAddrParents );
-                if( stats && !stats->parents.empty() )
+                if( stats && !stats->wasExecuting.empty() )
                 {
                     ImGui::Separator();
-                    TextFocused( "Entry call stacks:", RealToString( stats->parents.size() ) );
+                    TextFocused( "Entry call stacks:", RealToString( stats->wasExecuting.size() ) );
                     ImGui::SameLine();
                     TextDisabledUnformatted( "(middle click to view)" );
                 }
@@ -3515,7 +3515,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     m_asmSampleSelect.clear();
                     m_asmGroupSelect = -1;
                 }
-                else if( stats && !stats->parents.empty() && ImGui::IsMouseClicked( ImGuiMouseButton_Middle ) )
+                else if( stats && !stats->wasExecuting.empty() && ImGui::IsMouseClicked( ImGuiMouseButton_Middle ) )
                 {
                     view.ShowSampleParents( symAddrParents, false );
                 }

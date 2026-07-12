@@ -847,7 +847,7 @@ void View::DrawSampleParents()
     {
         auto ss = m_worker.GetSymbolStats( m_sampleParents.symAddr );
         auto excl = ss->excl;
-        auto stats = ss->parents;
+        auto stats = ss->wasExecuting;
 
         const auto symbol = m_worker.GetSymbolData( m_sampleParents.symAddr );
         if( !symbol->isInline && m_sampleParents.withInlines )
@@ -862,7 +862,7 @@ void View::DrawSampleParents()
                     auto istat = m_worker.GetSymbolStats( *inSym++ );
                     if( !istat ) continue;
                     excl += istat->excl;
-                    for( auto& v : istat->baseParents )
+                    for( auto& v : istat->wasExecutingBase )
                     {
                         auto it = stats.find( v.first );
                         if( it == stats.end() )

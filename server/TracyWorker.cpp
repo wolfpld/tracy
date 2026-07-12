@@ -7838,10 +7838,10 @@ void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint
     }
 
     sym0 = m_data.symbolStats.find( frame0.symAddr );
-    auto sit = sym0->second.parents.find( parentIdx );
-    if( sit == sym0->second.parents.end() )
+    auto sit = sym0->second.wasExecuting.find( parentIdx );
+    if( sit == sym0->second.wasExecuting.end() )
     {
-        sym0->second.parents.emplace( parentIdx, count );
+        sym0->second.wasExecuting.emplace( parentIdx, count );
     }
     else
     {
@@ -7878,10 +7878,10 @@ void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint
         }
     }
 
-    auto bit = sym0->second.baseParents.find( baseParentIdx );
-    if( bit == sym0->second.baseParents.end() )
+    auto bit = sym0->second.wasExecutingBase.find( baseParentIdx );
+    if( bit == sym0->second.wasExecutingBase.end() )
     {
-        sym0->second.baseParents.emplace( baseParentIdx, count );
+        sym0->second.wasExecutingBase.emplace( baseParentIdx, count );
     }
     else
     {

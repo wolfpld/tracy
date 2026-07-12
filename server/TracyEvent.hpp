@@ -875,8 +875,8 @@ struct Parameter
 struct SymbolStats
 {
     uint32_t incl, excl;
-    unordered_flat_map<uint32_t, uint32_t> parents;
-    unordered_flat_map<uint32_t, uint32_t> baseParents;
+    unordered_flat_map<uint32_t, uint32_t> wasExecuting;
+    unordered_flat_map<uint32_t, uint32_t> wasExecutingBase;
 };
 
 

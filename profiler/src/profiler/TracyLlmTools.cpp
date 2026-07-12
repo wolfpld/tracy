@@ -1054,7 +1054,7 @@ std::string TracyLlmTools::SymbolParents( const std::string& address, uint32_t l
     if( !symbol ) return "Symbol not found.";
     if( symbol->isInline ) return "Symbol is inline.";
 
-    auto stats = ss->parents;
+    auto stats = ss->wasExecuting;
     auto excl = ss->excl;
 
     const auto symLen = symbol->size.Val();
@@ -1067,7 +1067,7 @@ std::string TracyLlmTools::SymbolParents( const std::string& address, uint32_t l
             auto istat = m_worker.GetSymbolStats( *inSym++ );
             if( !istat ) continue;
             excl += istat->excl;
-            for( auto& v : istat->baseParents )
+            for( auto& v : istat->wasExecutingBase )
             {
                 auto it = stats.find( v.first );
                 if( it == stats.end() )

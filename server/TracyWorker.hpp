@@ -333,10 +333,10 @@ private:
         unordered_flat_map<uint64_t, uint64_t> codeSymbolMap;
 
 #ifndef TRACY_NO_STATISTICS
-        unordered_flat_map<VarArray<CallstackFrameId>*, uint32_t, VarArrayHasher<CallstackFrameId>, VarArrayComparator<CallstackFrameId>> parentCallstackMap;
-        Vector<short_ptr<VarArray<CallstackFrameId>>> parentCallstackPayload;
-        unordered_flat_map<CallstackFrameId, CallstackFrameData*, CallstackFrameIdHash, CallstackFrameIdCompare> parentCallstackFrameMap;
-        unordered_flat_map<const CallstackFrameData*, CallstackFrameId, RevFrameHash, RevFrameComp> revParentFrameMap;
+        unordered_flat_map<VarArray<CallstackFrameId>*, uint32_t, VarArrayHasher<CallstackFrameId>, VarArrayComparator<CallstackFrameId>> syntheticCallstackMap;
+        Vector<short_ptr<VarArray<CallstackFrameId>>> syntheticCallstackPayload;
+        unordered_flat_map<CallstackFrameId, CallstackFrameData*, CallstackFrameIdHash, CallstackFrameIdCompare> syntheticCallstackFrameMap;
+        unordered_flat_map<const CallstackFrameData*, CallstackFrameId, RevFrameHash, RevFrameComp> revSyntheticFrameMap;
         unordered_flat_map<uint32_t, uint32_t> postponedSamples;
         unordered_flat_map<CallstackFrameId, uint32_t, CallstackFrameIdHash, CallstackFrameIdCompare> pendingInstructionPointers;
         unordered_flat_map<uint64_t, unordered_flat_map<CallstackFrameId, uint32_t, CallstackFrameIdHash, CallstackFrameIdCompare>> instructionPointersMap;
@@ -520,8 +520,8 @@ public:
     uint64_t GetSrcLocCount() const { return m_data.sourceLocationPayload.size() + m_data.sourceLocation.size(); }
     uint64_t GetCallstackPayloadCount() const { return m_data.callstackPayload.size() - 1; }
 #ifndef TRACY_NO_STATISTICS
-    uint64_t GetCallstackParentPayloadCount() const { return m_data.parentCallstackPayload.size(); }
-    uint64_t GetCallstackParentFrameCount() const { return m_callstackParentNextIdx; }
+    uint64_t GetCallstackSyntheticPayloadCount() const { return m_data.syntheticCallstackPayload.size(); }
+    uint64_t GetCallstackSyntheticFrameCount() const { return m_callstackSyntheticNextIdx; }
 #endif
     uint64_t GetCallstackFrameCount() const { return m_data.callstackFrameMap.size() - m_pendingCallstackFrames; }
     uint64_t GetCallstackSampleCount() const { return m_data.samplesCnt; }
@@ -592,8 +592,8 @@ public:
     unordered_flat_map<CallstackFrameId, CallstackFrameData*, CallstackFrameIdHash, CallstackFrameIdCompare>& GetCallstackFrameMap() { return m_data.callstackFrameMap; }
 
 #ifndef TRACY_NO_STATISTICS
-    const VarArray<CallstackFrameId>& GetParentCallstack( uint32_t idx ) const { return *m_data.parentCallstackPayload[idx]; }
-    const CallstackFrameData* GetParentCallstackFrame( const CallstackFrameId& ptr ) const;
+    const VarArray<CallstackFrameId>& GetSyntheticCallstack( uint32_t idx ) const { return *m_data.syntheticCallstackPayload[idx]; }
+    const CallstackFrameData* GetSyntheticCallstackFrame( const CallstackFrameId& ptr ) const;
     const Vector<SampleDataRange>* GetSamplesForSymbol( uint64_t symAddr ) const;
     const Vector<ChildSample>* GetChildSamples( uint64_t addr ) const;
 #endif
@@ -1005,7 +1005,7 @@ private:
     bool UpdateSampleStatistics( uint32_t callstack, uint32_t count, bool canPostpone );
     void UpdateSampleStatisticsPostponed( decltype(Worker::DataBlock::postponedSamples.begin())& it );
     void UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint16_t framesCount, uint32_t count, const VarArray<CallstackFrameId>& cs );
-    CallstackFrameId InternParentFrame( const CallstackFrameData& cfd );
+    CallstackFrameId InternSyntheticFrame( const CallstackFrameData& cfd );
     tracy_force_inline void GetStackWithInlines( Vector<InlineStackData>& ret, const VarArray<CallstackFrameId>& cs );
     tracy_force_inline int AddGhostZone( const VarArray<CallstackFrameId>& cs, Vector<GhostZone>* vec, uint64_t t );
 #endif
@@ -1113,7 +1113,7 @@ private:
     CallstackFrameData* m_callstackFrameStaging;
     uint64_t m_callstackFrameStagingPtr;
     uint64_t m_callstackAllocNextIdx = 0;
-    uint64_t m_callstackParentNextIdx = 0;
+    uint64_t m_callstackSyntheticNextIdx = 0;
 
     uint32_t m_serialNextCallstack = 0;
     uint64_t m_memNamePayload = 0;

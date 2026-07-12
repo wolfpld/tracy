@@ -114,15 +114,15 @@ void View::DrawInfo()
         if( m_worker.AreCallstackSamplesReady() )
         {
             ImGui::SameLine();
-            TextFocused( "+", RealToString( m_worker.GetCallstackParentPayloadCount() ) );
-            TooltipIfHovered( "Parent call stacks for stack samples" );
+            TextFocused( "+", RealToString( m_worker.GetCallstackSyntheticPayloadCount() ) );
+            TooltipIfHovered( "Synthetic call stacks for stack samples" );
         }
         TextFocused( "Call stack frames:", RealToString( m_worker.GetCallstackFrameCount() ) );
         if( m_worker.AreCallstackSamplesReady() )
         {
             ImGui::SameLine();
-            TextFocused( "+", RealToString( m_worker.GetCallstackParentFrameCount() ) );
-            TooltipIfHovered( "Parent call stack frames for stack samples" );
+            TextFocused( "+", RealToString( m_worker.GetCallstackSyntheticFrameCount() ) );
+            TooltipIfHovered( "Synthetic call stack frames for stack samples" );
         }
         TextFocused( "Call stack samples:", RealToString( m_worker.GetCallstackSampleCount() ) );
         TextFocused( "Ghost zones:", RealToString( m_worker.GetGhostZonesCount() ) );

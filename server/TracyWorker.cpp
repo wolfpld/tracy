@@ -2265,11 +2265,11 @@ const CallstackFrameData* Worker::GetCallstackFrame( const CallstackFrameId& ptr
 }
 
 #ifndef TRACY_NO_STATISTICS
-const CallstackFrameData* Worker::GetParentCallstackFrame( const CallstackFrameId& ptr ) const
+const CallstackFrameData* Worker::GetSyntheticCallstackFrame( const CallstackFrameId& ptr ) const
 {
     assert( ptr.custom == 1 );
-    auto it = m_data.parentCallstackFrameMap.find( ptr );
-    if( it == m_data.parentCallstackFrameMap.end() )
+    auto it = m_data.syntheticCallstackFrameMap.find( ptr );
+    if( it == m_data.syntheticCallstackFrameMap.end() )
     {
         return nullptr;
     }
@@ -7793,7 +7793,7 @@ void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint
             .imageName = fexcl->imageName
         };
         for( int i=0; i<fxsz-1; i++ ) cfd.data[i] = fexcl->data[i+1];
-        parentFrameId = InternParentFrame( cfd );
+        parentFrameId = InternSyntheticFrame( cfd );
     }
 
     uint32_t parentIdx;
@@ -7823,12 +7823,12 @@ void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint
         auto arr = (VarArray<CallstackFrameId>*)( mem + sz * sizeof( CallstackFrameId ) );
         new(arr) VarArray<CallstackFrameId>( sz, data );
 
-        auto it = m_data.parentCallstackMap.find( arr );
-        if( it == m_data.parentCallstackMap.end() )
+        auto it = m_data.syntheticCallstackMap.find( arr );
+        if( it == m_data.syntheticCallstackMap.end() )
         {
-            parentIdx = m_data.parentCallstackPayload.size();
-            m_data.parentCallstackMap.emplace( arr, parentIdx );
-            m_data.parentCallstackPayload.push_back( arr );
+            parentIdx = m_data.syntheticCallstackPayload.size();
+            m_data.syntheticCallstackMap.emplace( arr, parentIdx );
+            m_data.syntheticCallstackPayload.push_back( arr );
         }
         else
         {
@@ -7864,12 +7864,12 @@ void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint
         auto arr = (VarArray<CallstackFrameId>*)( mem + sz * sizeof( CallstackFrameId ) );
         new(arr) VarArray<CallstackFrameId>( sz, data );
 
-        auto it = m_data.parentCallstackMap.find( arr );
-        if( it == m_data.parentCallstackMap.end() )
+        auto it = m_data.syntheticCallstackMap.find( arr );
+        if( it == m_data.syntheticCallstackMap.end() )
         {
-            baseParentIdx = m_data.parentCallstackPayload.size();
-            m_data.parentCallstackMap.emplace( arr, baseParentIdx );
-            m_data.parentCallstackPayload.push_back( arr );
+            baseParentIdx = m_data.syntheticCallstackPayload.size();
+            m_data.syntheticCallstackMap.emplace( arr, baseParentIdx );
+            m_data.syntheticCallstackPayload.push_back( arr );
         }
         else
         {
@@ -7889,10 +7889,10 @@ void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint
     }
 }
 
-CallstackFrameId Worker::InternParentFrame( const CallstackFrameData& cfd )
+CallstackFrameId Worker::InternSyntheticFrame( const CallstackFrameData& cfd )
 {
-    auto it = m_data.revParentFrameMap.find( &cfd );
-    if( it != m_data.revParentFrameMap.end() ) return it->second;
+    auto it = m_data.revSyntheticFrameMap.find( &cfd );
+    if( it != m_data.revSyntheticFrameMap.end() ) return it->second;
 
     auto frame = m_slab.Alloc<CallstackFrame>( cfd.size );
     memcpy( frame, cfd.data, sizeof( CallstackFrame ) * cfd.size );
@@ -7902,16 +7902,16 @@ CallstackFrameId Worker::InternParentFrame( const CallstackFrameData& cfd )
     frameData->size = cfd.size;
     frameData->imageName = cfd.imageName;
 
-    CallstackFrameId parentFrameId = {
-        .idx = m_callstackParentNextIdx++,
+    CallstackFrameId syntheticFrameId = {
+        .idx = m_callstackSyntheticNextIdx++,
         .sel = 0,
         .custom = 1
     };
 
-    m_data.parentCallstackFrameMap.emplace( parentFrameId, frameData );
-    m_data.revParentFrameMap.emplace( frameData, parentFrameId );
+    m_data.syntheticCallstackFrameMap.emplace( syntheticFrameId, frameData );
+    m_data.revSyntheticFrameMap.emplace( frameData, syntheticFrameId );
 
-    return parentFrameId;
+    return syntheticFrameId;
 }
 #endif
 

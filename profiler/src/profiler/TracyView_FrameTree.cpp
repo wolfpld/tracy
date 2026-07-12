@@ -39,7 +39,7 @@ static tracy_force_inline T* GetFrameTreeItemGroup( unordered_flat_map<uint64_t,
 template<class T>
 static tracy_force_inline T* GetParentFrameTreeItemGroup( unordered_flat_map<uint64_t, T>& tree, CallstackFrameId idx, const Worker& worker )
 {
-    auto frameDataPtr = idx.custom ? worker.GetParentCallstackFrame( idx ) : worker.GetCallstackFrame( idx );
+    auto frameDataPtr = idx.custom ? worker.GetSyntheticCallstackFrame( idx ) : worker.GetCallstackFrame( idx );
     if( !frameDataPtr ) return nullptr;
 
     auto& frameData = *frameDataPtr;
@@ -247,7 +247,7 @@ unordered_flat_map<uint64_t, CallstackFrameTree> View::GetParentsCallstackFrameT
     {
         for( auto& path : stacks )
         {
-            auto& cs = m_worker.GetParentCallstack( path.first );
+            auto& cs = m_worker.GetSyntheticCallstack( path.first );
             auto base = cs.back();
             auto treePtr = GetParentFrameTreeItemGroup( root, base, m_worker );
             if( treePtr )
@@ -266,7 +266,7 @@ unordered_flat_map<uint64_t, CallstackFrameTree> View::GetParentsCallstackFrameT
     {
         for( auto& path : stacks )
         {
-            auto& cs = m_worker.GetParentCallstack( path.first );
+            auto& cs = m_worker.GetSyntheticCallstack( path.first );
             auto base = cs.back();
             auto treePtr = GetFrameTreeItemNoGroup( root, base );
             treePtr->count += path.second;
@@ -377,7 +377,7 @@ unordered_flat_map<uint64_t, CallstackFrameTree> View::GetParentsCallstackFrameT
     {
         for( auto& path : stacks )
         {
-            auto& cs = m_worker.GetParentCallstack( path.first );
+            auto& cs = m_worker.GetSyntheticCallstack( path.first );
             auto base = cs.front();
             auto treePtr = GetParentFrameTreeItemGroup( root, base, m_worker );
             if( treePtr )
@@ -396,7 +396,7 @@ unordered_flat_map<uint64_t, CallstackFrameTree> View::GetParentsCallstackFrameT
     {
         for( auto& path : stacks )
         {
-            auto& cs = m_worker.GetParentCallstack( path.first );
+            auto& cs = m_worker.GetSyntheticCallstack( path.first );
             auto base = cs.front();
             auto treePtr = GetFrameTreeItemNoGroup( root, base );
             treePtr->count += path.second;
@@ -758,7 +758,7 @@ void View::DrawParentsFrameTreeLevel( const unordered_flat_map<uint64_t, Callsta
         auto& v = _v->second;
         const auto isKernel = ( m_worker.GetCanonicalPointer( v.frame ) >> 63 ) != 0;
         idx++;
-        auto frameDataPtr = v.frame.custom ? m_worker.GetParentCallstackFrame( v.frame ) : m_worker.GetCallstackFrame( v.frame );
+        auto frameDataPtr = v.frame.custom ? m_worker.GetSyntheticCallstackFrame( v.frame ) : m_worker.GetCallstackFrame( v.frame );
         if( frameDataPtr )
         {
             auto& frameData = *frameDataPtr;

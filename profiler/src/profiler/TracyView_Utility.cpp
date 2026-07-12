@@ -948,7 +948,7 @@ nlohmann::json View::GetCallstackJson( const CallstackFrameId* data, size_t size
     while( data < end )
     {
         auto& entry = *data++;
-        auto frameData = entry.custom ? m_worker.GetParentCallstackFrame( entry ) : m_worker.GetCallstackFrame( entry );
+        auto frameData = entry.custom ? m_worker.GetSyntheticCallstackFrame( entry ) : m_worker.GetCallstackFrame( entry );
         if( !frameData )
         {
             frames.push_back( { "pointer", m_worker.GetCanonicalPointer( entry ) } );

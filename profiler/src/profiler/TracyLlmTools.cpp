@@ -1097,7 +1097,7 @@ std::string TracyLlmTools::SymbolParents( const std::string& address, uint32_t l
 
     for( auto& entry : sorted )
     {
-        auto& cs = m_worker.GetParentCallstack( entry->first );
+        auto& cs = m_worker.GetSyntheticCallstack( entry->first );
         auto frames = m_view.GetCallstackJson( cs.data(), cs.size() )["frames"];
 
         char buf[32];

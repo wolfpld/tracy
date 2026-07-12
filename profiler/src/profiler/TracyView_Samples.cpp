@@ -993,7 +993,7 @@ void View::DrawSampleParents()
             char buf[64];
             PrintStringPercent( buf, 100. * data[m_sampleParents.sel]->second / excl );
             TextDisabledUnformatted( buf );
-            auto& cs = m_worker.GetParentCallstack( data[m_sampleParents.sel]->first );
+            auto& cs = m_worker.GetSyntheticCallstack( data[m_sampleParents.sel]->first );
             if( s_config.llm )
             {
                 ImGui::SameLine();
@@ -1038,7 +1038,7 @@ void View::DrawSampleParents()
                 int bidx = 0;
                 for( auto& entry : cs )
                 {
-                    auto frameData = entry.custom ? m_worker.GetParentCallstackFrame( entry ) : m_worker.GetCallstackFrame( entry );
+                    auto frameData = entry.custom ? m_worker.GetSyntheticCallstackFrame( entry ) : m_worker.GetCallstackFrame( entry );
                     assert( frameData );
                     const auto fsz = frameData->size;
                     for( uint8_t f=0; f<fsz; f++ )

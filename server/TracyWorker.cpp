@@ -7787,35 +7787,13 @@ void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint
     CallstackFrameId parentFrameId;
     if( topFrameHasInlines )
     {
-        auto cfdata = (CallstackFrame*)alloca( uint8_t( fxsz-1 ) * sizeof( CallstackFrame ) );
-        for( int i=0; i<fxsz-1; i++ )
-        {
-            cfdata[i] = fexcl->data[i+1];
-        }
-        CallstackFrameData cfd;
-        cfd.data = cfdata;
-        cfd.size = fxsz-1;
-        cfd.imageName = fexcl->imageName;
-
-        auto it = m_data.revParentFrameMap.find( &cfd );
-        if( it == m_data.revParentFrameMap.end() )
-        {
-            auto frame = m_slab.Alloc<CallstackFrame>( fxsz-1 );
-            memcpy( frame, cfdata, ( fxsz-1 ) * sizeof( CallstackFrame ) );
-            auto frameData = m_slab.AllocInit<CallstackFrameData>();
-            frameData->data = frame;
-            frameData->size = fxsz - 1;
-            frameData->imageName = fexcl->imageName;
-            parentFrameId.idx = m_callstackParentNextIdx++;
-            parentFrameId.sel = 0;
-            parentFrameId.custom = 1;
-            m_data.parentCallstackFrameMap.emplace( parentFrameId, frameData );
-            m_data.revParentFrameMap.emplace( frameData, parentFrameId );
-        }
-        else
-        {
-            parentFrameId = it->second;
-        }
+        CallstackFrameData cfd = {
+            .data = (CallstackFrame*)alloca( sizeof( CallstackFrame ) * ( fxsz - 1 ) ),
+            .size = uint8_t( fxsz-1 ),
+            .imageName = fexcl->imageName
+        };
+        for( int i=0; i<fxsz-1; i++ ) cfd.data[i] = fexcl->data[i+1];
+        parentFrameId = InternParentFrame( cfd );
     }
 
     uint32_t parentIdx;
@@ -7909,6 +7887,31 @@ void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint
     {
         bit->second += count;
     }
+}
+
+CallstackFrameId Worker::InternParentFrame( const CallstackFrameData& cfd )
+{
+    auto it = m_data.revParentFrameMap.find( &cfd );
+    if( it != m_data.revParentFrameMap.end() ) return it->second;
+
+    auto frame = m_slab.Alloc<CallstackFrame>( cfd.size );
+    memcpy( frame, cfd.data, sizeof( CallstackFrame ) * cfd.size );
+
+    auto frameData = m_slab.AllocInit<CallstackFrameData>();
+    frameData->data = frame;
+    frameData->size = cfd.size;
+    frameData->imageName = cfd.imageName;
+
+    CallstackFrameId parentFrameId = {
+        .idx = m_callstackParentNextIdx++,
+        .sel = 0,
+        .custom = 1
+    };
+
+    m_data.parentCallstackFrameMap.emplace( parentFrameId, frameData );
+    m_data.revParentFrameMap.emplace( frameData, parentFrameId );
+
+    return parentFrameId;
 }
 #endif
 

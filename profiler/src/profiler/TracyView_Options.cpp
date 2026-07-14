@@ -126,6 +126,22 @@ void View::DrawOptions()
             }
             if( expand )
             {
+                ImGui::SameLine();
+                if( ImGui::SmallButton( "Select all" ) )
+                {
+                    for( const auto& v : categories )
+                    {
+                        Vis( v.first ) = true;
+                    }
+                }
+                ImGui::SameLine();
+                if( ImGui::SmallButton( "Unselect all" ) )
+                {
+                    for( const auto& v : categories )
+                    {
+                        Vis( v.first ) = false;
+                    }
+                }
                 int idx = 0;
                 for( const auto& v : categories )
                 {

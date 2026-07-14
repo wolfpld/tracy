@@ -102,7 +102,8 @@ void View::DrawOptions()
         DefaultMarker(default_markers_active);
     }
 
-    if( !m_worker.GetSections().empty() )
+    const auto& sections = m_worker.GetSections();
+    if( !sections.empty() )
     {
         ImGui::Separator();
         val = m_vd.drawSections;
@@ -147,6 +148,9 @@ void View::DrawOptions()
                 {
                     ImGui::PushID( idx++ );
                     SmallCheckbox( m_worker.GetSectionCategoryDescription( v.first ), &Vis( v.first ) );
+                    ImGui::SameLine();
+                    auto it = sections.find( v.first );
+                    ImGui::TextDisabled( "(%s)", RealToString( it->second.size() ) );
                     ImGui::PopID();
                 }
                 ImGui::TreePop();

@@ -637,7 +637,16 @@ void View::DrawFrameStatistics()
                         ImGui::SameLine();
                         ImGui::Text( "%s - %s", TimeToString( t0 ), TimeToString( t1 ) );
                         ImGui::SameLine();
-                        ImGui::TextDisabled( "(%s FPS - %s FPS)", RealToString( round( 1000000000.0 / t0 ) ), RealToString( round( 1000000000.0 / t1 ) ) );
+                        const auto fps0 = round( 1000000000.0 / t0 );
+                        const auto fps1 = round( 1000000000.0 / t1 );
+                        if( fps0 == fps1 )
+                        {
+                            ImGui::TextDisabled( "(%s FPS)", RealToString( fps0 ) );
+                        }
+                        else
+                        {
+                            ImGui::TextDisabled( "(%s FPS - %s FPS)", RealToString( fps0 ), RealToString( fps1 ) );
+                        }
                         TextFocused( "Count:", RealToString( bins[bin] ) );
                         ImGui::EndTooltip();
                     }

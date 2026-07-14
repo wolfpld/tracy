@@ -431,7 +431,7 @@ void View::DrawTimelineSections()
     {
         const auto offset = ostep * rowidx;
 
-        pdqsort_branchless( row.items.begin(), row.items.end(), [&data]( auto& a, auto& b ) { return a.item->start.Val() < b.item->start.Val(); } );
+        pdqsort_branchless( row.items.begin(), row.items.end(), []( auto& a, auto& b ) { return a.item->start.Val() < b.item->start.Val(); } );
 
         size_t i = 0;
         while( i < row.items.size() )

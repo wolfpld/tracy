@@ -227,6 +227,7 @@ vx.xx.x (2026-xx-xx)
     marked as a section.
   - Each section is a distinct region not restricted by other sections.
   - Multiple sections can overlap.
+  - Sections can be assigned to user-defined categories.
   - Can be used to set time range limits.
   - Exposed via Lua bindings.
 - Find zone window now also displays coefficient of variation, in addition
@@ -246,6 +247,12 @@ vx.xx.x (2026-xx-xx)
     dependant on how divergent the numeric values are.
   - It is now possible to limit time range for both traces that are compared
     to their respective annotations or sections.
+- Frame image playback improvements.
+  - Playback can be looped.
+  - The range of played frame images can be limited, either manually, or by
+    copying annotation, section, or time range limit. There's an "require
+    frame coverage" option to only include frames that are at least 75%
+    within the source region.
 
 
 v0.13.1 (2025-12-11)
@@ -887,14 +894,8 @@ v0.8.0 (2022-03-28)
   trees.
 - Updated project build files to MSVC 2022.
 - Call stack tooltips now also show the executable image name.
-- Frame image playback improvements.
-  - Frames can be now changed by interacting with the frame image slider
-    using the mouse wheel.
-  - Playback can be looped.
-  - The range of played frame images can be limited, either manually, or by
-    copying annotation, section, or time range limit. There's an "require
-    frame coverage" option to only include frames that are at least 75%
-    within the source region.
+- Playback frames can be now changed by interacting with the frame image
+  slider using the mouse wheel.
 - Signal used to handle crashes on Linux can be now redefined.
 - Various DPI scaling improvements.
 - User interface can be now scaled in run time.

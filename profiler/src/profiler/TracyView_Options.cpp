@@ -150,7 +150,7 @@ void View::DrawOptions()
                     SmallCheckbox( m_worker.GetSectionCategoryDescription( v.first ), &Vis( v.first ) );
                     ImGui::SameLine();
                     auto it = sections.find( v.first );
-                    ImGui::TextDisabled( "(%s)", RealToString( it->second.size() ) );
+                    if( it != sections.end() ) ImGui::TextDisabled( "(%s)", RealToString( it->second.size() ) );
                     ImGui::PopID();
                 }
                 ImGui::TreePop();

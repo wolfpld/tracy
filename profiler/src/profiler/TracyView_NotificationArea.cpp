@@ -207,6 +207,18 @@ void View::DrawNotificationArea()
             if( IsMouseClicked( ImGuiMouseButton_Left ) ) m_vd.drawPlots = true;
         }
     }
+    if( !m_vd.drawSections )
+    {
+        ImGui::SameLine();
+        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_ARROWS_LEFT_RIGHT_TO_LINE );
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted( "Sections are hidden." );
+            ImGui::EndTooltip();
+            if( IsMouseClicked( ImGuiMouseButton_Left ) ) m_vd.drawSections = true;
+        }
+    }
     {
         bool hidden = false;
         for( auto& v : m_visMap )

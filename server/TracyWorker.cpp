@@ -9195,4 +9195,15 @@ bool Worker::IsSourceExternalBody( StringIdx filename, uint32_t key, unordered_f
     return res;
 }
 
+const char* Worker::GetSectionCategoryDescription( uint16_t category ) const
+{
+    auto it = m_data.sectionsDescription.find( category );
+    assert( it != m_data.sectionsDescription.end() );
+    if( it->second.Active() ) return GetString( it->second );
+
+    static char buf[64];
+    sprintf( buf, "Category %" PRIu16, category );
+    return buf;
+}
+
 }

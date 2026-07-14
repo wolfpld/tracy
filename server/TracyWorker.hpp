@@ -575,6 +575,7 @@ public:
     const Vector<short_ptr<FrameImage>>& GetFrameImages() const { return m_data.frameImage; }
     const Vector<StringRef>& GetAppInfo() const { return m_data.appInfo; }
     const unordered_flat_map<uint16_t, Vector<SectionItem>>& GetSections() const { return m_data.sections; }
+    const char* GetSectionCategoryDescription( uint16_t category ) const;
 
     const VarArray<CallstackFrameId>& GetCallstack( uint32_t idx ) const { return *m_data.callstackPayload[idx]; }
     const CallstackFrameData* GetCallstackFrame( const CallstackFrameId& ptr ) const;

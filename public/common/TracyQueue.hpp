@@ -83,6 +83,7 @@ enum class QueueType : uint8_t
     FiberLeave,
     SectionEnter,
     SectionLeave,
+    SectionSetup,
     Terminate,
     KeepAlive,
     ThreadContext,
@@ -327,6 +328,17 @@ struct QueueSectionLeave
 {
     int64_t time;
     uint32_t id;
+};
+
+struct QueueSectionSetup
+{
+    uint16_t category;
+};
+
+struct QueueSectionSetupFat : public QueueSectionSetup
+{
+    uint64_t text;      // ptr
+    uint16_t size;
 };
 
 struct QueueLockTerminate
@@ -944,6 +956,8 @@ struct QueueItem
         QueueSectionEnter sectionEnter;
         QueueSectionEnterFat sectionEnterFat;
         QueueSectionLeave sectionLeave;
+        QueueSectionSetup sectionSetup;
+        QueueSectionSetupFat sectionSetupFat;
         QueueGpuZoneAnnotation zoneAnnotation;
     };
 };
@@ -1025,6 +1039,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueFiberLeave ),
     sizeof( QueueHeader ) + sizeof( QueueSectionEnter ),
     sizeof( QueueHeader ) + sizeof( QueueSectionLeave ),
+    sizeof( QueueHeader ) + sizeof( QueueSectionSetup ),
     // above items must be first
     sizeof( QueueHeader ),                                  // terminate
     sizeof( QueueHeader ),                                  // keep alive

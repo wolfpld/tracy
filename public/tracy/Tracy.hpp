@@ -120,6 +120,7 @@
 
 #define TracySectionEnter(x, ...) 0
 #define TracySectionLeave(x)
+#define TracySectionSetup(x, y, ...)
 
 #define TracyFiberEnter(x)
 #define TracyFiberEnterHint(x,y)
@@ -260,6 +261,7 @@
 
 #define TracySectionEnter( fmt, ... ) tracy::Profiler::SectionEnter( fmt, ##__VA_ARGS__ )
 #define TracySectionLeave( id ) tracy::Profiler::SectionLeave( id )
+#define TracySectionSetup( category, fmt, ... ) tracy::Profiler::SectionSetup( category, fmt, ##__VA_ARGS__ )
 
 #ifdef TRACY_FIBERS
 #  define TracyFiberEnter( fiber ) tracy::Profiler::EnterFiber( fiber, 0 )

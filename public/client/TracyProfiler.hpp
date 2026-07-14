@@ -840,6 +840,32 @@ public:
         TracyLfqCommit;
     }
 
+    static void SectionSetup( uint16_t category, const char* fmt, ... ) TRACY_ATTRIBUTE_FORMAT_PRINTF( 2, 3 )
+    {
+        va_list args;
+        va_start( args, fmt );
+        auto size = vsnprintf( nullptr, 0, fmt, args );
+        va_end( args );
+        if( size < 0 ) return;
+        assert( size < (std::numeric_limits<uint16_t>::max)() );
+
+        char* ptr = (char*)tracy_malloc( size_t( size ) + 1 );
+        va_start( args, fmt );
+        vsnprintf( ptr, size_t( size ) + 1, fmt, args );
+        va_end( args );
+
+        TracyLfqPrepare( QueueType::SectionSetup );
+        MemWrite( &item->sectionSetupFat.category, category );
+        MemWrite( &item->sectionSetupFat.text, (uint64_t)ptr );
+        MemWrite( &item->sectionSetupFat.size, (uint16_t)size );
+
+#ifdef TRACY_ON_DEMAND
+        GetProfiler().DeferItem( *item );
+#endif
+
+        TracyLfqCommit;
+    }
+
     void SendCallstack( int32_t depth, const char** skipBefore );
     static void CutCallstack( void* callstack, const char** skipBefore );
 

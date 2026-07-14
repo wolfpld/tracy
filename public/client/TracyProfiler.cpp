@@ -2470,6 +2470,7 @@ static void FreeAssociatedMemory( const QueueItem& item )
 #ifdef TRACY_ON_DEMAND
     case QueueType::MessageAppInfo:
     case QueueType::GpuContextName:
+    case QueueType::SectionSetup:
         // Don't free memory associated with deferred messages.
         break;
 #endif
@@ -2489,6 +2490,12 @@ static void FreeAssociatedMemory( const QueueItem& item )
         ptr = MemRead( &item.sectionEnterFat.text );
         tracy_free( (void*)ptr );
         break;
+#ifndef TRACY_ON_DEMAND
+    case QueueType::SectionSetup:
+        ptr = MemRead( &item.sectionSetupFat.text );
+        tracy_free( (void*)ptr );
+        break;
+#endif
     default:
         break;
     }
@@ -2888,6 +2895,14 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         MemWrite( &item->sectionLeave.time, dt );
                         break;
                     }
+                    case QueueType::SectionSetup:
+                        ptr = MemRead( &item->sectionSetupFat.text );
+                        size = MemRead( &item->sectionSetupFat.size );
+                        SendSingleString( (const char*)ptr, size );
+#ifndef TRACY_ON_DEMAND
+                        tracy_free_fast( (void*)ptr );
+#endif
+                        break;
                     default:
                         assert( false );
                         break;

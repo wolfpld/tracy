@@ -1492,6 +1492,14 @@ struct TracySection
 
 Each of the sections you add is handled independently of any other section. Multiple sections may overlap, either with a hierarchical structure or with each section having a part that does not coincide with other sections.
 
+\subsubsection{Section categories}
+
+In some use cases, you will want to label your sections with specific category labels. For example, you may want to mark which level is currently loaded in your game and also mark when the inventory screen is open. When you are only interested in tracking the level progression, sifting through all the times the inventory was on the screen would be quite cumbersome. Section categories let you filter out uninteresting sections.
+
+To set a category for the section, start the section with the \texttt{TracySectionEnterCategory(category, fmt, ...)} macro, where \texttt{category} is an \texttt{uint16\_t} identifier. Sections without an explicit category assignment (i.e., made with the \texttt{TracySectionEnter} macro) are automatically in the $0$ category.
+
+You can describe each of the categories you want to use with the \texttt{TracySectionSetup(category, fmt, ...)} macro. Section categories with no name set will automatically be assigned a name based on the identifier (e.g., \emph{Category 0}).
+
 \subsection{Marking locks}
 
 Modern programs must use multi-threading to achieve the full performance capability of the CPU. However, correct execution requires claiming exclusive access to data shared between threads. When many threads want to simultaneously enter the same critical section, the application's multi-threaded performance advantage nullifies. To help solve this problem, Tracy can collect and display lock interactions in threads.
@@ -3879,6 +3887,8 @@ With some data sets such reconstruction will not be possible, in which case sect
 
 Clicking the \MMB{}~middle mouse button on a section will zoom the view to the extent of the section.
 
+Section hierarchy reconstruction is not affected by section categories. There is only a single lane for all sections. Enabling or disabling specific section categories in the options window, however, will affect which sections are visible here.
+
 \paragraph{Zones, locks and plots display}
 \label{zoneslocksplots}
 
@@ -4194,7 +4204,9 @@ In this window, you can set various trace-related options. For example, the time
 \begin{itemize}
 \item \emph{\faSignature{} Draw CPU usage graph} -- You can disable drawing of the CPU usage graph here.
 \end{itemize}
-\item \emph{\faEye{} Draw GPU zones} -- Allows disabling display of OpenGL/Vulkan/Metal/Direct3D/OpenCL/CUDA/WebGPU zones. The \emph{GPU zones} drop-down allows disabling individual GPU contexts and setting CPU/GPU drift offsets of uncalibrated contexts (see section~\ref{gpuprofiling} for more information). The \emph{\faRobot~Auto} button automatically measures the GPU drift value\footnote{There is an assumption that drift is linear. Automated measurement calculates and removes change over time in delay-to-execution of GPU zones. Resulting value may still be incorrect.}.
+\item \emph{\faEyeDropper{}~Draw stack samples} -- Controls if stack samples for each thread are displayed on the timeline.
+\item \emph{\faArrowsLeftRightToLine{}~Draw sections} -- Allows disabling display of sections (see chapter~\ref{sections}). If there are multiple section categories, there's also an expandable list of categories that can be disabled or enabled.
+\item \emph{\faEye{} Draw GPU zones} -- Allows disabling display of OpenGL / Vulkan / Metal / Direct3D / OpenCL / CUDA / WebGPU zones. The \emph{GPU zones} drop-down allows disabling individual GPU contexts and setting CPU/GPU drift offsets of uncalibrated contexts (see section~\ref{gpuprofiling} for more information). The \emph{\faRobot~Auto} button automatically measures the GPU drift value\footnote{There is an assumption that drift is linear. Automated measurement calculates and removes change over time in delay-to-execution of GPU zones. Resulting value may still be incorrect.}.
 \item \emph{\faMicrochip{} Draw CPU zones} -- Determines whether CPU zones are displayed.
 \begin{itemize}
 \item \emph{\faGhost{} Draw ghost zones} -- Controls if ghost zones should be displayed in threads which don't have any instrumented zones available.
@@ -5084,12 +5096,12 @@ This window displays information about time range limits (section~\ref{timerange
 
 \begin{itemize}
 \item \emph{\faMicroscope{}~Focus} -- Set the timeline view to the time range extent.
-\item \emph{\faArrowsLeftRightToLine{}~Limit to view} -- Set the time range limit to current view.
+\item \emph{Limit to view} -- Set the time range limit to current view.
 \item \emph{\faNoteSticky{}~Add annotation} -- Create a new annotation matching the time range. See section~\ref{annotatingtrace} for more information.
 \item \faCopy{}~Copy from...:
 \begin{itemize}
 \item \emph{\faNoteSticky{}~Annotation} -- Allows using the annotation region for limiting purposes.
-\item \emph{Sections} -- Copies time range of a section. See section~\ref{sections} for more information.
+\item \emph{\faArrowsLeftRightToLine{}~Sections} -- Copies time range of a section. See section~\ref{sections} for more information.
 \item \emph{\faMagnifyingGlass{}~Find zone} -- Copies the find zone time range limit.
 \item \emph{\faArrowUpWideShort{}~Statistics} -- Copies the statistics time range limit.
 \item \emph{\faFireFlameCurved{}~Flame graph} -- Copies the flame graph time range limit.

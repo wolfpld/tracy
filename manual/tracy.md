@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-07-11 <https://github.com/wolfpld/tracy>
+2026-07-14 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -1314,6 +1314,14 @@ To mark when a section starts, use the `TracySectionEnter(fmt, ...)` macro with 
     };
 
 Each of the sections you add is handled independently of any other section. Multiple sections may overlap, either with a hierarchical structure or with each section having a part that does not coincide with other sections.
+
+### Section categories
+
+In some use cases, you will want to label your sections with specific category labels. For example, you may want to mark which level is currently loaded in your game and also mark when the inventory screen is open. When you are only interested in tracking the level progression, sifting through all the times the inventory was on the screen would be quite cumbersome. Section categories let you filter out uninteresting sections.
+
+To set a category for the section, start the section with the `TracySectionEnterCategory(category, fmt, ...)` macro, where `category` is an `uint16_t` identifier. Sections without an explicit category assignment (i.e., made with the `TracySectionEnter` macro) are automatically in the 0 category.
+
+You can describe each of the categories you want to use with the `TracySectionSetup(category, fmt, ...)` macro. Section categories with no name set will automatically be assigned a name based on the identifier (e.g., *Category 0*).
 
 ## Marking locks
 
@@ -3464,6 +3472,8 @@ With some data sets such reconstruction will not be possible, in which case sect
 
 Clicking the middle mouse button on a section will zoom the view to the extent of the section.
 
+Section hierarchy reconstruction is not affected by section categories. There is only a single lane for all sections. Enabling or disabling specific section categories in the options window, however, will affect which sections are visible here.
+
 #### Zones, locks and plots display {#zoneslocksplots}
 
 You will find the zones with locks and their associated threads on this combined view. The plots are graphed right below.
@@ -3745,7 +3755,11 @@ In this window, you can set various trace-related options. For example, the time
 
   - * Draw CPU usage graph* -- You can disable drawing of the CPU usage graph here.
 
-- * Draw GPU zones* -- Allows disabling display of OpenGL/Vulkan/Metal/Direct3D/OpenCL/CUDA/WebGPU zones. The *GPU zones* drop-down allows disabling individual GPU contexts and setting CPU/GPU drift offsets of uncalibrated contexts (see section [3.10](#gpuprofiling) for more information). The * Auto* button automatically measures the GPU drift value[^78].
+- * Draw stack samples* -- Controls if stack samples for each thread are displayed on the timeline.
+
+- * Draw sections* -- Allows disabling display of sections (see chapter [5.2.3.3](#sections)). If there are multiple section categories, there's also an expandable list of categories that can be disabled or enabled.
+
+- * Draw GPU zones* -- Allows disabling display of OpenGL / Vulkan / Metal / Direct3D / OpenCL / CUDA / WebGPU zones. The *GPU zones* drop-down allows disabling individual GPU contexts and setting CPU/GPU drift offsets of uncalibrated contexts (see section [3.10](#gpuprofiling) for more information). The * Auto* button automatically measures the GPU drift value[^78].
 
 - * Draw CPU zones* -- Determines whether CPU zones are displayed.
 
@@ -3800,6 +3814,8 @@ It is possible to store defaults for the settings marked with a *\** to the glob
  - Moon icon
  - Sliders icon
  - Signature icon
+ - Eye Dropper icon
+ - Arrows Left Right To Line icon
  - Eye icon
  - Robot icon
  - Microchip icon
@@ -4781,7 +4797,7 @@ This window displays information about time range limits (section [5.3](#timera
 
 - * Focus* -- Set the timeline view to the time range extent.
 
-- * Limit to view* -- Set the time range limit to current view.
+- *Limit to view* -- Set the time range limit to current view.
 
 - * Add annotation* -- Create a new annotation matching the time range. See section [5.3.1](#annotatingtrace) for more information.
 
@@ -4789,7 +4805,7 @@ This window displays information about time range limits (section [5.3](#timera
 
   - * Annotation* -- Allows using the annotation region for limiting purposes.
 
-  - *Sections* -- Copies time range of a section. See section [5.2.3.3](#sections) for more information.
+  - * Sections* -- Copies time range of a section. See section [5.2.3.3](#sections) for more information.
 
   - * Find zone* -- Copies the find zone time range limit.
 
@@ -4809,9 +4825,9 @@ Note that ranges displayed in the window have color hints that match the color o
 -----
 
  - Microscope icon
- - Arrows Left Right To Line icon
  - Note Sticky icon
  - Copy icon
+ - Arrows Left Right To Line icon
  - Magnifying Glass icon
  - Arrow Up Wide Short icon
  - Fire Flame Curved icon

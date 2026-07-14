@@ -119,6 +119,7 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, int 
             }
             else if( ImGui::BeginMenu( "Sections" ) )
             {
+                /*
                 int id = 0;
                 for( auto& v : sections )
                 {
@@ -133,6 +134,7 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, int 
                     ImGui::SameLine();
                     ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v.start.Val() ), TimeToStringExact( end ), TimeToString( end - v.start.Val() ) );
                 }
+                */
                 ImGui::EndMenu();
             }
 

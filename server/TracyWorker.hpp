@@ -408,9 +408,10 @@ private:
 
         unordered_flat_map<uint64_t, uint64_t> fiberToThreadMap;
 
-        Vector<SectionItem> sections;
+        unordered_flat_map<uint16_t, Vector<SectionItem>> sections;
         Vector<SectionItem> sectionsPending;
-        unordered_flat_set<uint64_t> sectionsActive;
+        unordered_flat_map<uint64_t, uint16_t> sectionsActive;
+        unordered_flat_map<uint16_t, StringIdx> sectionsDescription;
     };
 
     struct MbpsBlock
@@ -573,7 +574,7 @@ public:
     const unordered_flat_map<uint64_t, MemData*>& GetMemNameMap() const { return m_data.memNameMap; }
     const Vector<short_ptr<FrameImage>>& GetFrameImages() const { return m_data.frameImage; }
     const Vector<StringRef>& GetAppInfo() const { return m_data.appInfo; }
-    const Vector<SectionItem>& GetSections() const { return m_data.sections; }
+    const unordered_flat_map<uint16_t, Vector<SectionItem>>& GetSections() const { return m_data.sections; }
 
     const VarArray<CallstackFrameId>& GetCallstack( uint32_t idx ) const { return *m_data.callstackPayload[idx]; }
     const CallstackFrameData* GetCallstackFrame( const CallstackFrameId& ptr ) const;

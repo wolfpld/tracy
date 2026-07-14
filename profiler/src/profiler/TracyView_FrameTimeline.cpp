@@ -324,7 +324,7 @@ void View::DrawTimelineFrames( const FrameData& frames )
 
 struct SectionEntry
 {
-    uint32_t idx;
+    const SectionItem* item;
     int64_t len;
     int64_t start;
     int64_t end;
@@ -332,7 +332,7 @@ struct SectionEntry
 
 struct SectionRow
 {
-    std::vector<uint32_t> items;
+    std::vector<const SectionItem*> items;
     std::vector<std::pair<int64_t, int64_t>> available;
 };
 
@@ -341,20 +341,23 @@ void View::DrawTimelineSections()
     auto& data = m_worker.GetSections();
     if( data.empty() ) return;
 
-    uint32_t idx = 0;
     std::vector<SectionEntry> visible;
-    visible.reserve( data.size() );
-    for( auto& v : data )
+    for( auto& cat : data )
     {
-        const auto start = v.start.Val();
-        const auto end = v.end.IsNonNegative() ? v.end.Val() : m_worker.GetLastTime();
-        if( end - start > 0 && start < m_vd.zvEnd && end > m_vd.zvStart ) visible.emplace_back( SectionEntry {
-            .idx = idx,
-            .len = end - start,
-            .start = std::max( start, m_vd.zvStart ),
-            .end = std::min( end, m_vd.zvEnd )
-        } );
-        idx++;
+        for( auto& v : cat.second )
+        {
+            const auto start = v.start.Val();
+            const auto end = v.end.IsNonNegative() ? v.end.Val() : m_worker.GetLastTime();
+            if( end - start > 0 && start < m_vd.zvEnd && end > m_vd.zvStart )
+            {
+                visible.emplace_back( SectionEntry {
+                    .item = &v,
+                    .len = end - start,
+                    .start = std::max( start, m_vd.zvStart ),
+                    .end = std::min( end, m_vd.zvEnd )
+                } );
+            }
+        }
     }
     if( visible.empty() ) return;
 
@@ -374,7 +377,7 @@ void View::DrawTimelineSections()
                     row.available.erase( row.available.begin() + i );
                     if( gap.second > e.end ) row.available.insert( row.available.begin() + i, { e.end, gap.second } );
                     if( gap.first < e.start ) row.available.insert( row.available.begin() + i, { gap.first, e.start } );
-                    row.items.push_back( e.idx );
+                    row.items.push_back( e.item );
                     found = true;
                     break;
                 }
@@ -387,7 +390,7 @@ void View::DrawTimelineSections()
             auto& row = rows.back();
             if( m_vd.zvStart < e.start ) row.available.emplace_back( m_vd.zvStart, e.start );
             if( m_vd.zvEnd > e.end ) row.available.emplace_back( e.end, m_vd.zvEnd );
-            row.items.push_back( e.idx );
+            row.items.push_back( e.item );
         }
     }
 
@@ -411,12 +414,12 @@ void View::DrawTimelineSections()
     {
         const auto offset = ostep * rowidx;
 
-        pdqsort_branchless( row.items.begin(), row.items.end(), [&data]( uint32_t a, uint32_t b ) { return data[a].start.Val() < data[b].start.Val(); } );
+        pdqsort_branchless( row.items.begin(), row.items.end(), [&data]( auto& a, auto& b ) { return a->start.Val() < b->start.Val(); } );
 
         size_t i = 0;
         while( i < row.items.size() )
         {
-            auto& v = data[row.items[i]];
+            auto& v = *row.items[i];
             const auto start = v.start.Val();
             const auto end = v.end.IsNonNegative() ? v.end.Val() : m_worker.GetLastTime();
             const auto zsz = end - start;
@@ -428,7 +431,7 @@ void View::DrawTimelineSections()
                 size_t j = i + 1;
                 while( j < row.items.size() )
                 {
-                    auto& nv = data[row.items[j]];
+                    auto& nv = *row.items[j];
                     const auto nStart = nv.start.Val();
                     const auto nEnd = nv.end.IsNonNegative() ? nv.end.Val() : m_worker.GetLastTime();
                     if( ( nEnd - nStart ) >= MinVisNs ) break;

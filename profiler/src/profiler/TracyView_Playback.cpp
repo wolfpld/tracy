@@ -302,6 +302,7 @@ void View::DrawPlayback()
             }
             else if( ImGui::BeginMenu( "Sections" ) )
             {
+                /*
                 int id = 0;
                 for( auto& v : sections )
                 {
@@ -316,6 +317,7 @@ void View::DrawPlayback()
                     ImGui::SameLine();
                     ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v.start.Val() ), TimeToStringExact( end ), TimeToString( end - v.start.Val() ) );
                 }
+                */
                 ImGui::EndMenu();
             }
 

@@ -402,6 +402,7 @@ void View::DrawCompare()
             }
             else if( ImGui::BeginMenu( "Sections" ) )
             {
+                /*
                 int id = 0;
                 for( auto& v : sections )
                 {
@@ -417,6 +418,7 @@ void View::DrawCompare()
                     ImGui::SameLine();
                     ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v.start.Val() ), TimeToStringExact( end ), TimeToString( end - v.start.Val() ) );
                 }
+                */
                 ImGui::EndMenu();
             }
             ImGui::EndPopup();
@@ -455,6 +457,7 @@ void View::DrawCompare()
             }
             else if( ImGui::BeginMenu( "Sections" ) )
             {
+                /*
                 int id = 0;
                 for( auto& v : sections )
                 {
@@ -470,6 +473,7 @@ void View::DrawCompare()
                     ImGui::SameLine();
                     ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v.start.Val() ), TimeToStringExact( end ), TimeToString( end - v.start.Val() ) );
                 }
+                */
                 ImGui::EndMenu();
             }
             ImGui::EndPopup();

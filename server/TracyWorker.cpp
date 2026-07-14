@@ -726,11 +726,38 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
     m_data.framesBase = m_data.frames.Data()[0];
     assert( m_data.framesBase->name == 0 );
 
-    if( fileVer >= FileVersion( 0, 13, 4 ) )
+    if( fileVer >= FileVersion( 0, 13, 5 ) )
     {
         f.Read( sz );
-        m_data.sections.reserve_exact( sz, m_slab );
-        f.Read( m_data.sections.data(), sz * sizeof( SectionItem ) );
+        m_data.sections.reserve( sz );
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            uint64_t sz2;
+            uint16_t category;
+            f.Read2( category, sz2 );
+            auto it = m_data.sections.emplace( category, Vector<SectionItem>() ).first;
+            it->second.reserve_exact( sz2, m_slab );
+            f.Read( it->second.data(), sz2 * sizeof( SectionItem ) );
+        }
+
+        f.Read( sz );
+        m_data.sectionsDescription.reserve( sz );
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            uint16_t category;
+            StringIdx idx;
+            f.Read2( category, idx );
+            m_data.sectionsDescription.emplace( category, idx );
+        }
+    }
+    else if( fileVer == FileVersion( 0, 13, 4 ) )
+    {
+        f.Read( sz );
+        auto it = m_data.sections.emplace( 0, Vector<SectionItem>() ).first;
+        it->second.reserve_exact( sz, m_slab );
+        f.Read( it->second.data(), sz * sizeof( SectionItem ) );
+
+        m_data.sectionsDescription.emplace( 0, StringIdx() );
     }
 
     unordered_flat_map<uint64_t, const char*> pointerMap;
@@ -7395,23 +7422,34 @@ void Worker::ProcessSectionEnter( const QueueSectionEnter& ev )
     const auto ait = m_data.sectionsActive.find( ev.id );
     if( ait != m_data.sectionsActive.end() )
     {
+        assert( ait->second == 0 );
         m_data.sectionsActive.erase( ait );
         auto it = std::ranges::find_if( m_data.sectionsPending, [id = ev.id]( const auto& s ) { return s.start.Val() == id; } );
         assert( it != m_data.sectionsPending.end() );
         assert( !it->text.Active() );
         it->start.SetVal( t );
         it->text.SetIdx( text );
-        m_data.sections.push_back( *it );
+        auto sit = m_data.sections.find( ev.category );
+        if( sit == m_data.sections.end() ) sit = m_data.sections.emplace( ev.category, Vector<SectionItem>() ).first;
+        sit->second.push_back( *it );
         m_data.sectionsPending.erase( it );
     }
     else
     {
-        m_data.sections.push_back( SectionItem {
+        auto sit = m_data.sections.find( ev.category );
+        if( sit == m_data.sections.end() ) sit = m_data.sections.emplace( ev.category, Vector<SectionItem>() ).first;
+        sit->second.push_back( SectionItem {
             .start = t,
             .end = -int64_t( ev.id ),
             .text = StringIdx( text )
         } );
-        m_data.sectionsActive.insert( ev.id );
+        m_data.sectionsActive.emplace( ev.id, ev.category );
+    }
+
+    auto sit = m_data.sectionsDescription.find( ev.category );
+    if( sit == m_data.sectionsDescription.end() )
+    {
+        m_data.sectionsDescription.emplace( ev.category, StringIdx() );
     }
 }
 
@@ -7423,9 +7461,13 @@ void Worker::ProcessSectionLeave( const QueueSectionLeave& ev )
     const auto ait = m_data.sectionsActive.find( ev.id );
     if( ait != m_data.sectionsActive.end() )
     {
+        const auto category = ait->second;
         m_data.sectionsActive.erase( ait );
-        auto it = std::ranges::find_if( m_data.sections, [id = -int64_t( ev.id )]( const auto& s ) { return s.end.Val() == id; } );
-        assert( it != m_data.sections.end() );
+        auto sit = m_data.sections.find( category );
+        assert( sit != m_data.sections.end() );
+        auto& sections = sit->second;
+        auto it = std::ranges::find_if( sections, [id = -int64_t( ev.id )]( const auto& s ) { return s.end.Val() == id; } );
+        assert( it != sections.end() );
         assert( it->end.Val() < 0 );
         it->end.SetVal( t );
     }
@@ -7435,12 +7477,22 @@ void Worker::ProcessSectionLeave( const QueueSectionLeave& ev )
             .start = ev.id,
             .end = t
         } );
-        m_data.sectionsActive.insert( ev.id );
+        m_data.sectionsActive.emplace( ev.id, 0 );
     }
 }
 
 void Worker::ProcessSectionSetup( const QueueSectionSetup& ev )
 {
+    const auto text = GetSingleStringIdx();
+    auto it = m_data.sectionsDescription.find( ev.category );
+    if( it != m_data.sectionsDescription.end() )
+    {
+        it->second.SetIdx( text );
+    }
+    else
+    {
+        m_data.sectionsDescription.emplace( ev.category, StringIdx( text ) );
+    }
 }
 
 void Worker::MemAllocChanged( MemData& memdata, int64_t time )
@@ -8253,7 +8305,21 @@ void Worker::Write( FileWrite& f, bool fiDict )
 
     sz = m_data.sections.size();
     f.Write( &sz, sizeof( sz ) );
-    f.Write( m_data.sections.data(), sz * sizeof( SectionItem ) );
+    for( auto& v : m_data.sections )
+    {
+        sz = v.second.size();
+        f.Write( &v.first, sizeof( v.first ) );
+        f.Write( &sz, sizeof( sz ) );
+        f.Write( v.second.data(), sz * sizeof( SectionItem ) );
+    }
+
+    sz = m_data.sectionsDescription.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& v : m_data.sectionsDescription )
+    {
+        f.Write( &v.first, sizeof( v.first ) );
+        f.Write( &v.second, sizeof( v.second ) );
+    }
 
     sz = m_data.stringData.size();
     f.Write( &sz, sizeof( sz ) );

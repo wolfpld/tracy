@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-07-14 <https://github.com/wolfpld/tracy>
+2026-07-15 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -4726,7 +4726,7 @@ This window presents information and statistics about a lock. The lock events co
 
 You may view a live replay of the profiled application screen captures (see section [3.3.3](#frameimages)) using this window. Playback is controlled by the * Play* and * Pause* buttons, and the *Frame image* slider can be used to scrub to the desired timestamp. Alternatively, you may use the ** and ** buttons, or use the mouse wheel on either the *Frame image* slider or the displayed frame image to change a single frame backward or forward.
 
-If the *Sync timeline* option is selected, the profiler will focus the timeline view on the frame corresponding to the currently displayed screenshot. The *Zoom 2×* option enlarges the image for easier viewing.
+If the *Sync timeline* option is selected, the profiler will focus the timeline view on the frame corresponding to the currently displayed screenshot. The *Zoom 2×* option enlarges the image for easier viewing. With the *Loop* option enabled, playback will start from the beginning after it reaches the end.
 
 Enabling the *Limit frame range* option allows you to manually set the frame image playback region. Adjustments can be made using the start and end sliders or by copying the time range from either an annotation (section [5.23](#annotationlist)), a section (chapter [5.2.3.3](#sections)), or one of the time range limits (section [5.24](#timerangelimits)). If the *Require frame coverage* option is enabled, source regions must cover at least 75% of the frame. Otherwise any amount of overlap is sufficient.
 

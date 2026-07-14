@@ -80,7 +80,7 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, int 
 
         if( ImGui::SmallButton( ICON_FA_MICROSCOPE " Focus" ) ) ZoomToRange( range.min, range.max );
         ImGui::SameLine();
-        if( ImGui::SmallButton( ICON_FA_ARROWS_LEFT_RIGHT_TO_LINE " Limit to view" ) )
+        if( ImGui::SmallButton( "Limit to view" ) )
         {
             range.min = m_vd.zvStart;
             range.max = m_vd.zvEnd;

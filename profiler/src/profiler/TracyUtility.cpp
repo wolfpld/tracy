@@ -274,9 +274,9 @@ RangeSlim ListSectionsMenu( const Worker& worker )
     auto& sections = worker.GetSections();
     if( sections.empty() )
     {
-        TextDisabledUnformatted( "Sections" );
+        TextDisabledUnformatted( ICON_FA_ARROWS_LEFT_RIGHT_TO_LINE " Sections" );
     }
-    else if( ImGui::BeginMenu( "Sections" ) )
+    else if( ImGui::BeginMenu( ICON_FA_ARROWS_LEFT_RIGHT_TO_LINE " Sections" ) )
     {
         if( sections.size() == 1 )
         {

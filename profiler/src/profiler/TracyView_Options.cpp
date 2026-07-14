@@ -106,7 +106,7 @@ void View::DrawOptions()
     {
         ImGui::Separator();
         val = m_vd.drawSections;
-        ImGui::Checkbox( "Draw sections", &val );
+        ImGui::Checkbox( ICON_FA_ARROWS_LEFT_RIGHT_TO_LINE " Draw sections", &val );
         m_vd.drawSections = val;
     }
 

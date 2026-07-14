@@ -191,6 +191,13 @@ public:
         return it->second;
     }
 
+    tracy_force_inline bool& Vis( uint16_t sectionCategory )
+    {
+        auto it = m_sectionVisMap.find( sectionCategory );
+        if( it == m_sectionVisMap.end() ) it = m_sectionVisMap.emplace( sectionCategory, true ).first;
+        return it->second;
+    }
+
     void HighlightThread( uint64_t thread );
     void SelectThread( uint64_t thread );
     uint64_t GetSelectThread() const { return m_selectedThread; }
@@ -744,6 +751,7 @@ private:
     unordered_flat_map<int16_t, StatisticsCache> m_gpuStatCache;
 
     unordered_flat_map<const void*, bool> m_visMap;
+    unordered_flat_map<uint16_t, bool> m_sectionVisMap;
 
     void(*m_cbMainThread)(const std::function<void()>&, bool);
 

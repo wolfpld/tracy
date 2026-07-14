@@ -231,6 +231,17 @@ void View::DrawNotificationArea()
         }
         if( !hidden )
         {
+            for( auto& v : m_sectionVisMap )
+            {
+                if( !v.second )
+                {
+                    hidden = true;
+                    break;
+                }
+            }
+        }
+        if( !hidden )
+        {
             for( auto& v : m_tc.GetItemMap() )
             {
                 if( !v.second->IsVisible() )

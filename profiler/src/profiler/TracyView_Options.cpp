@@ -108,6 +108,34 @@ void View::DrawOptions()
         val = m_vd.drawSections;
         ImGui::Checkbox( ICON_FA_ARROWS_LEFT_RIGHT_TO_LINE " Draw sections", &val );
         m_vd.drawSections = val;
+
+        const auto& categories = m_worker.GetSectionDescriptions();
+        if( categories.size() > 1 )
+        {
+            const auto expand = ImGui::TreeNode( "Sections" );
+            ImGui::SameLine();
+            size_t visible = 0;
+            for( const auto& v : categories ) if( Vis( v.first ) ) visible++;
+            if( visible == categories.size() )
+            {
+                ImGui::TextDisabled( "(%zu)", categories.size() );
+            }
+            else
+            {
+                ImGui::TextDisabled( "(%zu/%zu)", visible, categories.size() );
+            }
+            if( expand )
+            {
+                int idx = 0;
+                for( const auto& v : categories )
+                {
+                    ImGui::PushID( idx++ );
+                    SmallCheckbox( m_worker.GetSectionCategoryDescription( v.first ), &Vis( v.first ) );
+                    ImGui::PopID();
+                }
+                ImGui::TreePop();
+            }
+        }
     }
 
     const auto& gpuData = m_worker.GetGpuData();

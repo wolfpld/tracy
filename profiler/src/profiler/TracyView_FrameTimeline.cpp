@@ -346,6 +346,7 @@ void View::DrawTimelineSections()
     std::vector<SectionEntry> visible;
     for( auto& cat : data )
     {
+        if( !Vis( cat.first ) ) continue;
         for( auto& v : cat.second )
         {
             const auto start = v.start.Val();

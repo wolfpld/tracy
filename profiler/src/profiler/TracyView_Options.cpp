@@ -102,6 +102,14 @@ void View::DrawOptions()
         DefaultMarker(default_markers_active);
     }
 
+    if( !m_worker.GetSections().empty() )
+    {
+        ImGui::Separator();
+        val = m_vd.drawSections;
+        ImGui::Checkbox( "Draw sections", &val );
+        m_vd.drawSections = val;
+    }
+
     const auto& gpuData = m_worker.GetGpuData();
     if( !gpuData.empty() )
     {

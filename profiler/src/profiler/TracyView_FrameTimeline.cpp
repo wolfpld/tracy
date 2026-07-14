@@ -338,6 +338,8 @@ struct SectionRow
 
 void View::DrawTimelineSections()
 {
+    if( !m_vd.drawSections ) return;
+
     auto& data = m_worker.GetSections();
     if( data.empty() ) return;
 

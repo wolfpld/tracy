@@ -247,4 +247,25 @@ void PrintLocalStack( const CallstackFrameData* frame, const Worker& worker, con
     }
 }
 
+RangeSlim ListSections( const Vector<SectionItem>& sections, const Worker& worker )
+{
+    RangeSlim out = {};
+    int id = 0;
+    for( auto& v : sections )
+    {
+        ImGui::PushID( id++ );
+        const auto end = v.end.IsNonNegative() ? v.end.Val() : worker.GetLastTime();
+        if( ImGui::MenuItem( worker.GetString( v.text ) ) )
+        {
+            out.min = v.start.Val();
+            out.max = end;
+            out.active = true;
+        }
+        ImGui::PopID();
+        ImGui::SameLine();
+        ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v.start.Val() ), TimeToStringExact( end ), TimeToString( end - v.start.Val() ) );
+    }
+    return out;
+}
+
 }

@@ -316,6 +316,7 @@ struct QueueSectionEnter
 {
     int64_t time;
     uint32_t id;
+    uint16_t category;
 };
 
 struct QueueSectionEnterFat : public QueueSectionEnter

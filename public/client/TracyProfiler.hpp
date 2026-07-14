@@ -800,7 +800,7 @@ public:
     }
 #endif
 
-    static uint32_t SectionEnter( const char* fmt, ... ) TRACY_ATTRIBUTE_FORMAT_PRINTF( 1, 2 )
+    static uint32_t SectionEnter( uint16_t category, const char* fmt, ... ) TRACY_ATTRIBUTE_FORMAT_PRINTF( 2, 3 )
     {
         auto& profiler = GetProfiler();
 #ifdef TRACY_ON_DEMAND
@@ -822,6 +822,7 @@ public:
         TracyLfqPrepare( QueueType::SectionEnter );
         MemWrite( &item->sectionEnterFat.time, GetTime() );
         MemWrite( &item->sectionEnterFat.id, id );
+        MemWrite( &item->sectionEnterFat.category, category );
         MemWrite( &item->sectionEnterFat.text, (uint64_t)ptr );
         MemWrite( &item->sectionEnterFat.size, (uint16_t)size );
         TracyLfqCommit;

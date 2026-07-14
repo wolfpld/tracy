@@ -119,6 +119,7 @@
 #define TracySetProgramName(x)
 
 #define TracySectionEnter(x, ...) 0
+#define TracySectionEnterCategory(x, y, ...) 0
 #define TracySectionLeave(x)
 #define TracySectionSetup(x, y, ...)
 
@@ -259,7 +260,8 @@
 #define TracyIsConnected tracy::GetProfiler().IsConnected()
 #define TracySetProgramName( name ) tracy::GetProfiler().SetProgramName( name )
 
-#define TracySectionEnter( fmt, ... ) tracy::Profiler::SectionEnter( fmt, ##__VA_ARGS__ )
+#define TracySectionEnter( fmt, ... ) tracy::Profiler::SectionEnter( 0, fmt, ##__VA_ARGS__ )
+#define TracySectionEnterCategory( category, fmt, ... ) tracy::Profiler::SectionEnter( category, fmt, ##__VA_ARGS__ )
 #define TracySectionLeave( id ) tracy::Profiler::SectionLeave( id )
 #define TracySectionSetup( category, fmt, ... ) tracy::Profiler::SectionSetup( category, fmt, ##__VA_ARGS__ )
 

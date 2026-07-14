@@ -24,6 +24,7 @@ namespace
 struct TracySection
 {
     explicit TracySection( const char* name ) { Enter( name ); }
+    explicit TracySection( const char* name, uint16_t category ) : idx( TracySectionEnterCategory( category, "%s", name ) ) {}
     ~TracySection() { Leave(); }
 
     void Enter( const char* name )
@@ -52,7 +53,7 @@ bool help = false;
 // escape, or reaching the exit) and control should return to the caller.
 bool level_loop( World& world )
 {
-    TracySection section( ( std::string( "Level " ) + world.name() ).c_str() );
+    TracySection section( ( std::string( "Level " ) + world.name() ).c_str(), 1 );
 
     Player* p = world.player();
 

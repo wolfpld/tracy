@@ -28,6 +28,9 @@ int main( int /*argc*/, char* /*argv*/[] )
 {
     TracyNoop;
 
+    TracySectionSetup( 0, "Game state" );
+    TracySectionSetup( 1, "Level progression" );
+
     if( !dyna::Init::all() )
         return 1;
 

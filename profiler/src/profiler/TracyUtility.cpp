@@ -247,7 +247,7 @@ void PrintLocalStack( const CallstackFrameData* frame, const Worker& worker, con
     }
 }
 
-RangeSlim ListSections( const Vector<SectionItem>& sections, const Worker& worker )
+static RangeSlim ListSections( const Vector<SectionItem>& sections, const Worker& worker )
 {
     RangeSlim out = {};
     int id = 0;
@@ -264,6 +264,46 @@ RangeSlim ListSections( const Vector<SectionItem>& sections, const Worker& worke
         ImGui::PopID();
         ImGui::SameLine();
         ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v.start.Val() ), TimeToStringExact( end ), TimeToString( end - v.start.Val() ) );
+    }
+    return out;
+}
+
+RangeSlim ListSectionsMenu( const Worker& worker )
+{
+    RangeSlim out = {};
+    auto& sections = worker.GetSections();
+    if( sections.empty() )
+    {
+        TextDisabledUnformatted( "Sections" );
+    }
+    else if( ImGui::BeginMenu( "Sections" ) )
+    {
+        if( sections.size() == 1 )
+        {
+            out = ListSections( sections.begin()->second, worker );
+        }
+        else
+        {
+            std::vector<std::pair<uint16_t, const Vector<SectionItem>*>> s;
+            s.reserve( sections.size() );
+            for( auto& v : sections ) s.emplace_back( v.first, &v.second );
+            pdqsort_branchless( s.begin(), s.end(), []( const auto& lhs, const auto& rhs ) { return lhs.first < rhs.first; } );
+
+            int id = 0;
+            for( auto& v : s )
+            {
+                ImGui::PushID( id++ );
+                auto desc = worker.GetSectionCategoryDescription( v.first );
+                if( ImGui::BeginMenu( desc ) )
+                {
+                    auto res = ListSections( *v.second, worker );
+                    if( res.active ) out = res;
+                    ImGui::EndMenu();
+                }
+                ImGui::PopID();
+            }
+        }
+        ImGui::EndMenu();
     }
     return out;
 }

@@ -112,45 +112,11 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, int 
                 ImGui::EndMenu();
             }
 
-            auto& sections = m_worker.GetSections();
-            if( sections.empty() )
+            const auto sel = ListSectionsMenu( m_worker );
+            if( sel.active )
             {
-                TextDisabledUnformatted( "Sections" );
-            }
-            else if( ImGui::BeginMenu( "Sections" ) )
-            {
-                RangeSlim sel;
-                if( sections.size() == 1 )
-                {
-                    sel = ListSections( sections.begin()->second, m_worker );
-                }
-                else
-                {
-                    std::vector<std::pair<uint16_t, const Vector<SectionItem>*>> s;
-                    s.reserve( sections.size() );
-                    for( auto& v : sections ) s.emplace_back( v.first, &v.second );
-                    pdqsort_branchless( s.begin(), s.end(), []( const auto& lhs, const auto& rhs ) { return lhs.first < rhs.first; } );
-
-                    int id = 0;
-                    for( auto& v : s )
-                    {
-                        ImGui::PushID( id++ );
-                        auto desc = m_worker.GetSectionCategoryDescription( v.first );
-                        if( ImGui::BeginMenu( desc ) )
-                        {
-                            auto out = ListSections( *v.second, m_worker );
-                            if( out.active ) sel = out;
-                            ImGui::EndMenu();
-                        }
-                        ImGui::PopID();
-                    }
-                }
-                ImGui::EndMenu();
-                if( sel.active )
-                {
-                    range.min = sel.min;
-                    range.max = sel.max;
-                }
+                range.min = sel.min;
+                range.max = sel.max;
             }
 
             int idx = 0;

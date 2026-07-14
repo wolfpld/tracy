@@ -59,7 +59,7 @@ const char* FormatPlotValue( double val, PlotValueFormatting format );
 std::vector<std::string> SplitLines( const char* data, size_t sz );
 
 void PrintLocalStack( const CallstackFrameData* frame, const Worker& worker, const View& view );
-RangeSlim ListSections( const Vector<SectionItem>& sections, const Worker& worker );
+RangeSlim ListSectionsMenu( const Worker& worker );
 
 }
 

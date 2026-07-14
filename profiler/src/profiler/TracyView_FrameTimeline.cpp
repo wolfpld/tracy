@@ -328,11 +328,18 @@ struct SectionEntry
     int64_t len;
     int64_t start;
     int64_t end;
+    uint16_t category;
+};
+
+struct SectionRowItem
+{
+    const SectionItem* item;
+    uint16_t category;
 };
 
 struct SectionRow
 {
-    std::vector<const SectionItem*> items;
+    std::vector<SectionRowItem> items;
     std::vector<std::pair<int64_t, int64_t>> available;
 };
 
@@ -357,7 +364,8 @@ void View::DrawTimelineSections()
                     .item = &v,
                     .len = end - start,
                     .start = std::max( start, m_vd.zvStart ),
-                    .end = std::min( end, m_vd.zvEnd )
+                    .end = std::min( end, m_vd.zvEnd ),
+                    .category = cat.first
                 } );
             }
         }
@@ -380,7 +388,10 @@ void View::DrawTimelineSections()
                     row.available.erase( row.available.begin() + i );
                     if( gap.second > e.end ) row.available.insert( row.available.begin() + i, { e.end, gap.second } );
                     if( gap.first < e.start ) row.available.insert( row.available.begin() + i, { gap.first, e.start } );
-                    row.items.push_back( e.item );
+                    row.items.emplace_back( SectionRowItem {
+                        .item = e.item,
+                        .category = e.category
+                    } );
                     found = true;
                     break;
                 }
@@ -393,7 +404,10 @@ void View::DrawTimelineSections()
             auto& row = rows.back();
             if( m_vd.zvStart < e.start ) row.available.emplace_back( m_vd.zvStart, e.start );
             if( m_vd.zvEnd > e.end ) row.available.emplace_back( e.end, m_vd.zvEnd );
-            row.items.push_back( e.item );
+            row.items.emplace_back( SectionRowItem {
+                .item = e.item,
+                .category = e.category
+            } );
         }
     }
 
@@ -417,12 +431,13 @@ void View::DrawTimelineSections()
     {
         const auto offset = ostep * rowidx;
 
-        pdqsort_branchless( row.items.begin(), row.items.end(), [&data]( auto& a, auto& b ) { return a->start.Val() < b->start.Val(); } );
+        pdqsort_branchless( row.items.begin(), row.items.end(), [&data]( auto& a, auto& b ) { return a.item->start.Val() < b.item->start.Val(); } );
 
         size_t i = 0;
         while( i < row.items.size() )
         {
-            auto& v = *row.items[i];
+            auto& entry = row.items[i];
+            auto& v = *entry.item;
             const auto start = v.start.Val();
             const auto end = v.end.IsNonNegative() ? v.end.Val() : m_worker.GetLastTime();
             const auto zsz = end - start;
@@ -434,7 +449,7 @@ void View::DrawTimelineSections()
                 size_t j = i + 1;
                 while( j < row.items.size() )
                 {
-                    auto& nv = *row.items[j];
+                    auto& nv = *row.items[j].item;
                     const auto nStart = nv.start.Val();
                     const auto nEnd = nv.end.IsNonNegative() ? nv.end.Val() : m_worker.GetLastTime();
                     if( ( nEnd - nStart ) >= MinVisNs ) break;
@@ -479,7 +494,11 @@ void View::DrawTimelineSections()
                     else
                     {
                         const char* name = m_worker.GetString( v.text );
-                        ImGui::TextUnformatted( name );
+                        TextFocused( "Section:", name );
+                        if( m_worker.GetSectionDescriptions().size() > 1 )
+                        {
+                            TextFocused( "Category:", m_worker.GetSectionCategoryDescription( entry.category ) );
+                        }
                         ImGui::Separator();
                         TextFocused( "Execution time:", TimeToString( end - start ) );
                         TextFocused( "Time from start of program:", TimeToStringExact( start ) );
@@ -533,7 +552,11 @@ void View::DrawTimelineSections()
                 if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + ty + 1 ) ) )
                 {
                     ImGui::BeginTooltip();
-                    ImGui::TextUnformatted( name );
+                    TextFocused( "Section:", name );
+                    if( m_worker.GetSectionDescriptions().size() > 1 )
+                    {
+                        TextFocused( "Category:", m_worker.GetSectionCategoryDescription( entry.category ) );
+                    }
                     ImGui::Separator();
                     TextFocused( "Execution time:", TimeToString( end - start ) );
                     TextFocused( "Time from start of program:", TimeToStringExact( start ) );

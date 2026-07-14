@@ -295,30 +295,11 @@ void View::DrawPlayback()
                 ImGui::EndMenu();
             }
 
-            auto& sections = m_worker.GetSections();
-            if( sections.empty() )
+            const auto sel = ListSectionsMenu( m_worker );
+            if( sel.active )
             {
-                TextDisabledUnformatted( "Sections" );
-            }
-            else if( ImGui::BeginMenu( "Sections" ) )
-            {
-                /*
-                int id = 0;
-                for( auto& v : sections )
-                {
-                    ImGui::PushID( id++ );
-                    const auto end = v.end.IsNonNegative() ? v.end.Val() : m_worker.GetLastTime();
-                    if( ImGui::MenuItem( m_worker.GetString( v.text ) ) )
-                    {
-                        m_playback.range = GetPlaybackFrameRangeFromTime( v.start.Val(), end, m_playback.requireCoverage );
-                        limitChanged = true;
-                    }
-                    ImGui::PopID();
-                    ImGui::SameLine();
-                    ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v.start.Val() ), TimeToStringExact( end ), TimeToString( end - v.start.Val() ) );
-                }
-                */
-                ImGui::EndMenu();
+                m_playback.range = GetPlaybackFrameRangeFromTime( sel.min, sel.max, m_playback.requireCoverage );
+                limitChanged = true;
             }
 
             for( auto& r : m_ranges )

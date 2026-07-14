@@ -4870,6 +4870,9 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::SectionLeave:
         ProcessSectionLeave( ev.sectionLeave );
         break;
+    case QueueType::SectionSetup:
+        ProcessSectionSetup( ev.sectionSetup );
+        break;
     default:
         assert( false );
         break;
@@ -7436,6 +7439,9 @@ void Worker::ProcessSectionLeave( const QueueSectionLeave& ev )
     }
 }
 
+void Worker::ProcessSectionSetup( const QueueSectionSetup& ev )
+{
+}
 
 void Worker::MemAllocChanged( MemData& memdata, int64_t time )
 {

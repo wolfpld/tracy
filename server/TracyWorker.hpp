@@ -853,6 +853,7 @@ private:
     tracy_force_inline void ProcessFiberLeave( const QueueFiberLeave& ev );
     tracy_force_inline void ProcessSectionEnter( const QueueSectionEnter& ev );
     tracy_force_inline void ProcessSectionLeave( const QueueSectionLeave& ev );
+    tracy_force_inline void ProcessSectionSetup( const QueueSectionSetup& ev );
 
     tracy_force_inline ZoneEvent* AllocZoneEvent();
     tracy_force_inline void ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev );

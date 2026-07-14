@@ -395,31 +395,12 @@ void View::DrawCompare()
                 }
                 ImGui::EndMenu();
             }
-            auto& sections = m_worker.GetSections();
-            if( sections.empty() )
+            const auto sel = ListSectionsMenu( m_worker );
+            if( sel.active )
             {
-                TextDisabledUnformatted( "Sections" );
-            }
-            else if( ImGui::BeginMenu( "Sections" ) )
-            {
-                /*
-                int id = 0;
-                for( auto& v : sections )
-                {
-                    ImGui::PushID( id++ );
-                    const auto end = v.end.IsNonNegative() ? v.end.Val() : m_worker.GetLastTime();
-                    if( ImGui::MenuItem( m_worker.GetString( v.text ) ) )
-                    {
-                        m_compare.range[0].min = v.start.Val();
-                        m_compare.range[0].max = end;
-                        m_compare.ResetSelection();
-                    }
-                    ImGui::PopID();
-                    ImGui::SameLine();
-                    ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v.start.Val() ), TimeToStringExact( end ), TimeToString( end - v.start.Val() ) );
-                }
-                */
-                ImGui::EndMenu();
+                m_compare.range[0].min = sel.min;
+                m_compare.range[0].max = sel.max;
+                m_compare.ResetSelection();
             }
             ImGui::EndPopup();
         }
@@ -450,31 +431,12 @@ void View::DrawCompare()
                 }
                 ImGui::EndMenu();
             }
-            auto& sections = m_compare.second->GetSections();
-            if( sections.empty() )
+            const auto sel = ListSectionsMenu( *m_compare.second );
+            if( sel.active )
             {
-                TextDisabledUnformatted( "Sections" );
-            }
-            else if( ImGui::BeginMenu( "Sections" ) )
-            {
-                /*
-                int id = 0;
-                for( auto& v : sections )
-                {
-                    ImGui::PushID( id++ );
-                    const auto end = v.end.IsNonNegative() ? v.end.Val() : m_compare.second->GetLastTime();
-                    if( ImGui::MenuItem( m_compare.second->GetString( v.text ) ) )
-                    {
-                        m_compare.range[1].min = v.start.Val();
-                        m_compare.range[1].max = end;
-                        m_compare.ResetSelection();
-                    }
-                    ImGui::PopID();
-                    ImGui::SameLine();
-                    ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v.start.Val() ), TimeToStringExact( end ), TimeToString( end - v.start.Val() ) );
-                }
-                */
-                ImGui::EndMenu();
+                m_compare.range[1].min = sel.min;
+                m_compare.range[1].max = sel.max;
+                m_compare.ResetSelection();
             }
             ImGui::EndPopup();
         }

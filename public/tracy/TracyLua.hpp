@@ -449,7 +449,7 @@ static inline int LuaSectionEnter( lua_State* L )
     const auto size = strlen( txt );
     assert( size < (std::numeric_limits<uint16_t>::max)() );
 
-    uint32_t category = lua_isnumber( L, 2 ) ? lua_tointeger( L, 2 ) : 0;
+    uint16_t category = lua_isnumber( L, 2 ) ? lua_tointeger( L, 2 ) : 0;
 
     auto ptr = (char*)tracy_malloc( size );
     memcpy( ptr, txt, size );

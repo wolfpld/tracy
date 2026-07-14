@@ -119,23 +119,38 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, int 
             }
             else if( ImGui::BeginMenu( "Sections" ) )
             {
-                /*
-                int id = 0;
-                for( auto& v : sections )
+                RangeSlim sel;
+                if( sections.size() == 1 )
                 {
-                    ImGui::PushID( id++ );
-                    const auto end = v.end.IsNonNegative() ? v.end.Val() : m_worker.GetLastTime();
-                    if( ImGui::MenuItem( m_worker.GetString( v.text ) ) )
-                    {
-                        range.min = v.start.Val();
-                        range.max = end;
-                    }
-                    ImGui::PopID();
-                    ImGui::SameLine();
-                    ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v.start.Val() ), TimeToStringExact( end ), TimeToString( end - v.start.Val() ) );
+                    sel = ListSections( sections.begin()->second, m_worker );
                 }
-                */
+                else
+                {
+                    std::vector<std::pair<uint16_t, const Vector<SectionItem>*>> s;
+                    s.reserve( sections.size() );
+                    for( auto& v : sections ) s.emplace_back( v.first, &v.second );
+                    pdqsort_branchless( s.begin(), s.end(), []( const auto& lhs, const auto& rhs ) { return lhs.first < rhs.first; } );
+
+                    int id = 0;
+                    for( auto& v : s )
+                    {
+                        ImGui::PushID( id++ );
+                        auto desc = m_worker.GetSectionCategoryDescription( v.first );
+                        if( ImGui::BeginMenu( desc ) )
+                        {
+                            auto out = ListSections( *v.second, m_worker );
+                            if( out.active ) sel = out;
+                            ImGui::EndMenu();
+                        }
+                        ImGui::PopID();
+                    }
+                }
                 ImGui::EndMenu();
+                if( sel.active )
+                {
+                    range.min = sel.min;
+                    range.max = sel.max;
+                }
             }
 
             int idx = 0;

@@ -1688,6 +1688,17 @@ void View::DrawCompare()
                         TextDisabledUnformatted( "Time range:" );
                         ImGui::SameLine();
                         ImGui::Text( "%s - %s", TimeToString( t0 ), TimeToString( t1 ) );
+                        ImGui::SameLine();
+                        const auto fps0 = round( 1000000000.0 / t0 );
+                        const auto fps1 = round( 1000000000.0 / t1 );
+                        if( fps0 == fps1 )
+                        {
+                            ImGui::TextDisabled( "(%s FPS)", RealToString( fps0 ) );
+                        }
+                        else
+                        {
+                            ImGui::TextDisabled( "(%s FPS - %s FPS)", RealToString( fps0 ), RealToString( fps1 ) );
+                        }
                         TextDisabledUnformatted( "Count:" );
                         ImGui::SameLine();
                         ImGui::Text( "%s / %s", RealToString( floor( bins[bin].v0 ) ), RealToString( floor( bins[bin].v1 ) ) );

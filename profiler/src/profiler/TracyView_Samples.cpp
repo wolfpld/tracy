@@ -1281,23 +1281,12 @@ void View::DrawSampleParents()
             break;
         }
         case 1:
-        {
-            auto tree = GetParentsCallstackFrameTreeBottomUp( stats, m_sampleParents.groupBottomUp );
-            if( !tree.empty() )
-            {
-                int idx = 0;
-                DrawParentsFrameTreeLevel( tree, idx );
-            }
-            else
-            {
-                TextDisabledUnformatted( "No call stacks to show" );
-            }
-
-            break;
-        }
         case 2:
         {
-            auto tree = GetParentsCallstackFrameTreeTopDown( stats, m_sampleParents.groupTopDown );
+            auto tree = m_sampleParents.mode == 1 ?
+                GetParentsCallstackFrameTreeBottomUp( stats, m_sampleParents.groupBottomUp ) :
+                GetParentsCallstackFrameTreeTopDown( stats, m_sampleParents.groupTopDown );
+
             if( !tree.empty() )
             {
                 int idx = 0;

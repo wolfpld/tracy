@@ -1097,6 +1097,7 @@ private:
     WindowConstraints m_messagesConstraint;
     WindowConstraints m_findZoneConstraint;
     WindowConstraints m_statisticsConstraint;
+    WindowConstraints m_memoryConstraint;
 
 #ifndef __EMSCRIPTEN__
     TracyLlm m_llm;

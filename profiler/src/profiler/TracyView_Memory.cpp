@@ -174,6 +174,7 @@ void View::DrawMemory()
 {
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 1100 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
+    m_memoryConstraint.Constrain();
     ImGui::Begin( "Memory", &m_memInfo.show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
 
@@ -255,6 +256,7 @@ void View::DrawMemory()
         ToggleButton( ICON_FA_RULER " Limits", m_showRanges );
     }
     ImGui::PopStyleVar();
+    m_memoryConstraint.MarkMinWidth();
 
     ImGui::Separator();
     ImGui::BeginChild( "##memory" );

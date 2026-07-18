@@ -1532,6 +1532,7 @@ void View::DpiScaleChanged()
     m_messagesConstraint.Reset();
     m_findZoneConstraint.Reset();
     m_statisticsConstraint.Reset();
+    m_memoryConstraint.Reset();
 }
 
 void View::AddLlmAttachment( const nlohmann::json& json )

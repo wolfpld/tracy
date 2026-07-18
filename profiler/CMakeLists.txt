@@ -123,6 +123,7 @@ set(SERVER_FILES
     TracyView_ZoneInfo.cpp
     TracyView_ZoneTimeline.cpp
     TracyWeb.cpp
+    TracyWindowConstraints.cpp
 )
 
 if(NOT EMSCRIPTEN)

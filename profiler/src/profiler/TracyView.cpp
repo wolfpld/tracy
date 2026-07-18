@@ -1526,6 +1526,10 @@ bool View::WasActive() const
         !m_worker.IsBackgroundDone();
 }
 
+void View::DpiScaleChanged()
+{
+}
+
 void View::AddLlmAttachment( const nlohmann::json& json )
 {
 #ifndef __EMSCRIPTEN__

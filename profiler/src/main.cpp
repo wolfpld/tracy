@@ -198,6 +198,9 @@ static void SetupDPIScale()
     prevScale = scale;
     auto ctx = ImGui::GetCurrentContext();
     for( auto& w : ctx->Windows ) ScaleWindow( w, ratio );
+
+    auto viewPtr = view.load( std::memory_order_acquire );
+    if( viewPtr ) viewPtr->DpiScaleChanged();
 }
 
 static int IsBusy()

@@ -151,6 +151,7 @@ public:
 
     bool Draw();
     bool WasActive() const;
+    void DpiScaleChanged();
 
     void NotifyRootWindowSize( float w, float h ) { m_rootWidth = w; m_rootHeight = h; }
     void ViewSource( const char* fileName, int line );

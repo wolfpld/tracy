@@ -638,7 +638,7 @@ void View::DrawWaitStacks()
             PrintStringPercent( buf, 100. * data[m_waitStack]->second / totalCount );
             TextDisabledUnformatted( buf );
             ImGui::Separator();
-            DrawCallstackTable( data[m_waitStack]->first, { .wait = { .time = 1 } } );  // dummy time value to just mark a wait stack
+            DrawCallstackTable( data[m_waitStack]->first, { .wait = { .time = -1 } } );
             break;
         }
         case 1:

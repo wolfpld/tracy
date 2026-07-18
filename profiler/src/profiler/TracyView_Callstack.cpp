@@ -145,7 +145,7 @@ void View::DrawCallstackTable( const CallstackFrameId* data, size_t size, const 
                 json["thread_id"] = params.thread;
             }
             if( params.callstack >= 0 ) json["id"] = params.callstack;
-            if( params.wait.time != 0 )
+            if( params.wait.time > 0 )
             {
                 json["wait_time"] = TimeToString( params.wait.time );
                 if( params.wait.reasonCode ) json["wait_reason"] = params.wait.reasonCode;
@@ -236,7 +236,7 @@ void View::DrawCallstackTable( const CallstackFrameId* data, size_t size, const 
         ImGui::Spacing();
         ImGui::SameLine();
         TextColoredUnformatted( ImVec4( 0.6f, 0.6f, 1.f, 1.f ), ICON_FA_HOURGLASS_HALF " Wait stack" );
-        if( ImGui::IsItemHovered() )
+        if( params.wait.time > 0 && ImGui::IsItemHovered() )
         {
             ImGui::BeginTooltip();
             TextFocused( "Time:", TimeToString( params.wait.time ) );

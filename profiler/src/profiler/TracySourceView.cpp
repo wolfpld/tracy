@@ -565,7 +565,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
     return !m_asm.empty();
 }
 
-void SourceView::Render( Worker& worker, View& view )
+void SourceView::Render( Worker& worker, View& view, WindowConstraints& constraints )
 {
     m_highlightAddr.Decay( 0 );
     m_hoveredLine.Decay( 0 );
@@ -608,6 +608,7 @@ void SourceView::Render( Worker& worker, View& view )
             TextColoredUnformatted( ImVec4( 0.4f, 0.8f, 0.4f, 1.f ), ICON_FA_DATABASE );
             ImGui::SameLine();
             ImGui::TextUnformatted( "Source file cached during profiling run" );
+            constraints.MarkMinWidth();
         }
         else
         {
@@ -616,13 +617,14 @@ void SourceView::Render( Worker& worker, View& view )
             TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
             ImGui::SameLine();
             TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_TRIANGLE_EXCLAMATION );
+            constraints.MarkMinWidth();
         }
 
         RenderSimpleSourceView();
     }
     else
     {
-        RenderSymbolView( worker, view );
+        RenderSymbolView( worker, view, constraints );
     }
 }
 
@@ -678,7 +680,7 @@ void SourceView::RenderSimpleSourceView()
     ImGui::EndChild();
 }
 
-void SourceView::RenderSymbolView( Worker& worker, View& view )
+void SourceView::RenderSymbolView( Worker& worker, View& view, WindowConstraints& constraints )
 {
     assert( m_symAddr != 0 );
 
@@ -1175,6 +1177,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
     {
         m_cost = CostType::SampleCount;
     }
+    constraints.MarkMinWidth();
 
     ImGui::PopStyleVar();
     ImGui::Separator();

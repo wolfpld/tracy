@@ -1403,9 +1403,10 @@ void View::DrawTextEditor()
 {
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 1800 * scale, 800 * scale ), ImGuiCond_FirstUseEver );
+    m_sourceViewConstraint.Constrain();
     bool show = true;
     ImGui::Begin( "Source view", &show, ImGuiWindowFlags_NoScrollbar );
-    if( !ImGui::GetCurrentWindowRead()->SkipItems ) m_sourceView->Render( m_worker, *this );
+    if( !ImGui::GetCurrentWindowRead()->SkipItems ) m_sourceView->Render( m_worker, *this, m_sourceViewConstraint );
     ImGui::End();
     if( !show ) m_sourceViewFile = nullptr;
 }
@@ -1541,6 +1542,7 @@ void View::DpiScaleChanged()
     m_callstackConstraint.Reset();
     m_zoneInfoConstraint.Reset();
     m_gpuZoneInfoConstraint.Reset();
+    m_sourceViewConstraint.Reset();
 }
 
 void View::AddLlmAttachment( const nlohmann::json& json )

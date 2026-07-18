@@ -21,6 +21,7 @@ namespace tracy
 {
 
 class View;
+class WindowConstraints;
 class Worker;
 struct CallstackFrameData;
 
@@ -69,7 +70,7 @@ public:
 
     void OpenSource( const char* fileName, int line, const View& view, const Worker& worker );
     void OpenSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, Worker& worker, const View& view, bool updateHistory = true );
-    void Render( Worker& worker, View& view );
+    void Render( Worker& worker, View& view, WindowConstraints& constraints );
 
     bool SwitchTo( const char* fileName, int line, const Worker& worker, const View& view );
 
@@ -83,7 +84,7 @@ private:
     void SelectViewMode();
 
     void RenderSimpleSourceView();
-    void RenderSymbolView( Worker& worker, View& view );
+    void RenderSymbolView( Worker& worker, View& view, WindowConstraints& constraints );
 
     void RenderSymbolSourceView( const AddrStatData& as, Worker& worker, View& view, bool hasInlines );
     uint64_t RenderSymbolAsmView( const AddrStatData& as, Worker& worker, View& view );

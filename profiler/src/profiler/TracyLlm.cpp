@@ -83,10 +83,11 @@ TracyLlm::~TracyLlm()
     }
 }
 
-void TracyLlm::Draw()
+void TracyLlm::Draw( WindowConstraints& constraints )
 {
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 400 * scale, 800 * scale ), ImGuiCond_FirstUseEver );
+    constraints.Constrain();
     ImGui::Begin( "Tracy Assist", &m_show, ImGuiWindowFlags_NoScrollbar );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
 
@@ -174,7 +175,9 @@ void TracyLlm::Draw()
     }
 
     ImGui::SameLine();
-    if( ImGui::TreeNode( "Settings" ) )
+    const bool expand = ImGui::TreeNode( "Settings" );
+    constraints.MarkMinWidth();
+    if( expand )
     {
         m_jobsLock.lock();
         const auto responding = m_currentJob != nullptr;
@@ -335,6 +338,7 @@ void TracyLlm::Draw()
         {
             SaveConfig();
         }
+        constraints.MarkMinWidth();
 
         if( ImGui::Checkbox( ICON_FA_HAND_POINT_RIGHT " Show summary", &s_config.llmSummary ) )
         {
@@ -373,6 +377,7 @@ void TracyLlm::Draw()
             }
             ImGui::SameLine();
             ImGui::TextDisabled( "(bytes)" );
+            constraints.MarkMinWidth();
             if( !s_config.llmLimitToolReplySize ) ImGui::EndDisabled();
             if( !models.empty() )
             {

@@ -1099,6 +1099,7 @@ private:
     WindowConstraints m_statisticsConstraint;
     WindowConstraints m_memoryConstraint;
     WindowConstraints m_compareConstraint;
+    WindowConstraints m_llmConstraint;
 
 #ifndef __EMSCRIPTEN__
     TracyLlm m_llm;

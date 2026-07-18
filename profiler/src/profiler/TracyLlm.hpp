@@ -21,6 +21,7 @@ class TracyLlmChat;
 class TracyLlmTools;
 class TracyManualData;
 class View;
+class WindowConstraints;
 class Worker;
 
 struct LlmSkill
@@ -56,7 +57,7 @@ public:
 
     [[nodiscard]] bool IsBusy() const { std::lock_guard lock( m_jobsLock ); return m_busy; }
 
-    void Draw();
+    void Draw( WindowConstraints& constraints );
 
     bool m_show = false;
 

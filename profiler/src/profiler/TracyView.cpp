@@ -1215,7 +1215,7 @@ bool View::DrawImpl()
     if( m_showManual ) DrawManual();
     if( m_showFrameStatistics ) DrawFrameStatistics();
 #ifndef __EMSCRIPTEN__
-    if( m_llm.m_show ) m_llm.Draw();
+    if( m_llm.m_show ) m_llm.Draw( m_llmConstraint );
 #endif
 
     if( m_setRangePopup.active )
@@ -1534,6 +1534,7 @@ void View::DpiScaleChanged()
     m_statisticsConstraint.Reset();
     m_memoryConstraint.Reset();
     m_compareConstraint.Reset();
+    m_llmConstraint.Reset();
 }
 
 void View::AddLlmAttachment( const nlohmann::json& json )

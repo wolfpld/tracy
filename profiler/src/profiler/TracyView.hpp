@@ -86,6 +86,7 @@ struct CallstackTableParams
     bool showThread = false;
     bool hasCrashed = false;
     int64_t callstack = -1;
+    WindowConstraints* constraints = nullptr;
 };
 
 
@@ -1103,6 +1104,7 @@ private:
     WindowConstraints m_waitStacksConstraint;
     WindowConstraints m_frameStatsConstraint;
     WindowConstraints m_sampleEntryConstraint;
+    WindowConstraints m_callstackConstraint;
 
 #ifndef __EMSCRIPTEN__
     TracyLlm m_llm;

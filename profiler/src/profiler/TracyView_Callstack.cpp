@@ -21,6 +21,7 @@ void View::DrawCallstackWindow()
     bool show = true;
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 1400 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
+    m_callstackConstraint.Constrain();
     ImGui::Begin( "Call stack", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     if( !ImGui::GetCurrentWindowRead()->SkipItems )
     {
@@ -29,6 +30,7 @@ void View::DrawCallstackWindow()
             .wait = m_callstackView.wait,
             .entryStacks = true,
             .showThread = true,
+            .constraints = &m_callstackConstraint
         } );
     }
     ImGui::End();
@@ -47,6 +49,7 @@ void View::DrawCallstackTable( uint32_t callstack, const CallstackTableParams& p
         .showThread = params.showThread,
         .hasCrashed = crash.thread != 0 && crash.callstack == callstack,
         .callstack = callstack,
+        .constraints = params.constraints
     } );
 }
 
@@ -387,6 +390,7 @@ void View::DrawCallstackTable( const CallstackFrameId* data, size_t size, const 
             TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
         }
     }
+    if( params.constraints ) params.constraints->MarkMinWidth();
 
 #ifndef __EMSCRIPTEN__
     if( s_config.llm && params.callstack >= 0 )

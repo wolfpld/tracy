@@ -209,6 +209,7 @@ void View::DrawCompare()
 {
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 590 * scale, 800 * scale ), ImGuiCond_FirstUseEver );
+    m_compareConstraint.Constrain();
     ImGui::Begin( "Compare traces", &m_compare.show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
 #if defined TRACY_NO_FILESELECTOR
@@ -484,6 +485,7 @@ void View::DrawCompare()
             m_compare.diffDirection = !m_compare.diffDirection;
             m_compare.Reset();
         }
+        m_compareConstraint.MarkMinWidth();
         ImGui::Separator();
 
         ImGui::BeginChild( "##diff" );
@@ -633,6 +635,7 @@ void View::DrawCompare()
             }
             ImGui::SameLine();
             ImGui::Checkbox( "Ignore case", &m_compare.ignoreCase );
+            m_compareConstraint.MarkMinWidth();
 
             if( findClicked )
             {
@@ -1384,6 +1387,7 @@ void View::DrawCompare()
                         ImGui::TextDisabled( "(%.2f%%)", 100.f * sd / m_compare.average[1] );
                         TooltipIfHovered( "Coefficient of variation" );
                     }
+                    m_compareConstraint.MarkMinWidth();
                     ImGui::Indent();
                     PrintSpeedupOrSlowdown( m_compare.average[0], m_compare.average[1], "Mean" );
                     PrintSpeedupOrSlowdown( m_compare.median[0], m_compare.median[1], "Median" );
@@ -1438,6 +1442,7 @@ void View::DrawCompare()
                     TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
                     ImGui::SameLine();
                     PercentileLine( "P99.9:", p99_9[0] );
+                    m_compareConstraint.MarkMinWidth();
 
                     TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                     ImGui::SameLine();
@@ -1460,6 +1465,7 @@ void View::DrawCompare()
                     TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                     ImGui::SameLine();
                     PercentileLine( "P99.9:", p99_9[1] );
+                    m_compareConstraint.MarkMinWidth();
 
                     ImGui::Indent();
                     PrintSpeedupOrSlowdown( p75[0], p75[1], "P75" );

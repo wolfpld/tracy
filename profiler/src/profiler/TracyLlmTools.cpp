@@ -106,7 +106,6 @@ TracyLlmTools::TracyLlmTools( Worker& worker, const View& view, const TracyManua
         for( auto& line : SplitLines( chunk.text.c_str(), chunk.text.size() ) )
         {
             if( line.empty() ) continue;
-            if( line == "---" || line == ":::" || line == "::: bclogo" ) continue;
             m_chunkData.emplace_back( hdr + line, idx );
         }
         idx++;

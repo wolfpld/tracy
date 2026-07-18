@@ -25,6 +25,7 @@
 #include "TracyUserData.hpp"
 #include "TracyUtility.hpp"
 #include "TracyViewData.hpp"
+#include "TracyWindowConstraints.hpp"
 #include "../server/TracyFileWrite.hpp"
 #include "../server/TracyTaskDispatch.hpp"
 #include "../server/TracyShortPtr.hpp"
@@ -1091,6 +1092,8 @@ private:
     Range m_framesRange;
 
     std::array<RangeEntry, size_t( RangeId::NUM )> m_ranges;
+
+    WindowConstraints m_flameGraphConstraint;
 
 #ifndef __EMSCRIPTEN__
     TracyLlm m_llm;

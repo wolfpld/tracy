@@ -910,6 +910,7 @@ void View::DrawFlameGraph()
 {
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 1400 * scale, 800 * scale ), ImGuiCond_FirstUseEver );
+    m_flameGraphConstraint.Constrain();
     ImGui::Begin( "Flame graph", &m_showFlameGraph, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
 
@@ -998,6 +999,8 @@ void View::DrawFlameGraph()
         m_flameGraphViewEnd = 0;
         m_flameGraphPan = 0;
     }
+
+    m_flameGraphConstraint.MarkMinWidth();
 
     UpdateThreadOrder();
     const auto& td = m_threadOrder;

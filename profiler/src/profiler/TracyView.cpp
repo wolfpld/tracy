@@ -1528,6 +1528,7 @@ bool View::WasActive() const
 
 void View::DpiScaleChanged()
 {
+    m_flameGraphConstraint.Reset();
 }
 
 void View::AddLlmAttachment( const nlohmann::json& json )

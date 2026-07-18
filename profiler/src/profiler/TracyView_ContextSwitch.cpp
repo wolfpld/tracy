@@ -411,6 +411,7 @@ void View::DrawWaitStacks()
 
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 1400 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
+    m_waitStacksConstraint.Constrain();
     ImGui::Begin( "Wait stacks", &m_showWaitStacks );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
     uint64_t totalCount = 0;
@@ -489,6 +490,7 @@ void View::DrawWaitStacks()
         ToggleButton( ICON_FA_RULER " Limits", m_showRanges );
     }
     ImGui::PopStyleVar();
+    m_waitStacksConstraint.MarkMinWidth();
 
     bool threadsChanged = false;
     auto expand = ImGui::TreeNode( ICON_FA_SHUFFLE " Visible threads:" );

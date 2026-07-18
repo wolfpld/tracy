@@ -98,6 +98,8 @@ public:
         return memcmp( m_idx, &zero, 3 ) != 0;
     }
 
+    tracy_force_inline bool operator==( const StringIdx& rhs ) const { return memcmp( m_idx, rhs.m_idx, 3 ) == 0; }
+
 private:
     uint8_t m_idx[3];
 };

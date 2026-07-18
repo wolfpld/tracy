@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-07-18 <https://github.com/wolfpld/tracy>
+2026-07-19 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -4870,8 +4870,8 @@ If you just want to get things running and have a reasonably powerful hardware, 
         cache-type-k = q8_0
         cache-type-v = q8_0
 
-        [unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q4_K_M]
-        hf = unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q4_K_M
+        [bartowski/Qwen_Qwen3.6-35B-A3B-GGUF:Q4_K_M]
+        hf = bartowski/Qwen_Qwen3.6-35B-A3B-GGUF:Q4_K_M
         parallel = 1
         spec-default = true
         spec-type = draft-mtp
@@ -4889,9 +4889,9 @@ If you just want to get things running and have a reasonably powerful hardware, 
 
 4.  Connect to llama.cpp inside the profiler!
 
-The models will be automatically downloaded when trying to access them for the first time. It may take some time.
+The models will be automatically downloaded when trying to access them for the first time. It may take some time (the main model is 22+ GB).
 
-If you have the resources available you may try replacing `unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q4_K_M` with `unsloth/Qwen3.6-27B-MTP-GGUF:Q4_K_M` in the configuration file to get a more capable model.
+If you have the resources available you may try replacing `bartowski/Qwen_Qwen3.6-35B-A3B-GGUF:Q4_K_M` with `unsloth/Qwen3.6-27B-MTP-GGUF:Q4_K_M` in the configuration file to get a more capable model.
 
 ## Service provider
 

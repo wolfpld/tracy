@@ -1101,6 +1101,7 @@ private:
     WindowConstraints m_compareConstraint;
     WindowConstraints m_llmConstraint;
     WindowConstraints m_waitStacksConstraint;
+    WindowConstraints m_frameStatsConstraint;
 
 #ifndef __EMSCRIPTEN__
     TracyLlm m_llm;

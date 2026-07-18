@@ -1536,6 +1536,7 @@ void View::DpiScaleChanged()
     m_compareConstraint.Reset();
     m_llmConstraint.Reset();
     m_waitStacksConstraint.Reset();
+    m_frameStatsConstraint.Reset();
 }
 
 void View::AddLlmAttachment( const nlohmann::json& json )

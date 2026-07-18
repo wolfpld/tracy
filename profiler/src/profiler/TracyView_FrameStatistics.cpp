@@ -13,6 +13,7 @@ void View::DrawFrameStatistics()
 {
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 700 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
+    m_frameStatsConstraint.Constrain();
     ImGui::Begin( "Frame statistics", &m_showFrameStatistics, ImGuiWindowFlags_NoScrollbar );
 
     auto fsz = m_worker.GetFullFrameCount( *m_frames );
@@ -405,6 +406,7 @@ void View::DrawFrameStatistics()
                     ImGui::SameLine();
                     ImGui::TextDisabled( "(%.2f%%)", 100.f * m_frameSortData.sd / m_frameSortData.average );
                     TooltipIfHovered( "Coefficient of variation" );
+                    m_frameStatsConstraint.MarkMinWidth();
 
                     constexpr auto PercentileLine = []( const char* label, int64_t t ) {
                         TextFocused( label, TimeToString( t ) );
@@ -430,6 +432,7 @@ void View::DrawFrameStatistics()
                     ImGui::Spacing();
                     ImGui::SameLine();
                     PercentileLine( "P99.9:", m_frameSortData.p99_9 );
+                    m_frameStatsConstraint.MarkMinWidth();
 
                     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
                     ImGui::Checkbox( "###draw1", &m_frameSortData.drawAvgMed );

@@ -13,6 +13,7 @@ void View::DrawMessages()
 
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 1200 * scale, 600 * scale ), ImGuiCond_FirstUseEver );
+    m_messagesConstraint.Constrain();
     ImGui::Begin( "Messages", &m_showMessages );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
 
@@ -137,6 +138,7 @@ void View::DrawMessages()
         ImGui::Checkbox( ICON_FA_IMAGE " Show frame images", &m_showMessageImages );
     }
 
+    m_messagesConstraint.MarkMinWidth();
     UpdateThreadOrder();
 
     bool threadsChanged = false;

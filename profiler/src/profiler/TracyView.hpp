@@ -1094,6 +1094,7 @@ private:
     std::array<RangeEntry, size_t( RangeId::NUM )> m_ranges;
 
     WindowConstraints m_flameGraphConstraint;
+    WindowConstraints m_messagesConstraint;
 
 #ifndef __EMSCRIPTEN__
     TracyLlm m_llm;

@@ -1425,7 +1425,6 @@ void View::DrawGpuInfoWindow()
         const auto tid = GetZoneThread( ev );
         ImGui::PushFont( g_fonts.normal, FontBig );
         TextFocusedClipboard( "Zone name:", m_worker.GetString( srcloc.name ), m_worker.GetString( srcloc.name ), 1, g_fonts.normal, FontNormal );
-        ImGui::SameLine();
         ImGui::PopFont();
         TextFocusedClipboard( "Function:", m_worker.GetString( srcloc.function ), m_worker.GetString( srcloc.function ), 2 );
         TextFocusedClipboard( "Location:", LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ), LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ), 3 );

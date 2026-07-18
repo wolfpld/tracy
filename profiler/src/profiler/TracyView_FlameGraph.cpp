@@ -911,51 +911,34 @@ void View::DrawFlameGraph()
     ImGui::Begin( "Flame graph", &m_showFlameGraph, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
 
-    ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 2, 2 ) );
-    if( ImGui::RadioButton( ICON_FA_SYRINGE " Instrumentation", &m_flameMode, 0 ) )
-    {
+    static const auto ResetGraph = [this]() {
         m_flameGraphInvariant.Reset();
         m_flameGraphViewStart = 0;
         m_flameGraphViewEnd = 0;
         m_flameGraphPan = 0;
-    }
+    };
+
+    ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 2, 2 ) );
+    if( ImGui::RadioButton( ICON_FA_SYRINGE " Instrumentation", &m_flameMode, 0 ) ) ResetGraph();
 
     if( m_worker.AreCallstackSamplesReady() && m_worker.GetCallstackSampleCount() > 0 )
     {
         ImGui::SameLine();
-        if( ImGui::RadioButton( ICON_FA_EYE_DROPPER " Sampling", &m_flameMode, 1 ) )
-        {
-            m_flameGraphInvariant.Reset();
-            m_flameGraphViewStart = 0;
-            m_flameGraphViewEnd = 0;
-            m_flameGraphPan = 0;
-        }
+        if( ImGui::RadioButton( ICON_FA_EYE_DROPPER " Sampling", &m_flameMode, 1 ) ) ResetGraph();
     }
 
     ImGui::SameLine();
     ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
     ImGui::SameLine();
 
-    if( ImGui::Checkbox( ICON_FA_ARROW_UP_WIDE_SHORT " Sort by time", &m_flameSort ) )
-    {
-        m_flameGraphInvariant.Reset();
-        m_flameGraphViewStart = 0;
-        m_flameGraphViewEnd = 0;
-        m_flameGraphPan = 0;
-    }
+    if( ImGui::Checkbox( ICON_FA_ARROW_UP_WIDE_SHORT " Sort by time", &m_flameSort ) ) ResetGraph();
 
     if( m_flameMode == 0 )
     {
         if( m_worker.HasContextSwitches() )
         {
             ImGui::SameLine();
-            if( ImGui::Checkbox( "Running time", &m_flameRunningTime ) )
-            {
-                m_flameGraphInvariant.Reset();
-                m_flameGraphViewStart = 0;
-                m_flameGraphViewEnd = 0;
-                m_flameGraphPan = 0;
-            }
+            if( ImGui::Checkbox( "Running time", &m_flameRunningTime ) ) ResetGraph();
         }
         else
         {
@@ -969,22 +952,10 @@ void View::DrawFlameGraph()
         ImGui::SameLine();
         ImGui::Text( ICON_FA_SHIELD_HALVED "External" );
         ImGui::SameLine();
-        if( ImGui::Checkbox( "Frames", &m_flameExternal ) )
-        {
-            m_flameGraphInvariant.Reset();
-            m_flameGraphViewStart = 0;
-            m_flameGraphViewEnd = 0;
-            m_flameGraphPan = 0;
-        }
+        if( ImGui::Checkbox( "Frames", &m_flameExternal ) ) ResetGraph();
         ImGui::SameLine();
         if( m_flameExternal ) ImGui::BeginDisabled();
-        if( ImGui::Checkbox( "Tails", &m_flameExternalTail ) )
-        {
-            m_flameGraphInvariant.Reset();
-            m_flameGraphViewStart = 0;
-            m_flameGraphViewEnd = 0;
-            m_flameGraphPan = 0;
-        }
+        if( ImGui::Checkbox( "Tails", &m_flameExternalTail ) ) ResetGraph();
         if( m_flameExternal ) ImGui::EndDisabled();
     }
 
@@ -1000,10 +971,7 @@ void View::DrawFlameGraph()
             m_flameRange.max = m_vd.zvEnd;
         }
 
-        m_flameGraphInvariant.Reset();
-        m_flameGraphViewStart = 0;
-        m_flameGraphViewEnd = 0;
-        m_flameGraphPan = 0;
+        ResetGraph();
     }
     if( m_flameRange.active )
     {
@@ -1052,10 +1020,7 @@ void View::DrawFlameGraph()
             {
                 FlameGraphThread( t->id ) = true;
             }
-            m_flameGraphInvariant.Reset();
-            m_flameGraphViewStart = 0;
-            m_flameGraphViewEnd = 0;
-            m_flameGraphPan = 0;
+            ResetGraph();
         }
         ImGui::SameLine();
         if( ImGui::SmallButton( "Unselect all" ) )
@@ -1064,10 +1029,7 @@ void View::DrawFlameGraph()
             {
                 FlameGraphThread( t->id ) = false;
             }
-            m_flameGraphInvariant.Reset();
-            m_flameGraphViewStart = 0;
-            m_flameGraphViewEnd = 0;
-            m_flameGraphPan = 0;
+            ResetGraph();
         }
         ImGui::SameLine();
         if( ImGui::SmallButton( "Sort" ) )
@@ -1100,13 +1062,7 @@ void View::DrawFlameGraph()
             const auto threadColor = GetThreadColor( t->id, 0 );
             SmallColorBox( threadColor );
             ImGui::SameLine();
-            if( SmallCheckbox( m_worker.GetThreadName( t->id ), &FlameGraphThread( t->id ) ) )
-            {
-                m_flameGraphInvariant.Reset();
-                m_flameGraphViewStart = 0;
-                m_flameGraphViewEnd = 0;
-                m_flameGraphPan = 0;
-            }
+            if( SmallCheckbox( m_worker.GetThreadName( t->id ), &FlameGraphThread( t->id ) ) ) ResetGraph();
             ImGui::PopID();
             if( t->isFiber )
             {

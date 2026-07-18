@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-07-15 <https://github.com/wolfpld/tracy>
+2026-07-18 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -4185,6 +4185,8 @@ You can navigate the flame graph using the mouse. Use the mouse wheel to zoom in
 Similar to the statistics window (section [5.6](#statistics)), the flame graph can operate in two modes: * Instrumentation* and * Sampling*. In the instrumentation mode, the graph represents the zones you put in your program. In the sampling mode, the graph is constructed from the automatically captured call stack data (section [3.18.5](#sampling)).
 
 In the sampling mode, external frames from system libraries are hidden by default. These typically include internal implementation details of starting threads, handling smart pointers, and other such things that are quick to execute and not really interesting. Enabling the * External* option will show these frames. One exception is *external tails*, or calls that your code makes that do not eventually land in your application down the call chain. Think of functions that write to a file or send data on the network. These can be time-consuming, and you may want to see them. There is a separate option to disable these.
+
+The sampling mode, by default, groups the displayed zones by symbol address. In some cases, for example, when using templates, the same function may exist at multiple different symbol addresses. Enabling the *Group by name* option will group the graph items by name instead of by symbol address.
 
 The flame graph can be restricted to a specific time extent using the *Limit range* option (chapter [5.3](#timeranges)). You can access more options through the * Limits* button, which will open the time range limits window, described in section [5.24](#timerangelimits).
 

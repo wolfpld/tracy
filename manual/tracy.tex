@@ -4640,6 +4640,8 @@ Similar to the statistics window (section~\ref{statistics}), the flame graph can
 
 In the sampling mode, external frames from system libraries are hidden by default. These typically include internal implementation details of starting threads, handling smart pointers, and other such things that are quick to execute and not really interesting. Enabling the \emph{\faShieldHalved{}~External} option will show these frames. One exception is \emph{external tails}, or calls that your code makes that do not eventually land in your application down the call chain. Think of functions that write to a file or send data on the network. These can be time-consuming, and you may want to see them. There is a separate option to disable these.
 
+The sampling mode, by default, groups the displayed zones by symbol address. In some cases, for example, when using templates, the same function may exist at multiple different symbol addresses. Enabling the \emph{Group by name} option will group the graph items by name instead of by symbol address.
+
 The flame graph can be restricted to a specific time extent using the \emph{Limit range} option (chapter~\ref{timeranges}). You can access more options through the \emph{\faRuler{}~Limits} button, which will open the time range limits window, described in section~\ref{timerangelimits}.
 
 \subsection{Memory window}

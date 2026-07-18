@@ -254,6 +254,7 @@ void View::DrawFindZone()
 
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 520 * scale, 800 * scale ), ImGuiCond_FirstUseEver );
+    m_findZoneConstraint.Constrain();
     ImGui::Begin( "Find zone", &m_findZone.show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
     if( !m_worker.AreSourceLocationZonesReady() )
@@ -322,6 +323,7 @@ void View::DrawFindZone()
         ImGui::SameLine();
         ToggleButton( ICON_FA_RULER " Limits", m_showRanges );
     }
+    m_findZoneConstraint.MarkMinWidth();
 
     if( m_findZone.rangeSlim != m_findZone.range )
     {
@@ -857,6 +859,7 @@ void View::DrawFindZone()
                         m_findZone.scheduleResetMatch = true;
                     }
                 }
+                m_findZoneConstraint.MarkMinWidth();
 
                 const auto cumulateTime = m_findZone.cumulateTime;
 
@@ -1127,6 +1130,7 @@ void View::DrawFindZone()
                             ImGui::TextDisabled( "(%.2f%%)", 100.f * sd / avg );
                             TooltipIfHovered( "Coefficient of variation" );
                         }
+                        m_findZoneConstraint.MarkMinWidth();
                         TextFocused( "P75:", TimeToString( m_findZone.p75 ) );
                         ImGui::SameLine();
                         ImGui::Spacing();
@@ -1593,6 +1597,7 @@ void View::DrawFindZone()
             m_findZone.selGroup = m_findZone.Unselected;
             m_findZone.ResetGroups();
         }
+        m_findZoneConstraint.MarkMinWidth();
 
         ImGui::TextUnformatted( "Sort by:" );
         ImGui::SameLine();
@@ -2119,6 +2124,7 @@ void View::DrawFindZone()
                 {
                     m_findZone.samples.scheduleUpdate = true;
                 }
+                m_findZoneConstraint.MarkMinWidth();
             }
 
             if( !m_findZone.samples.enabled )

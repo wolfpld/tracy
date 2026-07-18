@@ -1095,6 +1095,7 @@ private:
 
     WindowConstraints m_flameGraphConstraint;
     WindowConstraints m_messagesConstraint;
+    WindowConstraints m_findZoneConstraint;
 
 #ifndef __EMSCRIPTEN__
     TracyLlm m_llm;

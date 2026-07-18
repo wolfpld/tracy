@@ -196,6 +196,8 @@ vx.xx.x (2026-xx-xx)
 - Fixed NVCC builds.
 - Fixed possible lockups in Vulkan timer calibration loop.
 - The flame graph view now supports zooming in and panning with the mouse.
+- Sampling flame graph items can be now also grouped by name, in addition
+  to symbol address.
 - General application crash information polish in the profiler UI.
 - The achievements system has been converted to use markdown renderer.
 - Offline symbol resolution with the update utility now supports custom

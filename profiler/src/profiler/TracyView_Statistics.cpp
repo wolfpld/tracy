@@ -39,6 +39,7 @@ void View::DrawStatistics()
 {
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 1400 * scale, 600 * scale ), ImGuiCond_FirstUseEver );
+    m_statisticsConstraint.Constrain();
     ImGui::Begin( "Statistics", &m_showStatistics, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
     if( !m_worker.AreSourceLocationZonesReady() && ( !m_worker.AreCallstackSamplesReady() || m_worker.GetCallstackSampleCount() == 0 ) )
@@ -272,6 +273,7 @@ void View::DrawStatistics()
         ImGui::Spacing();
         ImGui::SameLine();
         AccumulationModeComboBox();
+        m_statisticsConstraint.MarkMinWidth();
     }
     else if( m_statMode == 1 )
     {
@@ -314,6 +316,7 @@ void View::DrawStatistics()
         const char* locationTable = "Entry\0Sample\0Smart\0";
         ImGui::SetNextItemWidth( ImGui::CalcTextSize( "Sample" ).x + ImGui::GetTextLineHeight() * 2 );
         ImGui::Combo( "##location", &m_statSampleLocation, locationTable );
+        m_statisticsConstraint.MarkMinWidth();
     }
     else
     {
@@ -579,6 +582,7 @@ void View::DrawStatistics()
         ImGui::SameLine();
         ImGui::Checkbox( ICON_FA_FIRE " Top inline", &m_topInline );
         if( m_statSeparateInlines ) ImGui::EndDisabled();
+        m_statisticsConstraint.MarkMinWidth();
     }
 
     ImGui::Separator();

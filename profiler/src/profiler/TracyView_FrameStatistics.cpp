@@ -13,7 +13,7 @@ void View::DrawFrameStatistics()
 {
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 700 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
-    ImGui::Begin( "Frame statistics", &m_showFrameStatistics );
+    ImGui::Begin( "Frame statistics", &m_showFrameStatistics, ImGuiWindowFlags_NoScrollbar );
 
     auto fsz = m_worker.GetFullFrameCount( *m_frames );
     if( fsz != 0 )
@@ -205,6 +205,7 @@ void View::DrawFrameStatistics()
         ImGui::SameLine();
         ImGui::TextDisabled( "(%.2f%% of profile time span)", m_frameSortData.total / float( profileSpan ) * 100.f );
         ImGui::Separator();
+        ImGui::BeginChild( "##frameStats" );
 
         const auto ty = ImGui::GetTextLineHeight();
 
@@ -673,6 +674,7 @@ void View::DrawFrameStatistics()
                 }
             }
         }
+        ImGui::EndChild();
     }
     ImGui::End();
 }

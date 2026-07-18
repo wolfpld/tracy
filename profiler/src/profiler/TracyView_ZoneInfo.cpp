@@ -176,6 +176,7 @@ void View::DrawZoneInfoWindow()
 
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 500 * scale, 600 * scale ), ImGuiCond_FirstUseEver );
+    m_zoneInfoConstraint.Constrain();
     bool show = true;
     ImGui::Begin( "Zone info", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     if( !ImGui::GetCurrentWindowRead()->SkipItems )
@@ -257,6 +258,7 @@ void View::DrawZoneInfoWindow()
                 m_zoneInfoWindow = m_zoneInfoStack.back_and_pop();
             }
         }
+        m_zoneInfoConstraint.MarkMinWidth();
 
         ImGui::Separator();
 
@@ -341,6 +343,7 @@ void View::DrawZoneInfoWindow()
         const auto ztime = end - ev.Start();
         const auto selftime = GetZoneSelfTime( ev );
         TextFocused( "Time from start of program:", TimeToStringExact( ev.Start() ) );
+        m_zoneInfoConstraint.MarkMinWidth();
         const std::time_t ts = m_worker.GetCaptureTime() + ev.Start() / 1000000000;
         TextFocused( "Wall clock time:", std::asctime( std::localtime( &ts ) ) );
         TextFocused( "Execution time:", TimeToString( ztime ) );
@@ -353,6 +356,7 @@ void View::DrawZoneInfoWindow()
                 ImGui::TextDisabled( "(%.2f%% of mean time)", float( ztime ) / zoneData.total * zoneData.zones.size() * 100 );
             }
         }
+        m_zoneInfoConstraint.MarkMinWidth();
         TextFocused( "Self time:", TimeToString( selftime ) );
         if( ztime != 0 )
         {
@@ -469,6 +473,7 @@ void View::DrawZoneInfoWindow()
                         ImGui::Spacing();
                         ImGui::SameLine();
                         SmallCheckbox( "Time relative to zone start", &m_ctxSwitchTimeRelativeToZone );
+                        m_zoneInfoConstraint.MarkMinWidth();
                         const int64_t adjust = m_ctxSwitchTimeRelativeToZone ? ev.Start() : 0;
                         const auto wrsz = eit - it;
 
@@ -744,6 +749,7 @@ void View::DrawZoneInfoWindow()
                             ImGui::Spacing();
                             ImGui::SameLine();
                             SmallCheckbox( "Time relative to zone start", &m_allocTimeRelativeToZone );
+                            m_zoneInfoConstraint.MarkMinWidth();
 
                             std::vector<const MemEvent*> v;
                             v.reserve( nAlloc + nFree );
@@ -807,6 +813,7 @@ void View::DrawZoneInfoWindow()
                         SmallCheckbox( "Time relative to zone start", &m_messageTimeRelativeToZone );
                         ImGui::SameLine();
                         SmallCheckbox( "Exclude children", &m_messagesExcludeChildren );
+                        m_zoneInfoConstraint.MarkMinWidth();
                         int64_t viewSize;
                         if( !m_messagesExcludeChildren )
                         {
@@ -975,6 +982,7 @@ void View::DrawZoneInfoWindow()
                     ImGui::SameLine();
                     if( SmallCheckbox( "Running time", &m_timeDist.runningTime ) ) m_timeDist.dataValidFor = nullptr;
                 }
+                m_zoneInfoConstraint.MarkMinWidth();
                 if( m_timeDist.dataValidFor != &ev )
                 {
                     m_timeDist.data.clear();
@@ -1087,7 +1095,10 @@ void View::DrawZoneInfoWindow()
         {
             if( ImGui::TreeNode( "Call stack" ) )
             {
-                DrawCallstackTable( m_worker.GetZoneExtra( ev ).callstack.Val(), { .thread = tid } );
+                DrawCallstackTable( m_worker.GetZoneExtra( ev ).callstack.Val(), {
+                    .thread = tid,
+                    .constraints = &m_zoneInfoConstraint
+                } );
                 ImGui::TreePop();
             }
         }
@@ -1101,7 +1112,10 @@ void View::DrawZoneInfoWindow()
                 TextDisabledUnformatted( ICON_FA_WAND_SPARKLES );
                 if( expand )
                 {
-                    DrawCallstackTable( cs.data(), cs.size(), { .thread = tid } );
+                    DrawCallstackTable( cs.data(), cs.size(), {
+                        .thread = tid,
+                        .constraints = &m_zoneInfoConstraint
+                    } );
                     ImGui::TreePop();
                 }
             }
@@ -1127,6 +1141,7 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
 
     ImGui::SameLine();
     SmallCheckbox( ICON_FA_LAYER_GROUP " Group children locations", &m_groupChildrenLocations );
+    m_zoneInfoConstraint.MarkMinWidth();
 
     if( m_groupChildrenLocations )
     {
@@ -1356,6 +1371,7 @@ void View::DrawGpuInfoWindow()
 
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 500 * scale, 600 * scale), ImGuiCond_FirstUseEver );
+    m_gpuZoneInfoConstraint.Constrain();
     bool show = true;
     ImGui::Begin( "Zone info", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     if( !ImGui::GetCurrentWindowRead()->SkipItems )
@@ -1419,6 +1435,7 @@ void View::DrawGpuInfoWindow()
                 m_gpuInfoWindow = m_gpuInfoStack.back_and_pop();
             }
         }
+        m_gpuZoneInfoConstraint.MarkMinWidth();
 
         ImGui::Separator();
 
@@ -1445,7 +1462,9 @@ void View::DrawGpuInfoWindow()
         const auto ztime = end - ev.GpuStart();
         const auto selftime = GetZoneSelfTime( ev );
         TextFocused( "Time from start of program:", TimeToStringExact( ev.GpuStart() ) );
+        m_gpuZoneInfoConstraint.MarkMinWidth();
         TextFocused( "GPU execution time:", TimeToString( ztime ) );
+        m_gpuZoneInfoConstraint.MarkMinWidth();
         TextFocused( "GPU self time:", TimeToString( selftime ) );
         if( ztime != 0 )
         {
@@ -1577,7 +1596,10 @@ void View::DrawGpuInfoWindow()
         {
             if( ImGui::TreeNode( "Call stack" ) )
             {
-                DrawCallstackTable( ev.callstack.Val(), { .thread = tid } );
+                DrawCallstackTable( ev.callstack.Val(), {
+                    .thread = tid,
+                    .constraints = &m_gpuZoneInfoConstraint
+                } );
                 ImGui::TreePop();
             }
         }
@@ -1602,6 +1624,7 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
 
     ImGui::SameLine();
     SmallCheckbox( ICON_FA_LAYER_GROUP " Group children locations", &m_groupChildrenLocations );
+    m_gpuZoneInfoConstraint.MarkMinWidth();
 
     if( m_groupChildrenLocations )
     {

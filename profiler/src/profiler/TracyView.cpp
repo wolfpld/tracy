@@ -1539,6 +1539,8 @@ void View::DpiScaleChanged()
     m_frameStatsConstraint.Reset();
     m_sampleEntryConstraint.Reset();
     m_callstackConstraint.Reset();
+    m_zoneInfoConstraint.Reset();
+    m_gpuZoneInfoConstraint.Reset();
 }
 
 void View::AddLlmAttachment( const nlohmann::json& json )

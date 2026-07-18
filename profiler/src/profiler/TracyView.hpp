@@ -1105,6 +1105,8 @@ private:
     WindowConstraints m_frameStatsConstraint;
     WindowConstraints m_sampleEntryConstraint;
     WindowConstraints m_callstackConstraint;
+    WindowConstraints m_zoneInfoConstraint;
+    WindowConstraints m_gpuZoneInfoConstraint;
 
 #ifndef __EMSCRIPTEN__
     TracyLlm m_llm;

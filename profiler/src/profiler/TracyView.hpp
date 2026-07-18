@@ -651,6 +651,7 @@ private:
     bool m_flameRunningTime = false;
     bool m_flameExternal = false;
     bool m_flameExternalTail = true;
+    bool m_flameSymbolByName = false;
     int m_statSampleLocation = 2;
     bool m_statHideUnknown = true;
     bool m_showAllSymbols = false;

@@ -351,7 +351,9 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
         auto vec = &data;
         for( auto& v : cache )
         {
-            auto it = std::find_if( vec->begin(), vec->end(), [symaddr = v.symaddr]( const auto& v ) { return v.srcloc == symaddr; } );
+            auto it = m_flameSymbolByName ?
+                std::find_if( vec->begin(), vec->end(), [name = v.name]( const auto& v ) { return v.name == name; } ) :
+                std::find_if( vec->begin(), vec->end(), [symaddr = v.symaddr]( const auto& v ) { return v.srcloc == symaddr; } );
             if( it == vec->end() )
             {
                 vec->emplace_back( FlameGraphItem { (int64_t)v.symaddr, period, v.name } );
@@ -957,6 +959,11 @@ void View::DrawFlameGraph()
         if( m_flameExternal ) ImGui::BeginDisabled();
         if( ImGui::Checkbox( "Tails", &m_flameExternalTail ) ) ResetGraph();
         if( m_flameExternal ) ImGui::EndDisabled();
+
+        ImGui::SameLine();
+        ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
+        ImGui::SameLine();
+        if( ImGui::Checkbox( "Group by name", &m_flameSymbolByName ) ) ResetGraph();
     }
 
     ImGui::SameLine();

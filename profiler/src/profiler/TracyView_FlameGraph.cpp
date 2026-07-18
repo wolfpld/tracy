@@ -914,7 +914,7 @@ void View::DrawFlameGraph()
     ImGui::Begin( "Flame graph", &m_showFlameGraph, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
 
-    static const auto ResetGraph = [this]() {
+    const auto ResetGraph = [this]() {
         m_flameGraphInvariant.Reset();
         m_flameGraphViewStart = 0;
         m_flameGraphViewEnd = 0;

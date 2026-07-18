@@ -1,10 +1,22 @@
 #include <algorithm>
-#include <imgui.h>
+#include <imgui_internal.h>
 
 #include "TracyWindowConstraints.hpp"
 
 namespace tracy
 {
+
+static int GetChildDepth()
+{
+    int depth = 0;
+    ImGuiWindow* window = ImGui::GetCurrentWindow();
+    while( window->Flags & ImGuiWindowFlags_ChildWindow )
+    {
+        window = window->ParentWindow;
+        depth++;
+    }
+    return depth;
+}
 
 void WindowConstraints::Reset()
 {
@@ -19,7 +31,10 @@ void WindowConstraints::Constrain() const
 void WindowConstraints::MarkMinWidth()
 {
     ImGui::SameLine();
-    m_minWidth = std::max( m_minWidth, ImGui::GetCursorPosX() );
+    const auto& style = ImGui::GetStyle();
+    const auto depth = GetChildDepth();
+    const auto pos = ImGui::GetCursorPosX() + depth * ( style.WindowPadding.x + style.ScrollbarSize );
+    m_minWidth = std::max( m_minWidth, pos );
     ImGui::NewLine();
 }
 

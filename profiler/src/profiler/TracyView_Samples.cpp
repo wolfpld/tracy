@@ -842,6 +842,7 @@ void View::DrawSampleParents()
     bool show = true;
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 1400 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
+    m_sampleEntryConstraint.Constrain();
     ImGui::Begin( "Sample entry stacks", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     if( !ImGui::GetCurrentWindowRead()->SkipItems )
     {
@@ -1022,6 +1023,7 @@ void View::DrawSampleParents()
             ImGui::SameLine();
             ImGui::RadioButton( "Symbol address", &m_showCallstackFrameAddress, 2 );
             ImGui::PopStyleVar();
+            m_sampleEntryConstraint.MarkMinWidth();
 
             ImGui::Separator();
             if( ImGui::BeginTable( "##callstack", 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY ) )

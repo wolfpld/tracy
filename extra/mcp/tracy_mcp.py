@@ -251,6 +251,7 @@ except ImportError:
 
 _MAX_INSTANCES = int(os.environ.get("TRACY_MCP_MAX_INSTANCES", "4"))
 _DISCONNECTED_TTL_S = float(os.environ.get("TRACY_MCP_DISCONNECTED_TTL_S", "1800"))
+_FILE_IDLE_TTL_S = float(os.environ.get("TRACY_MCP_FILE_IDLE_TTL_S", "1800"))
 _SWEEP_INTERVAL_S = float(os.environ.get("TRACY_MCP_SWEEP_INTERVAL_S", "300"))
 
 
@@ -303,17 +304,22 @@ def _shutdown_worker(worker: object | None) -> None:
         pass
 
 
-def _evict_disconnected_idle() -> list[str]:
-    """Unload live instances that disconnected and have sat idle past the TTL.
-
-    Runs on the periodic sweep. A grace period (_DISCONNECTED_TTL_S) is kept
-    so a capture is still around for post-session analysis right after the
-    target disconnects — this only reclaims sessions that were forgotten.
+def _evict_idle() -> list[str]:
+    """Unload instances idle past their TTL: disconnected live instances
+    past _DISCONNECTED_TTL_S, file-loaded captures past _FILE_IDLE_TTL_S
+    (safe — already durably on disk). Connected live instances are never
+    touched here.
     """
     now = time.time()
     evicted = []
     for name, inst in list(instances.items()):
-        if inst.path is not None or inst.worker is None:
+        if inst.path is not None:
+            if now - inst.last_used >= _FILE_IDLE_TTL_S:
+                del instances[name]
+                _shutdown_worker(inst.worker)
+                evicted.append(name)
+            continue
+        if inst.worker is None:
             continue
         try:
             connected = inst.worker.is_connected()
@@ -359,7 +365,7 @@ async def _sweep_loop() -> None:
     while True:
         await asyncio.sleep(_SWEEP_INTERVAL_S)
         try:
-            evicted = _evict_disconnected_idle()
+            evicted = _evict_idle()
         except Exception:
             evicted = None
         print(
@@ -424,10 +430,12 @@ async def list_instances() -> list[dict]:
     process runs (it's a singleton shared across all MCP clients) until
     unloaded. `idle_seconds` is how long since this instance was last used
     via `eval`/`save_trace` — call `unload_capture` on ones you no longer
-    need instead of waiting for automatic eviction. Automatic eviction only
-    kicks in at the `TRACY_MCP_MAX_INSTANCES` cap (LRU, connected live
-    instances are never evicted) or after a disconnected live instance sits
-    idle past `TRACY_MCP_DISCONNECTED_TTL_S`.
+    need instead of waiting for automatic eviction. Automatic eviction kicks
+    in at the `TRACY_MCP_MAX_INSTANCES` cap (LRU, connected live instances
+    are never evicted), after a disconnected live instance sits idle past
+    `TRACY_MCP_DISCONNECTED_TTL_S`, or after a file-loaded capture sits idle
+    past `TRACY_MCP_FILE_IDLE_TTL_S` — it's already durably on disk, so
+    nothing is lost; just `load_capture` it again.
     """
     now = time.time()
     return [

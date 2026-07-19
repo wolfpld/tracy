@@ -230,14 +230,21 @@ PYBIND11_MODULE( TracyServerBindings, m )
 
         // --- Sections ---
         .def( "get_sections", locked( +[]( const Worker& w ) {
+            // GetSections() is keyed by category (multiple named section sets);
+            // flatten across categories, tagging each item with its category name.
         py::list result;
-        for( auto& s : w.GetSections() )
+        for( const auto& kv : w.GetSections() )
         {
-            py::dict d;
-            d["start"] = s.start.Val();
-            d["end"] = s.end.Val();
-            d["text"] = std::string( w.GetString( s.text ) );
-            result.append( d );
+            const char* category = w.GetSectionCategoryDescription( kv.first );
+            for( const auto& s : kv.second )
+            {
+                py::dict d;
+                d["category"] = std::string( category );
+                d["start"] = s.start.Val();
+                d["end"] = s.end.Val();
+                d["text"] = std::string( w.GetString( s.text ) );
+                result.append( d );
+            }
         }
         return result;
     } ) )
@@ -1098,7 +1105,11 @@ PYBIND11_MODULE( TracyServerBindings, m )
         // --- Connection control ---
         .def( "is_connected", &Worker::IsConnected )
         .def( "shutdown", &Worker::Shutdown )
-        .def( "disconnect", &Worker::Disconnect );
+        .def( "disconnect", &Worker::Disconnect )
+        // Plain relaxed atomic like IsConnected() above — no locked()
+        // needed. True once post-load zone/symbol stats have finished
+        // building; get_all_zone_stats() et al. can be empty until then.
+        .def( "is_background_done", &Worker::IsBackgroundDone );
 
     // -------------------------------------------------------------------------
     // FileRead

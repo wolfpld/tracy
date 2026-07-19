@@ -5,6 +5,7 @@ import asyncio
 import atexit
 import builtins
 import concurrent.futures
+import faulthandler
 import glob
 import io
 import os
@@ -14,6 +15,8 @@ import socket
 import struct
 import sys
 import time
+import urllib.error
+import urllib.request
 import uuid
 from contextlib import asynccontextmanager, redirect_stdout
 
@@ -29,6 +32,7 @@ logging.getLogger("starlette").setLevel(logging.CRITICAL)
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _PORT_FILE = os.path.join(_HERE, "tracy_mcp.port")
 _PID_FILE  = os.path.join(_HERE, "tracy_mcp.pid")
+_CRASH_LOG_FILE = os.path.join(_HERE, "tracy_mcp.crash.log")
 _PREFERRED_PORT = int(os.environ.get("TRACY_MCP_PORT", "47380"))
 _TRANSPORT = os.environ.get("TRACY_MCP_TRANSPORT", "streamable-http").strip().lower()
 
@@ -156,10 +160,26 @@ async def _listen_broadcasts(timeout_s: float = 1.5) -> list[dict]:
     return list(seen.values())
 
 
-def _is_our_server_running() -> tuple[bool, int]:
+def _http_ping(port: int, timeout_s: float = 2.0) -> bool:
+    """Confirms the server answers HTTP, not just that its PID exists — a
+    deadlocked process still passes os.kill(pid, 0). Any response, even an
+    error one, proves the transport is alive; only a timeout or refused
+    connection means it's not.
     """
-    Check the PID file to see if our server is already running.
-    Returns (running, port). Uses os.kill(pid, 0) to confirm the process is alive.
+    path = mcp_server.settings.sse_path if _TRANSPORT == "sse" else mcp_server.settings.streamable_http_path
+    try:
+        urllib.request.urlopen(f"http://127.0.0.1:{port}{path}", timeout=timeout_s)
+        return True
+    except urllib.error.HTTPError:
+        return True
+    except Exception:
+        return False
+
+
+def _is_our_server_running() -> tuple[bool, int]:
+    """Check whether our server is running: PID alive AND responding to
+    an HTTP self-ping (a hung process still passes os.kill(pid, 0)).
+    Returns (running, port).
     """
     try:
         with open(_PID_FILE) as f:
@@ -167,9 +187,19 @@ def _is_our_server_running() -> tuple[bool, int]:
         with open(_PORT_FILE) as f:
             port = int(f.read().strip())
         os.kill(pid, 0)   # raises OSError if process is gone
-        return True, port
     except Exception:
         return False, 0
+    if not _http_ping(port):
+        print(
+            f"Tracy MCP process {pid} is alive (PID check passed) but isn't "
+            f"responding on port {port} within {2.0:.0f}s -- likely hung/deadlocked, "
+            f"not just busy. Starting a fresh server on a new port; kill PID {pid} "
+            f"manually once you're able to (it's still holding the port and the "
+            f"TracyServerBindings.pyd file lock).",
+            file=sys.stderr,
+        )
+        return False, 0
+    return True, port
 
 
 def _find_free_port() -> int:
@@ -320,12 +350,25 @@ def _evict_for_capacity(exclude: str | None = None) -> str | None:
 
 
 async def _sweep_loop() -> None:
+    """Periodic eviction sweep, doubling as a heartbeat — distinguishes a
+    crashed process (see faulthandler) from a hung one (stops producing
+    these lines). flush=True since a hang is exactly when buffering would
+    hide the last known-good timestamp.
+    """
+    start = time.time()
     while True:
         await asyncio.sleep(_SWEEP_INTERVAL_S)
         try:
-            _evict_disconnected_idle()
+            evicted = _evict_disconnected_idle()
         except Exception:
-            pass
+            evicted = None
+        print(
+            f"[heartbeat] uptime={int(time.time() - start)}s "
+            f"instances={len(instances)} tasks={len(tasks)} "
+            f"evicted={evicted or 'none'}",
+            file=sys.stderr,
+            flush=True,
+        )
 
 
 @asynccontextmanager
@@ -810,6 +853,13 @@ async def shutdown_server() -> str:
 
 
 if __name__ == "__main__":
+    # Enabled before anything touches the native bindings, so a genuine
+    # fatal crash (segfault etc.) writes a thread-state traceback to disk
+    # before the process dies — works on Windows via
+    # SetUnhandledExceptionFilter, same mechanism as POSIX signals.
+    _crash_log_fh = open(_CRASH_LOG_FILE, "a", encoding="utf-8")
+    faulthandler.enable(file=_crash_log_fh, all_threads=True)
+
     atexit.register(_cleanup_pid_files)
 
     if _TRANSPORT not in ("sse", "streamable-http"):

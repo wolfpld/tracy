@@ -108,7 +108,7 @@ public:
                 continue;
             }
 
-            if (disjoint.Disjoint)
+            if (disjoint.Disjoint || disjoint.Frequency == 0)
                 continue;
 
             UINT64 timestamp = 0;
@@ -214,6 +214,13 @@ public:
         {
             m_previousCheckpoint = m_nextCheckpoint;
             TracyD3D11Panic("disjoint timestamps detected; dropping.");
+            return;
+        }
+
+        if (disjoint.Frequency == 0)
+        {
+            m_previousCheckpoint = m_nextCheckpoint;
+            TracyD3D11Panic("zero GPU timestamp frequency; dropping.");
             return;
         }
 

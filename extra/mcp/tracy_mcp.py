@@ -385,6 +385,11 @@ async def list_instances() -> list[dict]:
     kicks in at the `TRACY_MCP_MAX_INSTANCES` cap (LRU, connected live
     instances are never evicted) or after a disconnected live instance sits
     idle past `TRACY_MCP_DISCONNECTED_TTL_S`.
+
+    `background_done: false` means a just-loaded capture is still building
+    zone/symbol statistics on a background thread — `get_all_zone_stats`
+    and similar stats-based `eval` queries can return empty or partial
+    results until this flips to true.
     """
     now = time.time()
     return [
@@ -394,6 +399,7 @@ async def list_instances() -> list[dict]:
             "mtime": inst.mtime,
             "live": inst.path is None,
             "connected": inst.worker.is_connected() if inst.path is None and inst.worker else None,
+            "background_done": inst.worker.is_background_done() if inst.worker else None,
             "idle_seconds": now - inst.last_used,
         }
         for name, inst in instances.items()
@@ -523,6 +529,12 @@ async def load_capture(path: str, alias: str | None = None) -> str:
 
     If you don't already have a path, call `list_captures` first — it lists
     .tracy files in the TRACY_CAPTURES_DIR environment directory.
+
+    Loading returns before zone/symbol statistics finish building — a
+    background thread populates them after the file itself is read. Check
+    `background_done` in `list_instances` (or poll it) before relying on
+    `get_all_zone_stats` and similar stats-based `eval` queries; they can
+    return empty or partial results until it's true.
     """
     if not tracy_server:
         return "Error: Tracy Server bindings not found."

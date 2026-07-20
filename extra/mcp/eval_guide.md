@@ -23,9 +23,13 @@ data surface. Common entry points:
   `get_locks()`, `get_memory_events()`, `get_callstack_frames(...)`
 - Sections: `get_sections()` — timed code sections from
   `TracySectionEnter`/`TracySectionLeave` instrumentation. Returns a list of
-  `{start, end, text}` dicts (start/end in ns).
+  `{category, start, end, text}` dicts (start/end in ns); `category` is the
+  section's named group (multiple unrelated section sets can coexist in one
+  capture).
 - Capture metadata: `get_capture_name()`, `get_capture_program()`,
   `get_first_time()`, `get_last_time()`, `get_resolution()`, `get_host_info()`
+- Readiness: `is_background_done()` — see "Instance lifecycle" below before
+  querying zone/symbol stats right after `load_capture`.
 
 Run `print([m for m in dir(ctx) if not m.startswith('_')])` for the full list.
 
@@ -81,12 +85,18 @@ instance holds its *entire* trace — zones, messages, callstacks, memory
 events — resident in memory for as long as that process runs. Nothing
 frees it just because your conversation ends.
 
+- `load_capture` returns before zone/symbol statistics finish building — a
+  background thread populates them after the file itself is read. Check
+  `is_background_done()` (or `background_done` in `list_instances`) before
+  relying on `get_all_zone_stats()` and similar stats-based queries; they
+  can return empty or partial results until it's true. For small captures
+  this finishes before you'd notice; for multi-GB ones it can take seconds.
 - Call `unload_capture(instance_id)` as soon as you're done analyzing a
   capture. Don't rely on automatic eviction as your primary cleanup path —
   treat it as a backstop for forgotten sessions, not a substitute.
-- `list_instances` reports `idle_seconds` and `connected` per instance; use
-  it to spot stale ones before starting a new session, especially if you're
-  about to load several captures for comparison.
+- `list_instances` reports `idle_seconds`, `connected`, and `background_done`
+  per instance; use it to spot stale ones before starting a new session,
+  especially if you're about to load several captures for comparison.
 - The server does provide two backstops, both configurable via environment
   variables at startup: it evicts the least-recently-used *evictable*
   instance (disconnected live sessions, or any loaded file capture — never

@@ -87,11 +87,14 @@ frees it just because your conversation ends.
 - `list_instances` reports `idle_seconds` and `connected` per instance; use
   it to spot stale ones before starting a new session, especially if you're
   about to load several captures for comparison.
-- The server does provide two backstops, both configurable via environment
+- The server provides three backstops, all configurable via environment
   variables at startup: it evicts the least-recently-used *evictable*
   instance (disconnected live sessions, or any loaded file capture — never
   a still-connected live one) once the instance count reaches
-  `TRACY_MCP_MAX_INSTANCES` (default 4), and it drops a disconnected live
+  `TRACY_MCP_MAX_INSTANCES` (default 4); it drops a disconnected live
   instance that's sat idle for `TRACY_MCP_DISCONNECTED_TTL_S` (default
   1800s / 30 min) so a session is still there for analysis right after the
-  target disconnects, but doesn't linger forever if forgotten.
+  target disconnects, but doesn't linger forever if forgotten; and it drops
+  a file-loaded capture that's sat idle for `TRACY_MCP_FILE_IDLE_TTL_S`
+  (default 1800s) — safe to let expire since it's already durably on disk,
+  just `load_capture` it again.

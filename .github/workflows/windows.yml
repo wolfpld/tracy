@@ -23,7 +23,7 @@ jobs:
         key: ${{ runner.os }}-cpm-${{ hashFiles('**/vendor.cmake', '**/CMakeLists.txt') }}
         restore-keys: ${{ runner.os }}-cpm-
     - uses: microsoft/setup-msbuild@v2
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v7
       with:
         python-version: '3.x'
     - run: pip install meson ninja

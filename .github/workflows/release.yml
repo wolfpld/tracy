@@ -14,6 +14,8 @@ jobs:
   attach-to-release:
     needs: [release-build-windows, release-build-manual]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
     - uses: actions/download-artifact@v4
     - name: Create versioned zip

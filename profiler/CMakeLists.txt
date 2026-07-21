@@ -8,6 +8,10 @@ set_option(LEGACY "Instead of Wayland, use the legacy X11 backend on Linux" OFF)
 set_option(SELF_PROFILE "Enable self-profiling" OFF)
 set_option_value(SANITIZE "Sanitizer parameters" "")
 
+if(APPLE)
+    set_option(BUNDLE "Build a macOS application bundle" OFF)
+endif()
+
 set(NO_STATISTICS OFF)
 
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/version.cmake)
@@ -261,6 +265,25 @@ if(WIN32)
     )
     add_executable(${PROJECT_NAME} WIN32 ${PROFILER_FILES} ${COMMON_FILES} ${SERVER_FILES})
     set_property(DIRECTORY ${CMAKE_CURRENT_LIST_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
+elseif(APPLE AND BUNDLE)
+    set(ICON_SRC ${CMAKE_CURRENT_LIST_DIR}/../icon/icon.png)
+    set(ICON_ICNS ${CMAKE_CURRENT_BINARY_DIR}/icon.icns)
+    add_custom_command(
+        OUTPUT ${ICON_ICNS}
+        COMMAND sips -s format icns ${ICON_SRC} --out ${ICON_ICNS}
+        DEPENDS ${ICON_SRC}
+    )
+    set_source_files_properties(${ICON_ICNS} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+    add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${PROFILER_FILES} ${COMMON_FILES} ${SERVER_FILES} ${ICON_ICNS})
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_LIST_DIR}/macos/Info.plist.in
+        MACOSX_BUNDLE_BUNDLE_NAME "Tracy Profiler"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "pl.nereid.tracy"
+        MACOSX_BUNDLE_BUNDLE_VERSION ${TRACY_VERSION_STRING}
+        MACOSX_BUNDLE_SHORT_VERSION_STRING ${TRACY_VERSION_STRING}
+        MACOSX_BUNDLE_ICON_FILE icon.icns
+        MACOSX_BUNDLE_COPYRIGHT "Bartosz Taudul"
+    )
 else()
     add_executable(${PROJECT_NAME} ${PROFILER_FILES} ${COMMON_FILES} ${SERVER_FILES})
 endif()

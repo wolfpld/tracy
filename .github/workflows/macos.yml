@@ -31,7 +31,7 @@ jobs:
       uses: ./.github/actions/test-tracy
     - name: Build profiler
       run: |
-        cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
+        cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DBUNDLE=ON -DGIT_REV=${{ github.sha }}
         cmake --build profiler/build --parallel 2 --config Release
     - name: Build update
       run: |
@@ -56,7 +56,7 @@ jobs:
     - name: Package artifacts
       run: |
         mkdir -p bin
-        cp profiler/build/tracy-profiler bin
+        ditto -c -k --keepParent profiler/build/tracy-profiler.app bin/tracy-profiler.app.zip
         cp update/build/tracy-update bin
         cp capture/build/tracy-capture bin
         cp csvexport/build/tracy-csvexport bin

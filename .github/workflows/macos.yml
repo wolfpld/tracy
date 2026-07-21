@@ -26,7 +26,7 @@ jobs:
     - name: Trust git repo
       run: git config --global --add safe.directory '*'
     - name: Build library
-      run: meson setup -Dprefix=$GITHUB_WORKSPACE/bin/lib -Dtracy_enable=true build && meson compile -C build && meson install -C build
+      run: meson setup -Dtracy_enable=true build && meson compile -C build
     - name: Test application
       uses: ./.github/actions/test-tracy
     - name: Build profiler

@@ -66,7 +66,6 @@ jobs:
       run: |
         cmake -B build -DCMAKE_BUILD_TYPE=Release -DTRACY_ENABLE=ON
         cmake --build build
-        cmake --install build
       env:
         CMAKE_INSTALL_PREFIX: ${{ github.workspace }}/bin
     - name: Library (meson)

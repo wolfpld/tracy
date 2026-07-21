@@ -32,6 +32,7 @@ jobs:
         VERSION="${{ github.event.release.tag_name }}"
         VERSION_NO_V="${VERSION#v}"
         cd macos
+        chmod +x tracy-* tracy-profiler.app/Contents/MacOS/*
         zip -r ../macos-$VERSION_NO_V.zip .
     - uses: softprops/action-gh-release@v2
       with:

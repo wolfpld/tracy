@@ -185,7 +185,7 @@ void TracyLlm::Draw( WindowConstraints& constraints )
         if( responding ) ImGui::BeginDisabled();
         ImGui::Spacing();
         ImGui::AlignTextToFramePadding();
-        TextDisabledUnformatted( "API:" );
+        TextDisabledUnformatted( ICON_FA_PLUG " API:" );
         ImGui::SameLine();
         const auto sz = std::min( InputBufferSize-1, s_config.llmAddress.size() );
         memcpy( m_apiInput, s_config.llmAddress.c_str(), sz );

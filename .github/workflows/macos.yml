@@ -56,7 +56,7 @@ jobs:
     - name: Package artifacts
       run: |
         mkdir -p bin
-        ditto -c -k --keepParent profiler/build/tracy-profiler.app bin/tracy-profiler.app.zip
+        cp -r profiler/build/tracy-profiler.app bin
         cp update/build/tracy-update bin
         cp capture/build/tracy-capture bin
         cp csvexport/build/tracy-csvexport bin

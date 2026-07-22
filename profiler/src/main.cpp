@@ -769,7 +769,11 @@ static void DrawContents()
                 tracy::OpenWebpage( "https://github.com/wolfpld/tracy" );
             }
             ImGui::Separator();
-            if( ImGui::Selectable( ICON_FA_VIDEO " An Introduction to Tracy Profiler in C++ - Marcos Slomp - CppCon 2023" ) )
+            if( ImGui::Selectable( ICON_FA_VIDEO " Performance profiling Mutter, GNOME Shell & apps with Tracy – Ivan Molodetskikh – GUADEC 2026" ) )
+            {
+                tracy::OpenWebpage( "https://youtu.be/Q4O7dhreLDU?t=21080" );
+            }
+            if( ImGui::Selectable( ICON_FA_VIDEO " An Introduction to Tracy Profiler in C++ – Marcos Slomp – CppCon 2023" ) )
             {
                 tracy::OpenWebpage( "https://youtu.be/ghXk3Bk5F2U?t=37" );
             }

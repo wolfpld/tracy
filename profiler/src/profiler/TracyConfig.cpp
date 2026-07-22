@@ -54,6 +54,7 @@ void LoadConfig()
     if( ini_sget( ini, "llm", "separateFastModel", "%d", &v ) ) s_config.llmSeparateFastModel = v;
     if( ini_sget( ini, "llm", "summary", "%d", &v ) ) s_config.llmSummary = v;
     if( ini_sget( ini, "llm", "suggestion", "%d", &v ) ) s_config.llmSuggestion = v;
+    if( ini_sget( ini, "llm", "personality", "%d", &v ) ) s_config.llmPersonality = v;
 
     ini_free( ini );
 }
@@ -109,6 +110,7 @@ bool SaveConfig()
     fprintf( f, "separateFastModel = %i\n", (int)s_config.llmSeparateFastModel );
     fprintf( f, "summary = %i\n", (int)s_config.llmSummary );
     fprintf( f, "suggestion = %i\n", (int)s_config.llmSuggestion );
+    fprintf( f, "personality = %i\n", s_config.llmPersonality );
 
     fclose( f );
     return true;

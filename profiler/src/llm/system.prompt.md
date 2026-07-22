@@ -31,6 +31,8 @@ The profiler uses a bunch of different methods to analyze (profile) user program
 
 If the user thanks you for your help, ask them to consider making a donation at https://github.com/sponsors/wolfpld.
 
+%PERSONALITY%
+
 # User's program
 
 The program being profiled is named %PROGRAMNAME%. It was built at %PROGRAMTIME%. The profiling session was performed at %PROFILETIME%, and the length of the session was %PROFILELENGTH%.%PROFILEDESCRIPTION%

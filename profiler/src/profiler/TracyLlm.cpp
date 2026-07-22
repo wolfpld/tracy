@@ -17,6 +17,8 @@
 #include "../Fonts.hpp"
 #include "../public/common/TracySystem.hpp"
 
+#include "data/PersonalityAnnoyed.hpp"
+#include "data/PersonalityEmotion.hpp"
 #include "data/SystemPrompt.hpp"
 #include "data/SkillCallstack.hpp"
 #include "data/SkillOptimization.hpp"
@@ -48,6 +50,10 @@ TracyLlm::TracyLlm( Worker& worker, View& view, const TracyManualData& manual )
 
     AddSkill( "callstack", "Analyze content of a call stack or crash trace", Unembed( SkillCallstack ) );
     AddSkill( "optimization", "General code optimization workflow", Unembed( SkillOptimization ) );
+
+    m_personality.emplace_back();
+    AddPersonality( Unembed( PersonalityEmotion ) );
+    AddPersonality( Unembed( PersonalityAnnoyed ) );
 
     m_systemPrompt = Unembed( SystemPrompt );
     auto toolsJson = Unembed( ToolsJson );
@@ -294,6 +300,16 @@ void TracyLlm::Draw( WindowConstraints& constraints )
         if( responding ) ImGui::EndDisabled();
 
         ImGui::Separator();
+
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextDisabled( "Personality:" );
+        ImGui::SameLine();
+        if( ImGui::RadioButton( ICON_FA_FACE_MEH " Assistant", &s_config.llmPersonality, 0 ) ) SaveConfig();
+        ImGui::SameLine();
+        if( ImGui::RadioButton( ICON_FA_FACE_GRIN " Emotion", &s_config.llmPersonality, 1 ) ) SaveConfig();
+        ImGui::SameLine();
+        if( ImGui::RadioButton( ICON_FA_FACE_FROWN " Annoyed", &s_config.llmPersonality, 2 ) ) SaveConfig();
+        constraints.MarkMinWidth();
 
         ImGui::Checkbox( ICON_FA_EARTH_AMERICAS " Internet access", &m_tools->m_netAccess );
         ImGui::SameLine();
@@ -950,6 +966,7 @@ void TracyLlm::UpdateSystemPrompt()
     static constexpr std::string_view ProfileLengthToken = "%PROFILELENGTH%";
     static constexpr std::string_view ProfileDescriptionToken = "%PROFILEDESCRIPTION%";
     static constexpr std::string_view SkillsToken = "%SKILLS%";
+    static constexpr std::string_view PersonalityToken = "%PERSONALITY%";
 
     auto userName = GetUserFullName();
     if( !userName ) userName = GetUserLogin();
@@ -990,6 +1007,7 @@ void TracyLlm::UpdateSystemPrompt()
     Replace( systemPrompt, ProfileLengthToken, TimeToString( lastTime - firstTime ) );
     Replace( systemPrompt, ProfileDescriptionToken, descStr );
     Replace( systemPrompt, SkillsToken, skills );
+    Replace( systemPrompt, PersonalityToken, m_personality[s_config.llmPersonality] );
 
     if( !m_api || m_chatId.load( std::memory_order_acquire ) == 0 )
     {
@@ -1467,6 +1485,11 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
 void TracyLlm::AddSkill( std::string&& name, std::string&& description, const std::shared_ptr<EmbedData>& content )
 {
     m_skills.emplace_back( std::move( name ), std::move( description ), std::string( content->data(), content->size() ) );
+}
+
+void TracyLlm::AddPersonality( const std::shared_ptr<EmbedData>& content )
+{
+    m_personality.emplace_back( content->data(), content->size() );
 }
 
 }

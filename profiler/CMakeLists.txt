@@ -158,6 +158,8 @@ set(PROFILER_FILES
     src/winmainArchDiscovery.cpp
 )
 
+Embed(PROFILER_FILES PersonalityAnnoyed src/llm/personality.annoyed.md TEXT)
+Embed(PROFILER_FILES PersonalityEmotion src/llm/personality.emotion.md TEXT)
 Embed(PROFILER_FILES SystemPrompt src/llm/system.prompt.md TEXT)
 Embed(PROFILER_FILES SkillCallstack src/llm/skill.callstack.md TEXT)
 Embed(PROFILER_FILES SkillOptimization src/llm/skill.optimization.md TEXT)

@@ -50,6 +50,7 @@ struct Config
     int llmMaxToolReplySizeValue = 48*1024;
     bool llmSummary = true;
     bool llmSuggestion = true;
+    int llmPersonality = 0;
 };
 
 extern Config s_config;

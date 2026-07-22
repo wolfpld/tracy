@@ -90,6 +90,7 @@ private:
     bool OnResponse( const nlohmann::json& json );
 
     void AddSkill( std::string&& name, std::string&& description, const std::shared_ptr<EmbedData>& content );
+    void AddPersonality( const std::shared_ptr<EmbedData>& content );
 
     std::unique_ptr<TracyLlmApi> m_api;
     std::unique_ptr<TracyLlmChat> m_chatUi;
@@ -123,6 +124,7 @@ private:
     std::string m_suggestion;
 
     std::vector<LlmSkill> m_skills;
+    std::vector<std::string> m_personality;
     std::shared_ptr<EmbedData> m_systemPrompt;
     nlohmann::json m_toolsJson;
 

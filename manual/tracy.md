@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-07-19 <https://github.com/wolfpld/tracy>
+2026-07-22 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -4942,17 +4942,17 @@ A good *starting* point that will work fairly well on almost any hardware is the
 >
 > The realistic minimum required context size for Tracy to run the assistant is 100K tokens, but feel free to experiment.
 
-### Fast model
-
-Sometimes Tracy needs to do some language processing where speed is more important than the smarts. The default setting is to use the chat model with the reasoning disabled, which is fine for most applications.
-
-It may be more convenient to use a small, quick model instead, in which case enable the *Fast model* checkbox and choose the second model. To save precious GPU resources for the chat model, you may want to keep this model entirely in system RAM (set `-ngl 0` for llama.cpp or set "GPU offload" to 0 in LM Studio) and disable the KV cache offload to GPU (set `-nkvo` for llama.cpp or disable "Offload KV Cache to GPU Memory" in LM Studio).
-
 ### Embedding model
 
 This is a small model used for semantic search in the user manual. This should be **nomic-embed-text-1.5**, which is provided by default by LM Studio, or which you can download on your own for llama.cpp.
 
 LM Studio properly labels the model's capabilities. This is not the case with the llama.cpp/llama-swap setup. To make it work, your embedding model's name must contain the word `embed`.
+
+### Fast model
+
+Sometimes Tracy needs to do some language processing where speed is more important than the smarts. The default setting is to use the chat model with the reasoning disabled, which is fine for most applications.
+
+It may be more convenient to use a small, quick model instead, in which case enable the *Fast model* checkbox and choose the second model. To save precious GPU resources for the chat model, you may want to keep this model entirely in system RAM (set `-ngl 0` for llama.cpp or set "GPU offload" to 0 in LM Studio) and disable the KV cache offload to GPU (set `-nkvo` for llama.cpp or disable "Offload KV Cache to GPU Memory" in LM Studio).
 
 ### In practice
 
@@ -4980,13 +4980,19 @@ The chat window is divided into three sections:
 
 The control section allows you to clear the chat contents, reconnect to the LLM provider and open the settings panel consisting of:
 
-- *API* -- Enter the endpoint URL of the LLM provider here. A drop-down list is provided as a convenient way to select the default configuration of various providers. Note that the drop-down list is only used to fill in the endpoint URL. While Tracy does adapt to different ways each provider behaves, the feature detection is performed based on the endpoint conversation, not the drop-down selection.
+- * API* -- Enter the endpoint URL of the LLM provider here. A drop-down list is provided as a convenient way to select the default configuration of various providers. Note that the drop-down list is only used to fill in the endpoint URL. While Tracy does adapt to different ways each provider behaves, the feature detection is performed based on the endpoint conversation, not the drop-down selection.
 
 - * Chat model* -- Here you can select one of the models you have configured in the LLM provider for chat.
 
-- * Fast model* -- Select the fast model.
-
 - * Embeddings model* -- Select the vector embeddings model.
+
+- *Personality* -- Choose how the assistant should behave. Note that the actual behavior will vary depending on the language model you have chosen. The following options are available:
+
+  - * Assistant* -- The default behavior of the model with Tracy Assist role guidance.
+
+  - * Emotion* -- The model will behave like a human with feelings and emotions.
+
+  - * Annoyed* -- Does not tolerate nonsense and will respond with sarcasm.
 
 - * Internet access* -- Determines whether the model can access network resources such as Wikipedia queries, web searches, and web page retrievals.
 
@@ -4997,6 +5003,8 @@ The control section allows you to clear the chat contents, reconnect to the LLM 
 - * Chat suggestions* -- Suggests the next question the user may want to ask.
 
 - *Advanced* -- More advanced options are hidden here.
+
+  - * Fast model* -- Select the fast model.
 
   - * Temperature* -- Allows changing default model temperature setting.
 
@@ -5024,13 +5032,17 @@ The chat entry at the bottom is composed of the text input box and the * Send
 -----
 
  - Robot icon
+ - Plug icon
  - Comments icon
- - Bolt Lightning icon
  - Book Bookmark icon
+ - Face Meh icon
+ - Face Grin icon
+ - Face Frown icon
  - Earth Americas icon
  - Tag icon
  - Hand Point Right icon
  - Comment Dots icon
+ - Bolt Lightning icon
  - Temperature Half icon
  - Lightbulb icon
  - Book icon

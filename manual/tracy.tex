@@ -5278,6 +5278,12 @@ The control section allows you to clear the chat contents, reconnect to the LLM 
 \item \emph{\faPlug{}~API} -- Enter the endpoint URL of the LLM provider here. A drop-down list is provided as a convenient way to select the default configuration of various providers. Note that the drop-down list is only used to fill in the endpoint URL. While Tracy does adapt to different ways each provider behaves, the feature detection is performed based on the endpoint conversation, not the drop-down selection.
 \item \emph{\faComments{}~Chat model} -- Here you can select one of the models you have configured in the LLM provider for chat.
 \item \emph{\faBookBookmark{}~Embeddings model} -- Select the vector embeddings model.
+\item \emph{Personality} -- Choose how the assistant should behave. Note that the actual behavior will vary depending on the language model you have chosen. The following options are available:
+	\begin{itemize}
+	\item \emph{\faFaceMeh{}~Assistant} -- The default behavior of the model with Tracy Assist role guidance.
+	\item \emph{\faFaceGrin{}~Emotion} -- The model will behave like a human with feelings and emotions.
+	\item \emph{\faFaceFrown{}~Annoyed} -- Does not tolerate nonsense and will respond with sarcasm.
+	\end{itemize}
 \item \emph{\faEarthAmericas{}~Internet access} -- Determines whether the model can access network resources such as Wikipedia queries, web searches, and web page retrievals.
 \item \emph{\faTag{}~Annotate call stacks} -- Enables automatic annotation of call stacks (see section~\ref{callstackwindow}). Disabled by default, as it requires proper configuration of the fast model.
 \item \emph{\faHandPointRight{}~Show summary} -- Shows a short conversation topic after the initial question is asked.

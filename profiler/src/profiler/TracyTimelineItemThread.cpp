@@ -17,6 +17,45 @@ namespace tracy
 constexpr float MinVisSize = 3;
 constexpr float MinCtxSize = 4;
 
+// Sum Wait→Obtain (and WaitShared→ObtainShared) for one thread across all locks.
+static int64_t GetThreadLockWaitTime( const Worker& worker, uint64_t tid, size_t& lockCnt, uint64_t& waitCount )
+{
+    int64_t waitTotal = 0;
+    lockCnt = 0;
+    waitCount = 0;
+    for( const auto& lock : worker.GetLockMap() )
+    {
+        const auto& lockmap = *lock.second;
+        if( !lockmap.valid ) continue;
+        auto it = lockmap.threadMap.find( tid );
+        if( it == lockmap.threadMap.end() ) continue;
+        lockCnt++;
+        const uint8_t thread = it->second;
+        bool pending = false;
+        int64_t waitStart = 0;
+        for( const auto& evPtr : lockmap.timeline )
+        {
+            const auto* ev = evPtr.ptr.get();
+            if( !ev || ev->thread != thread ) continue;
+            if( ev->type == LockEvent::Type::Wait || ev->type == LockEvent::Type::WaitShared )
+            {
+                pending = true;
+                waitStart = ev->Time();
+            }
+            else if( ev->type == LockEvent::Type::Obtain || ev->type == LockEvent::Type::ObtainShared )
+            {
+                if( pending )
+                {
+                    waitTotal += ev->Time() - waitStart;
+                    waitCount++;
+                    pending = false;
+                }
+            }
+        }
+    }
+    return waitTotal;
+}
+
 
 TimelineItemThread::TimelineItemThread( View& view, Worker& worker, const ThreadData* thread )
     : TimelineItem( view, worker, thread, true )
@@ -171,14 +210,8 @@ void TimelineItemThread::HeaderTooltip( const char* label ) const
     ImGui::Separator();
 
     size_t lockCnt = 0;
-    for( const auto& lock : m_worker.GetLockMap() )
-    {
-        const auto& lockmap = *lock.second;
-        if( !lockmap.valid ) continue;
-        auto it = lockmap.threadMap.find( m_thread->id );
-        if( it == lockmap.threadMap.end() ) continue;
-        lockCnt++;
-    }
+    uint64_t lockWaitCount = 0;
+    const int64_t lockWaitTime = GetThreadLockWaitTime( m_worker, m_thread->id, lockCnt, lockWaitCount );
 
     if( last >= 0 )
     {
@@ -199,6 +232,18 @@ void TimelineItemThread::HeaderTooltip( const char* label ) const
             ImGui::SameLine();
             PrintStringPercent( buf, ctx->runningTime / double( lifetime ) * 100 );
             TextDisabledUnformatted( buf );
+        }
+        if( lockCnt != 0 || lockWaitTime > 0 )
+        {
+            TextFocused( "Lock wait time:", TimeToString( lockWaitTime ) );
+            ImGui::SameLine();
+            PrintStringPercent( buf, lockWaitTime / double( lifetime ) * 100 );
+            TextDisabledUnformatted( buf );
+            if( lockWaitCount != 0 )
+            {
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%s waits)", RealToString( lockWaitCount ) );
+            }
         }
     }
 

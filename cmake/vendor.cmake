@@ -104,6 +104,10 @@ else()
         OPTIONS
             "FT_DISABLE_HARFBUZZ ON"
             "FT_WITH_HARFBUZZ OFF"
+            "FT_DISABLE_ZLIB ON"
+            "FT_DISABLE_BZIP2 ON"
+            "FT_DISABLE_PNG ON"
+            "FT_DISABLE_BROTLI ON"
         EXCLUDE_FROM_ALL TRUE
     )
     add_library(TracyFreetype INTERFACE)

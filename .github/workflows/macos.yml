@@ -23,7 +23,7 @@ jobs:
         key: ${{ runner.os }}-cpm-${{ hashFiles('**/vendor.cmake', '**/CMakeLists.txt') }}
         restore-keys: ${{ runner.os }}-cpm-
     - name: Install dependencies
-      run: brew install pkg-config glfw meson
+      run: brew install pkg-config meson
     - name: Trust git repo
       run: git config --global --add safe.directory '*'
     - name: Build library

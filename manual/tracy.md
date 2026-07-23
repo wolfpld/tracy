@@ -3635,7 +3635,7 @@ Mutual exclusion zones are displayed in each thread that tries to acquire them. 
 
 [^77]: This region type is disabled by default and needs to be enabled in options (section [5.4](#options)).
 
-Hovering the  mouse pointer over a lock timeline will highlight the lock in all threads to help read the lock behavior. Hovering the  mouse pointer over a lock event will display important information, for example, a list of threads that are currently blocking or which are blocked by the lock. Clicking the left mouse button on a lock event or a lock label will open the lock information window, as described in section [5.19](#lockwindow). Clicking the middle mouse button on a lock event will zoom the view to the extent of the event.
+Hovering the  mouse pointer over a lock timeline will highlight the lock in all threads to help read the lock behavior. Hovering the  mouse pointer over a lock event will display important information, for example, a list of threads that are currently blocking or which are blocked by the lock. Hovering the  mouse pointer over a thread label shows that thread's aggregate lock wait time across all locks (see above). Clicking the left mouse button on a lock event or a lock label will open the lock information window, as described in section [5.19](#lockwindow). Clicking the middle mouse button on a lock event will zoom the view to the extent of the event.
 
 
 -----

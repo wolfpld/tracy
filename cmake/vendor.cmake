@@ -8,11 +8,17 @@ set (ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}/../")
 include(FindPkgConfig)
 include(${CMAKE_CURRENT_LIST_DIR}/CPM.cmake)
 
+if(APPLE AND BUNDLE)
+    set(DLOPT ON)
+else()
+    set(DLOPT OFF)
+endif()
+
 option(DOWNLOAD_CAPSTONE "Force download capstone" ON)
-option(DOWNLOAD_GLFW "Force download glfw" OFF)
-option(DOWNLOAD_FREETYPE "Force download freetype" OFF)
-option(DOWNLOAD_LIBCURL "Force download libcURL" OFF)
-option(DOWNLOAD_PUGIXML "Force download pugixml" OFF)
+option(DOWNLOAD_GLFW "Force download glfw" ${DLOPT})
+option(DOWNLOAD_FREETYPE "Force download freetype" ${DLOPT})
+option(DOWNLOAD_LIBCURL "Force download libcURL" ${DLOPT})
+option(DOWNLOAD_PUGIXML "Force download pugixml" ${DLOPT})
 
 # capstone
 

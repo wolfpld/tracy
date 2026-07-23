@@ -309,6 +309,12 @@ void TracyLlm::Draw( WindowConstraints& constraints )
         if( ImGui::RadioButton( ICON_FA_FACE_GRIN " Emotion", &s_config.llmPersonality, 1 ) ) SaveConfig();
         ImGui::SameLine();
         if( ImGui::RadioButton( ICON_FA_FACE_FROWN " Annoyed", &s_config.llmPersonality, 2 ) ) SaveConfig();
+        if( s_config.llmPersonality != m_personalityPrompt )
+        {
+            ImGui::SameLine();
+            TextColoredUnformatted( 0xFF00FFFF, ICON_FA_TRIANGLE_EXCLAMATION );
+            TooltipIfHovered( "Start fresh conversation to apply personality change" );
+        }
         constraints.MarkMinWidth();
 
         ImGui::Checkbox( ICON_FA_EARTH_AMERICAS " Internet access", &m_tools->m_netAccess );
@@ -998,6 +1004,7 @@ void TracyLlm::UpdateSystemPrompt()
     for( auto& skill : m_skills ) skills += skill.name + ": " + skill.description + "\n";
 
     auto systemPrompt = std::string( m_systemPrompt->data(), m_systemPrompt->size() );
+    m_personalityPrompt = std::clamp<size_t>( s_config.llmPersonality, 0, m_personality.size() - 1 );
 
     Replace( systemPrompt, UserToken, userName );
     Replace( systemPrompt, TimeToken, m_tools->GetCurrentTime() );
@@ -1007,7 +1014,7 @@ void TracyLlm::UpdateSystemPrompt()
     Replace( systemPrompt, ProfileLengthToken, TimeToString( lastTime - firstTime ) );
     Replace( systemPrompt, ProfileDescriptionToken, descStr );
     Replace( systemPrompt, SkillsToken, skills );
-    Replace( systemPrompt, PersonalityToken, m_personality[std::clamp<size_t>( s_config.llmPersonality, 0, m_personality.size() - 1 )] );
+    Replace( systemPrompt, PersonalityToken, m_personality[m_personalityPrompt] );
 
     if( !m_api || m_chatId.load( std::memory_order_acquire ) == 0 )
     {

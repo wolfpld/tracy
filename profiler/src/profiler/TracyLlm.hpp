@@ -115,6 +115,7 @@ private:
     float m_temperature = 1.0f;
     bool m_setTemperature = false;
     bool m_allThinkingRegions = false;
+    int m_personalityPrompt = -1;
 
     char* m_input;
     char* m_apiInput;

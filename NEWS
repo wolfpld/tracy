@@ -86,6 +86,7 @@ vx.xx.x (2026-xx-xx)
   - Chat topic description is now provided, based on the first user question.
   - Each assistant reply is now labeled with used model and reply time.
   - Follow-up questions can be automatically suggested.
+  - It is now possible to alter the assistant personality.
 - Expanded LLM attachments.
   - You can now attach complete symbol assembly.
   - Entry call stacks can be now attached (previously it was only regular
@@ -255,6 +256,9 @@ vx.xx.x (2026-xx-xx)
     copying annotation, section, or time range limit. There's an "require
     frame coverage" option to only include frames that are at least 75%
     within the source region.
+- Most windows now have a minimum width, in order to make sure all controls
+  provided in the window are visible. Previously it was easy to oversee some
+  button that was out of the window draw area.
 
 
 v0.13.1 (2025-12-11)

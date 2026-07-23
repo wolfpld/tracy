@@ -1007,7 +1007,7 @@ void TracyLlm::UpdateSystemPrompt()
     Replace( systemPrompt, ProfileLengthToken, TimeToString( lastTime - firstTime ) );
     Replace( systemPrompt, ProfileDescriptionToken, descStr );
     Replace( systemPrompt, SkillsToken, skills );
-    Replace( systemPrompt, PersonalityToken, m_personality[s_config.llmPersonality] );
+    Replace( systemPrompt, PersonalityToken, m_personality[std::clamp<size_t>( s_config.llmPersonality, 0, m_personality.size() - 1 )] );
 
     if( !m_api || m_chatId.load( std::memory_order_acquire ) == 0 )
     {

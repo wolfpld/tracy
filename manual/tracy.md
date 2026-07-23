@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-07-22 <https://github.com/wolfpld/tracy>
+2026-07-23 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -4993,6 +4993,8 @@ The control section allows you to clear the chat contents, reconnect to the LLM 
   - * Emotion* -- The model will behave like a human with feelings and emotions.
 
   - * Annoyed* -- Does not tolerate nonsense and will respond with sarcasm.
+
+  Personality changes do not take effect until you start a new chat.
 
 - * Internet access* -- Determines whether the model can access network resources such as Wikipedia queries, web searches, and web page retrievals.
 

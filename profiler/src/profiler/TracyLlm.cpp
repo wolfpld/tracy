@@ -335,6 +335,7 @@ void TracyLlm::Draw( WindowConstraints& constraints )
 
         if( ImGui::TreeNode( "Advanced" ) )
         {
+            if( responding ) ImGui::BeginDisabled();
             ImGui::AlignTextToFramePadding();
             if( ImGui::Checkbox( ICON_FA_BOLT_LIGHTNING " Fast model:", &s_config.llmSeparateFastModel ) ) SaveConfig();
             ImGui::SameLine();
@@ -370,7 +371,6 @@ void TracyLlm::Draw( WindowConstraints& constraints )
             }
             if( !s_config.llmSeparateFastModel ) ImGui::EndDisabled();
 
-            if( responding ) ImGui::BeginDisabled();
             ImGui::Checkbox( ICON_FA_TEMPERATURE_HALF " Temperature", &m_setTemperature );
             ImGui::SameLine();
             ImGui::SetNextItemWidth( 40 * scale );

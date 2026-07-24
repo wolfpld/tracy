@@ -2,7 +2,20 @@
 <mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
     <mime-type type="application/tracy">
         <comment>Tracy Profiler trace file</comment>
+        <comment xml:lang="ar">ملف تتبع لمحلل الأداء Tracy</comment>
+        <comment xml:lang="de">Trace-Datei des Tracy-Profilers</comment>
+        <comment xml:lang="es">Archivo de traza del perfilador Tracy</comment>
+        <comment xml:lang="fr">Fichier de trace du profileur Tracy</comment>
+        <comment xml:lang="hi">Tracy प्रोफ़ाइलर ट्रेस फ़ाइल</comment>
+        <comment xml:lang="it">File di traccia del profiler Tracy</comment>
+        <comment xml:lang="ja">Tracy プロファイラーのトレースファイル</comment>
         <comment xml:lang="pl">Zrzut sesji profilera Tracy</comment>
+        <comment xml:lang="pt">Ficheiro de rastreio do perfilador Tracy</comment>
+        <comment xml:lang="pt_BR">Arquivo de rastreamento do perfilador Tracy</comment>
+        <comment xml:lang="ru">Файл трассировки профилировщика Tracy</comment>
+        <comment xml:lang="uk">Файл трасування профілювальника Tracy</comment>
+        <comment xml:lang="zh_CN">Tracy 性能分析器跟踪文件</comment>
+        <comment xml:lang="zh_TW">Tracy 效能分析器追蹤檔案</comment>
         <icon name="application-tracy"/>
         <magic>
             <match type="string" value="tlZ\x04" offset="0"/>

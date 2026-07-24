@@ -53,9 +53,7 @@ cp "$PREFIX/lib/libwayland-client.so.0" \
    "$PREFIX/lib/libwayland-cursor.so.0" \
    "$PREFIX/lib/libwayland-egl.so.1" \
    "$APPDIR/usr/lib/"
-# The Exec path must not be absolute, the profiler is not in /usr/bin here
-sed 's|^Exec=.*|Exec=tracy-profiler %f|' "$ROOT/extra/desktop/tracy.desktop" \
-    > "$APPDIR/usr/share/applications/tracy.desktop"
+cp "$ROOT/extra/desktop/tracy.desktop" "$APPDIR/usr/share/applications/"
 cp "$ROOT/extra/desktop/application-tracy.xml" "$APPDIR/usr/share/mime/packages/"
 cp "$ROOT/icon/icon.svg" "$APPDIR/usr/share/icons/hicolor/scalable/apps/tracy.svg"
 cp "$ROOT/icon/application-tracy.svg" "$APPDIR/usr/share/icons/hicolor/scalable/mimetypes/"

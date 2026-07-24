@@ -308,6 +308,10 @@ if(NOT EMSCRIPTEN)
                 "HTTP_ONLY ON"
                 "CURL_ZSTD OFF"
                 "CURL_USE_LIBPSL OFF"
+                "CURL_USE_LIBSSH2 OFF"
+                "CURL_BROTLI OFF"
+                "USE_NGHTTP2 OFF"
+                "USE_LIBIDN2 OFF"
             EXCLUDE_FROM_ALL TRUE
         )
         add_library(TracyLibcurl INTERFACE)

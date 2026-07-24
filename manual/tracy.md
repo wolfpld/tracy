@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-07-23 <https://github.com/wolfpld/tracy>
+2026-07-25 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -253,11 +253,19 @@ Tracy can be found at the following web addresses:
 
 ### Binary distribution
 
-The version releases of the profiler are provided as precompiled Windows binaries for download at <https://github.com/wolfpld/tracy/releases>, along with the user manual. You will need to install the latest Visual C++ redistributable package to use them.
+Prebuilt binary releases of the profiler and the user manual can be found at <https://github.com/wolfpld/tracy/releases>. The following platforms are supported:
 
-Development builds of Windows binaries, and the user manual are available as artifacts created by the automated Continuous Integration system on GitHub.
+- **Windows** -- Requires the latest Visual C++ redistributable package to be installed.
 
-Note that these binary releases require AVX2 instruction set support on the processor. If you have an older CPU, you will need to set a proper instruction set architecture in the project properties and build the executables yourself.
+- **macOS** -- Needs manual quarantine handling before any provided binary can be executed, e.g.:
+
+      xattr -d com.apple.quarantine tracy-profiler.app
+
+  Thanks, Tim Apple!
+
+- **Linux** -- AppImage with Ubuntu 24.04 used as a baseline. Requires Wayland and an implementation of an XDG desktop portal to be installed.
+
+Development builds of binaries and the user manual are available as artifacts created by the automated continuous integration system on GitHub.
 
 # First steps {#firststeps}
 

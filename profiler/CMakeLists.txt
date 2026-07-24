@@ -198,7 +198,7 @@ if(USE_WAYLAND)
         message(WARNING "libwayland ${WAYLAND_CLIENT_VERSION} is too old and does not provide version 6 of the core protocol. Building in this configuration is not supported and will result in reduced functionality.")
     endif()
     set(INCLUDES "${INCLUDES};${WAYLAND_INCLUDE_DIRS}")
-    set(LIBS "${LIBS};${WAYLAND_LIBRARIES}")
+    set(LIBS "${LIBS};${WAYLAND_LINK_LIBRARIES}")
     set(PROFILER_FILES ${PROFILER_FILES}
         src/BackendWayland.cpp
     )

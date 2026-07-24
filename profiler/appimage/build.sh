@@ -48,6 +48,7 @@ mkdir -p "$APPDIR/usr/bin" "$APPDIR/usr/lib" \
 
 cp "$BUILD/profiler/tracy-profiler" "$APPDIR/usr/bin/"
 strip "$APPDIR/usr/bin/tracy-profiler"
+patchelf --set-rpath '$ORIGIN/../lib' "$APPDIR/usr/bin/tracy-profiler"
 cp "$PREFIX/lib/libwayland-client.so.0" \
    "$PREFIX/lib/libwayland-cursor.so.0" \
    "$PREFIX/lib/libwayland-egl.so.1" \

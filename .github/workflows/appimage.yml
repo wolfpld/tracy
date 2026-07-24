@@ -21,7 +21,7 @@ jobs:
         apt-get update
         DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
           build-essential cmake ninja-build meson pkg-config git ca-certificates \
-          curl file desktop-file-utils nodejs \
+          curl file desktop-file-utils nodejs patchelf \
           libegl-dev libxkbcommon-dev libdbus-1-dev libssl-dev \
           libffi-dev libexpat1-dev
     - name: Trust git repo

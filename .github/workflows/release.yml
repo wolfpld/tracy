@@ -14,8 +14,11 @@ jobs:
   release-build-manual:
     uses: ./.github/workflows/latex.yml
 
+  release-build-appimage:
+    uses: ./.github/workflows/appimage.yml
+
   attach-to-release:
-    needs: [release-build-windows, release-build-macos, release-build-manual]
+    needs: [release-build-windows, release-build-macos, release-build-manual, release-build-appimage]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -34,9 +37,16 @@ jobs:
         cd macos
         chmod +x tracy-* tracy-profiler.app/Contents/MacOS/*
         zip -r ../macos-$VERSION_NO_V.zip .
+    - name: Create versioned AppImage
+      run: |
+        VERSION="${{ github.event.release.tag_name }}"
+        VERSION_NO_V="${VERSION#v}"
+        mv appimage/tracy-profiler-x86_64.AppImage tracy-profiler-$VERSION_NO_V-x86_64.AppImage
+        chmod +x tracy-profiler-$VERSION_NO_V-x86_64.AppImage
     - uses: softprops/action-gh-release@v2
       with:
         files: |
           windows-*.zip
           macos-*.zip
+          tracy-profiler-*.AppImage
           manual/tracy.pdf

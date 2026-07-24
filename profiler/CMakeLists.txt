@@ -193,6 +193,10 @@ set(LIBS "")
 
 if(USE_WAYLAND)
     pkg_check_modules(WAYLAND REQUIRED egl wayland-egl wayland-cursor xkbcommon)
+    pkg_check_modules(WAYLAND_CLIENT REQUIRED wayland-client)
+    if(WAYLAND_CLIENT_VERSION VERSION_LESS 1.22)
+        message(WARNING "libwayland ${WAYLAND_CLIENT_VERSION} is too old and does not provide version 6 of the core protocol. Building in this configuration is not supported and will result in reduced functionality.")
+    endif()
     set(INCLUDES "${INCLUDES};${WAYLAND_INCLUDE_DIRS}")
     set(LIBS "${LIBS};${WAYLAND_LIBRARIES}")
     set(PROFILER_FILES ${PROFILER_FILES}

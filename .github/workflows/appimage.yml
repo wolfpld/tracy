@@ -33,6 +33,11 @@ jobs:
         path: ${{ env.CPM_SOURCE_CACHE }}
         key: ${{ runner.os }}-cpm-${{ hashFiles('**/vendor.cmake', '**/CMakeLists.txt') }}
         restore-keys: ${{ runner.os }}-cpm-
+    - name: Cache wayland
+      uses: actions/cache@v4
+      with:
+        path: profiler/build-appimage/wayland
+        key: ${{ runner.os }}-wayland-${{ hashFiles('profiler/appimage/build.sh') }}
     - name: Build AppImage
       run: profiler/appimage/build.sh
       env:

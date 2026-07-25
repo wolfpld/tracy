@@ -847,36 +847,51 @@ void View::DrawSampleParents()
     if( !ImGui::GetCurrentWindowRead()->SkipItems )
     {
         auto ss = m_worker.GetSymbolStats( m_sampleParents.symAddr );
-        auto excl = ss->excl;
-        auto stats = ss->wasExecuting;
+        if( m_sampleParents.statMode == 0 && ss->wasExecuting.empty() ) m_sampleParents.statMode = 1;
 
         const auto symbol = m_worker.GetSymbolData( m_sampleParents.symAddr );
-        if( !symbol->isInline && m_sampleParents.withInlines )
+        uint64_t total = 0;
+        unordered_flat_map<uint32_t, uint32_t> stats;
+        if( m_sampleParents.statMode == 0 )
         {
-            const auto symlen = symbol->size.Val();
-            auto inSym = m_worker.GetInlineSymbolList( m_sampleParents.symAddr, symlen );
-            if( inSym )
+            auto excl = ss->excl;
+            stats = ss->wasExecuting;
+            if( !symbol->isInline && m_sampleParents.withInlines )
             {
-                const auto symEnd = m_sampleParents.symAddr + symlen;
-                while( *inSym < symEnd )
+                const auto symlen = symbol->size.Val();
+                auto inSym = m_worker.GetInlineSymbolList( m_sampleParents.symAddr, symlen );
+                if( inSym )
                 {
-                    auto istat = m_worker.GetSymbolStats( *inSym++ );
-                    if( !istat ) continue;
-                    excl += istat->excl;
-                    for( auto& v : istat->wasExecutingBase )
+                    const auto symEnd = m_sampleParents.symAddr + symlen;
+                    while( *inSym < symEnd )
                     {
-                        auto it = stats.find( v.first );
-                        if( it == stats.end() )
+                        auto istat = m_worker.GetSymbolStats( *inSym++ );
+                        if( !istat ) continue;
+                        excl += istat->excl;
+                        for( auto& v : istat->wasExecutingBase )
                         {
-                            stats.emplace( v.first, v.second );
-                        }
-                        else
-                        {
-                            it->second += v.second;
+                            auto it = stats.find( v.first );
+                            if( it == stats.end() )
+                            {
+                                stats.emplace( v.first, v.second );
+                            }
+                            else
+                            {
+                                it->second += v.second;
+                            }
                         }
                     }
                 }
             }
+            total = excl;
+        }
+        else
+        {
+            // A base symbol is always present as the last frame of any frame group containing
+            // its inline functions, so the wasReached maps already cover the whole symbol.
+            // There is no separate with/without inlines handling here.
+            stats = m_sampleParents.statMode == 1 ? ss->wasReachedNonReentrant : ss->wasReached;
+            for( auto& v : stats ) total += v.second;
         }
         assert( !stats.empty() );
 
@@ -895,7 +910,7 @@ void View::DrawSampleParents()
             ImGui::SameLine();
             TextDisabledUnformatted( "(inline)" );
         }
-        else if( !m_sampleParents.withInlines )
+        else if( !m_sampleParents.withInlines && m_sampleParents.statMode == 0 )
         {
             ImGui::SameLine();
             TextDisabledUnformatted( "(without inlines)" );
@@ -923,6 +938,25 @@ void View::DrawSampleParents()
         TextDisabledUnformatted( m_worker.GetString( symbol->imageName ) );
         ImGui::Separator();
         ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 2, 2 ) );
+        ImGui::AlignTextToFramePadding();
+        TextDisabledUnformatted( "Count if symbol:" );
+        ImGui::SameLine();
+        if( ImGui::RadioButton( "Was reached", m_sampleParents.statMode == 1 ) ) { m_sampleParents.statMode = 1; m_sampleParents.sel = 0; }
+        TooltipIfHovered( "Stacks below any occurrence of the symbol, non-reentrant.\nEach sample is counted once, at the outermost occurrence." );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        if( ImGui::RadioButton( "Was reached, recursive", m_sampleParents.statMode == 2 ) ) { m_sampleParents.statMode = 2; m_sampleParents.sel = 0; }
+        TooltipIfHovered( "Stacks below any occurrence of the symbol.\nRecursive re-entries are counted separately." );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        const bool noExecuting = ss->wasExecuting.empty();
+        if( noExecuting ) ImGui::BeginDisabled();
+        if( ImGui::RadioButton( "Was executing", m_sampleParents.statMode == 0 ) ) { m_sampleParents.statMode = 0; m_sampleParents.sel = 0; }
+        if( noExecuting ) ImGui::EndDisabled();
+        TooltipIfHovered( "Stacks of samples taken while the symbol was executing" );
+        ImGui::Separator();
         if( ImGui::RadioButton( ICON_FA_TABLE " List", m_sampleParents.mode == 0 ) ) m_sampleParents.mode = 0;
         ImGui::SameLine();
         ImGui::Spacing();
@@ -992,7 +1026,7 @@ void View::DrawSampleParents()
             ImGui::TextUnformatted( m_statSampleTime ? TimeToString( m_worker.GetSamplingPeriod() * data[m_sampleParents.sel]->second ) : RealToString( data[m_sampleParents.sel]->second ) );
             ImGui::SameLine();
             char buf[64];
-            PrintStringPercent( buf, 100. * data[m_sampleParents.sel]->second / excl );
+            PrintStringPercent( buf, 100. * data[m_sampleParents.sel]->second / total );
             TextDisabledUnformatted( buf );
             auto& cs = m_worker.GetSyntheticCallstack( data[m_sampleParents.sel]->first );
             if( s_config.llm )

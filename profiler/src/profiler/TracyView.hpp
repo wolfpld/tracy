@@ -1040,6 +1040,7 @@ private:
         int sel;
         bool withInlines = false;
         int mode = 0;
+        int statMode = 1;
         bool groupBottomUp = true;
         bool groupTopDown = true;
     } m_sampleParents;

@@ -126,12 +126,15 @@ void View::DrawInfo()
         }
         TextFocused( "Call stack samples:", RealToString( m_worker.GetCallstackSampleCount() ) );
         TextFocused( "Ghost zones:", RealToString( m_worker.GetGhostZonesCount() ) );
-        TextFocused( "Child sample symbols:", RealToString( m_worker.GetChildSamplesCountSyms() ) );
-        if( ImGui::IsItemHovered() )
+        if( m_worker.AreSymbolSamplesReady() )
         {
-            ImGui::BeginTooltip();
-            TextFocused( "Child samples:", RealToString( m_worker.GetChildSamplesCountFull() ) );
-            ImGui::EndTooltip();
+            TextFocused( "Child sample symbols:", RealToString( m_worker.GetChildSamplesCountSyms() ) );
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::BeginTooltip();
+                TextFocused( "Child samples:", RealToString( m_worker.GetChildSamplesCountFull() ) );
+                ImGui::EndTooltip();
+            }
         }
         TextFocused( "Context switch samples:", RealToString( m_worker.GetContextSwitchSampleCount() ) );
         TextFocused( "Hardware samples:", RealToString( m_worker.GetHwSampleCount() ) );

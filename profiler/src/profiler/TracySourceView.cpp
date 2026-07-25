@@ -1028,7 +1028,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view, WindowConstraints
         CountHwStats( as, worker, view );
     }
     const auto samplesReady = worker.AreSymbolSamplesReady();
-    if( ( as.ipTotalAsm.local + as.ipTotalAsm.ext ) > 0 || ( range.active && worker.GetSamplesForSymbol( m_baseAddr ) ) )
+    if( ( as.ipTotalAsm.local + as.ipTotalAsm.ext ) > 0 || ( range.active && samplesReady && worker.GetSamplesForSymbol( m_baseAddr ) ) )
     {
         ImGui::SameLine();
         ImGui::Spacing();
@@ -1448,7 +1448,7 @@ static uint32_t GetGoodnessColor( float inRatio )
 void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker, View& view, bool hasInlines )
 {
     const auto scale = GetScale();
-    if( hasInlines && !m_calcInlineStats && ( ( as.ipTotalAsm.local + as.ipTotalAsm.ext ) > 0 || ( view.GetRange( RangeId::Statistics ).active && worker.GetSamplesForSymbol( m_baseAddr ) ) ) )
+    if( hasInlines && !m_calcInlineStats && ( ( as.ipTotalAsm.local + as.ipTotalAsm.ext ) > 0 || ( view.GetRange( RangeId::Statistics ).active && worker.AreSymbolSamplesReady() && worker.GetSamplesForSymbol( m_baseAddr ) ) ) )
     {
         const auto samplesReady = worker.AreSymbolSamplesReady();
         if( !samplesReady )
@@ -3461,7 +3461,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
 
                 if( hw ) PrintHwSampleTooltip( cycles, retired, cacheRef, cacheMiss, branchRetired, branchMiss, false );
 
-                const auto stats = worker.GetSymbolStats( symAddrParents );
+                const auto stats = worker.AreCallstackSamplesReady() ? worker.GetSymbolStats( symAddrParents ) : nullptr;
                 if( stats && !stats->wasReached.empty() )
                 {
                     ImGui::Separator();
@@ -4956,6 +4956,7 @@ uint32_t SourceView::CountAsmIpStats( uint64_t baseAddr, const Worker& worker, b
 {
     if( limitView )
     {
+        if( !worker.AreSymbolSamplesReady() ) return 0;
         auto vec = worker.GetSamplesForSymbol( baseAddr );
         if( !vec ) return 0;
         auto& range = view.GetRange( RangeId::Statistics );
@@ -4966,6 +4967,7 @@ uint32_t SourceView::CountAsmIpStats( uint64_t baseAddr, const Worker& worker, b
     }
     else
     {
+        if( !worker.AreCallstackSamplesReady() ) return 0;
         uint32_t cnt = 0;
         auto ipmap = worker.GetSymbolInstructionPointers( baseAddr );
         if( !ipmap ) return 0;

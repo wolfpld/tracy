@@ -2000,7 +2000,7 @@ void View::DrawFindZone()
             }
         }
 
-        if( m_findZone.samples.enabled && m_findZone.samples.scheduleUpdate && !m_findZone.scheduleResetMatch )
+        if( m_findZone.samples.enabled && m_findZone.samples.scheduleUpdate && !m_findZone.scheduleResetMatch && m_worker.AreSymbolSamplesReady() )
         {
             m_findZone.samples.scheduleUpdate = false;
 

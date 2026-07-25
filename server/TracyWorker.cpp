@@ -7853,25 +7853,49 @@ void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint
         }
     };
 
-    const bool topFrameHasInlines = fxsz != 1;
-
-    CallstackFrameId parentFrameId;
-    if( topFrameHasInlines )
+    // Walk the call stack bottom-up, so that the first occurrence of a symbol is the
+    // outermost one. Entry stacks are accumulated for each symbol on the way. Frames
+    // within a group are inline expansions, ordered innermost-first, hence the reverse
+    // iteration order.
+    seen.clear();
+    auto suffixIdx = InternSyntheticCallstack( nullptr, cs, framesCount );
+    for( int32_t c=framesCount-1; c>=0; c-- )
     {
-        const CallstackFrameData cfd = {
-            .data = fexcl->data + 1,
-            .size = uint8_t( fxsz-1 ),
-            .imageName = fexcl->imageName
-        };
-        parentFrameId = InternSyntheticFrame( cfd );
+        const auto fdat = frames[c];
+        const auto fsz = fdat->size;
+        for( int32_t f=fsz-1; f>=0; f-- )
+        {
+            // suffixIdx contains the call stack below the current frame group. Symbols at
+            // inline positions also get the remaining inline frames of their own group, as
+            // a synthetic frame.
+            const auto symAddr = fdat->data[f].symAddr;
+            uint32_t idx;
+            if( f == fsz-1 )
+            {
+                idx = suffixIdx;
+            }
+            else
+            {
+                const CallstackFrameData cfd = {
+                    .data = fdat->data + f + 1,
+                    .size = uint8_t( fsz - f - 1 ),
+                    .imageName = fdat->imageName
+                };
+                const auto synthetic = InternSyntheticFrame( cfd );
+                idx = InternSyntheticCallstack( &synthetic, cs, c+1 );
+            }
+            auto sym = m_data.symbolStats.find( symAddr );
+            assert( sym != m_data.symbolStats.end() );
+            UpdateEntry( sym->second.wasReached, idx, count );
+            if( seen.emplace( symAddr ).second ) UpdateEntry( sym->second.wasReachedNonReentrant, idx, count );
+            if( c == 0 && f == 0 )
+            {
+                UpdateEntry( sym->second.wasExecuting, idx, count );
+                UpdateEntry( sym->second.wasExecutingBase, suffixIdx, count );
+            }
+        }
+        if( c > 0 ) suffixIdx = InternSyntheticCallstack( nullptr, cs, c );
     }
-
-    const auto parentIdx = InternSyntheticCallstack( topFrameHasInlines ? &parentFrameId : nullptr, cs, 1 );
-    const auto baseParentIdx = InternSyntheticCallstack( nullptr, cs, 1 );
-
-    sym0 = m_data.symbolStats.find( frame0.symAddr );
-    UpdateEntry( sym0->second.wasExecuting, parentIdx, count );
-    UpdateEntry( sym0->second.wasExecutingBase, baseParentIdx, count );
 }
 
 uint32_t Worker::InternSyntheticCallstack( const CallstackFrameId* head, const VarArray<CallstackFrameId>& cs, uint16_t from )

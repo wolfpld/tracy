@@ -240,7 +240,7 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, uint
                         if( v.count > 0 && v.symAddr != 0 )
                         {
                             ImGui::PushID( v.symAddr );
-                            expand = ImGui::TreeNodeEx( "", v.count == 0 ? ImGuiTreeNodeFlags_Leaf : 0 );
+                            expand = ImGui::TreeNode( "" );
                             ImGui::PopID();
                             ImGui::SameLine();
                         }

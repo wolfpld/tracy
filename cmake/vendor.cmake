@@ -153,6 +153,7 @@ CPMAddPackage(
         "${CMAKE_CURRENT_LIST_DIR}/imgui-emscripten.patch"
         "${CMAKE_CURRENT_LIST_DIR}/imgui-loader.patch"
         "${CMAKE_CURRENT_LIST_DIR}/imgui-no-samplers.patch"
+        "${CMAKE_CURRENT_LIST_DIR}/imgui-no-default-font.patch"
 )
 
 set(IMGUI_SOURCES

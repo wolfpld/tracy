@@ -72,7 +72,7 @@ public:
     template<class Compare>
     tracy_force_inline void push_back( const T& val, Compare comp )
     {
-        if( sortedEnd == 0 && !v.empty() && !comp( v.back(), val ) )
+        if( sortedEnd == 0 && !v.empty() && comp( val, v.back() ) )
         {
             sortedEnd = (uint32_t)v.size();
         }

@@ -332,7 +332,7 @@ private:
     void DrawFindZone();
     void AccumulationModeComboBox();
     void DrawStatistics();
-    void DrawSamplesStatistics(Vector<SymList>& data, int64_t timeRange, AccumulationMode accumulationMode);
+    void DrawSamplesStatistics(Vector<SymList>& data, int64_t timeRange, uint64_t totalSamples, AccumulationMode accumulationMode);
     void DrawMemory();
     void DrawAllocList();
     void DrawCompare();

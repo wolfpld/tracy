@@ -1000,7 +1000,33 @@ void View::DrawStatistics()
             }
         }
 
-        DrawSamplesStatistics( data, timeRange, m_statAccumulationMode );
+        // The denominator is the number of collected samples, excluding context
+        // switch samples, which do not participate in the sampling statistics. This
+        // way the percentages have the same meaning with and without an active
+        // range filter.
+        uint64_t totalSamples;
+        if( m_statRange.active )
+        {
+            static const auto CountInRange = []( const auto& vec, int64_t min, int64_t max ) -> uint64_t {
+                auto it = std::lower_bound( vec.begin(), vec.end(), min, []( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+                auto end = std::lower_bound( it, vec.end(), max, []( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+                return end - it;
+            };
+            totalSamples = 0;
+            for( auto& td : m_worker.GetThreadData() )
+            {
+                const auto cnt = CountInRange( td->samples, m_statRange.min, m_statRange.max );
+                const auto ctx = CountInRange( td->ctxSwitchSamples, m_statRange.min, m_statRange.max );
+                if( cnt > ctx ) totalSamples += cnt - ctx;
+            }
+        }
+        else
+        {
+            const auto cnt = m_worker.GetCallstackSampleCount();
+            const auto ctx = m_worker.GetContextSwitchSampleCount();
+            totalSamples = cnt > ctx ? cnt - ctx : 0;
+        }
+        DrawSamplesStatistics( data, timeRange, totalSamples, m_statAccumulationMode );
     }
     ImGui::End();
 }

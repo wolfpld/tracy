@@ -85,7 +85,7 @@ void View::DrawSampleList( const TimelineContext& ctx, const std::vector<Samples
     }
 }
 
-void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, AccumulationMode accumulationMode )
+void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, uint64_t totalSamples, AccumulationMode accumulationMode )
 {
     static unordered_flat_map<uint64_t, SymList> inlineMap;
     assert( inlineMap.empty() );
@@ -156,32 +156,6 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
             ImGui::TableSetupColumn( "Code size", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
             ImGui::TableHeadersRow();
 
-            // The denominator is the number of collected samples, excluding context
-            // switch samples, which do not participate in the sampling statistics. This
-            // way the percentages have the same meaning with and without an active
-            // range filter.
-            uint64_t totalSamples;
-            if( m_statRange.active )
-            {
-                static const auto CountInRange = []( const auto& vec, int64_t min, int64_t max ) -> uint64_t {
-                    auto it = std::lower_bound( vec.begin(), vec.end(), min, []( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
-                    auto end = std::lower_bound( it, vec.end(), max, []( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
-                    return end - it;
-                };
-                totalSamples = 0;
-                for( auto& td : m_worker.GetThreadData() )
-                {
-                    const auto cnt = CountInRange( td->samples, m_statRange.min, m_statRange.max );
-                    const auto ctx = CountInRange( td->ctxSwitchSamples, m_statRange.min, m_statRange.max );
-                    if( cnt > ctx ) totalSamples += cnt - ctx;
-                }
-            }
-            else
-            {
-                const auto cnt = m_worker.GetCallstackSampleCount();
-                const auto ctx = m_worker.GetContextSwitchSampleCount();
-                totalSamples = cnt > ctx ? cnt - ctx : 0;
-            }
             const double revSampleCount100 = totalSamples == 0 ? 0 : 100. / totalSamples;
 
             const bool showAll = m_showAllSymbols;

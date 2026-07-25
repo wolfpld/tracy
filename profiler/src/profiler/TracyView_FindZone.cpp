@@ -2136,9 +2136,14 @@ void View::DrawFindZone()
 
             Vector<SymList> data;
             data.reserve( m_findZone.samples.counts.size() );
-            for( auto it: m_findZone.samples.counts ) data.push_back_no_space_check( it );
+            uint64_t totalSamples = 0;
+            for( auto it: m_findZone.samples.counts )
+            {
+                data.push_back_no_space_check( it );
+                totalSamples += it.excl;
+            }
             int64_t timeRange = ( m_findZone.selGroup != m_findZone.Unselected ) ? m_findZone.selTotal : m_findZone.total;
-            DrawSamplesStatistics( data, timeRange, AccumulationMode::SelfOnly );
+            DrawSamplesStatistics( data, timeRange, totalSamples, AccumulationMode::SelfOnly );
 
             ImGui::TreePop();
         }

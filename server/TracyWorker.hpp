@@ -342,7 +342,7 @@ private:
         unordered_flat_map<uint64_t, unordered_flat_map<CallstackFrameId, uint32_t, CallstackFrameIdHash, CallstackFrameIdCompare>> instructionPointersMap;
         unordered_flat_map<uint64_t, Vector<SampleDataRange>> symbolSamples;
         unordered_flat_map<CallstackFrameId, Vector<SampleDataRange>, CallstackFrameIdHash, CallstackFrameIdCompare> pendingSymbolSamples;
-        unordered_flat_map<uint64_t, Vector<ChildSample>> childSamples;
+        unordered_flat_map<uint64_t, SortedVector<ChildSample, ChildSampleSort>> childSamples;
         bool newFramesWereReceived = false;
         bool callstackSamplesReady = false;
         bool newContextSwitchesReceived = false;
@@ -598,7 +598,7 @@ public:
     const VarArray<CallstackFrameId>& GetSyntheticCallstack( uint32_t idx ) const { return *m_data.syntheticCallstackPayload[idx]; }
     const CallstackFrameData* GetSyntheticCallstackFrame( const CallstackFrameId& ptr ) const;
     const Vector<SampleDataRange>* GetSamplesForSymbol( uint64_t symAddr ) const;
-    const Vector<ChildSample>* GetChildSamples( uint64_t addr ) const;
+    const SortedVector<ChildSample, ChildSampleSort>* GetChildSamples( uint64_t addr );
 #endif
 
     const CrashEvent& GetCrashEvent() const { return m_data.crashEvent; }

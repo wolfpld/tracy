@@ -1957,11 +1957,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
                                 auto it = m_data.childSamples.find( addr );
                                 if( it == m_data.childSamples.end() )
                                 {
-                                    m_data.childSamples.emplace( addr, Vector<ChildSample>( ChildSample { time, childAddr } ) );
+                                    m_data.childSamples.emplace( addr, SortedVector<ChildSample, ChildSampleSort>( ChildSample { time, childAddr } ) );
                                 }
                                 else
                                 {
-                                    it->second.push_back_non_empty( ChildSample { time, childAddr } );
+                                    it->second.push_back( ChildSample { time, childAddr } );
                                 }
                                 childAddr = addr;
                             }
@@ -1973,7 +1973,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
                     }
                     for( auto& v : m_data.childSamples )
                     {
-                        pdqsort_branchless( v.second.begin(), v.second.end(), []( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs.time.Val(); } );
+                        v.second.ensure_sorted();
                     }
                     std::lock_guard<std::mutex> lock( m_data.lock );
                     m_data.symbolSamplesReady = true;
@@ -2321,11 +2321,15 @@ const Vector<SampleDataRange>* Worker::GetSamplesForSymbol( uint64_t symAddr ) c
     return &it->second;
 }
 
-const Vector<ChildSample>* Worker::GetChildSamples( uint64_t addr ) const
+const SortedVector<ChildSample, ChildSampleSort>* Worker::GetChildSamples( uint64_t addr )
 {
     assert( m_data.symbolSamplesReady );
     auto it = m_data.childSamples.find( addr );
     if( it == m_data.childSamples.end() ) return nullptr;
+    // Out-of-order insertions may happen during live capture, e.g. when samples postponed
+    // due to missing context switch data are finally processed. Sorting is done lazily, as
+    // the vectors are only ever read here.
+    it->second.ensure_sorted();
     return &it->second;
 }
 #endif
@@ -6674,11 +6678,11 @@ void Worker::ProcessCallstackSampleImplStats( const SampleData& sd, ThreadData& 
         auto it = m_data.childSamples.find( addr );
         if( it == m_data.childSamples.end() )
         {
-            m_data.childSamples.emplace( addr, Vector<ChildSample>( ChildSample { sd.time, childAddr } ) );
+            m_data.childSamples.emplace( addr, SortedVector<ChildSample, ChildSampleSort>( ChildSample { sd.time, childAddr } ) );
         }
         else
         {
-            it->second.push_back_non_empty( ChildSample { sd.time, childAddr } );
+            it->second.push_back( ChildSample { sd.time, childAddr } );
         }
         childAddr = addr;
     }

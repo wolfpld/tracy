@@ -685,6 +685,8 @@ struct ChildSample
     uint64_t addr;
 };
 
+struct ChildSampleSort { bool operator()( const ChildSample& lhs, const ChildSample& rhs ) const { return lhs.time.Val() < rhs.time.Val(); }; };
+
 
 struct SectionItem
 {

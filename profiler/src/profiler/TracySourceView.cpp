@@ -1019,6 +1019,10 @@ void SourceView::RenderSymbolView( Worker& worker, View& view, WindowConstraints
     {
         GatherIpHwStats( as, worker, view, m_cost );
     }
+    // The local and ext maxima can occur on different addresses, so the maximum of the
+    // sums has to be tracked separately for the child calls display.
+    for( auto& v : as.ipCountSrc ) as.ipMaxSrcSum = std::max( as.ipMaxSrcSum, v.second.local + v.second.ext );
+    for( auto& v : as.ipCountAsm ) as.ipMaxAsmSum = std::max( as.ipMaxAsmSum, v.second.local + v.second.ext );
     if( !m_calcInlineStats )
     {
         as.ipTotalSrc = as.ipTotalAsm;
@@ -1862,8 +1866,8 @@ void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker,
             if( buckets[i] < 0 ) continue;
             const auto y0 = round( rect.Min.y + float( i ) / bucketNum * rect.GetHeight() );
             const auto y1 = round( rect.Min.y + float( i + 1 ) / bucketNum * rect.GetHeight() );
-            const auto color = buckets[i] == 0 ? 0x22FFFFFF : ( GetHotnessColor( buckets[i], m_childCalls ? (as.ipMaxSrc.local + as.ipMaxSrc.ext) : as.ipMaxSrc.local ) );
-            const auto glow = GetHotnessGlow( buckets[i], m_childCalls ? (as.ipMaxSrc.local + as.ipMaxSrc.ext) : as.ipMaxSrc.local );
+            const auto color = buckets[i] == 0 ? 0x22FFFFFF : ( GetHotnessColor( buckets[i], m_childCalls ? as.ipMaxSrcSum : as.ipMaxSrc.local ) );
+            const auto glow = GetHotnessGlow( buckets[i], m_childCalls ? as.ipMaxSrcSum : as.ipMaxSrc.local );
             draw->AddRectFilled( ImVec2( x40, y0 ), ImVec2( x60, y1 ), color );
             if( glow )
             {
@@ -2811,8 +2815,8 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
             if( buckets[i] <= 0 ) continue;
             const auto y0 = round( rect.Min.y + float( i ) / bucketNum * rect.GetHeight() );
             const auto y1 = round( rect.Min.y + float( i + 1 ) / bucketNum * rect.GetHeight() );
-            const auto color = GetHotnessColor( buckets[i], m_childCalls ? (as.ipMaxAsm.local + as.ipMaxAsm.ext) : as.ipMaxAsm.local );
-            const auto glow = GetHotnessGlow( buckets[i], m_childCalls ? (as.ipMaxAsm.local + as.ipMaxAsm.ext) : as.ipMaxAsm.local );
+            const auto color = GetHotnessColor( buckets[i], m_childCalls ? as.ipMaxAsmSum : as.ipMaxAsm.local );
+            const auto glow = GetHotnessGlow( buckets[i], m_childCalls ? as.ipMaxAsmSum : as.ipMaxAsm.local );
             draw->AddRectFilled( ImVec2( x40, y0 ), ImVec2( x60, y1 ), color );
             if( glow )
             {
@@ -3179,8 +3183,8 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
             uint32_t col, glow;
             if( m_childCalls )
             {
-                col = GetHotnessColor( ipcnt.local + ipcnt.ext, as.ipMaxSrc.local + as.ipMaxSrc.ext );
-                glow = GetHotnessGlow( ipcnt.local + ipcnt.ext, as.ipMaxSrc.local + as.ipMaxSrc.ext );
+                col = GetHotnessColor( ipcnt.local + ipcnt.ext, as.ipMaxSrcSum );
+                glow = GetHotnessGlow( ipcnt.local + ipcnt.ext, as.ipMaxSrcSum );
             }
             else
             {
@@ -3534,8 +3538,8 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             uint32_t col, glow;
             if( m_childCalls )
             {
-                col = GetHotnessColor( ipcnt.local + ipcnt.ext, as.ipMaxAsm.local + as.ipMaxAsm.ext );
-                glow = GetHotnessGlow( ipcnt.local + ipcnt.ext, as.ipMaxAsm.local + as.ipMaxAsm.ext );
+                col = GetHotnessColor( ipcnt.local + ipcnt.ext, as.ipMaxAsmSum );
+                glow = GetHotnessGlow( ipcnt.local + ipcnt.ext, as.ipMaxAsmSum );
             }
             else
             {

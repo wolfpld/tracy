@@ -127,6 +127,8 @@ struct AddrStatData
     AddrStat ipTotalAsm = {};
     AddrStat ipMaxSrc = {};
     AddrStat ipMaxAsm = {};
+    uint64_t ipMaxSrcSum = 0;
+    uint64_t ipMaxAsmSum = 0;
     AddrStat hwMaxSrc = {};
     AddrStat hwMaxAsm = {};
     unordered_flat_map<uint64_t, AddrStat> ipCountSrc, ipCountAsm;

@@ -4704,7 +4704,13 @@ If the * Impact* switch is enabled, the branch and cache columns will show ho
 
 The profiler can group call stacks leading to certain events and display the resulting information in a variety of ways. In essence, this shows the code paths that lead to these events and the distribution of these paths. At this moment, these events include:
 
-- **Sample entry stacks** -- this window shows all the paths that lead to execution of the selected symbol. Requires sampling (chapter [3.18.5](#sampling)) to be active.
+- **Sample entry stacks** -- this window shows all the paths that lead to execution of the selected symbol. Requires sampling (chapter [3.18.5](#sampling)) to be active. The displayed data set can be selected with the following options:
+
+  - *Was reached* -- counts samples in which the symbol was present anywhere on the call stack. Each sample is counted only once, at the outermost occurrence of the symbol, so recursive re-entries are ignored.
+
+  - *Was reached, recursive* -- as above, but each occurrence of the symbol on the call stack is counted separately, showing also the paths by which the symbol re-entered itself.
+
+  - *Was executing* -- counts samples taken while the symbol was executing, i.e. it was at the top of the call stack.
 
 - **Wait stacks** -- this windows shows all the places where the application was sleeping. See chapter [3.18.5.1](#waitstacks) for more information. Note that wait stacks have separate setting for the * External* option, as it is generally beneficial to see the external code when determining the cause of program interruption.
 

@@ -5024,7 +5024,12 @@ The percentage values when \emph{\faCarBurst{}~Impact} option is not selected wi
 The profiler can group call stacks leading to certain events and display the resulting information in a variety of ways. In essence, this shows the code paths that lead to these events and the distribution of these paths. At this moment, these events include:
 
 \begin{itemize}
-\item \textbf{Sample entry stacks} -- this window shows all the paths that lead to execution of the selected symbol. Requires sampling (chapter~\ref{sampling}) to be active.
+\item \textbf{Sample entry stacks} -- this window shows all the paths that lead to execution of the selected symbol. Requires sampling (chapter~\ref{sampling}) to be active. The displayed data set can be selected with the following options:
+\begin{itemize}
+\item \emph{Was reached} -- counts samples in which the symbol was present anywhere on the call stack. Each sample is counted only once, at the outermost occurrence of the symbol, so recursive re-entries are ignored.
+\item \emph{Was reached, recursive} -- as above, but each occurrence of the symbol on the call stack is counted separately, showing also the paths by which the symbol re-entered itself.
+\item \emph{Was executing} -- counts samples taken while the symbol was executing, i.e.\ it was at the top of the call stack.
+\end{itemize}
 \item \textbf{Wait stacks} -- this windows shows all the places where the application was sleeping. See chapter~\ref{waitstacks} for more information. Note that wait stacks have separate setting for the \emph{\faShieldHalved{}~External} option, as it is generally beneficial to see the external code when determining the cause of program interruption.
 \end{itemize}
 

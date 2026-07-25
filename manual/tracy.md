@@ -2743,6 +2743,8 @@ The sampling functionality also captures call stacks for context switch events. 
 
 3.  Unexpected waits, which should be immediately taken care of. After all, what's the point of profiling and optimizing your program if it is constantly waiting for something? An example of such an unexpected wait may be some anti-virus service interfering with each of your file read operations. In this case, you could have assumed that the system would buffer a large chunk of the data after the first read to make it immediately available to the application in the following calls.
 
+Since context switch samples are captured at scheduling events rather than by the statistical sampling timer, they are not an unbiased measure of program execution. They are therefore only displayed on the timeline and in the wait stacks window, and are excluded from the sampling statistics, the per-symbol sample data, child calls, entry stacks, flame graph, zone call stack reconstruction, and so on.
+
 > [!CAUTION]
 > **Platform differences**
 >
@@ -3931,7 +3933,7 @@ The location data is complemented by the originating executable image name, cont
 
 The profiler may not find some function locations due to insufficient debugging data available on the client-side. To filter out such entries, use the * Hide unknown* option.
 
-The *Time* or *Count* column (depending on the * Show time* option selection) shows number of taken samples, either as a raw count, or in an easier to understand time format. Note that the percentage value of time is calculated relative to the wall-clock time. The percentage value of sample counts is relative to the total number of collected samples. You can also make the percentages of inline functions relative to the base symbol measurements by enabling the * Base relative* option.
+The *Time* or *Count* column (depending on the * Show time* option selection) shows number of taken samples, either as a raw count, or in an easier to understand time format. Note that the percentage value of time is calculated relative to the wall-clock time. The percentage value of sample counts is relative to the number of collected samples, excluding context switch samples, which do not participate in the sampling statistics (section [3.18.5.1](#waitstacks)). You can also make the percentages of inline functions relative to the base symbol measurements by enabling the * Base relative* option.
 
 The last column, *Code size*, displays the size of the symbol in the executable image of the program. Since inlined routines are directly embedded into other functions, their symbol size will be based on the parent symbol and displayed as 'less than'. In some cases, this data won't be available. If the symbol code has been retrieved[^81] symbol size will be prepended with the `` icon, and clicking the right mouse button on the location column entry will open symbol view window (section [5.17.2](#symbolview)).
 

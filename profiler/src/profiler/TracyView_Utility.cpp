@@ -1039,9 +1039,23 @@ std::vector<CallstackFrameId> View::ReconstructZoneCallstack( const ZoneEvent& e
     auto end = std::lower_bound( it, td->samples.end(), m_worker.GetZoneEnd( ev ), [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
     if( std::distance( it, end ) > SampleLimit ) end = it + SampleLimit;
 
+    // Context switch samples are excluded, as they are always parked at the scheduler
+    // and would compete with the zone's real call stacks.
+    const SampleData* cit = std::lower_bound( td->ctxSwitchSamples.begin(), td->ctxSwitchSamples.end(), ev.Start(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
+
     unordered_flat_map<uint64_t, unordered_flat_set<uint32_t>> roots;
     while( it != end )
     {
+        if( cit != td->ctxSwitchSamples.end() )
+        {
+            const auto t = it->time.Val();
+            cit = std::lower_bound( cit, td->ctxSwitchSamples.end(), t, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
+            if( cit != td->ctxSwitchSamples.end() && cit->time.Val() == t )
+            {
+                ++it;
+                continue;
+            }
+        }
         auto stack = it->callstack.Val();
         auto& cs = m_worker.GetCallstack( stack );
         auto root = cs.back().data;

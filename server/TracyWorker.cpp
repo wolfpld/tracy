@@ -1923,8 +1923,15 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
                     for( auto& t : m_data.threads )
                     {
                         uint16_t tid = CompressThread( t->id );
+                        auto cit = t->ctxSwitchSamples.begin();
                         for( auto& v : t->samples )
                         {
+                            if( cit != t->ctxSwitchSamples.end() )
+                            {
+                                const auto vt = v.time.Val();
+                                cit = std::lower_bound( cit, t->ctxSwitchSamples.end(), vt, []( const auto& l, const auto& r ) { return (uint64_t)l.time.Val() < (uint64_t)r; } );
+                                if( cit != t->ctxSwitchSamples.end() && cit->time.Val() == vt ) continue;
+                            }
                             const auto& time = v.time;
                             const auto cs = v.callstack.Val();
                             const auto& callstack = GetCallstack( cs );

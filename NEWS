@@ -40,7 +40,8 @@ vx.xx.x (2026-xx-xx)
   separately.
   - Entry stacks are now also available for symbols which were only reached,
     but never directly sampled, e.g. in the assembly view of a call site with
-    purely child sample costs.
+    purely child sample costs, or in the statistics window for symbols which
+    only have inclusive counts.
 - Fixed inclusive sample counts of symbols with inline functions. Each
   sample was counted multiple times: once for the symbol itself and once for
   every of its inline functions present on the call stack.
@@ -56,6 +57,11 @@ vx.xx.x (2026-xx-xx)
   samples that were actually collected. Previously, enabling the range
   filter switched the calculation to a theoretical single-thread estimate,
   which changed both the meaning and the scale of the displayed values.
+- Find zone sample count percentages are now relative to the matched zones,
+  consistent with the time percentages in the same list, instead of being
+  relative to the whole trace.
+- Context switch samples are now consistently excluded from all sampling
+  statistics views.
 - System tracing on Windows has been refactored to be more robust.
 - Tracing on Arm macOS will now have more precise timer readings.
 - Extended CUDA support to track some previously missing memory operations.

@@ -839,6 +839,14 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
 
 void View::DrawSampleParents()
 {
+    const auto ss = m_worker.GetSymbolStats( m_sampleParents.symAddr );
+    const auto symbol = m_worker.GetSymbolData( m_sampleParents.symAddr );
+    if( !ss || !symbol )
+    {
+        m_sampleParents.symAddr = 0;
+        return;
+    }
+
     bool show = true;
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 1400 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
@@ -846,10 +854,8 @@ void View::DrawSampleParents()
     ImGui::Begin( "Sample entry stacks", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     if( !ImGui::GetCurrentWindowRead()->SkipItems )
     {
-        auto ss = m_worker.GetSymbolStats( m_sampleParents.symAddr );
         if( m_sampleParents.statMode == 0 && ss->wasExecuting.empty() ) m_sampleParents.statMode = 1;
 
-        const auto symbol = m_worker.GetSymbolData( m_sampleParents.symAddr );
         uint64_t total = 0;
         unordered_flat_map<uint32_t, uint32_t> stats;
         if( m_sampleParents.statMode == 0 )

@@ -154,6 +154,7 @@ CPMAddPackage(
         "${CMAKE_CURRENT_LIST_DIR}/imgui-loader.patch"
         "${CMAKE_CURRENT_LIST_DIR}/imgui-no-samplers.patch"
         "${CMAKE_CURRENT_LIST_DIR}/imgui-no-default-font.patch"
+        "${CMAKE_CURRENT_LIST_DIR}/imgui-macos-clipboard.patch"
 )
 
 set(IMGUI_SOURCES
@@ -182,6 +183,10 @@ endif()
 
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_definitions(TracyImGui PRIVATE "IMGUI_DISABLE_DEBUG_TOOLS" "IMGUI_DISABLE_DEMO_WINDOWS")
+endif()
+
+if(APPLE)
+    target_link_libraries(TracyImGui PUBLIC "-framework ApplicationServices")
 endif()
 
 # NFD

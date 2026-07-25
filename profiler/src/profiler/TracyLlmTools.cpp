@@ -875,6 +875,7 @@ std::string TracyLlmTools::SourceFile( const std::string& file, uint32_t line, u
 {
     if( line == 0 ) return "Error: Source file line number must be greater than 0.";
 
+    std::lock_guard<std::mutex> lock( m_worker.GetDataLock() );
     const auto data = m_worker.GetSourceFileFromCache( file.c_str() );
     if( data.data == nullptr ) return "Error: Source file not available.";
 
@@ -924,6 +925,7 @@ std::string TracyLlmTools::SourceFile( const std::string& file, uint32_t line, u
 
 std::string TracyLlmTools::SourceSearch( std::string query, bool caseInsensitive, const std::string& path ) const
 {
+    std::lock_guard<std::mutex> lock( m_worker.GetDataLock() );
     auto& cache = m_worker.GetSourceFileCache();
     nlohmann::json json = {
         { "hint", "Each line starts with a line number, then ':', then the actual line content." }
@@ -1036,6 +1038,8 @@ std::string TracyLlmTools::GetSkill( const std::string& name ) const
 
 std::string TracyLlmTools::SymbolDisasm( const std::string& address ) const
 {
+    if( !m_worker.AreCallstackSamplesReady() || !m_worker.AreSymbolSamplesReady() ) return "Sampling data is not ready yet. Wait for background processing to complete.";
+    std::lock_guard<std::mutex> lock( m_worker.GetDataLock() );
     uint64_t symaddr = strtoull( address.c_str(), nullptr, 16 );
     auto json = JsonDisassembly( symaddr, m_worker, m_view );
     auto ret = json.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
@@ -1045,6 +1049,8 @@ std::string TracyLlmTools::SymbolDisasm( const std::string& address ) const
 
 std::string TracyLlmTools::SymbolParents( const std::string& address, uint32_t limit ) const
 {
+    if( !m_worker.AreCallstackSamplesReady() ) return "Sampling data is not ready yet. Wait for background processing to complete.";
+    std::lock_guard<std::mutex> lock( m_worker.GetDataLock() );
     uint64_t symAddr = strtoull( address.c_str(), nullptr, 16 );
     auto ss = m_worker.GetSymbolStats( symAddr );
     if( !ss ) return "No parent callstack data for this symbol.";
@@ -1113,8 +1119,10 @@ std::string TracyLlmTools::SymbolParents( const std::string& address, uint32_t l
 
 std::string TracyLlmTools::SamplingStats( const std::string& query, uint32_t limit ) const
 {
-    if( !m_worker.AreSymbolSamplesReady() ) return "Sampling data is not ready yet. Wait for background processing to complete.";
+    if( !m_worker.AreCallstackSamplesReady() || !m_worker.AreSymbolSamplesReady() ) return "Sampling data is not ready yet. Wait for background processing to complete.";
     if( m_worker.GetCallstackSampleCount() == 0 ) return "No call stack samples in this trace.";
+
+    std::lock_guard<std::mutex> lock( m_worker.GetDataLock() );
 
     std::regex rx;
     if( !query.empty() )

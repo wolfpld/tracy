@@ -171,13 +171,16 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                 totalSamples = 0;
                 for( auto& td : m_worker.GetThreadData() )
                 {
-                    totalSamples += CountInRange( td->samples, m_statRange.min, m_statRange.max );
-                    totalSamples -= CountInRange( td->ctxSwitchSamples, m_statRange.min, m_statRange.max );
+                    const auto cnt = CountInRange( td->samples, m_statRange.min, m_statRange.max );
+                    const auto ctx = CountInRange( td->ctxSwitchSamples, m_statRange.min, m_statRange.max );
+                    if( cnt > ctx ) totalSamples += cnt - ctx;
                 }
             }
             else
             {
-                totalSamples = m_worker.GetCallstackSampleCount() - m_worker.GetContextSwitchSampleCount();
+                const auto cnt = m_worker.GetCallstackSampleCount();
+                const auto ctx = m_worker.GetContextSwitchSampleCount();
+                totalSamples = cnt > ctx ? cnt - ctx : 0;
             }
             const double revSampleCount100 = totalSamples == 0 ? 0 : 100. / totalSamples;
 

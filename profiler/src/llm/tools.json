@@ -216,6 +216,10 @@
         "limit": {
           "type": "integer",
           "description": "Maximum number of call stacks to return. Default: 10."
+        },
+        "mode": {
+          "type": "string",
+          "description": "Which samples to count. 'reached': the symbol was anywhere on the call stack (default). 'reached_recursive': as 'reached', but recursive re-entries count separately. 'executing': the symbol was at the top of the call stack."
         }
       },
       "required": ["address"]

@@ -154,10 +154,10 @@ std::string TracyLlmChat::ToolCallDescription( const nlohmann::json& json ) cons
         auto symAddr = strtoull( addr.c_str(), nullptr, 16 );
         auto sym = m_worker.GetSymbolData( symAddr );
         if( !sym ) return "";
-        if( sym->isInline ) return "";
-        std::string limit;
-        if( args.contains( "limit" ) ) limit = ", limit: " + std::to_string( args["limit"].get<uint32_t>() );
-        return "Symbol parents: " + std::string( m_worker.GetString( sym->name ) ) + limit;
+        std::string extra;
+        if( args.contains( "mode" ) ) extra = ", mode: " + args["mode"].get<std::string>();
+        if( args.contains( "limit" ) ) extra += ", limit: " + std::to_string( args["limit"].get<uint32_t>() );
+        return "Symbol parents: " + std::string( m_worker.GetString( sym->name ) ) + extra;
     }
     else if( name == "sampling_stats" )
     {

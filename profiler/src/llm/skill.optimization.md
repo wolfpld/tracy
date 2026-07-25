@@ -59,6 +59,11 @@ When reasoning about the performance of a symbol, you should look at the environ
 1. Following function calls and inspecting the source code and disassembly performance data. Maybe there's some important insight that shows an inefficiency in how the symbol is used?
 2. Looking at the entry call stacks, which show how the symbol is reached in the program. Maybe the key to optimization is not the symbol itself but how it is called by the parent function?
 
+The entry call stacks can be queried in three modes:
+- The *reached* mode (the default) counts each sample once, at the outermost occurrence of the symbol on the call stack. The percentages are shares of the symbol's inclusive cost. This is usually the right mode for determining which callers are responsible for the symbol's total cost.
+- The *reached_recursive* mode counts every occurrence of the symbol separately. Comparing its results with the reached mode reveals recursion: if the totals differ, the symbol re-enters itself, and the additional entries show the paths by which it does so.
+- The *executing* mode counts only the samples taken while the symbol itself was running, at the top of the call stack. Use it to attribute the symbol's self cost to its callers. Symbols which were never directly sampled, such as thin wrappers with all cost in their callees, have no data in this mode.
+
 # General optimization procedure
 
 1. Start by mapping the assembly instructions to the source code. All reasoning should be performed with source code first. The assembly can only be used as a supplementary source.

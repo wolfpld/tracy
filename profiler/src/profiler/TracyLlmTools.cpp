@@ -200,7 +200,8 @@ std::string TracyLlmTools::HandleToolCalls( const std::string& tool, const nlohm
         }
         else if( tool == "symbol_parents" )
         {
-            return SymbolParents( Param( "address" ), ParamOptU32( "limit", 10 ) );
+            std::string mode = "reached";
+            return SymbolParents( Param( "address" ), ParamOptU32( "limit", 10 ), ParamOptString( "mode", mode ) );
         }
         else if( tool == "sampling_stats" )
         {
@@ -1047,9 +1048,16 @@ std::string TracyLlmTools::SymbolDisasm( const std::string& address ) const
     return ret;
 }
 
-std::string TracyLlmTools::SymbolParents( const std::string& address, uint32_t limit ) const
+std::string TracyLlmTools::SymbolParents( const std::string& address, uint32_t limit, const std::string& mode ) const
 {
     if( !m_worker.AreCallstackSamplesReady() ) return "Sampling data is not ready yet. Wait for background processing to complete.";
+
+    int statMode;
+    if( mode == "reached" ) statMode = 1;
+    else if( mode == "reached_recursive" ) statMode = 2;
+    else if( mode == "executing" ) statMode = 0;
+    else return "Unknown mode: " + mode;
+
     std::lock_guard<std::mutex> lock( m_worker.GetDataLock() );
     uint64_t symAddr = strtoull( address.c_str(), nullptr, 16 );
     auto ss = m_worker.GetSymbolStats( symAddr );
@@ -1057,36 +1065,50 @@ std::string TracyLlmTools::SymbolParents( const std::string& address, uint32_t l
 
     const auto symbol = m_worker.GetSymbolData( symAddr );
     if( !symbol ) return "Symbol not found.";
-    if( symbol->isInline ) return "Symbol is inline.";
 
-    auto stats = ss->wasExecuting;
-    auto excl = ss->excl;
-
-    const auto symLen = symbol->size.Val();
-    auto inSym = m_worker.GetInlineSymbolList( symAddr, symLen );
-    if( inSym )
+    unordered_flat_map<uint32_t, uint32_t> stats;
+    uint64_t total = 0;
+    if( statMode == 0 )
     {
-        const auto symEnd = symAddr + symLen;
-        while( *inSym < symEnd )
+        stats = ss->wasExecuting;
+        total = ss->excl;
+        if( !symbol->isInline )
         {
-            auto istat = m_worker.GetSymbolStats( *inSym++ );
-            if( !istat ) continue;
-            excl += istat->excl;
-            for( auto& v : istat->wasExecutingBase )
+            const auto symLen = symbol->size.Val();
+            auto inSym = m_worker.GetInlineSymbolList( symAddr, symLen );
+            if( inSym )
             {
-                auto it = stats.find( v.first );
-                if( it == stats.end() )
+                const auto symEnd = symAddr + symLen;
+                while( *inSym < symEnd )
                 {
-                    stats[v.first] = v.second;
-                }
-                else
-                {
-                    it->second += v.second;
+                    auto istat = m_worker.GetSymbolStats( *inSym++ );
+                    if( !istat ) continue;
+                    total += istat->excl;
+                    for( auto& v : istat->wasExecutingBase )
+                    {
+                        auto it = stats.find( v.first );
+                        if( it == stats.end() )
+                        {
+                            stats[v.first] = v.second;
+                        }
+                        else
+                        {
+                            it->second += v.second;
+                        }
+                    }
                 }
             }
         }
+        if( stats.empty() ) return "The symbol was never sampled while it was executing. Use the \"reached\" mode to see the stacks through which it was present deeper on the call stack.";
     }
-    if( stats.empty() ) return "No parent callstack data for this symbol.";
+    else
+    {
+        // A base symbol is always present as the last frame of any frame group containing
+        // its inline functions, so the wasReached maps already cover the whole symbol.
+        stats = statMode == 1 ? ss->wasReachedNonReentrant : ss->wasReached;
+        for( auto& v : stats ) total += v.second;
+        if( stats.empty() ) return "No parent callstack data for this symbol.";
+    }
 
     std::vector<decltype(stats.begin())> sorted;
     sorted.reserve( stats.size() );
@@ -1095,6 +1117,7 @@ std::string TracyLlmTools::SymbolParents( const std::string& address, uint32_t l
     if( sorted.size() > limit ) sorted.resize( limit );
 
     nlohmann::json result = {
+        { "mode", mode },
         { "entries", nlohmann::json::array() },
         { "hint", "Frame N is where frame N-1 returns to. The caller of frame N-1 may differ from frame N." }
     };
@@ -1106,7 +1129,7 @@ std::string TracyLlmTools::SymbolParents( const std::string& address, uint32_t l
         auto frames = m_view.GetCallstackJson( cs.data(), cs.size() )["frames"];
 
         char buf[32];
-        auto end = PrintFloat( buf, buf+32, 100.f * entry->second / excl, 4 );
+        auto end = PrintFloat( buf, buf+32, 100.f * entry->second / total, 4 );
         *end = '\0';
 
         entries.push_back( {

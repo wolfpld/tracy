@@ -156,10 +156,10 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
             ImGui::TableSetupColumn( "Code size", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
             ImGui::TableHeadersRow();
 
-            // The denominator is the number of samples which can be attributed to the
-            // displayed symbols, so that the percentages have the same meaning with and
-            // without an active range filter. Context switch samples are not included, as
-            // they are excluded from the sampling statistics.
+            // The denominator is the number of collected samples, excluding context
+            // switch samples, which do not participate in the sampling statistics. This
+            // way the percentages have the same meaning with and without an active
+            // range filter.
             uint64_t totalSamples;
             if( m_statRange.active )
             {

@@ -262,7 +262,7 @@ void View::DrawCallstackTable( const CallstackFrameId* data, size_t size, const 
         if( frame && frame->data[0].symAddr != 0 )
         {
             auto sym = m_worker.GetSymbolStats( frame->data[0].symAddr );
-            if( sym && !sym->wasExecuting.empty() )
+            if( sym && !sym->wasReached.empty() )
             {
                 ImGui::SameLine();
                 ImGui::Spacing();

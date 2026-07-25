@@ -717,20 +717,21 @@ nlohmann::json JsonDisassembly( uint64_t symAddr, Worker& worker, const View& vi
     auto data = Disassemble( symAddr, worker );
     if( data.lines.empty() ) return nlohmann::json { { "error", "Disassembly failed" } };
 
-    const bool limitView = view.GetRange( RangeId::Statistics ).active;
+    // Tool calls always operate on the whole trace. The statistics range filter is
+    // invisible UI state, which would silently scope the reported costs.
     AddrStatData as;
-    GatherIpStats( symAddr, as, worker, limitView, view, nullptr, false );
+    GatherIpStats( symAddr, as, worker, false, view, nullptr, false );
     auto iptr = worker.GetInlineSymbolList( symAddr, data.codeLen );
     if( iptr )
     {
         const auto symEnd = symAddr + data.codeLen;
         while( *iptr < symEnd )
         {
-            GatherIpStats( *iptr, as, worker, limitView, view, nullptr, false );
+            GatherIpStats( *iptr, as, worker, false, view, nullptr, false );
             iptr++;
         }
     }
-    GatherAdditionalIpStats( symAddr, as, worker, limitView, view, nullptr, false );
+    GatherAdditionalIpStats( symAddr, as, worker, false, view, nullptr, false );
 
     char tmp[32];
     sprintf( tmp, "0x%" PRIx64, symAddr );

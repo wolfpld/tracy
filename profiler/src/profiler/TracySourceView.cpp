@@ -766,7 +766,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view, WindowConstraints
     if( worker.AreCallstackSamplesReady() )
     {
         const auto stats = worker.GetSymbolStats( m_symAddr );
-        if( stats && !stats->wasReached.empty() )
+        if( stats && !stats->wasReached.empty() && worker.GetSymbolData( m_symAddr ) )
         {
             ImGui::SameLine();
             ImGui::AlignTextToFramePadding();

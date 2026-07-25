@@ -156,17 +156,30 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
             ImGui::TableSetupColumn( "Code size", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
             ImGui::TableHeadersRow();
 
-            double revSampleCount100;
-            if( m_statRange.active && m_worker.GetSamplingPeriod() != 0 )
+            // The denominator is the number of samples which can be attributed to the
+            // displayed symbols, so that the percentages have the same meaning with and
+            // without an active range filter. Context switch samples are not included, as
+            // they are excluded from the sampling statistics.
+            uint64_t totalSamples;
+            if( m_statRange.active )
             {
-                const auto st = m_statRange.max - m_statRange.min;
-                const auto cnt = st / m_worker.GetSamplingPeriod();
-                revSampleCount100 = 100. / cnt;
+                static const auto CountInRange = []( const Vector<SampleData>& vec, int64_t min, int64_t max ) -> uint64_t {
+                    auto it = std::lower_bound( vec.begin(), vec.end(), min, []( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+                    auto end = std::lower_bound( it, vec.end(), max, []( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+                    return end - it;
+                };
+                totalSamples = 0;
+                for( auto& td : m_worker.GetThreadData() )
+                {
+                    totalSamples += CountInRange( td->samples, m_statRange.min, m_statRange.max );
+                    totalSamples -= CountInRange( td->ctxSwitchSamples, m_statRange.min, m_statRange.max );
+                }
             }
             else
             {
-                revSampleCount100 = 100. / m_worker.GetCallstackSampleCount();
+                totalSamples = m_worker.GetCallstackSampleCount() - m_worker.GetContextSwitchSampleCount();
             }
+            const double revSampleCount100 = totalSamples == 0 ? 0 : 100. / totalSamples;
 
             const bool showAll = m_showAllSymbols;
             const auto period = m_worker.GetSamplingPeriod();

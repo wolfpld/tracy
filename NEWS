@@ -38,6 +38,24 @@ vx.xx.x (2026-xx-xx)
   was reached, i.e. it was present anywhere on the call stack, not only when
   it was executing. Recursive re-entries can be either ignored or counted
   separately.
+  - Entry stacks are now also available for symbols which were only reached,
+    but never directly sampled, e.g. in the assembly view of a call site with
+    purely child sample costs.
+- Fixed inclusive sample counts of symbols with inline functions. Each
+  sample was counted multiple times: once for the symbol itself and once for
+  every of its inline functions present on the call stack.
+- Fixed context switch samples leaking into per-symbol sample lists and
+  child sample data on trace load. This inflated range-limited sample counts
+  and child call costs, and made loaded traces disagree with live sessions,
+  where such samples are excluded from sampling statistics.
+- Fixed wrong results of range-limited child call queries during live
+  capture, when some samples had to wait for context switch data to arrive.
+- Fixed crashes when opening the sample entry stacks window for symbols
+  without any sampling data.
+- Sampling statistics percentages are now calculated against the number of
+  samples that were actually collected. Previously, enabling the range
+  filter switched the calculation to a theoretical single-thread estimate,
+  which changed both the meaning and the scale of the displayed values.
 - System tracing on Windows has been refactored to be more robust.
 - Tracing on Arm macOS will now have more precise timer readings.
 - Extended CUDA support to track some previously missing memory operations.

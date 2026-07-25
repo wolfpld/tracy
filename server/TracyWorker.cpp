@@ -7840,111 +7840,68 @@ void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint
         }
     }
 
+    static const auto UpdateEntry = []( unordered_flat_map<uint32_t, uint32_t>& map, uint32_t idx, uint32_t count )
+    {
+        auto it = map.find( idx );
+        if( it == map.end() )
+        {
+            map.emplace( idx, count );
+        }
+        else
+        {
+            it->second += count;
+        }
+    };
+
     const bool topFrameHasInlines = fxsz != 1;
 
     CallstackFrameId parentFrameId;
     if( topFrameHasInlines )
     {
-        CallstackFrameData cfd = {
-            .data = (CallstackFrame*)alloca( sizeof( CallstackFrame ) * ( fxsz - 1 ) ),
+        const CallstackFrameData cfd = {
+            .data = fexcl->data + 1,
             .size = uint8_t( fxsz-1 ),
             .imageName = fexcl->imageName
         };
-        for( int i=0; i<fxsz-1; i++ ) cfd.data[i] = fexcl->data[i+1];
         parentFrameId = InternSyntheticFrame( cfd );
     }
 
-    uint32_t parentIdx;
-    {
-        const auto sz = framesCount - !topFrameHasInlines;
-        const auto memsize = sizeof( VarArray<CallstackFrameId> ) + sz * sizeof( CallstackFrameId );
-        auto mem = (char*)m_slab.AllocRaw( memsize );
-
-        auto data = (CallstackFrameId*)mem;
-        auto dst = data;
-        if( !topFrameHasInlines )
-        {
-            for( int i=0; i<sz; i++ )
-            {
-                *dst++ = cs[i+1];
-            }
-        }
-        else
-        {
-            *dst++ = parentFrameId;
-            for( int i=1; i<sz; i++ )
-            {
-                *dst++ = cs[i];
-            }
-        }
-
-        auto arr = (VarArray<CallstackFrameId>*)( mem + sz * sizeof( CallstackFrameId ) );
-        new(arr) VarArray<CallstackFrameId>( sz, data );
-
-        auto it = m_data.syntheticCallstackMap.find( arr );
-        if( it == m_data.syntheticCallstackMap.end() )
-        {
-            parentIdx = m_data.syntheticCallstackPayload.size();
-            m_data.syntheticCallstackMap.emplace( arr, parentIdx );
-            m_data.syntheticCallstackPayload.push_back( arr );
-        }
-        else
-        {
-            parentIdx = it->second;
-            m_slab.Unalloc( memsize );
-        }
-    }
+    const auto parentIdx = InternSyntheticCallstack( topFrameHasInlines ? &parentFrameId : nullptr, cs, 1 );
+    const auto baseParentIdx = InternSyntheticCallstack( nullptr, cs, 1 );
 
     sym0 = m_data.symbolStats.find( frame0.symAddr );
-    auto sit = sym0->second.wasExecuting.find( parentIdx );
-    if( sit == sym0->second.wasExecuting.end() )
+    UpdateEntry( sym0->second.wasExecuting, parentIdx, count );
+    UpdateEntry( sym0->second.wasExecutingBase, baseParentIdx, count );
+}
+
+uint32_t Worker::InternSyntheticCallstack( const CallstackFrameId* head, const VarArray<CallstackFrameId>& cs, uint16_t from )
+{
+    const uint16_t tail = cs.size() - from;
+    const uint32_t sz = tail + ( head != nullptr );
+    const auto memsize = sizeof( VarArray<CallstackFrameId> ) + sz * sizeof( CallstackFrameId );
+    auto mem = (char*)m_slab.AllocRaw( memsize );
+
+    auto data = (CallstackFrameId*)mem;
+    auto dst = data;
+    if( head ) *dst++ = *head;
+    for( uint16_t i=0; i<tail; i++ )
     {
-        sym0->second.wasExecuting.emplace( parentIdx, count );
-    }
-    else
-    {
-        sit->second += count;
-    }
-
-    uint32_t baseParentIdx;
-    {
-        const auto sz = framesCount - 1;
-        const auto memsize = sizeof( VarArray<CallstackFrameId> ) + sz * sizeof( CallstackFrameId );
-        auto mem = (char*)m_slab.AllocRaw( memsize );
-
-        auto data = (CallstackFrameId*)mem;
-        auto dst = data;
-        for( int i=0; i<sz; i++ )
-        {
-            *dst++ = cs[i+1];
-        }
-
-        auto arr = (VarArray<CallstackFrameId>*)( mem + sz * sizeof( CallstackFrameId ) );
-        new(arr) VarArray<CallstackFrameId>( sz, data );
-
-        auto it = m_data.syntheticCallstackMap.find( arr );
-        if( it == m_data.syntheticCallstackMap.end() )
-        {
-            baseParentIdx = m_data.syntheticCallstackPayload.size();
-            m_data.syntheticCallstackMap.emplace( arr, baseParentIdx );
-            m_data.syntheticCallstackPayload.push_back( arr );
-        }
-        else
-        {
-            baseParentIdx = it->second;
-            m_slab.Unalloc( memsize );
-        }
+        *dst++ = cs[from+i];
     }
 
-    auto bit = sym0->second.wasExecutingBase.find( baseParentIdx );
-    if( bit == sym0->second.wasExecutingBase.end() )
+    auto arr = (VarArray<CallstackFrameId>*)( mem + sz * sizeof( CallstackFrameId ) );
+    new(arr) VarArray<CallstackFrameId>( sz, data );
+
+    auto it = m_data.syntheticCallstackMap.find( arr );
+    if( it != m_data.syntheticCallstackMap.end() )
     {
-        sym0->second.wasExecutingBase.emplace( baseParentIdx, count );
+        m_slab.Unalloc( memsize );
+        return it->second;
     }
-    else
-    {
-        bit->second += count;
-    }
+    const auto idx = uint32_t( m_data.syntheticCallstackPayload.size() );
+    m_data.syntheticCallstackMap.emplace( arr, idx );
+    m_data.syntheticCallstackPayload.push_back( arr );
+    return idx;
 }
 
 CallstackFrameId Worker::InternSyntheticFrame( const CallstackFrameData& cfd )

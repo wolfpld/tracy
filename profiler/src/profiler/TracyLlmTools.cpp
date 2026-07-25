@@ -1214,7 +1214,9 @@ std::string TracyLlmTools::SamplingStats( const std::string& query, uint32_t lim
     if( data.size() > limit ) data.resize( limit );
 
     const auto period = m_worker.GetSamplingPeriod();
-    const auto totalSamples = m_worker.GetCallstackSampleCount();
+    const auto cnt = m_worker.GetCallstackSampleCount();
+    const auto ctx = m_worker.GetContextSwitchSampleCount();
+    const auto totalSamples = cnt > ctx ? cnt - ctx : 0;
 
     nlohmann::json result = {
         { "total_time", TimeToString( totalSamples * period ) },

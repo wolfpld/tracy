@@ -243,7 +243,7 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
     }
 }
 
-void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& data, const Vector<SampleData>& samples, unordered_flat_map<uint32_t, bool>& externalCache, uint32_t& lastImage, uint32_t& lastSource )
+void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& data, const Vector<SampleData>& samples, const SortedVector<SampleData, SampleDataSort>& ctxSamples, unordered_flat_map<uint32_t, bool>& externalCache, uint32_t& lastImage, uint32_t& lastSource )
 {
     struct FrameCache
     {
@@ -254,6 +254,7 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
 
     std::vector<FrameCache> cache;
 
+    const SampleData* cit = ctxSamples.begin();
     for( auto& v : samples )
     {
         if ( m_flameGraphInvariant.range.active )
@@ -263,6 +264,14 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
             {
                 continue;
             }
+        }
+
+        // Context switch samples are excluded, following the sampling statistics.
+        if( cit != ctxSamples.end() )
+        {
+            const auto vt = v.time.Val();
+            cit = std::lower_bound( cit, ctxSamples.end(), vt, []( const auto& l, const auto& r ) { return (uint64_t)l.time.Val() < (uint64_t)r; } );
+            if( cit != ctxSamples.end() && cit->time.Val() == vt ) continue;
         }
 
         cache.clear();
@@ -1149,7 +1158,7 @@ void View::DrawFlameGraph()
                         unordered_flat_map<uint32_t, bool> externalCache;
                         uint32_t lastImage = 0;
                         uint32_t lastSource = 0;
-                        BuildFlameGraph( m_worker, threadData[idx], thread->samples, externalCache, lastImage, lastSource );
+                        BuildFlameGraph( m_worker, threadData[idx], thread->samples, thread->ctxSwitchSamples, externalCache, lastImage, lastSource );
                     } );
                     idx++;
                 }

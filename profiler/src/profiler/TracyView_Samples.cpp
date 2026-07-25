@@ -424,9 +424,10 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                     }
                     else
                     {
-                        if( !inSymList.empty() && m_topInline )
+                        auto topIt = ( !inSymList.empty() && m_topInline ) ? symMap.find( inSymList[0].symAddr ) : symMap.end();
+                        if( topIt != symMap.end() )
                         {
-                            const auto topName = m_worker.GetString( symMap.find( inSymList[0].symAddr )->second.name );
+                            const auto topName = m_worker.GetString( topIt->second.name );
                             if( topName != name )
                             {
                                 // Parent name at this point should only be enabled if m_statSeparateInlines

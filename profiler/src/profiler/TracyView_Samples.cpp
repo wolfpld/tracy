@@ -460,7 +460,11 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                                 }
                             }
                             if( !sfv ) ImGui::EndDisabled();
+                            const auto estat = m_worker.AreCallstackSamplesReady() ? m_worker.GetSymbolStats( v.symAddr ) : nullptr;
+                            const bool sev = estat && !estat->wasReached.empty() && m_worker.GetSymbolData( v.symAddr );
+                            if( !sev ) ImGui::BeginDisabled();
                             if( ImGui::MenuItem( ICON_FA_ARROW_DOWN_SHORT_WIDE " Sample entry stacks" ) ) ShowSampleParents( v.symAddr, !m_statSeparateInlines );
+                            if( !sev ) ImGui::EndDisabled();
                             ImGui::EndPopup();
                         }
                         ImGui::PopID();
@@ -710,7 +714,11 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                                             }
                                         }
                                         if( !sfv ) ImGui::EndDisabled();
+                                        const auto estat = m_worker.AreCallstackSamplesReady() ? m_worker.GetSymbolStats( iv.symAddr ) : nullptr;
+                                        const bool sev = estat && !estat->wasReached.empty() && m_worker.GetSymbolData( iv.symAddr );
+                                        if( !sev ) ImGui::BeginDisabled();
                                         if( ImGui::MenuItem( ICON_FA_ARROW_DOWN_SHORT_WIDE " Sample entry stacks" ) ) ShowSampleParents( iv.symAddr, false );
+                                        if( !sev ) ImGui::EndDisabled();
                                         ImGui::EndPopup();
                                     }
                                     ImGui::PopID();

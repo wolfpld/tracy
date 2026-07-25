@@ -1927,7 +1927,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
                 jobs.emplace_back( std::thread( [this] {
                     for( auto& t : m_data.threads )
                     {
-                        uint16_t tid = CompressThread( t->id );
+                        // Don't touch thread compression cache in a thread.
+                        uint16_t tid = m_data.localThreadCompress.DecompressMustRaw( t->id );
                         auto cit = t->ctxSwitchSamples.begin();
                         for( auto& v : t->samples )
                         {

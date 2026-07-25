@@ -248,6 +248,7 @@ unordered_flat_map<uint64_t, CallstackFrameTree> View::GetParentsCallstackFrameT
         for( auto& path : stacks )
         {
             auto& cs = m_worker.GetSyntheticCallstack( path.first );
+            if( cs.empty() ) continue;
             auto base = cs.back();
             auto treePtr = GetParentFrameTreeItemGroup( root, base, m_worker );
             if( treePtr )
@@ -267,6 +268,7 @@ unordered_flat_map<uint64_t, CallstackFrameTree> View::GetParentsCallstackFrameT
         for( auto& path : stacks )
         {
             auto& cs = m_worker.GetSyntheticCallstack( path.first );
+            if( cs.empty() ) continue;
             auto base = cs.back();
             auto treePtr = GetFrameTreeItemNoGroup( root, base );
             treePtr->count += path.second;
@@ -378,6 +380,7 @@ unordered_flat_map<uint64_t, CallstackFrameTree> View::GetParentsCallstackFrameT
         for( auto& path : stacks )
         {
             auto& cs = m_worker.GetSyntheticCallstack( path.first );
+            if( cs.empty() ) continue;
             auto base = cs.front();
             auto treePtr = GetParentFrameTreeItemGroup( root, base, m_worker );
             if( treePtr )
@@ -397,6 +400,7 @@ unordered_flat_map<uint64_t, CallstackFrameTree> View::GetParentsCallstackFrameT
         for( auto& path : stacks )
         {
             auto& cs = m_worker.GetSyntheticCallstack( path.first );
+            if( cs.empty() ) continue;
             auto base = cs.front();
             auto treePtr = GetFrameTreeItemNoGroup( root, base );
             treePtr->count += path.second;

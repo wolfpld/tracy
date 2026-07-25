@@ -627,7 +627,7 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
 
                     if( !m_statSeparateInlines && expand )
                     {
-                        const auto revBaseCnt = 100.0 / baseCnt;
+                        const auto revBaseCnt = baseCnt == 0 ? 0 : 100.0 / baseCnt;
                         ImGui::Indent();
                         for( auto& iv : inSymList )
                         {
@@ -828,8 +828,7 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                                         ImGui::TextUnformatted( TimeToString( t ) );
                                         if( m_relativeInlines )
                                         {
-                                            const auto tBase = baseCnt * period;
-                                            PrintStringPercent( buf, 100. * t / tBase );
+                                            PrintStringPercent( buf, cnt * revBaseCnt );
                                         }
                                         else
                                         {

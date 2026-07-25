@@ -12,6 +12,8 @@ vx.xx.x (2026-xx-xx)
 - Added tracy-merge utility for combining multiple trace files into one.
 - Added support for Windows on ARM64 with MSVC.
 - Added support for WebGPU.
+- Binary releases are now also provided for macOS (needs manual quarantine
+  handling) and Linux (AppImage with Ubuntu 24.04 base, requires Wayland).
 - Trace-specific settings storage has been completely overhauled. It is now
   possible to make the settings sidecar file public, saved next to the trace
   file.
@@ -32,6 +34,10 @@ vx.xx.x (2026-xx-xx)
   - Red for samples in kernel.
 - Single-line call stacks now have ellipsis at the end, if there are frames
   remaining.
+- Sample entry stacks window can now also show the stacks by which a symbol
+  was reached, i.e. it was present anywhere on the call stack, not only when
+  it was executing. Recursive re-entries can be either ignored or counted
+  separately.
 - System tracing on Windows has been refactored to be more robust.
 - Tracing on Arm macOS will now have more precise timer readings.
 - Extended CUDA support to track some previously missing memory operations.

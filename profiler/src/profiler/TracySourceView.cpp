@@ -763,9 +763,16 @@ void SourceView::RenderSymbolView( Worker& worker, View& view, WindowConstraints
             ImGui::TextDisabled( "(+%s inlined functions)", RealToString( inlineCount ) );
         }
     }
-    ImGui::SameLine();
-    ImGui::AlignTextToFramePadding();
-    if( ImGui::SmallButton( ICON_FA_ARROW_DOWN_SHORT_WIDE " Entry stacks" ) ) view.ShowSampleParents( m_symAddr, !m_calcInlineStats );
+    if( worker.AreCallstackSamplesReady() )
+    {
+        const auto stats = worker.GetSymbolStats( m_symAddr );
+        if( stats && !stats->wasReached.empty() )
+        {
+            ImGui::SameLine();
+            ImGui::AlignTextToFramePadding();
+            if( ImGui::SmallButton( ICON_FA_ARROW_DOWN_SHORT_WIDE " Entry stacks" ) ) view.ShowSampleParents( m_symAddr, !m_calcInlineStats );
+        }
+    }
     if( inlineList )
     {
         if( m_calcInlineStats )

@@ -97,15 +97,20 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
         {
             auto sym = m_worker.GetSymbolData( v.symAddr );
             const auto symAddr = ( sym && sym->isInline ) ? m_worker.GetSymbolForAddress( v.symAddr ) : v.symAddr;
+            // Inclusive counts of a base symbol and its inline functions overlap, as the base
+            // symbol is on the stack whenever any of its inlines is. The base's own inclusive
+            // count is therefore already the correct value for the aggregated entry, and the
+            // inline counts must not be added to it.
+            const auto isBase = symAddr == v.symAddr;
             auto it = baseMap.find( symAddr );
             if( it == baseMap.end() )
             {
-                baseMap.emplace( symAddr, SymList { symAddr, v.incl, v.excl, 0 } );
+                baseMap.emplace( symAddr, SymList { symAddr, isBase ? v.incl : 0, v.excl, 0 } );
             }
             else
             {
                 assert( symAddr == it->second.symAddr );
-                it->second.incl += v.incl;
+                if( isBase ) it->second.incl = v.incl;
                 it->second.excl += v.excl;
                 it->second.count++;
             }

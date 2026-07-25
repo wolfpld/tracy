@@ -163,7 +163,7 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
             uint64_t totalSamples;
             if( m_statRange.active )
             {
-                static const auto CountInRange = []( const Vector<SampleData>& vec, int64_t min, int64_t max ) -> uint64_t {
+                static const auto CountInRange = []( const auto& vec, int64_t min, int64_t max ) -> uint64_t {
                     auto it = std::lower_bound( vec.begin(), vec.end(), min, []( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
                     auto end = std::lower_bound( it, vec.end(), max, []( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
                     return end - it;

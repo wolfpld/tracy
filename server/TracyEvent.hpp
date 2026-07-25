@@ -714,7 +714,7 @@ struct ThreadData
 #endif
     Vector<SampleData> samples;
     SampleData pendingSample;
-    Vector<SampleData> ctxSwitchSamples;
+    SortedVector<SampleData, SampleDataSort> ctxSwitchSamples;
     uint64_t kernelSampleCnt;
     uint8_t isFiber;
     ThreadData* fiber;

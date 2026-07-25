@@ -1100,6 +1100,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
                     f.Read( &ptr->callstack, sizeof( ptr->callstack ) );
                     ptr++;
                 }
+                if( fileVer < FileVersion( 0, 13, 6 ) && !std::is_sorted( td->ctxSwitchSamples.begin(), td->ctxSwitchSamples.end(), SampleDataSort() ) )
+                {
+                    td->ctxSwitchSamples.mark_unsorted();
+                    td->ctxSwitchSamples.ensure_sorted();
+                }
             }
             else
             {
@@ -4379,6 +4384,7 @@ void Worker::DoPostponedWork()
                         {
                             td->postponedSamples.erase( td->postponedSamples.begin(), sit );
                         }
+                        td->ctxSwitchSamples.ensure_sorted();
                     }
                 }
             }
@@ -8494,6 +8500,7 @@ void Worker::Write( FileWrite& f, bool fiDict )
             auto ptr = uint64_t( (MessageData*)v );
             f.Write( &ptr, sizeof( ptr ) );
         }
+        thread->ctxSwitchSamples.ensure_sorted();
         sz = thread->ctxSwitchSamples.size();
         f.Write( &sz, sizeof( sz ) );
         refTime = 0;

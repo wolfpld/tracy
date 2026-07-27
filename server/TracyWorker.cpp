@@ -2860,6 +2860,7 @@ void Worker::Exec()
         m_captureTime = welcome.epoch;
         m_executableTime = welcome.exectime;
         m_ignoreMemFreeFaults = ( welcome.flags & WelcomeFlag::OnDemand ) || ( welcome.flags & WelcomeFlag::IgnoreMemFaults );
+        m_ignoreMemAllocFaults = welcome.flags & WelcomeFlag::IgnoreMemFaults;
         m_ignoreFrameEndFaults = welcome.flags & WelcomeFlag::OnDemand;
         m_data.cpuArch = (CpuArchitecture)welcome.cpuArch;
         m_codeTransfer = welcome.flags & WelcomeFlag::CodeTransfer;
@@ -6294,15 +6295,24 @@ static MemEvent* MemDataFree( MemData& memdata, unordered_flat_map<uint64_t, siz
 
 MemEvent* Worker::ProcessMemAllocImpl( MemData& memdata, const QueueMemAlloc& ev )
 {
-    if( memdata.active.find( ev.ptr ) != memdata.active.end() )
-    {
-        MemAllocTwiceFailure( ev.thread );
-        return nullptr;
-    }
-
     const auto time = TscTime( RefTime( m_refTimeSerial, ev.time ) );
     if( m_data.lastTime < time ) m_data.lastTime = time;
     NoticeThread( ev.thread );
+
+    const auto thread = CompressThread( ev.thread );
+
+    auto it = memdata.active.find( ev.ptr );
+    if( it != memdata.active.end() )
+    {
+        if( !m_ignoreMemAllocFaults )
+        {
+            MemAllocTwiceFailure( ev.thread );
+            return nullptr;
+        }
+
+        MemDataFree( memdata, it, time, thread );
+        MemAllocChanged( memdata, time );
+    }
 
     assert( memdata.data.empty() || memdata.data.back().TimeAlloc() <= time );
 
@@ -6318,7 +6328,7 @@ MemEvent* Worker::ProcessMemAllocImpl( MemData& memdata, const QueueMemAlloc& ev
     auto& mem = memdata.data.push_next();
     mem.SetPtr( ptr );
     mem.SetSize( size );
-    mem.SetTimeThreadAlloc( time, CompressThread( ev.thread ) );
+    mem.SetTimeThreadAlloc( time, thread );
     mem.SetTimeThreadFree( -1, 0 );
     mem.SetCsAlloc( 0 );
     mem.csFree.SetVal( 0 );

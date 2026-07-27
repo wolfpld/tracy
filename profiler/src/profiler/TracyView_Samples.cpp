@@ -206,7 +206,7 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, uint
                             assert( false );
                             break;
                         }
-                        if( m_statHideUnknown && file[0] == '[' ) continue;
+                        if( m_statHideUnknown && strcmp( name, "[unknown]" ) == 0 ) continue;
                         symlen = sit->second.size.Val();
                     }
                     else if( m_statHideUnknown )

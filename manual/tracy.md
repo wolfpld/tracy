@@ -3993,7 +3993,7 @@ The *Location* column displays the corresponding source file name and line numbe
 
 The location data is complemented by the originating executable image name, contained in the *Image* column. If the * Short images* option is selected, the image path will be shortened to just the image file name, with the full path available in the tooltip.
 
-The profiler may not find some function locations due to insufficient debugging data available on the client-side. To filter out such entries, use the * Hide unknown* option.
+The profiler may not find some function names due to insufficient debugging data available on the client-side. To filter out such entries, use the * Hide unknown* option.
 
 The *Time* or *Count* column (depending on the * Show time* option selection) shows number of taken samples, either as a raw count, or in an easier to understand time format. Note that the percentage value of time is calculated relative to the wall-clock time. The percentage value of sample counts is relative to the number of collected samples, excluding context switch samples, which do not participate in the sampling statistics (section [3.18.5.1](#waitstacks)). You can also make the percentages of inline functions relative to the base symbol measurements by enabling the * Base relative* option.
 

@@ -21,6 +21,7 @@
 \usepackage{nameref}
 \usepackage{diagbox}
 \usepackage{csquotes}
+\usepackage{longtable}
 
 \usepackage[hmarginratio=1:1,top=32mm,columnsep=20pt]{geometry} % Document margins
 \geometry{a4paper,textwidth=6.5in,hmarginratio=1:1,
@@ -494,6 +495,77 @@ target_link_libraries(<TARGET> PUBLIC TracyClient)
 While using \texttt{set(CMAKE\_INTERPROCEDURAL\_OPTIMIZATION ON)} is a convenient way to enable Link-Time Optimization (LTO) for an entire project, there are situations in which this may not work due to excessive compilation times, linking issues, compiler bugs, or other reasons.
 For such cases, Tracy provides an option to enable Link-Time Optimization for itself using the \texttt{TRACY\_LTO} variable during the CMake configuration stage.
 
+\subsubsection{Build options}
+\label{buildoptions}
+
+Table~\ref{cmakeoptions} lists the options you may want to set in the program you are profiling. All of them are boolean switches defaulting to \texttt{OFF}, with three exceptions: \texttt{TRACY\_STATIC}, which defaults to the opposite of \texttt{BUILD\_SHARED\_LIBS}, and \texttt{TRACY\_CALLSTACK} and \texttt{TRACY\_PLATFORM\_HEADER}, which take a value instead of a boolean.
+
+Each enabled option is passed down to your program as a preprocessor macro of the same name. If you are not using CMake, you can achieve the same results by defining these macros yourself, as described in section~\ref{initialsetup}. Note that some of the listed options additionally affect how the client library itself is built, so they cannot be replaced with a macro definition alone.
+
+\begin{footnotesize}
+\begin{longtable}{@{}p{0.4\textwidth}p{0.56\textwidth}@{}}
+\caption{Tracy CMake options}\label{cmakeoptions} \\
+\hline
+\textbf{Option} & \textbf{Description} \\ \hline
+\endfirsthead
+\hline
+\endhead
+\hline
+\endfoot
+\hline
+\endlastfoot
+\textbf{Basic setup} & \\
+\texttt{TRACY\_ENABLE} & Enable profiling. Without it, the instrumentation is compiled out and the client does nothing (section~\ref{initialsetup}). \\
+\texttt{TRACY\_ON\_DEMAND} & Collect data only while the profiler is connected, instead of starting at program launch (section~\ref{ondemand}). \\
+\texttt{TRACY\_NO\_EXIT} & Don't let the client exit until all the profiling data has been sent to the server. Useful for short-lived applications. \\
+\texttt{TRACY\_STATIC} & Build the client as a static (\texttt{ON}) or shared (\texttt{OFF}) library. Multi-DLL projects need a shared library (section~\ref{multidll}). \\
+\texttt{TRACY\_LTO} & Enable link-time optimization of the client library itself. \\
+& \\
+\textbf{Networking} & \\
+\texttt{TRACY\_NO\_BROADCAST} & Don't announce the client's presence on the local network. Manual connections are still possible. \\
+\texttt{TRACY\_ONLY\_LOCALHOST} & Listen for connections only on the localhost interface. \\
+\texttt{TRACY\_ONLY\_IPV4} & Accept connections only on IPv4 addresses, disabling IPv6 support. \\
+& \\
+\textbf{Data collection} & \\
+\texttt{TRACY\_NO\_SYSTEM\_TRACING} & Prevent the client from accessing kernel data, which disables all system-level tracing (section~\ref{automated}). \\
+\texttt{TRACY\_NO\_CONTEXT\_SWITCH} & Disable capture of context switch data (section~\ref{contextswitches}). \\
+\texttt{TRACY\_NO\_SAMPLING} & Disable call stack sampling (section~\ref{sampling}). \\
+\texttt{TRACY\_NO\_VSYNC\_CAPTURE} & Disable capture of hardware Vsync events (section~\ref{vsync}). \\
+\texttt{TRACY\_NO\_CODE\_TRANSFER} & Disable retrieval of the program's machine code and source files (section~\ref{executableretrieval}). \\
+\texttt{TRACY\_NO\_FRAME\_IMAGE} & Disable frame image support, along with the compression thread it needs (section~\ref{frameimages}). \\
+\texttt{TRACY\_NO\_CRASH\_HANDLER} & Don't install the crash handler (section~\ref{crashhandling}). \\
+\texttt{TRACY\_NO\_VERIFY} & Disable validation of the C API instrumentation correctness (section~\ref{capi}). \\
+\texttt{TRACY\_FIBERS} & Enable fiber support, which is opt-in due to the additional cost it adds to zone capture (section~\ref{fibers}). \\
+\texttt{TRACY\_IGNORE\_MEMORY\_FAULTS} & Don't report instrumentation failures for free events with no matching allocation, or for repeated allocations of the same address (section~\ref{memoryprofiling}). \\
+\texttt{TRACY\_OPENGL\_AUTO\_CALIBRATION} & Periodically correct the OpenGL GPU/CPU clock drift, at the cost of a CPU/GPU synchronization each time (section~\ref{gpuprofiling}). \\
+\texttt{TRACY\_ROCPROF\_CALIBRATION} & Periodically correct the ROCm GPU/CPU clock drift. Available only if rocprofiler-sdk was found (section~\ref{rocm}). \\
+& \\
+\textbf{Call stacks and symbols} & \\
+\texttt{TRACY\_CALLSTACK} & Call stack capture depth, which makes the zone macros without the \texttt{S} postfix collect call stacks (section~\ref{collectingcallstacks}). \\
+\texttt{TRACY\_NO\_CALLSTACK} & Disable all call stack related functionality (section~\ref{collectingcallstacks}). \\
+\texttt{TRACY\_NO\_CALLSTACK\_INLINES} & Don't resolve inline frames, retrieval of which may be very slow on Windows. \\
+\texttt{TRACY\_LIBUNWIND\_BACKTRACE} & Capture call stacks using libunwind, which may be faster than the default implementation. Links with libunwind. \\
+\texttt{TRACY\_DEBUGINFOD} & Enable on-demand delivery of debugging symbols through debuginfod. Links with libdebuginfod. \\
+\texttt{TRACY\_SYMBOL\_OFFLINE\_RESOLVE} & Record only image paths and offsets, leaving symbol resolution to be performed later by the \texttt{update} utility. \\
+\texttt{TRACY\_LIBBACKTRACE\_ELF\_DYNLOAD\_SUPPORT} & Let libbacktrace resolve symbols in ELF objects that were loaded after the first symbol resolution took place. \\
+\texttt{TRACY\_DEMANGLE} & Don't use the built-in symbol demangling function. You will have to provide your own \texttt{\_\_tracy\_demangle} implementation. \\
+& \\
+\textbf{Timers} & \\
+\texttt{TRACY\_TIMER\_FALLBACK} & Compile in a lower resolution timer, to be used when the hardware timer is unavailable (table~\ref{timeroptions}). \\
+\texttt{TRACY\_DISALLOW\_HW\_TIMER} & Never use the hardware timer, even if it \emph{appears} to be available. Requires \texttt{TRACY\_TIMER\_FALLBACK}. \\
+& \\
+\textbf{Special environments} & \\
+\texttt{TRACY\_DELAYED\_INIT} & Gather the profiler data into a single structure, initialized on first use instead of at load time (section~\ref{multidll}). \\
+\texttt{TRACY\_MANUAL\_LIFETIME} & Provide the \texttt{StartupProfiler} and \texttt{ShutdownProfiler} functions for manual profiler lifetime management. Requires \texttt{TRACY\_DELAYED\_INIT} (section~\ref{multidll}). \\
+\texttt{TRACY\_PLATFORM\_HEADER} & Path to a header providing the \texttt{TRACY\_HAS\_CUSTOM\_*} hooks for an unsupported platform (section~\ref{customplatform}). \\
+\texttt{TRACY\_PATCHABLE\_NOPSLEDS} & Emit nopsleds in front of the timer reads, so that system-level tools such as \emph{rr} can patch them. \\
+& \\
+\textbf{Diagnostics} & \\
+\texttt{TRACY\_VERBOSE} & Print detailed information about the detected features to the standard error output (section~\ref{troubleshooting}). \\
+\texttt{TRACY\_NO\_INTERNAL\_MESSAGE} & Don't send the profiler's own diagnostic messages to the server (section~\ref{troubleshooting}). \\
+\end{longtable}
+\end{footnotesize}
+
 \subsubsection{Meson integration}
 
 If you are using the Meson build system, you can add Tracy using the Wrap dependency system. To do this, place the \texttt{tracy.wrap} file in the \texttt{subprojects} directory of your project, with the following content. The \texttt{head} \texttt{revision} field tracks Tracy's \texttt{master} branch. If you want to lock to a specific version of Tracy instead, you can just set the \texttt{revision} field to an appropriate git tag.
@@ -531,6 +603,8 @@ Here's a sample command to set up a build directory with profiling enabled. The 
 meson setup build --buildtype=debugoptimized -Dtracy_enable=true -Dtracy:on_demand=true
 \end{lstlisting}
 
+Most of the options listed in table~\ref{cmakeoptions} are also available in the Meson build. Their names are lowercased, with the \texttt{TRACY\_} prefix dropped, the only exception being \texttt{tracy\_enable}.
+
 \subsubsection{Short-lived applications}
 
 In case you want to profile a short-lived program (for example, a compression utility that finishes its work in one second), set the \texttt{TRACY\_NO\_EXIT} environment variable to $1$. With this option enabled, Tracy will not exit until an incoming connection is made, even if the application has already finished executing. If your platform doesn't support an easy setup of environment variables, you may also add the \texttt{TRACY\_NO\_EXIT} define to your build configuration, which has the same effect.
@@ -565,6 +639,7 @@ If you need to use a specific Tracy client address, such as QNX requires, define
 By default, the Tracy client will listen on IPv6 interfaces, falling back to IPv4 only if IPv6 is unavailable. If you want to restrict it to only listening on IPv4 interfaces, define the \texttt{TRACY\_ONLY\_IPV4} macro at compile-time, or set the \texttt{TRACY\_ONLY\_IPV4} environment variable to $1$ at runtime.
 
 \subsubsection{Setup for multi-DLL projects}
+\label{multidll}
 
 Things are a bit different in projects that consist of multiple DLLs/shared objects. Compiling \texttt{TracyClient.cpp} into every DLL is not an option because this would result in several instances of Tracy objects lying around in the process. We instead need to pass their instances to the different DLLs to be reused there.
 
@@ -713,6 +788,7 @@ The platform header is intended only for the \texttt{TRACY\_HAS\_CUSTOM\_*} hook
 \end{bclogo}
 
 \subsubsection{Troubleshooting}
+\label{troubleshooting}
 
 By default, Tracy's diagnostics will be sent as Message logs (section~\ref{messagelog}) to the server.
 Setting the \texttt{TRACY\_NO\_INTERNAL\_MESSAGE} define will disable this feature, but setting the \texttt{TRACY\_VERBOSE} will make the client print advanced information about the detected features to the standard error output. By matching those debug prints to the source code, you might be able to uncover why some of the features are missing on your platform.
@@ -1848,6 +1924,7 @@ To instrument a GPU zone, use the various \texttt{TracyWebGPU*Zone*()} macros. N
 You are required to periodically collect the GPU events using the \texttt{TracyWebGPUCollect()} macro. Good places for collection are: after synchronous waits, after event processing \texttt{wgpuInstanceProcessEvents}, after present drawable calls (\texttt{wgpuSurfacePresent}), and inside the completion callback of command queues (\texttt{wgpuQueueOnSubmittedWorkDone}).
 
 \subsubsection{ROCm}
+\label{rocm}
 
 On Linux, if rocprofiler-sdk is installed, tracy can automatically trace GPU dispatches and collect
 performance counter values. If CMake can't find rocprofiler-sdk, you can set the CMake variable
@@ -3129,6 +3206,7 @@ On Linux, Tracy will override the \texttt{dlclose} function call to prevent shar
 \end{bclogo}
 
 \subsubsection{Vertical synchronization}
+\label{vsync}
 
 On Windows and Linux, Tracy will automatically capture hardware Vsync events, provided that the application has access to the kernel data (privilege elevation may be needed, see section~\ref{privilegeelevation}). These events will be reported as \enquote{\texttt{[x] Vsync}} frame sets, where \texttt{x} is the identifier of a specific monitor. Note that hardware vertical synchronization might not correspond to the one seen by your application due to desktop composition, command queue buffering, and so on. Also, in some instances, when there is nothing to update on the screen, the graphic driver may choose to stop issuing screen refresh. As a result, there may be periods where no vertical synchronization events are reported.
 

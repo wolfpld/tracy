@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-07-25 <https://github.com/wolfpld/tracy>
+2026-07-27 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -376,6 +376,66 @@ Link `Tracy::TracyClient` to any target where you use Tracy for profiling:
 
 While using `set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)` is a convenient way to enable Link-Time Optimization (LTO) for an entire project, there are situations in which this may not work due to excessive compilation times, linking issues, compiler bugs, or other reasons. For such cases, Tracy provides an option to enable Link-Time Optimization for itself using the `TRACY_LTO` variable during the CMake configuration stage.
 
+### Build options {#buildoptions}
+
+Table [2](#cmakeoptions) lists the options you may want to set in the program you are profiling. All of them are boolean switches defaulting to `OFF`, with three exceptions: `TRACY_STATIC`, which defaults to the opposite of `BUILD_SHARED_LIBS`, and `TRACY_CALLSTACK` and `TRACY_PLATFORM_HEADER`, which take a value instead of a boolean.
+
+Each enabled option is passed down to your program as a preprocessor macro of the same name. If you are not using CMake, you can achieve the same results by defining these macros yourself, as described in section [2.1](#initialsetup). Note that some of the listed options additionally affect how the client library itself is built, so they cannot be replaced with a macro definition alone.
+
+| **Option** | **Description** |
+|:---|:---|
+| **Basic setup** |  |
+| `TRACY_ENABLE` | Enable profiling. Without it, the instrumentation is compiled out and the client does nothing (section [2.1](#initialsetup)). |
+| `TRACY_ON_DEMAND` | Collect data only while the profiler is connected, instead of starting at program launch (section [2.1.6](#ondemand)). |
+| `TRACY_NO_EXIT` | Don't let the client exit until all the profiling data has been sent to the server. Useful for short-lived applications. |
+| `TRACY_STATIC` | Build the client as a static (`ON`) or shared (`OFF`) library. Multi-DLL projects need a shared library (section [2.1.9](#multidll)). |
+| `TRACY_LTO` | Enable link-time optimization of the client library itself. |
+|  |  |
+| **Networking** |  |
+| `TRACY_NO_BROADCAST` | Don't announce the client's presence on the local network. Manual connections are still possible. |
+| `TRACY_ONLY_LOCALHOST` | Listen for connections only on the localhost interface. |
+| `TRACY_ONLY_IPV4` | Accept connections only on IPv4 addresses, disabling IPv6 support. |
+|  |  |
+| **Data collection** |  |
+| `TRACY_NO_SYSTEM_TRACING` | Prevent the client from accessing kernel data, which disables all system-level tracing (section [3.18](#automated)). |
+| `TRACY_NO_CONTEXT_SWITCH` | Disable capture of context switch data (section [3.18.3](#contextswitches)). |
+| `TRACY_NO_SAMPLING` | Disable call stack sampling (section [3.18.5](#sampling)). |
+| `TRACY_NO_VSYNC_CAPTURE` | Disable capture of hardware Vsync events (section [3.18.8](#vsync)). |
+| `TRACY_NO_CODE_TRANSFER` | Disable retrieval of the program's machine code and source files (section [3.18.7](#executableretrieval)). |
+| `TRACY_NO_FRAME_IMAGE` | Disable frame image support, along with the compression thread it needs (section [3.3.3](#frameimages)). |
+| `TRACY_NO_CRASH_HANDLER` | Don't install the crash handler (section [2.5](#crashhandling)). |
+| `TRACY_NO_VERIFY` | Disable validation of the C API instrumentation correctness (section [3.14](#capi)). |
+| `TRACY_FIBERS` | Enable fiber support, which is opt-in due to the additional cost it adds to zone capture (section [3.11](#fibers)). |
+| `TRACY_IGNORE_MEMORY_FAULTS` | Don't report instrumentation failures for free events with no matching allocation, or for repeated allocations of the same address (section [3.9](#memoryprofiling)). |
+| `TRACY_OPENGL_AUTO_CALIBRATION` | Periodically correct the OpenGL GPU/CPU clock drift, at the cost of a CPU/GPU synchronization each time (section [3.10](#gpuprofiling)). |
+| `TRACY_ROCPROF_CALIBRATION` | Periodically correct the ROCm GPU/CPU clock drift. Available only if rocprofiler-sdk was found (section [3.10.9](#rocm)). |
+|  |  |
+| **Call stacks and symbols** |  |
+| `TRACY_CALLSTACK` | Call stack capture depth, which makes the zone macros without the `S` postfix collect call stacks (section [3.12](#collectingcallstacks)). |
+| `TRACY_NO_CALLSTACK` | Disable all call stack related functionality (section [3.12](#collectingcallstacks)). |
+| `TRACY_NO_CALLSTACK_INLINES` | Don't resolve inline frames, retrieval of which may be very slow on Windows. |
+| `TRACY_LIBUNWIND_BACKTRACE` | Capture call stacks using libunwind, which may be faster than the default implementation. Links with libunwind. |
+| `TRACY_DEBUGINFOD` | Enable on-demand delivery of debugging symbols through debuginfod. Links with libdebuginfod. |
+| `TRACY_SYMBOL_OFFLINE_RESOLVE` | Record only image paths and offsets, leaving symbol resolution to be performed later by the `update` utility. |
+| `TRACY_LIBBACKTRACE_ELF_DYNLOAD_SUPPORT` | Let libbacktrace resolve symbols in ELF objects that were loaded after the first symbol resolution took place. |
+| `TRACY_DEMANGLE` | Don't use the built-in symbol demangling function. You will have to provide your own `__tracy_demangle` implementation. |
+|  |  |
+| **Timers** |  |
+| `TRACY_TIMER_FALLBACK` | Compile in a lower resolution timer, to be used when the hardware timer is unavailable (table [3](#timeroptions)). |
+| `TRACY_DISALLOW_HW_TIMER` | Never use the hardware timer, even if it *appears* to be available. Requires `TRACY_TIMER_FALLBACK`. |
+|  |  |
+| **Special environments** |  |
+| `TRACY_DELAYED_INIT` | Gather the profiler data into a single structure, initialized on first use instead of at load time (section [2.1.9](#multidll)). |
+| `TRACY_MANUAL_LIFETIME` | Provide the `StartupProfiler` and `ShutdownProfiler` functions for manual profiler lifetime management. Requires `TRACY_DELAYED_INIT` (section [2.1.9](#multidll)). |
+| `TRACY_PLATFORM_HEADER` | Path to a header providing the `TRACY_HAS_CUSTOM_*` hooks for an unsupported platform (section [2.1.11](#customplatform)). |
+| `TRACY_PATCHABLE_NOPSLEDS` | Emit nopsleds in front of the timer reads, so that system-level tools such as *rr* can patch them. |
+|  |  |
+| **Diagnostics** |  |
+| `TRACY_VERBOSE` | Print detailed information about the detected features to the standard error output (section [2.1.12](#troubleshooting)). |
+| `TRACY_NO_INTERNAL_MESSAGE` | Don't send the profiler's own diagnostic messages to the server (section [2.1.12](#troubleshooting)). |
+
+_Tracy CMake options_
+
 ### Meson integration
 
 If you are using the Meson build system, you can add Tracy using the Wrap dependency system. To do this, place the `tracy.wrap` file in the `subprojects` directory of your project, with the following content. The `head` `revision` field tracks Tracy's `master` branch. If you want to lock to a specific version of Tracy instead, you can just set the `revision` field to an appropriate git tag.
@@ -402,6 +462,8 @@ Finally, let's check if the `debugoptimized` build type is enabled, and print a 
 Here's a sample command to set up a build directory with profiling enabled. The last option, `tracy:on_demand`, is used to demonstrate how to set options in the Tracy subproject.
 
     meson setup build --buildtype=debugoptimized -Dtracy_enable=true -Dtracy:on_demand=true
+
+Most of the options listed in table [2](#cmakeoptions) are also available in the Meson build. Their names are lowercased, with the `TRACY_` prefix dropped, the only exception being `tracy_enable`.
 
 ### Short-lived applications
 
@@ -436,7 +498,7 @@ If you need to use a specific Tracy client address, such as QNX requires, define
 
 By default, the Tracy client will listen on IPv6 interfaces, falling back to IPv4 only if IPv6 is unavailable. If you want to restrict it to only listening on IPv4 interfaces, define the `TRACY_ONLY_IPV4` macro at compile-time, or set the `TRACY_ONLY_IPV4` environment variable to 1 at runtime.
 
-### Setup for multi-DLL projects
+### Setup for multi-DLL projects {#multidll}
 
 Things are a bit different in projects that consist of multiple DLLs/shared objects. Compiling `TracyClient.cpp` into every DLL is not an option because this would result in several instances of Tracy objects lying around in the process. We instead need to pass their instances to the different DLLs to be reused there.
 
@@ -524,7 +586,7 @@ The best way to run Tracy is on bare metal. Avoid profiling applications in virt
 
 - Call stack sampling might lack time stamps. While you can use such a reduced data set to perform statistical analysis, you won't be able to limit the time range or see the sampling zones on the timeline.
 
-Additionally, you can rebuild your application with the `TRACY_DISALLOW_HW_TIMER` define, which will disable usage of the hardware timer, even if it *appears* to be available. See table [2](#timeroptions) for details.
+Additionally, you can rebuild your application with the `TRACY_DISALLOW_HW_TIMER` define, which will disable usage of the hardware timer, even if it *appears* to be available. See table [3](#timeroptions) for details.
 
 | **Scenario** | **HW timer** | **Fallback timer** |
 |:--:|:--:|:--:|
@@ -900,7 +962,7 @@ This is an automatic process, and it doesn't require user interaction. If you ar
 
 ## Feature support matrix {#featurematrix}
 
-Some features of the profiler are only available on selected platforms. Please refer to table [3](#featuretable) for details.
+Some features of the profiler are only available on selected platforms. Please refer to table [4](#featuretable) for details.
 
 | **Feature** | **Windows** | **Linux** | **Android** | **OSX** | **iOS** | **BSD** | **QNX** |
 |:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
@@ -1051,7 +1113,7 @@ Handling image data requires a lot of memory and bandwidth[^37]. To achieve sane
 
 [^37]: One uncompressed 1080p image takes 8 MB.
 
-To further reduce image data size, frame images are internally compressed using the DXT1 Texture Compression technique[^38], which significantly reduces data size[^39], at a slight quality decrease. The compression algorithm is high-speed and can be made even faster by enabling SIMD processing, as indicated in table [4](#EtcSimd).
+To further reduce image data size, frame images are internally compressed using the DXT1 Texture Compression technique[^38], which significantly reduces data size[^39], at a slight quality decrease. The compression algorithm is high-speed and can be made even faster by enabling SIMD processing, as indicated in table [5](#EtcSimd).
 
 [^38]: <https://en.wikipedia.org/wiki/S3_Texture_Compression>
 
@@ -1184,7 +1246,7 @@ While this approach is much more complex than the previously discussed one, the 
 <figcaption>High-quality screen shot</figcaption>
 </figure>
 
-You can see the performance results you may expect in a simple application in table [5](#asynccapture). The naïve capture performs synchronous retrieval of full-screen image and resizes it using *stb_image_resize*. The proper and high-quality captures do things as described in this chapter.
+You can see the performance results you may expect in a simple application in table [6](#asynccapture). The naïve capture performs synchronous retrieval of full-screen image and resizes it using *stb_image_resize*. The proper and high-quality captures do things as described in this chapter.
 
 | **Resolution** | **Naïve capture** | **Proper capture** | **High quality** |
 |:--------------:|:-----------------:|:------------------:|:----------------:|
@@ -1478,7 +1540,7 @@ To mark memory events, use the `TracyAlloc(ptr, size)` and `TracyFree(ptr)` macr
 >
 > - Places where the memory is allocated, but profiling markup is added.
 >
-> This requirement is relaxed in the on-demand mode (section [2.1.5](#ondemand)) because the memory allocation event might have happened before the server made the connection.
+> This requirement is relaxed in the on-demand mode (section [2.1.6](#ondemand)) because the memory allocation event might have happened before the server made the connection.
 
 > [!TIP]
 > **Non-stable memory addresses**
@@ -1723,7 +1785,7 @@ As you can see, there are two threads, `t1` and `t2`, which are simulating worke
 
 Capture of true calls stacks can be performed by using macros with the `S` postfix, which require an additional parameter, specifying the depth of call stack to be captured. The greater the depth, the longer it will take to perform capture. Currently you can use the following macros: `ZoneScopedS`, `ZoneScopedNS`, `ZoneScopedCS`, `ZoneScopedNCS`, `TracyAllocS`, `TracyFreeS`, `TracyMessageS`, `TracyMessageLS`, `TracyMessageCS`, `TracyMessageLCS`, `TracyGpuZoneS`, `TracyGpuZoneCS`, `TracyVkZoneS`, `TracyVkZoneCS`, and the named and transient variants.
 
-Be aware that call stack collection is a relatively slow operation. Table [6](#CallstackTimes) and figure [6](#CallstackPlot) show how long it took to perform a single capture of varying depth on multiple CPU architectures.
+Be aware that call stack collection is a relatively slow operation. Table [7](#CallstackTimes) and figure [6](#CallstackPlot) show how long it took to perform a single capture of varying depth on multiple CPU architectures.
 
 | **Depth** | **x86** | **x64** | **ARM**  | **ARM64** |
 |:---------:|:-------:|:-------:|:--------:|:---------:|
@@ -1748,7 +1810,7 @@ _Median times of zone capture with call stack. x86, x64: i7 8700K; ARM: Banana P
 
 <figure id="CallstackPlot" data-latex-placement="h">
 
-<figcaption>Plot of call stack capture times (see table <a href="#CallstackTimes">6</a>). Notice that the capture time grows linearly with requested capture depth</figcaption>
+<figcaption>Plot of call stack capture times (see table <a href="#CallstackTimes">7</a>). Notice that the capture time grows linearly with requested capture depth</figcaption>
 </figure>
 
 You can force call stack capture in the non-`S` postfixed macros by adding the `TRACY_CALLSTACK` define, set to the desired call stack capture depth. This setting doesn't affect the explicit call stack macros.
@@ -1892,7 +1954,7 @@ To collect Lua call stacks (see section [3.12](#collectingcallstacks)), replace
 
 Be aware that for Lua call stack retrieval to work, you need to be on a platform that supports the collection of native call stacks.
 
-Cost of performing Lua call stack capture is presented in table [7](#CallstackTimesLua) and figure [7](#CallstackPlotLua). Lua call stacks include native call stacks, which have a capture cost of their own (table [6](#CallstackTimes)), and the `depth` parameter is applied for both captures. The presented data were captured with full Lua stack depth, but only 13 frames were available on the native call stack. Hence, to explain the non-linearity of the graph, you need to consider what was truly measured:
+Cost of performing Lua call stack capture is presented in table [8](#CallstackTimesLua) and figure [7](#CallstackPlotLua). Lua call stacks include native call stacks, which have a capture cost of their own (table [7](#CallstackTimes)), and the `depth` parameter is applied for both captures. The presented data were captured with full Lua stack depth, but only 13 frames were available on the native call stack. Hence, to explain the non-linearity of the graph, you need to consider what was truly measured:
 
     Cost_total(depth) =
         Cost_Lua(depth) + Cost_native(depth)   when depth ≤ 13
@@ -1921,7 +1983,7 @@ _Median times of Lua zone capture with call stack (x64, 13 native frames)_
 
 <figure id="CallstackPlotLua" data-latex-placement="h">
 
-<figcaption>Plot of call Lua stack capture times (see table <a href="#CallstackTimesLua">7</a>)</figcaption>
+<figcaption>Plot of call Lua stack capture times (see table <a href="#CallstackTimesLua">8</a>)</figcaption>
 </figure>
 
 ### Instrumentation cleanup
@@ -2652,7 +2714,7 @@ Tracy will perform an automatic collection of system data without user intervent
 
 ### Privilege elevation {#privilegeelevation}
 
-Some profiling data can only be retrieved using the kernel facilities, which are not available to users with normal privilege level. To collect such data, you will need to elevate your rights to the administrator level. You can do so either by running the profiled program from the `root` account on Unix or through the *Run as administrator* option on Windows[^59]. On Android, you will need to have a rooted device (see section [2.1.9.4](#androidlunacy) for additional information).
+Some profiling data can only be retrieved using the kernel facilities, which are not available to users with normal privilege level. To collect such data, you will need to elevate your rights to the administrator level. You can do so either by running the profiled program from the `root` account on Unix or through the *Run as administrator* option on Windows[^59]. On Android, you will need to have a rooted device (see section [2.1.10.4](#androidlunacy) for additional information).
 
 [^59]: To make this easier, you can run MSVC with admin privileges, which will be inherited by your program when you start it from within the IDE.
 
@@ -2793,7 +2855,7 @@ It would be best to be extra careful when working with non-public code, as parts
 >
 > On Linux, Tracy will override the `dlclose` function call to prevent shared objects from being unloaded. Note that in a well-behaved program this shouldn't have any effect, as calling `dlclose` does not guarantee that the shared object will be unloaded.
 
-### Vertical synchronization
+### Vertical synchronization {#vsync}
 
 On Windows and Linux, Tracy will automatically capture hardware Vsync events, provided that the application has access to the kernel data (privilege elevation may be needed, see section [3.18.1](#privilegeelevation)). These events will be reported as "`[x] Vsync`" frame sets, where `x` is the identifier of a specific monitor. Note that hardware vertical synchronization might not correspond to the one seen by your application due to desktop composition, command queue buffering, and so on. Also, in some instances, when there is nothing to update on the screen, the graphic driver may choose to stop issuing screen refresh. As a result, there may be periods where no vertical synchronization events are reported.
 
@@ -3065,7 +3127,7 @@ The maximum attainable connection speed is determined by the ability of the clie
 
 The captured data is stored in RAM and only written to the disk when the capture finishes. This can result in memory exhaustion when you capture massive amounts of profile data or even in typical usage situations when the capture is performed over a long time. Therefore, the recommended usage pattern is to perform moderate instrumentation of the client code and limit capture time to the strict necessity.
 
-In some cases, it may be helpful to perform an *on-demand* capture, as described in section [2.1.5](#ondemand). In such a case, you will be able to profile only the exciting topic (e.g., behavior during loading of a level in a game), ignoring all the unneeded data.
+In some cases, it may be helpful to perform an *on-demand* capture, as described in section [2.1.6](#ondemand). In such a case, you will be able to profile only the exciting topic (e.g., behavior during loading of a level in a game), ignoring all the unneeded data.
 
 If you genuinely need to capture large traces, you have two options. Either buy more RAM or use a large swap file on a fast disk drive[^71].
 
@@ -3084,7 +3146,7 @@ The new file contains the same data as the old one but with an updated internal 
 
 ### Archival mode {#archival}
 
-The `update` utility supports optional higher levels of data compression, which reduce disk size of traces at the cost of increased compression times. The output files have a reasonable size and are quick to save and load with the default settings. A list of available compression modes and their respective results is available in table [8](#compressiontimes) and figures [10](#savesize), [12](#savetime) and [13](#loadtime). The following command-line options control compression mode selection:
+The `update` utility supports optional higher levels of data compression, which reduce disk size of traces at the cost of increased compression times. The output files have a reasonable size and are quick to save and load with the default settings. A list of available compression modes and their respective results is available in table [9](#compressiontimes) and figures [10](#savesize), [12](#savetime) and [13](#loadtime). The following command-line options control compression mode selection:
 
 - `-4` -- selects LZ4 algorithm.
 
@@ -3128,18 +3190,18 @@ Tests performed on Ryzen 9 3900X._
 <figure id="savetime">
 <figure id="savesize" data-latex-placement="H">
 
-<figcaption>Plot of trace sizes for different compression modes (see table <a href="#compressiontimes">8</a>).</figcaption>
+<figcaption>Plot of trace sizes for different compression modes (see table <a href="#compressiontimes">9</a>).</figcaption>
 </figure>
 <figure id="savetime" data-latex-placement="H">
 
-<figcaption>Logarithmic plot of trace compression times for different compression modes (see table <a href="#compressiontimes">8</a>).</figcaption>
+<figcaption>Logarithmic plot of trace compression times for different compression modes (see table <a href="#compressiontimes">9</a>).</figcaption>
 </figure>
-<figcaption>Logarithmic plot of trace compression times for different compression modes (see table <a href="#compressiontimes">8</a>).</figcaption>
+<figcaption>Logarithmic plot of trace compression times for different compression modes (see table <a href="#compressiontimes">9</a>).</figcaption>
 </figure>
 
 <figure id="loadtime">
 
-<figcaption>Plot of trace load times for different compression modes (see table <a href="#compressiontimes">8</a>).</figcaption>
+<figcaption>Plot of trace load times for different compression modes (see table <a href="#compressiontimes">9</a>).</figcaption>
 </figure>
 
 Trace files created using the *lz4*, *lz4 hc* and *lz4 extreme* modes are optimized for fast decompression and can be further compressed using file compression utilities. For example, using 7-zip results in archives of the following sizes: 77.2 MB, 54.3 MB, 52.4 MB.
@@ -3150,7 +3212,7 @@ For archival purposes, it is, however, much better to use the *zstd* compression
 
 Saving and loading trace data can be parallelized using the `-j streams` parameter. Each compression stream runs on its own thread, and it makes little sense to use more streams than you have CPU cores. Note that the number of streams set at save time will also be used at load time, which may affect load performance if you are viewing the trace on a less powerful machine.
 
-Going overboard with the number of streams is not recommended, especially with the fast compression modes where it will be difficult to keep each stream busy. Also, complex compression codecs (e.g. zstd at level 22) have significantly worse compression rates when the work is divided. This is a fairly nuanced topic, and you are encouraged to do your own measurements, but for a rough guideline on the behavior, you can refer to tables [9](#streamsize) and [10](#streamspeedup).
+Going overboard with the number of streams is not recommended, especially with the fast compression modes where it will be difficult to keep each stream busy. Also, complex compression codecs (e.g. zstd at level 22) have significantly worse compression rates when the work is divided. This is a fairly nuanced topic, and you are encouraged to do your own measurements, but for a rough guideline on the behavior, you can refer to tables [10](#streamsize) and [11](#streamspeedup).
 
 |         |  **4**  |  **8**  | **16**  | **32**  |
 |:-------:|:-------:|:-------:|:-------:|:-------:|

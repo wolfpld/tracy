@@ -289,6 +289,9 @@ vx.xx.x (2026-xx-xx)
 - Most windows now have a minimum width, in order to make sure all controls
   provided in the window are visible. Previously it was easy to oversee some
   button that was out of the window draw area.
+- The ignore memory faults functionality (enabled by default if profiling
+  programs on Apple platforms) will now also ignore allocating memory at the
+  same location twice, without an intermediate free. Thanks, Tim Apple!
 
 
 v0.13.1 (2025-12-11)

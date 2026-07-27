@@ -6282,6 +6282,16 @@ void Worker::ProcessGpuZoneAnnotation( const QueueGpuZoneAnnotation& ev )
     note->second[ev.noteId] = ev.value;
 }
 
+static MemEvent* MemDataFree( MemData& memdata, unordered_flat_map<uint64_t, size_t>::iterator it, int64_t time, uint16_t thread )
+{
+    memdata.frees.push_back( it->second );
+    auto& mem = memdata.data[it->second];
+    mem.SetTimeThreadFree( time, thread );
+    memdata.usage -= mem.Size();
+    memdata.active.erase( it );
+    return &mem;
+}
+
 MemEvent* Worker::ProcessMemAllocImpl( MemData& memdata, const QueueMemAlloc& ev )
 {
     if( memdata.active.find( ev.ptr ) != memdata.active.end() )
@@ -6346,14 +6356,9 @@ MemEvent* Worker::ProcessMemFreeImpl( MemData& memdata, const QueueMemFree& ev )
     if( m_data.lastTime < time ) m_data.lastTime = time;
     NoticeThread( ev.thread );
 
-    memdata.frees.push_back( it->second );
-    auto& mem = memdata.data[it->second];
-    mem.SetTimeThreadFree( time, CompressThread( ev.thread ) );
-    memdata.usage -= mem.Size();
-    memdata.active.erase( it );
-
+    auto mem = MemDataFree( memdata, it, time, CompressThread( ev.thread ) );
     MemAllocChanged( memdata, time );
-    return &mem;
+    return mem;
 }
 
 MemEvent* Worker::ProcessMemAlloc( const QueueMemAlloc& ev )

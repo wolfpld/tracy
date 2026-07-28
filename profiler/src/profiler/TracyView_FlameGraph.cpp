@@ -289,7 +289,7 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
                     for( uint8_t j=frameData->size; j>0; j-- )
                     {
                         const auto frame = frameData->data[j-1];
-                        cache.emplace_back( FrameCache { frame.symAddr, frame.symAddr ? frame.name : StringIdx {} } );
+                        cache.emplace_back( FrameCache { frame.symAddr, frame.symAddr ? frame.name : frameData->imageName } );
                     }
                 }
                 else
@@ -312,7 +312,7 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
                             const auto frame = frameData->data[j-1];
                             if( !m_worker.IsSourceExternal( frame.file, externalCache, lastSource ) )
                             {
-                                cache.emplace_back( FrameCache { frame.symAddr, frame.symAddr ? frame.name : StringIdx {} } );
+                                cache.emplace_back( FrameCache { frame.symAddr, frame.symAddr ? frame.name : frameData->imageName } );
                             }
                         }
                     }
@@ -331,7 +331,7 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
                     {
                         const auto frame = frameData->data[j-1];
                         bool external = imageExternal || m_worker.IsSourceExternal( frame.file, externalCache, lastSource );
-                        cache.emplace_back( FrameCache { frame.symAddr, frame.symAddr ? frame.name : StringIdx {}, external } );
+                        cache.emplace_back( FrameCache { frame.symAddr, frame.symAddr ? frame.name : frameData->imageName, external } );
                     }
                 }
                 else
@@ -359,9 +359,22 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
         auto vec = &data;
         for( auto& v : cache )
         {
-            auto it = ( m_flameSymbolByName && v.name.Active() ) ?
-                std::find_if( vec->begin(), vec->end(), [name = v.name]( const auto& v ) { return v.name == name; } ) :
-                std::find_if( vec->begin(), vec->end(), [symaddr = v.symaddr]( const auto& v ) { return v.srcloc == symaddr; } );
+            // Unresolved frames carry the image name instead of the symbol name, so they must be
+            // grouped by name in both modes. Grouping them by address would merge all images into one item.
+            std::vector<FlameGraphItem>::iterator it;
+            if( v.symaddr == 0 )
+            {
+                it = std::ranges::find_if( *vec, [name = v.name]( const auto& v ) { return v.srcloc == 0 && v.name == name; } );
+            }
+            else if( m_flameSymbolByName )
+            {
+                it = std::ranges::find_if( *vec, [name = v.name]( const auto& v ) { return v.srcloc != 0 && v.name == name; } );
+            }
+            else
+            {
+                it = std::ranges::find_if( *vec, [symaddr = v.symaddr]( const auto& v ) { return v.srcloc == symaddr; } );
+            }
+
             if( it == vec->end() )
             {
                 vec->emplace_back( FlameGraphItem { (int64_t)v.symaddr, period, v.name } );
@@ -487,8 +500,9 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
     else
     {
         const auto symAddr = (uint64_t)item.srcloc;
-        const auto known = item.name.Active();
-        name = known ? m_worker.GetString( item.name ) : "[unknown]";
+        const auto known = symAddr != 0;
+        // Unresolved frames have no symbol name. They are labelled with the image name, if it is known.
+        name = item.name.Active() ? m_worker.GetString( item.name ) : "[unknown]";
 
         auto sym = known ? m_worker.GetSymbolData( symAddr ) : nullptr;
         if( sym )
@@ -590,7 +604,7 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
         if( samples )
         {
             const auto symAddr = (uint64_t)item.srcloc;
-            auto sym = item.name.Active() ? m_worker.GetSymbolData( symAddr ) : nullptr;
+            auto sym = symAddr != 0 ? m_worker.GetSymbolData( symAddr ) : nullptr;
             if( sym )
             {
                 ImGui::BeginTooltip();
@@ -839,9 +853,22 @@ static void MergeFlameGraph( std::vector<FlameGraphItem>& dst, std::vector<Flame
 {
     for( auto& v : src )
     {
-        auto it = ( byName && v.name.Active() ) ?
-            std::find_if( dst.begin(), dst.end(), [&v]( const auto& vv ) { return vv.name == v.name; } ) :
-            std::find_if( dst.begin(), dst.end(), [&v]( const auto& vv ) { return vv.srcloc == v.srcloc; } );
+        // Matches the grouping performed in BuildFlameGraph. In instrumentation mode no name is ever set,
+        // so the srcloc == 0 branch degenerates to a plain srcloc comparison.
+        std::vector<FlameGraphItem>::iterator it;
+        if( v.srcloc == 0 )
+        {
+            it = std::ranges::find_if( dst, [&v]( const auto& vv ) { return vv.srcloc == 0 && vv.name == v.name; } );
+        }
+        else if( byName )
+        {
+            it = std::ranges::find_if( dst, [&v]( const auto& vv ) { return vv.srcloc != 0 && vv.name == v.name; } );
+        }
+        else
+        {
+            it = std::ranges::find_if( dst, [&v]( const auto& vv ) { return vv.srcloc == v.srcloc; } );
+        }
+
         if( it == dst.end() )
         {
             dst.emplace_back( std::move( v ) );

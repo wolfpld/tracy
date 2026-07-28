@@ -4150,9 +4150,9 @@ void Worker::AddCallstackAllocPayload( const char* data )
         CallstackFrame cf;
         memcpy( &cf.line, data, 4 ); data += 4;
         memcpy( &sz, data, 2 ); data += 2;
-        cf.name = StoreString( data, sz ).idx; data += sz;
+        cf.name = StringIdx( StoreString( data, sz ).idx ); data += sz;
         memcpy( &sz, data, 2 ); data += 2;
-        cf.file = StoreString( data, sz ).idx; data += sz;
+        cf.file = StringIdx( StoreString( data, sz ).idx ); data += sz;
         cf.symAddr = 0;
         CallstackFrameData cfd = { &cf, 1 };
 

@@ -66,7 +66,7 @@ class StringIdx
 {
 public:
     tracy_force_inline StringIdx() { memset( m_idx, 0, sizeof( m_idx ) ); }
-    tracy_force_inline StringIdx( uint32_t idx )
+    tracy_force_inline explicit StringIdx( uint32_t idx )
     {
         SetIdx( idx );
     }

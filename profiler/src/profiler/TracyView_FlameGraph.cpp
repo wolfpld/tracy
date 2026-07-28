@@ -289,12 +289,12 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
                     for( uint8_t j=frameData->size; j>0; j-- )
                     {
                         const auto frame = frameData->data[j-1];
-                        const auto symaddr = frame.symAddr;
-                        if( symaddr != 0 )
-                        {
-                            cache.emplace_back( FrameCache { symaddr, frame.name } );
-                        }
+                        cache.emplace_back( FrameCache { frame.symAddr, frame.symAddr ? frame.name : StringIdx {} } );
                     }
+                }
+                else
+                {
+                    cache.emplace_back( FrameCache { 0, StringIdx {} } );
                 }
             }
         }
@@ -310,10 +310,9 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
                         for( uint8_t j=frameData->size; j>0; j-- )
                         {
                             const auto frame = frameData->data[j-1];
-                            const auto symaddr = frame.symAddr;
-                            if( symaddr != 0 && !m_worker.IsSourceExternal( frame.file, externalCache, lastSource ) )
+                            if( !m_worker.IsSourceExternal( frame.file, externalCache, lastSource ) )
                             {
-                                cache.emplace_back( FrameCache { symaddr, frame.name } );
+                                cache.emplace_back( FrameCache { frame.symAddr, frame.symAddr ? frame.name : StringIdx {} } );
                             }
                         }
                     }
@@ -331,13 +330,13 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
                     for( uint8_t j=frameData->size; j>0; j-- )
                     {
                         const auto frame = frameData->data[j-1];
-                        const auto symaddr = frame.symAddr;
-                        if( symaddr != 0 )
-                        {
-                            bool external = imageExternal || m_worker.IsSourceExternal( frame.file, externalCache, lastSource );
-                            cache.emplace_back( FrameCache { symaddr, frame.name, external } );
-                        }
+                        bool external = imageExternal || m_worker.IsSourceExternal( frame.file, externalCache, lastSource );
+                        cache.emplace_back( FrameCache { frame.symAddr, frame.symAddr ? frame.name : StringIdx {}, external } );
                     }
+                }
+                else
+                {
+                    cache.emplace_back( FrameCache { 0, StringIdx {}, true } );
                 }
             }
 
@@ -360,7 +359,7 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
         auto vec = &data;
         for( auto& v : cache )
         {
-            auto it = m_flameSymbolByName ?
+            auto it = ( m_flameSymbolByName && v.name.Active() ) ?
                 std::find_if( vec->begin(), vec->end(), [name = v.name]( const auto& v ) { return v.name == name; } ) :
                 std::find_if( vec->begin(), vec->end(), [symaddr = v.symaddr]( const auto& v ) { return v.srcloc == symaddr; } );
             if( it == vec->end() )
@@ -487,9 +486,11 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
     }
     else
     {
-        name = m_worker.GetString( item.name );
         const auto symAddr = (uint64_t)item.srcloc;
-        auto sym = m_worker.GetSymbolData( symAddr );
+        const auto known = item.name.Active();
+        name = known ? m_worker.GetString( item.name ) : "[unknown]";
+
+        auto sym = known ? m_worker.GetSymbolData( symAddr ) : nullptr;
         if( sym )
         {
             auto namehash = charutil::hash( name );
@@ -504,9 +505,14 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
         {
             color = 0xFF888888;
         }
+
         if( symAddr >> 63 != 0 )
         {
             textColor = 0xFF8888FF;
+        }
+        else if( !known )
+        {
+            textColor = 0xFFCCCCCC;
         }
     }
 
@@ -584,7 +590,7 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
         if( samples )
         {
             const auto symAddr = (uint64_t)item.srcloc;
-            auto sym = m_worker.GetSymbolData( symAddr );
+            auto sym = item.name.Active() ? m_worker.GetSymbolData( symAddr ) : nullptr;
             if( sym )
             {
                 ImGui::BeginTooltip();
@@ -833,7 +839,7 @@ static void MergeFlameGraph( std::vector<FlameGraphItem>& dst, std::vector<Flame
 {
     for( auto& v : src )
     {
-        auto it = byName ?
+        auto it = ( byName && v.name.Active() ) ?
             std::find_if( dst.begin(), dst.end(), [&v]( const auto& vv ) { return vv.name == v.name; } ) :
             std::find_if( dst.begin(), dst.end(), [&v]( const auto& vv ) { return vv.srcloc == v.srcloc; } );
         if( it == dst.end() )

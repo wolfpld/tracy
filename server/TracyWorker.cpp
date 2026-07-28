@@ -1788,6 +1788,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
                     if( !t->timeline.empty() )
                     {
                         uint8_t countMap[64*1024];
+                        memset( countMap, 0, sizeof( countMap ) );
                         // Don't touch thread compression cache in a thread.
                         ProcessTimeline( countMap, t->timeline, m_data.localThreadCompress.DecompressMustRaw( t->id ) );
                     }

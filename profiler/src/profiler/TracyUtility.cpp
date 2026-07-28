@@ -140,6 +140,13 @@ void TooltipNormalizedName( const char* name, const char* normalized )
     }
 }
 
+const char* ShortenImageName( const char* image )
+{
+    const char* ptr = image + strlen( image );
+    while( ptr > image && ptr[-1] != '/' && ptr[-1] != '\\' ) ptr--;
+    return ptr;
+}
+
 uint32_t GetThreadColor( uint64_t thread, int depth, bool dynamic )
 {
     if( !dynamic ) return 0xFFCC5555;

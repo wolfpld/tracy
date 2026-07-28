@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-07-27 <https://github.com/wolfpld/tracy>
+2026-07-28 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -4260,6 +4260,8 @@ In the sampling mode, external frames from system libraries are hidden by defaul
 
 The sampling mode, by default, groups the displayed zones by symbol address. In some cases, for example, when using templates, the same function may exist at multiple different symbol addresses. Enabling the *Group by name* option will group the graph items by name instead of by symbol address.
 
+Sometimes a stack frame cannot be resolved to a symbol, as described in section [5.16](#callstackwindow). Such frames are aggregated into a single graph item with the label of the executable image the frame address belongs to, or with "`[unknown]`" if even this information is unavailable. The label is slightly dimmed to set it apart from the resolved items. The * Short images* option shortens the displayed image name to only the file name.
+
 The flame graph can be restricted to a specific time extent using the *Limit range* option (chapter [5.3](#timeranges)). You can access more options through the * Limits* button, which will open the time range limits window, described in section [5.24](#timerangelimits).
 
 
@@ -4268,6 +4270,7 @@ The flame graph can be restricted to a specific time extent using the *Limit ran
  - Syringe icon
  - Eye Dropper icon
  - Shield Halved icon
+ - Scissors icon
  - Ruler icon
 
 ## Memory window {#memorywindow}

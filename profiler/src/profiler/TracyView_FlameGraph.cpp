@@ -668,6 +668,25 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
                     ViewDispatch( file, line, symAddr );
                 }
             }
+            else if( symAddr == 0 )
+            {
+                ImGui::BeginTooltip();
+                if( item.name.Active() && strcmp( name, "[unknown]" ) != 0 )
+                {
+                    TextFocused( "Image:", name );
+                    ImGui::Separator();
+                }
+                TextFocused( "Execution time:", TimeToString( item.time ) );
+                if( !item.children.empty() )
+                {
+                    TextFocused( "Self time:", TimeToString( self ) );
+                    char buf[64];
+                    PrintStringPercent( buf, 100.f * self / item.time );
+                    ImGui::SameLine();
+                    TextDisabledUnformatted( buf );
+                }
+                ImGui::EndTooltip();
+            }
         }
         else
         {

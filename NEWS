@@ -226,9 +226,12 @@ vx.xx.x (2026-xx-xx)
 - The profiler can no longer be built with the statistics disabled.
 - Fixed NVCC builds.
 - Fixed possible lockups in Vulkan timer calibration loop.
-- The flame graph view now supports zooming in and panning with the mouse.
-- Sampling flame graph items can be now also grouped by name, in addition
-  to symbol address.
+- Flame graph improvements.
+  - The flame graph view now supports zooming in and panning with the mouse.
+  - Sampling flame graph items can be now also grouped by name, in addition
+    to symbol address.
+  - Sampling flame graph no longer omits display of unknown symbols. These
+    are now aggregated into blocks named after the executable image.
 - General application crash information polish in the profiler UI.
 - The achievements system has been converted to use markdown renderer.
 - Offline symbol resolution with the update utility now supports custom

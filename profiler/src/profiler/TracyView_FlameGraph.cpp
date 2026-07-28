@@ -828,11 +828,13 @@ static bool DrawFlameGraphHorizontalPosition( int64_t& vStart, int64_t& vEnd, do
     return false;
 }
 
-static void MergeFlameGraph( std::vector<FlameGraphItem>& dst, std::vector<FlameGraphItem>&& src )
+static void MergeFlameGraph( std::vector<FlameGraphItem>& dst, std::vector<FlameGraphItem>&& src, bool byName )
 {
     for( auto& v : src )
     {
-        auto it = std::find_if( dst.begin(), dst.end(), [&v]( const auto& vv ) { return vv.srcloc == v.srcloc; } );
+        auto it = byName ?
+            std::find_if( dst.begin(), dst.end(), [&v]( const auto& vv ) { return vv.name == v.name; } ) :
+            std::find_if( dst.begin(), dst.end(), [&v]( const auto& vv ) { return vv.srcloc == v.srcloc; } );
         if( it == dst.end() )
         {
             dst.emplace_back( std::move( v ) );
@@ -840,7 +842,7 @@ static void MergeFlameGraph( std::vector<FlameGraphItem>& dst, std::vector<Flame
         else
         {
             it->time += v.time;
-            MergeFlameGraph( it->children, std::move( v.children ) );
+            MergeFlameGraph( it->children, std::move( v.children ), byName );
         }
     }
 }
@@ -1171,10 +1173,11 @@ void View::DrawFlameGraph()
         m_flameGraphData.clear();
         if( !threadData.empty() )
         {
+            const auto byName = m_flameMode == 1 && m_flameSymbolByName;
             std::swap( m_flameGraphData, threadData[0] );
             for( size_t i=1; i<threadData.size(); i++ )
             {
-                MergeFlameGraph( m_flameGraphData, std::move( threadData[i] ) );
+                MergeFlameGraph( m_flameGraphData, std::move( threadData[i] ), byName );
             }
         }
 

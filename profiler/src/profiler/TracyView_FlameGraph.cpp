@@ -581,13 +581,13 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
         uint64_t self = item.time;
         for( auto& v : item.children ) self -= v.time;
 
-        ImGui::BeginTooltip();
         if( samples )
         {
             const auto symAddr = (uint64_t)item.srcloc;
             auto sym = m_worker.GetSymbolData( symAddr );
             if( sym )
             {
+                ImGui::BeginTooltip();
                 TextFocused( "Name:", normalized );
                 if( sym->isInline )
                 {
@@ -641,16 +641,17 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
                     ImGui::SameLine();
                     TextDisabledUnformatted( buf );
                 }
+                ImGui::EndTooltip();
 
                 if( IsMouseClicked( ImGuiMouseButton_Left ) )
                 {
                     ViewDispatch( file, line, symAddr );
                 }
             }
-            ImGui::EndTooltip();
         }
         else
         {
+            ImGui::BeginTooltip();
             if( srcloc->name.active )
             {
                 ImGui::TextUnformatted( m_worker.GetString( srcloc->name ) );

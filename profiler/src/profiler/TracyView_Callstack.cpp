@@ -691,25 +691,11 @@ void View::DrawCallstackTable( const CallstackFrameId* data, size_t size, const 
                     if( frameData->imageName.Active() )
                     {
                         auto image = m_worker.GetString( frameData->imageName );
-                        const char* end = image + strlen( image );
-
-                        if( m_shortImageNames )
-                        {
-                            const char* ptr = end - 1;
-                            while( ptr > image && *ptr != '/' && *ptr != '\\' ) ptr--;
-                            if( *ptr == '/' || *ptr == '\\' ) ptr++;
-                            const auto cw = ImGui::GetContentRegionAvail().x;
-                            const auto tw = ImGui::CalcTextSize( image, end ).x;
-                            TextDisabledUnformatted( ptr );
-                            if( ptr != image || tw > cw ) TooltipIfHovered( image );
-                        }
-                        else
-                        {
-                            const auto cw = ImGui::GetContentRegionAvail().x;
-                            const auto tw = ImGui::CalcTextSize( image, end ).x;
-                            TextDisabledUnformatted( image );
-                            if( tw > cw ) TooltipIfHovered( image );
-                        }
+                        const char* ptr = m_shortImageNames ? ShortenImageName( image ) : image;
+                        const auto cw = ImGui::GetContentRegionAvail().x;
+                        const auto tw = ImGui::CalcTextSize( image ).x;
+                        TextDisabledUnformatted( ptr );
+                        if( ptr != image || tw > cw ) TooltipIfHovered( image );
                     }
                 }
             }

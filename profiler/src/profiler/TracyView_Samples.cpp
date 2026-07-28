@@ -550,25 +550,11 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, uint
                         ImGui::Unindent( indentVal );
                     }
                     ImGui::TableNextColumn();
-                    if( m_shortImageNames )
-                    {
-                        const char* end = imageName + strlen( imageName );
-                        const char* ptr = end - 1;
-                        while( ptr > imageName && *ptr != '/' && *ptr != '\\' ) ptr--;
-                        if( *ptr == '/' || *ptr == '\\' ) ptr++;
-                        const auto cw = ImGui::GetContentRegionAvail().x;
-                        const auto tw = ImGui::CalcTextSize( imageName, end ).x;
-                        TextDisabledUnformatted( ptr );
-                        if( ptr != imageName || tw > cw ) TooltipIfHovered( imageName );
-                    }
-                    else
-                    {
-                        const char* end = imageName + strlen( imageName );
-                        const auto cw = ImGui::GetContentRegionAvail().x;
-                        const auto tw = ImGui::CalcTextSize( imageName, end ).x;
-                        TextDisabledUnformatted( imageName );
-                        if( tw > cw ) TooltipIfHovered( imageName );
-                    }
+                    const char* ptr = m_shortImageNames ? ShortenImageName( imageName ) : imageName;
+                    const auto cw = ImGui::GetContentRegionAvail().x;
+                    const auto tw = ImGui::CalcTextSize( imageName ).x;
+                    TextDisabledUnformatted( ptr );
+                    if( ptr != imageName || tw > cw ) TooltipIfHovered( imageName );
                     ImGui::TableNextColumn();
                     const auto baseCnt = cnt;
                     if( cnt > 0 )
@@ -1286,25 +1272,11 @@ void View::DrawSampleParents()
                         if( frameData->imageName.Active() )
                         {
                             const char* imageName = m_worker.GetString( frameData->imageName );
-                            const char* end = imageName + strlen( imageName );
-
-                            if( m_shortImageNames )
-                            {
-                                const char* ptr = end - 1;
-                                while( ptr > imageName && *ptr != '/' && *ptr != '\\' ) ptr--;
-                                if( *ptr == '/' || *ptr == '\\' ) ptr++;
-                                const auto cw = ImGui::GetContentRegionAvail().x;
-                                const auto tw = ImGui::CalcTextSize( imageName, end ).x;
-                                TextDisabledUnformatted( ptr );
-                                if( ptr != imageName || tw > cw ) TooltipIfHovered( imageName );
-                            }
-                            else
-                            {
-                                const auto cw = ImGui::GetContentRegionAvail().x;
-                                const auto tw = ImGui::CalcTextSize( imageName, end ).x;
-                                TextDisabledUnformatted( imageName );
-                                if( tw > cw ) TooltipIfHovered( imageName );
-                            }
+                            const char* ptr = m_shortImageNames ? ShortenImageName( imageName ) : imageName;
+                            const auto cw = ImGui::GetContentRegionAvail().x;
+                            const auto tw = ImGui::CalcTextSize( imageName ).x;
+                            TextDisabledUnformatted( ptr );
+                            if( ptr != imageName || tw > cw ) TooltipIfHovered( imageName );
                         }
                     }
                 }

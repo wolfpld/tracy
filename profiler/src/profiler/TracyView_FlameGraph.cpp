@@ -502,7 +502,15 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
         const auto symAddr = (uint64_t)item.srcloc;
         const auto known = symAddr != 0;
         // Unresolved frames have no symbol name. They are labelled with the image name, if it is known.
-        name = item.name.Active() ? m_worker.GetString( item.name ) : "[unknown]";
+        if( item.name.Active() )
+        {
+            name = m_worker.GetString( item.name );
+            if( !known && m_shortImageNames ) name = ShortenImageName( name );
+        }
+        else
+        {
+            name = "[unknown]";
+        }
 
         auto sym = known ? m_worker.GetSymbolData( symAddr ) : nullptr;
         if( sym )
@@ -671,9 +679,10 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
             else if( symAddr == 0 )
             {
                 ImGui::BeginTooltip();
-                if( item.name.Active() && strcmp( name, "[unknown]" ) != 0 )
+                const auto image = item.name.Active() ? m_worker.GetString( item.name ) : nullptr;
+                if( image && strcmp( image, "[unknown]" ) != 0 )
                 {
-                    TextFocused( "Image:", name );
+                    TextFocused( "Image:", image );
                     ImGui::Separator();
                 }
                 TextFocused( "Execution time:", TimeToString( item.time ) );
@@ -1029,6 +1038,9 @@ void View::DrawFlameGraph()
         ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
         ImGui::SameLine();
         if( ImGui::Checkbox( "Group by name", &m_flameSymbolByName ) ) ResetGraph();
+
+        ImGui::SameLine();
+        ImGui::Checkbox( ICON_FA_SCISSORS " Short images", &m_shortImageNames );
     }
 
     ImGui::SameLine();

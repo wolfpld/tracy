@@ -26,6 +26,8 @@ static const char* DecodeArmImplementer( uint32_t v )
     case 0x66: return "Faraday";
     case 0x68: return "HXT";
     case 0x69: return "Intel";
+    case 0x6d: return "Microsoft";
+    case 0x70: return "Phytium";
     case 0xc0: return "Ampere Computing";
     default: break;
     }
@@ -90,20 +92,44 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0xd0e: return " Cortex-A76AE";
         case 0xd0f: return " AEMv8";
         case 0xd13: return " Cortex-R52";
+        case 0xd14: return " Cortex-R82AE";
+        case 0xd15: return " Cortex-R82";
+        case 0xd16: return " Cortex-R52+";
         case 0xd20: return " Cortex-M23";
         case 0xd21: return " Cortex-M33";
         case 0xd22: return " Cortex-M55";
+        case 0xd23: return " Cortex-M85";
+        case 0xd24: return " Cortex-M52";
         case 0xd40: return " Neoverse V1";
         case 0xd41: return " Cortex-A78";
         case 0xd42: return " Cortex-A78AE";
         case 0xd43: return " Cortex-A65AE";
         case 0xd44: return " Cortex-X1";
+        case 0xd46: return " Cortex-A510";
         case 0xd47: return " Cortex-A710";
         case 0xd48: return " Cortex-X2";
         case 0xd49: return " Neoverse N2";
         case 0xd4a: return " Neoverse E1";
         case 0xd4b: return " Cortex-A78C";
         case 0xd4c: return " Cortex-X1C";
+        case 0xd4d: return " Cortex-A715";
+        case 0xd4e: return " Cortex-X3";
+        case 0xd4f: return " Neoverse-V2";
+        case 0xd80: return " Cortex-A520";
+        case 0xd81: return " Cortex-A720";
+        case 0xd82: return " Cortex-X4";
+        case 0xd83: return " Neoverse-V3AE";
+        case 0xd84: return " Neoverse-V3";
+        case 0xd85: return " Cortex-X925";
+        case 0xd87: return " Cortex-A725";
+        case 0xd88: return " Cortex-A520AE";
+        case 0xd89: return " Cortex-A720AE";
+        case 0xd8a: return " C1-Nano";
+        case 0xd8b: return " C1-Pro";
+        case 0xd8c: return " C1-Ultra";
+        case 0xd8e: return " Neoverse-N3";
+        case 0xd8f: return " Cortex-A320";
+        case 0xd90: return " C1-Premium";
         default: break;
         }
     case 0x42:  // Broadcom
@@ -143,13 +169,17 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         switch( part )
         {
         case 0x1: return " A64FX";
+        case 0x3: return " MONAKA";
         default: break;
         }
     case 0x48:  // HiSilicon
         switch( part )
         {
-        case 0xd01: return " TSV100";
-        case 0xd40: return " Kirin 980";
+        case 0xd01: return " TaiShan-v110";
+        case 0xd02: return " TaiShan-v120";
+        case 0xd06: return " hip12";
+        case 0xd40: return " Cortex-A76";
+        case 0xd41: return " Cortex-A77";
         default: break;
         }
     case 0x4e:  // Nvidia
@@ -158,6 +188,8 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0x0: return " Denver";
         case 0x3: return " Denver 2";
         case 0x4: return " Carmel";
+        case 0x10: return " Olympus";
+        case 0x11: return " Rigel";
         default: break;
         }
     case 0x50:  // Applied Micro
@@ -169,6 +201,7 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
     case 0x51:  // Qualcomm
         switch( part )
         {
+        case 0x1: return " Oryon";
         case 0xf: return " Scorpion";
         case 0x2d: return " Scorpion";
         case 0x4d: return " Krait";
@@ -213,6 +246,7 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
     case 0x61:  // Apple
         switch( part )
         {
+        case 0x0: return " Swift";
         case 0x1: return " Cyclone";
         case 0x2: return " Typhoon";
         case 0x3: return " Typhoon/Capri";
@@ -220,12 +254,52 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0x5: return " Twister/Elba/Malta";
         case 0x6: return " Hurricane";
         case 0x7: return " Hurricane/Myst";
+        case 0x8: return " Monsoon";
+        case 0x9: return " Mistral";
+        case 0xb: return " Vortex";
+        case 0xc: return " Tempest";
+        case 0xf: return " Tempest-M9"
+        case 0x10: return " Vortex/Aruba";
+        case 0x11: return " Tempest/Aruba";
+        case 0x12: return " Lightning";
+        case 0x13: return " Thunder";
+        case 0x20: return " A14 Icestorm";
+        case 0x21: return " A14 Firestorm";
         case 0x22: return " M1 Icestorm";
         case 0x23: return " M1 Firestorm";
         case 0x24: return " M1 Icestorm Pro";
         case 0x25: return " M1 Firestorm Pro";
+        case 0x26: return " M10 Thunder";
         case 0x28: return " M1 Icestorm Max";
         case 0x29: return " M1 Firestorm Max";
+        case 0x30: return " A15 Blizzard";
+        case 0x31: return " A15 Avalanche";
+        case 0x32: return " M2 Blizzard";
+        case 0x33: return " M2 Avalanche";
+        case 0x34: return " M2 Pro Blizzard";
+        case 0x35: return " M2 Pro Avalanche";
+        case 0x36: return " A16 Sawtooth";
+        case 0x37: return " A16 Everest";
+        case 0x38: return " M2 Max Blizzard";
+        case 0x39: return " M2 Max Avalanche";
+        case 0x42: return " M3";
+        case 0x43: return " M3";
+        case 0x44: return " M3";
+        case 0x45: return " M3";
+        case 0x48: return " M3";
+        case 0x49: return " M3";
+        case 0x52: return " M4";
+        case 0x53: return " M4";
+        case 0x54: return " M4";
+        case 0x55: return " M4";
+        case 0x58: return " M4";
+        case 0x59: return " M4";
+        case 0x62: return " M5";
+        case 0x63: return " M5";
+        case 0x64: return " M5";
+        case 0x65: return " M5";
+        case 0x68: return " M5";
+        case 0x69: return " M5";
         default: break;
         }
     case 0x66:  // Faraday
@@ -241,10 +315,55 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0x0: return " Phecda";
         default: break;
         }
+    case 0x69:  // Intel
+        switch( part )
+        {
+        case 0x200: return " i80200";
+        case 0x210: return " PXA250A";
+        case 0x212: return " PXA210A";
+        case 0x242: return " i80321-400";
+        case 0x243: return " i80321-600";
+        case 0x290: return " PXA250B/PXA26x";
+        case 0x292: return " PXA210B";
+        case 0x2c2: return " i80321-400-B0";
+        case 0x2c3: return " i80321-600-B0";
+        case 0x2d0: return " PXA250C/PXA255/PXA26x";
+        case 0x2d2: return " PXA210C";
+        case 0x411: return " PXA27x";
+        case 0x41c: return " IPX425-533";
+        case 0x41d: return " IPX425-400";
+        case 0x41f: return " IPX425-266";
+        case 0x682: return " PXA32x";
+        case 0x683: return " PXA930/PXA935";
+        case 0x688: return " PXA30x";
+        case 0x689: return " PXA31x";
+        case 0xb11: return " SA1110";
+        case 0xc12: return " IPX1200";
+        default: break;
+        }
+    case 0x6d:  // Microsoft
+        switch( part )
+        {
+        case 0xd49: return " Azure-Cobalt-100";
+        default: break;
+        }
+    case 0x70:  // Phytium
+        switch( part )
+        {
+        case 0x303: return " FTC310";
+        case 0x660: return " FTC660";
+        case 0x661: return " FTC661";
+        case 0x662: return " FTC662";
+        case 0x663: return " FTC663";
+        case 0x664: return " FTC664";
+        case 0x862: return " FTC862";
+        default: break;
+        }
     case 0xc0:  // Ampere Computing
         switch( part )
         {
-        case 0xac3: return " Ampere1";
+        case 0xac3: return " Ampere-1";
+        case 0xac4: return " Ampere-1a";
         default: break;
         }
     default: break;

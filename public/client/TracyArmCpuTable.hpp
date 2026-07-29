@@ -258,7 +258,7 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0x9: return " Mistral";
         case 0xb: return " Vortex";
         case 0xc: return " Tempest";
-        case 0xf: return " Tempest-M9"
+        case 0xf: return " Tempest-M9";
         case 0x10: return " Vortex/Aruba";
         case 0x11: return " Tempest/Aruba";
         case 0x12: return " Lightning";

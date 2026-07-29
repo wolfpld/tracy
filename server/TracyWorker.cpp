@@ -12,6 +12,7 @@
 
 #include <cctype>
 #include <chrono>
+#include <cstdio>
 #include <math.h>
 #include <string.h>
 
@@ -3725,12 +3726,24 @@ void Worker::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread,
     auto it = lockmap.threadMap.find( thread );
     if( it == lockmap.threadMap.end() )
     {
+        // waitList / range[] only support MaxLockThreads (64). Exceeding that
+        // used to uint8_t-truncate the index and OOB-write lockmap.range[],
+        // corrupting adjacent slab objects (non-deterministic findIdx AVs).
+        if( lockmap.threadList.size() >= MaxLockThreads )
+        {
+            return;
+        }
         assert( lockmap.threadList.size() < MaxLockThreads );
         it = lockmap.threadMap.emplace( thread, lockmap.threadList.size() ).first;
         lockmap.threadList.emplace_back( thread );
     }
-    lev->thread = it->second;
-    assert( lev->thread == it->second );
+    const uint8_t tidx = it->second;
+    if( tidx >= MaxLockThreads )
+    {
+        return;
+    }
+    lev->thread = tidx;
+    assert( lev->thread == tidx );
     auto& timeline = lockmap.timeline;
     if( timeline.empty() )
     {
@@ -3744,7 +3757,7 @@ void Worker::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread,
         UpdateLockCount( lockmap, timeline.size() - 1 );
     }
 
-    auto& range = lockmap.range[it->second];
+    auto& range = lockmap.range[tidx];
     if( range.start > time ) range.start = time;
     if( range.end < time ) range.end = time;
 }

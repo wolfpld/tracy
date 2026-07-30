@@ -3965,7 +3965,7 @@ report_inlined_functions (uintptr_t pc, struct function *function, const char* c
     return ret;
 
   /* Report this inlined call.  */
-  if (*filename[0] != '/' && comp_dir)
+  if (*filename && *filename[0] != '/' && comp_dir)
   {
     char buf[1024];
     snprintf (buf, 1024, "%s/%s", comp_dir, *filename);
@@ -4246,7 +4246,7 @@ dwarf_lookup_pc (struct backtrace_state *state, struct dwarf_data *ddata,
   if (ret != 0)
     return ret;
 
-  if (filename[0] != '/' && entry->u->comp_dir)
+  if (filename && filename[0] != '/' && entry->u->comp_dir)
   {
     char buf[1024];
     snprintf (buf, 1024, "%s/%s", entry->u->comp_dir, filename);

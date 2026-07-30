@@ -1,5 +1,5 @@
-#ifndef __TRACYPRINT_HPP__
-#define __TRACYPRINT_HPP__
+#ifndef __TRACYDEBUG_HPP__
+#define __TRACYDEBUG_HPP__
 
 #ifdef TRACY_ON_DEMAND
 #  define TRACY_VERBOSE_EARLY_OUT_COND if( !GetProfiler().IsConnected() ) break

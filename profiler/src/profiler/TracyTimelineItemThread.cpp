@@ -406,7 +406,7 @@ int TimelineItemThread::PreprocessGhostLevel( const TimelineContext& ctx, const 
     const auto vStart = ctx.vStart;
     const auto vEnd = ctx.vEnd;
 
-    const auto MinVisNs = int64_t( round( GetScale() * MinVisSize * nspx ) );
+    const auto MinVisNs = int64_t( round( ctx.scale * MinVisSize * nspx ) );
 
     auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, vStart - 2 * MinVisNs ), [] ( const auto& l, const auto& r ) { return l.end.Val() < r; } );
     if( it == vec.end() ) return depth;
@@ -479,7 +479,7 @@ int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V
     const auto vEnd = ctx.vEnd;
     const auto nspx = ctx.nspx;
 
-    const auto MinVisNs = int64_t( round( GetScale() * MinVisSize * nspx ) );
+    const auto MinVisNs = int64_t( round( ctx.scale * MinVisSize * nspx ) );
 
     auto it = std::lower_bound( vec.begin(), vec.end(), vStart, [this] ( const auto& l, const auto& r ) { Adapter a; return m_worker.GetZoneEnd( a(l) ) < r; } );
     if( it == vec.end() ) return depth;
@@ -569,7 +569,7 @@ void TimelineItemThread::PreprocessContextSwitches( const TimelineContext& ctx, 
     m_hasCtxSwitch = true;
     if( !visible ) return;
 
-    const auto MinCtxNs = int64_t( round( GetScale() * MinCtxSize * nspx ) );
+    const auto MinCtxNs = int64_t( round( ctx.scale * MinCtxSize * nspx ) );
     const auto& sampleData = m_thread->samples;
 
     bool first = true;
@@ -635,7 +635,7 @@ void TimelineItemThread::PreprocessSamples( const TimelineContext& ctx, const Ve
     const auto ostep = ty + 1;
     const auto pos = yPos + ostep;
 
-    const auto MinVis = 5 * GetScale();
+    const auto MinVis = 5 * ctx.scale;
     const auto MinVisNs = int64_t( round( MinVis * nspx ) );
 
     auto it = std::lower_bound( vec.begin(), vec.end(), vStart - MinVisNs, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
@@ -713,7 +713,7 @@ void TimelineItemThread::PreprocessMessages( const TimelineContext& ctx, const V
     const auto vEnd = ctx.vEnd;
     const auto nspx = ctx.nspx;
 
-    const auto MinVisNs = int64_t( round( GetScale() * MinVisSize * nspx ) );
+    const auto MinVisNs = int64_t( round( ctx.scale * MinVisSize * nspx ) );
 
     auto it = std::lower_bound( vec.begin(), vec.end(), vStart, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
     if( it == vec.end() ) return;
@@ -978,7 +978,7 @@ void TimelineItemThread::PreprocessLocks( const TimelineContext& ctx, const unor
     const auto& vd = m_view.GetViewData();
     const auto lockInfoWindow = m_view.GetLockInfoWindow();
 
-    const auto MinVisNs = int64_t( round( GetScale() * MinVisSize * nspx ) );
+    const auto MinVisNs = int64_t( round( ctx.scale * MinVisSize * nspx ) );
 
     for( auto& v : locks )
     {

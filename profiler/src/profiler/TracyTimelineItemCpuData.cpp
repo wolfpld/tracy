@@ -90,7 +90,7 @@ void TimelineItemCpuData::Preprocess( const TimelineContext& ctx, TaskDispatch& 
         }
         if( hasCpuData )
         {
-            const auto cpuUsageHeight = floor( 30.f * GetScale() );
+            const auto cpuUsageHeight = floor( 30.f * ctx.scale );
             if( pos <= yMax && pos + cpuUsageHeight + 3 >= yMin )
             {
                 td.Queue( [this, &ctx] {
@@ -132,7 +132,7 @@ void TimelineItemCpuData::PreprocessCpuCtxSwitches( const TimelineContext& ctx, 
     auto eit = std::lower_bound( it, cs.end(), vEnd, [] ( const auto& l, const auto& r ) { return l.Start() < r; } );
     if( it == eit ) return;
 
-    const auto MinVisNs = int64_t( round( GetScale() * MinVisSize * nspx ) );
+    const auto MinVisNs = int64_t( round( ctx.scale * MinVisSize * nspx ) );
 
     while( it < eit )
     {

@@ -5,6 +5,7 @@
 #include "TracyPrint.hpp"
 #include "TracyView.hpp"
 #include "tracy_pdqsort.h"
+#include "../public/common/TracyString.hpp"
 #include "../Fonts.hpp"
 
 namespace tracy
@@ -362,17 +363,17 @@ void View::DrawInfo()
             if( ImGui::Button( ICON_FA_TRASH_CAN ) ) remove = idx;
             ImGui::SameLine();
             char tmp[1024];
-            strncpy( tmp, v.pattern.c_str(), 1024 );
+            strzcpy( tmp, v.pattern.c_str(), sizeof( tmp ) );
             ImGui::SetNextItemWidth( -1 );
-            if( ImGui::InputTextWithHint( "##pattern", "Regex pattern", tmp, 1024 ) )
+            if( ImGui::InputTextWithHint( "##pattern", "Regex pattern", tmp, sizeof( tmp ) ) )
             {
                 v.pattern.assign( tmp );
                 changed = true;
             }
             ImGui::NextColumn();
-            strncpy( tmp, v.target.c_str(), 1024 );
+            strzcpy( tmp, v.target.c_str(), sizeof( tmp ) );
             ImGui::SetNextItemWidth( -1 );
-            if( ImGui::InputTextWithHint( "##replacement", "Regex replacement", tmp, 1024 ) ) v.target.assign( tmp );
+            if( ImGui::InputTextWithHint( "##replacement", "Regex replacement", tmp, sizeof( tmp ) ) ) v.target.assign( tmp );
             ImGui::PopID();
             ImGui::NextColumn();
             idx++;

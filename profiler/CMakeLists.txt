@@ -13,6 +13,7 @@ if(APPLE)
 endif()
 
 set(NO_STATISTICS OFF)
+set(VENDOR_GUI ON)
 
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/version.cmake)
 

@@ -1458,7 +1458,7 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
                 auto suggestionQuery = chat;
                 suggestionQuery.push_back( nlohmann::json {
                     {"role", "user"},
-                    {"content", "Based on this conversation, suggest one useful follow-up question the user might want to ask next. It should be relevant, actionable, and something the user would genuinely want to explore. Reply with ONLY the question text, in the user's language, under 80 characters."}
+                    {"content", "Based on this conversation, suggest one useful follow-up question the user might want to ask next. It should be relevant, actionable, and something the user would genuinely want to explore. Reply with ONLY the question text, in the user's language, from the user's perspective, under 80 characters."}
                 } );
                 const int chatId = m_chatId.load( std::memory_order_acquire );
                 QueueFastMessageLocking( suggestionQuery, [this, chatId]( const nlohmann::json& res ) {

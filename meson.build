@@ -197,6 +197,7 @@ common_includes = [
     'public/common/TracyQueue.hpp',
     'public/common/TracySocket.hpp',
     'public/common/TracyStackFrames.hpp',
+    'public/common/TracyString.hpp',
     'public/common/TracySystem.hpp',
     'public/common/TracyTaggedUserlandAddress.hpp',
     'public/common/TracyWinFamily.hpp',

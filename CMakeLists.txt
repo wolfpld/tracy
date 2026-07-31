@@ -220,6 +220,7 @@ set(common_includes
     ${TRACY_PUBLIC_DIR}/common/TracyQueue.hpp
     ${TRACY_PUBLIC_DIR}/common/TracySocket.hpp
     ${TRACY_PUBLIC_DIR}/common/TracyStackFrames.hpp
+    ${TRACY_PUBLIC_DIR}/common/TracyString.hpp
     ${TRACY_PUBLIC_DIR}/common/TracySystem.hpp
     ${TRACY_PUBLIC_DIR}/common/TracyTaggedUserlandAddress.hpp
     ${TRACY_PUBLIC_DIR}/common/TracyWinFamily.hpp

@@ -94,6 +94,11 @@ frees it just because your conversation ends.
 - Call `unload_capture(instance_id)` as soon as you're done analyzing a
   capture. Don't rely on automatic eviction as your primary cleanup path —
   treat it as a backstop for forgotten sessions, not a substitute.
+- `live_connect` caps a live session at `TRACY_MCP_LIVE_MEMORY_LIMIT_MB`
+  (default 8192, override per-call or set 0 to disable) — a long-lived
+  session on a busy target otherwise grows unbounded and can OOM-kill the
+  whole server process. Hitting the cap disconnects that instance cleanly;
+  data collected so far stays queryable and `save_trace`-able.
 - `list_instances` reports `idle_seconds`, `connected`, and `background_done`
   per instance; use it to spot stale ones before starting a new session,
   especially if you're about to load several captures for comparison.

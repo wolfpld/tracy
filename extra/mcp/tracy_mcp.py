@@ -222,6 +222,7 @@ except ImportError:
 _MAX_INSTANCES = int(os.environ.get("TRACY_MCP_MAX_INSTANCES", "4"))
 _DISCONNECTED_TTL_S = float(os.environ.get("TRACY_MCP_DISCONNECTED_TTL_S", "1800"))
 _SWEEP_INTERVAL_S = float(os.environ.get("TRACY_MCP_SWEEP_INTERVAL_S", "300"))
+_DEFAULT_LIVE_MEMORY_LIMIT_MB = int(os.environ.get("TRACY_MCP_LIVE_MEMORY_LIMIT_MB", "8192"))
 
 
 class Task:
@@ -432,11 +433,25 @@ async def discover_instances(port_range: str = "8086-8095") -> list[dict]:
 
 
 @mcp_server.tool()
-async def live_connect(address: str = "127.0.0.1", port: int = 8086, alias: str | None = None) -> str:
+async def live_connect(
+    address: str = "127.0.0.1",
+    port: int = 8086,
+    alias: str | None = None,
+    memory_limit_mb: int | None = None,
+) -> str:
     """
     Connect to a live running Tracy-instrumented application.
 
-    Wraps Worker(addr, port, memoryLimit=-1). Returns the instance_id.
+    Wraps Worker(addr, port, memoryLimit). A long-lived session on a busy
+    target grows unbounded otherwise -- every zone/message/memory event
+    stays resident until disconnect, which can OOM-kill this whole process
+    rather than just the one instance. memory_limit_mb defaults to
+    TRACY_MCP_LIVE_MEMORY_LIMIT_MB (8192 if unset); pass 0 to disable.
+    Hitting the limit disconnects that Worker cleanly (Tracy's own
+    QueryTerminate path) -- already-collected data stays queryable and
+    save_trace-able, it just stops growing.
+
+    Returns the instance_id.
     """
     if not tracy_server:
         return "Error: Tracy Server bindings not found."
@@ -458,8 +473,10 @@ async def live_connect(address: str = "127.0.0.1", port: int = 8086, alias: str 
                 f"the target against a matching Tracy version."
             )
 
+    limit_mb = _DEFAULT_LIVE_MEMORY_LIMIT_MB if memory_limit_mb is None else memory_limit_mb
+    memory_limit = limit_mb * 1024 * 1024 if limit_mb > 0 else -1
     try:
-        w = tracy_server.Worker(address, port)
+        w = tracy_server.Worker(address, port, memory_limit)
     except Exception as e:
         return f"Failed to connect: {str(e)}"
 
@@ -508,8 +525,9 @@ async def live_connect(address: str = "127.0.0.1", port: int = 8086, alias: str 
     evicted = _evict_for_capacity(exclude=name)
     instances[name] = TracyInstance(name, w)
     note = f" (evicted idle instance '{evicted}' to stay under the {_MAX_INSTANCES}-instance cap)" if evicted else ""
+    limit_note = f"{limit_mb}MB memory limit" if limit_mb > 0 else "no memory limit"
     return (
-        f"Connected to live instance as '{name}'{note}. "
+        f"Connected to live instance as '{name}'{note} ({limit_note}). "
         f"Before your first eval, read resources tracy://prompt "
         f"(analysis guidance) and tracy://eval-guide (ctx object model, "
         f"ns time units, srcloc IDs)."

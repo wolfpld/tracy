@@ -19,6 +19,7 @@
 #include <sys/stat.h>
 
 #include "TracyStorage.hpp"
+#include "../common/TracyString.hpp"
 
 namespace tracy
 {
@@ -222,7 +223,7 @@ const char* GetSavePath( const char* program, uint64_t time, bool create )
     const auto psz = strlen( program );
     assert( psz < 512 );
     char tmp[512];
-    strcpy( tmp, program );
+    strzcpy( tmp, program, sizeof( tmp ) );
     NormalizeProgramName( tmp, psz );
     sz += sprintf( buf+sz, "/tracy/sidecar/%s", tmp );
 
@@ -264,7 +265,7 @@ const char* GetSavePathLegacy( const char* program, uint64_t time, const char* f
     const auto psz = strlen( program );
     assert( psz < 512 );
     char tmp[512];
-    strcpy( tmp, program );
+    strzcpy( tmp, program, sizeof( tmp ) );
     NormalizeProgramName( tmp, psz );
 
     // 604800 = 7 days

@@ -1490,7 +1490,7 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
     }
     if( symname )
     {
-        strcpy( ret, symname );
+        strzcpy( ret, symname, sizeof( ret ) );
     }
     else
     {
@@ -1883,7 +1883,7 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
     }
     if( symname )
     {
-        strcpy( ret, symname );
+        strzcpy( ret, symname, sizeof( ret ) );
     }
     else
     {

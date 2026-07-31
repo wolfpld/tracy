@@ -1,6 +1,8 @@
-#include "TracyBroadcast.hpp"
 #include <cassert>
 #include <cstring>
+
+#include "TracyBroadcast.hpp"
+#include "../common/TracyString.hpp"
 
 namespace tracy
 {
@@ -32,7 +34,7 @@ std::optional<BroadcastMessage> ParseBroadcastMessage( const char* msg, size_t m
         out.protocolVersion = bm.protocolVersion;
         out.activeTime = bm.activeTime;
         out.listenPort = bm.listenPort;
-        strcpy( out.programName, bm.programName );
+        strzcpy( out.programName, bm.programName, sizeof( out.programName ) );
         out.pid = 0;
         return out;
     }
@@ -46,7 +48,7 @@ std::optional<BroadcastMessage> ParseBroadcastMessage( const char* msg, size_t m
         out.protocolVersion = bm.protocolVersion;
         out.activeTime = bm.activeTime;
         out.listenPort = bm.listenPort;
-        strcpy( out.programName, bm.programName );
+        strzcpy( out.programName, bm.programName, sizeof( out.programName ) );
         out.pid = 0;
         return out;
     }
@@ -60,7 +62,7 @@ std::optional<BroadcastMessage> ParseBroadcastMessage( const char* msg, size_t m
         out.protocolVersion = bm.protocolVersion;
         out.activeTime = bm.activeTime;
         out.listenPort = 8086;
-        strcpy( out.programName, bm.programName );
+        strzcpy( out.programName, bm.programName, sizeof( out.programName ) );
         out.pid = 0;
         return out;
     }

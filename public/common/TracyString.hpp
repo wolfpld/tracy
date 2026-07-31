@@ -12,9 +12,10 @@ static inline size_t strzcpy( char* __restrict dst, const char* __restrict src, 
 {
     assert( dstSize > 0 );
 
-    const auto srcSz = strlen( src );
-    if( srcSz < dstSize )
+    const auto end = (const char*)memchr( src, '\0', dstSize );
+    if( end != nullptr )
     {
+        const auto srcSz = end - src;
         memcpy( dst, src, srcSz + 1 );
         return srcSz;
     }

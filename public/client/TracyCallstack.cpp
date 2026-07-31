@@ -8,6 +8,7 @@
 #include "TracyFastVector.hpp"
 #include "TracyStringHelpers.hpp"
 #include "../common/TracyAlloc.hpp"
+#include "../common/TracyString.hpp"
 #include "../common/TracySystem.hpp"
 
 
@@ -1461,8 +1462,7 @@ static const char* DecodeCallstackPtrFastExternal( uint64_t ptr )
     }
     if( symname )
     {
-        strncpy( ret, symname, sizeof( ret ) - 1 );
-        ret[sizeof( ret ) - 1] = '\0';
+        strzcpy( ret, symname, sizeof( ret ) );
     }
     else
     {

@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <thread>
 
+#include "../../common/TracyString.hpp"
+
 namespace tracy
 {
 namespace etw
@@ -330,9 +332,7 @@ static Session StartSingletonKernelLoggerSession( ULONGLONG EnableFlags )
 {
     Session session = {};
 
-    size_t maxlen = sizeof( session.name ) - 1;
-    strncpy( session.name, KERNEL_LOGGER_NAMEA, maxlen );
-    session.name[maxlen] = '\0';
+    strzcpy( session.name, KERNEL_LOGGER_NAMEA, sizeof( session.name ) );
 
     auto& props = session.properties;
     props.LoggerNameOffset = offsetof( Session, name );
@@ -364,9 +364,7 @@ static Session StartPrivateKernelSession( const CHAR* name )
 {
     Session session = {};
 
-    size_t maxlen = sizeof( session.name ) - 1;
-    strncpy( session.name, name, maxlen );
-    session.name[maxlen] = '\0';
+    strzcpy( session.name, name, sizeof( session.name ) );
 
     auto& props = session.properties;
     props.LoggerNameOffset = offsetof( Session, name );
@@ -398,9 +396,7 @@ static Session StartUserSession( const CHAR* name )
 {
     Session session = {};
 
-    size_t maxlen = sizeof( session.name ) - 1;
-    strncpy( session.name, name, maxlen );
-    session.name[maxlen] = '\0';
+    strzcpy( session.name, name, sizeof( session.name ) );
 
     auto& props = session.properties;
     props.LoggerNameOffset = offsetof( Session, name );

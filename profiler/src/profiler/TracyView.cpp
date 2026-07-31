@@ -774,24 +774,6 @@ bool View::DrawImpl()
         m_acb();
     }
 
-    auto& threadHints = m_worker.GetPendingThreadHints();
-    if( !threadHints.empty() )
-    {
-        m_threadReinsert.reserve( threadHints.size()  );
-        for( auto v : threadHints )
-        {
-            auto it = std::find_if( m_threadOrder.begin(), m_threadOrder.end(), [v]( const auto& t ) { return t->id == v; } );
-            if( it != m_threadOrder.end() )
-            {
-                // Will be reinserted in the correct place later.
-                // A separate list is kept of threads that were already known to avoid having to figure out which one is missing in m_threadOrder.
-                m_threadReinsert.push_back( *it );
-                m_threadOrder.erase( it );
-            }
-        }
-        m_worker.ClearPendingThreadHints();
-    }
-
     const auto& io = ImGui::GetIO();
     m_wasActive.store( false, std::memory_order_release );
 
@@ -882,6 +864,23 @@ bool View::DrawImpl()
         }
     }
     Worker::MainThreadDataLockGuard lock = m_worker.ObtainLockForMainThread();
+    auto& threadHints = m_worker.GetPendingThreadHints();
+    if( !threadHints.empty() )
+    {
+        m_threadReinsert.reserve( threadHints.size()  );
+        for( auto v : threadHints )
+        {
+            auto it = std::find_if( m_threadOrder.begin(), m_threadOrder.end(), [v]( const auto& t ) { return t->id == v; } );
+            if( it != m_threadOrder.end() )
+            {
+                // Will be reinserted in the correct place later.
+                // A separate list is kept of threads that were already known to avoid having to figure out which one is missing in m_threadOrder.
+                m_threadReinsert.push_back( *it );
+                m_threadOrder.erase( it );
+            }
+        }
+        m_worker.ClearPendingThreadHints();
+    }
     m_worker.DoPostponedWork();
     if( !m_worker.IsDataStatic() )
     {

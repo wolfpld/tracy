@@ -203,7 +203,7 @@ std::vector<std::string> SplitLines( const char* data, size_t sz )
     for(;;)
     {
         auto end = txt;
-        while( *end != '\n' && *end != '\r' && end - data < sz ) end++;
+        while( end - data < sz && *end != '\n' && *end != '\r' ) end++;
         ret.emplace_back( txt, end );
         if( end - data == sz ) break;
         if( *end == '\n' )

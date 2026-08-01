@@ -351,16 +351,9 @@ void View::DrawTimeline()
     ImGui::SetNextWindowContentSize( ImVec2( 0, m_tc.GetHeight() ) );
     ImGui::BeginChild( "##zoneWin", ImVec2( ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y ), false, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 
-    const auto verticallyCenterTimeline = true;
-
     if( m_yDelta != 0 )
     {
         auto& io = ImGui::GetIO();
-        if( !verticallyCenterTimeline )
-        {
-            auto y = ImGui::GetScrollY();
-            ImGui::SetScrollY( y - m_yDelta );
-        }
         io.MouseClickedPos[1].y = io.MousePos.y;
     }
 
@@ -403,7 +396,7 @@ void View::DrawTimeline()
         }
     }
 
-    const auto vcenter = verticallyCenterTimeline && drawMouseLine && m_viewMode == ViewMode::Paused;
+    const auto vcenter = drawMouseLine && m_viewMode == ViewMode::Paused;
     m_tc.End( pxns, wpos, hover, vcenter, yMin, yMax );
     ImGui::EndChild();
 

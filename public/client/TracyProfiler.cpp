@@ -2206,7 +2206,7 @@ void Profiler::Worker()
     // takes care of calling StopSystemTracing(). However, a client may decide to
     // manually RequestShutdown(), in which case ~Profile() may not execute before
     // this Worker() thread goes through its teardown stages and reaches this point.
-    // To ensure that system tracing does not keep pushing data to the worker queue 
+    // To ensure that system tracing does not keep pushing data to the worker queue
     // indefinitely (thus preventing this worker from terminating), we have to call
     // StopSystemTracing() here as well to be safe:
     StopSystemTracing();
@@ -4727,6 +4727,34 @@ TRACY_API void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size
     }
 }
 
+TRACY_API void ___tracy_emit_zone_text_fmt( TracyCZoneCtx ctx, const char* fmt, ... )
+{
+    if( !ctx.active ) return;
+    va_list args;
+    va_start( args, fmt );
+    auto size = vsnprintf( nullptr, 0, fmt, args );
+    va_end( args );
+    if( size < 0 ) return;
+    assert( size < (std::numeric_limits<uint16_t>::max)() );
+
+    char* ptr = (char*)tracy::tracy_malloc( size_t( size ) + 1 );
+    va_start( args, fmt );
+    vsnprintf( ptr, size_t( size ) + 1, fmt, args );
+    va_end( args );
+
+#ifndef TRACY_NO_VERIFY
+    {
+        TracyQueuePrepareC( tracy::QueueType::ZoneValidation );
+        tracy::MemWrite( &item->zoneValidation.id, ctx.id );
+        TracyQueueCommitC( zoneValidationThread );
+    }
+#endif
+    TracyQueuePrepare( tracy::QueueType::ZoneText );
+    tracy::MemWrite( &item->zoneTextFat.text, (uint64_t)ptr );
+    tracy::MemWrite( &item->zoneTextFat.size, (uint16_t)size );
+    TracyQueueCommit( zoneTextFatThread );
+}
+
 TRACY_API void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size_t size )
 {
     assert( size < std::numeric_limits<uint16_t>::max() );
@@ -4746,6 +4774,34 @@ TRACY_API void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size
         tracy::MemWrite( &item->zoneTextFat.size, (uint16_t)size );
         TracyQueueCommitC( zoneTextFatThread );
     }
+}
+
+TRACY_API void ___tracy_emit_zone_name_fmt( TracyCZoneCtx ctx, const char* fmt, ... )
+{
+    if( !ctx.active ) return;
+    va_list args;
+    va_start( args, fmt );
+    auto size = vsnprintf( nullptr, 0, fmt, args );
+    va_end( args );
+    if( size < 0 ) return;
+    assert( size < (std::numeric_limits<uint16_t>::max)() );
+
+    char* ptr = (char*)tracy::tracy_malloc( size_t( size ) + 1 );
+    va_start( args, fmt );
+    vsnprintf( ptr, size_t( size ) + 1, fmt, args );
+    va_end( args );
+
+#ifndef TRACY_NO_VERIFY
+    {
+        TracyQueuePrepareC( tracy::QueueType::ZoneValidation );
+        tracy::MemWrite( &item->zoneValidation.id, ctx.id );
+        TracyQueueCommitC( zoneValidationThread );
+    }
+#endif
+    TracyQueuePrepare( tracy::QueueType::ZoneName );
+    tracy::MemWrite( &item->zoneTextFat.text, (uint64_t)ptr );
+    tracy::MemWrite( &item->zoneTextFat.size, (uint16_t)size );
+    TracyQueueCommit( zoneTextFatThread );
 }
 
 TRACY_API void ___tracy_emit_zone_color( TracyCZoneCtx ctx, uint32_t color ) {

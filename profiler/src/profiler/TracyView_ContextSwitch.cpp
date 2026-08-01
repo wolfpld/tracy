@@ -289,7 +289,7 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
                         ImGui::Separator();
                         TextDisabledUnformatted( ICON_FA_HOURGLASS_HALF " Wait stack:" );
                         CallstackTooltipContents( waitStack );
-                        if( ImGui::IsMouseClicked( ImGuiMouseButton_Left ) )
+                        if( IsMouseClicked( ImGuiMouseButton_Left ) )
                         {
                             m_callstackView = {
                                 .id = waitStack,

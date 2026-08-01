@@ -609,7 +609,7 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
 void View::DrawThreadCropper( const int depth, const uint64_t tid, const float xPos, const float yPos, const float ostep, const float cropperWidth, const bool hasCtxSwitches )
 {
     const ImVec2 mousePos = ImGui::GetMousePos();
-    const bool clicked = ImGui::IsMouseClicked( ImGuiMouseButton_Left );
+    const bool clicked = IsMouseClicked( ImGuiMouseButton_Left );
     auto draw = ImGui::GetWindowDrawList();
     bool isCropped = ( m_threadDepthLimit.find( tid ) != m_threadDepthLimit.end() );
     const int depthLimit = isCropped ? m_threadDepthLimit[tid] : depth;

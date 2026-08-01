@@ -223,8 +223,8 @@ const char* GetSavePath( const char* program, uint64_t time, bool create )
     const auto psz = strlen( program );
     assert( psz < 512 );
     char tmp[512];
-    strzcpy( tmp, program, sizeof( tmp ) );
-    NormalizeProgramName( tmp, psz );
+    const auto tsz = strzcpy( tmp, program, sizeof( tmp ) );
+    NormalizeProgramName( tmp, tsz );
     sz += sprintf( buf+sz, "/tracy/sidecar/%s", tmp );
 
     if( create )
@@ -265,8 +265,8 @@ const char* GetSavePathLegacy( const char* program, uint64_t time, const char* f
     const auto psz = strlen( program );
     assert( psz < 512 );
     char tmp[512];
-    strzcpy( tmp, program, sizeof( tmp ) );
-    NormalizeProgramName( tmp, psz );
+    const auto tsz = strzcpy( tmp, program, sizeof( tmp ) );
+    NormalizeProgramName( tmp, tsz );
 
     // 604800 = 7 days
     sz += sprintf( buf+sz, "/tracy/user/%c/%s/%" PRIu64 "/%" PRIu64 "/", tmp[0], tmp, uint64_t( time / 604800 ), time );

@@ -416,7 +416,7 @@ TRACY_API void ___tracy_fiber_leave( void );
 #  define TracyCFiberLeave ___tracy_fiber_leave();
 #endif
 
-TRACY_API int64_t ___tracy_get_time();
+TRACY_API int64_t ___tracy_get_time( void );
 
 #endif
 

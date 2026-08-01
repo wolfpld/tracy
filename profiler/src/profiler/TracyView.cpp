@@ -339,6 +339,7 @@ static_assert( sizeof( CompressionName ) == sizeof( CompressionDesc ), "Unmatche
 
 bool View::Draw()
 {
+    Worker::MainThreadDataLockGuard lock = m_worker.ObtainLockForMainThread();
     HandshakeStatus status = (HandshakeStatus)m_worker.GetHandshakeStatus();
     switch( status )
     {
@@ -863,7 +864,6 @@ bool View::DrawImpl()
             ImGui::EndPopup();
         }
     }
-    Worker::MainThreadDataLockGuard lock = m_worker.ObtainLockForMainThread();
     auto& threadHints = m_worker.GetPendingThreadHints();
     if( !threadHints.empty() )
     {

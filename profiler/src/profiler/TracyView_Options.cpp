@@ -919,12 +919,14 @@ void View::DrawOptions()
     {
         // Keep in sync with TracyView.cpp View::SetupConfig()
         s_config.targetFps = m_vd.frameTarget;
+        s_config.drawFrameTargets = m_vd.drawFrameTargets;
         s_config.dynamicColors = m_vd.dynamicColors;
         s_config.forceColors = m_vd.forceColors;
         s_config.ghostZones = m_vd.ghostZones;
         s_config.shortenName = (int)m_vd.shortenName;
         s_config.drawSamples = m_vd.drawSamples;
         s_config.drawContextSwitches = m_vd.drawContextSwitches;
+        s_config.plotHeight = m_vd.plotHeight;
         SaveConfig();
     }
 

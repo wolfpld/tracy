@@ -393,7 +393,7 @@ void View::DrawFindZone()
                 ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s", RealToString( zones.size() ), LocationToString( fileName, srcloc.line ) );
                 if( ImGui::IsItemHovered() )
                 {
-                    DrawSourceTooltip( fileName, srcloc.line );
+                    DrawSourceTooltip( fileName, srcloc.line, srcloc.line );
                     if( ImGui::IsItemClicked( 1 ) )
                     {
                         if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )

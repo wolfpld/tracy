@@ -587,7 +587,7 @@ void View::DrawLockInfoWindow()
         ImGui::TextUnformatted( LocationToString( fileName, srcloc.line ) );
         if( ImGui::IsItemHovered() )
         {
-            DrawSourceTooltip( fileName, srcloc.line );
+            DrawSourceTooltip( fileName, srcloc.line, srcloc.line );
             if( ImGui::IsItemClicked( 1 ) )
             {
                 if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )

@@ -551,7 +551,7 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, MemCallstackFr
             }
             if( ImGui::IsItemHovered() )
             {
-                DrawSourceTooltip( fileName, frame.line );
+                DrawSourceTooltip( fileName, frame.line, frame.line );
                 if( ImGui::IsItemClicked( 1 ) )
                 {
                     if( !ViewDispatch( fileName, frame.line, frame.symAddr ) )
@@ -706,7 +706,7 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrame
             }
             if( ImGui::IsItemHovered() )
             {
-                DrawSourceTooltip( fileName, frame.line );
+                DrawSourceTooltip( fileName, frame.line, frame.line );
                 if( ImGui::IsItemClicked( 1 ) )
                 {
                     if( !ViewDispatch( fileName, frame.line, frame.symAddr ) )
@@ -856,7 +856,7 @@ void View::DrawParentsFrameTreeLevel( const unordered_flat_map<uint64_t, Callsta
             }
             if( ImGui::IsItemHovered() )
             {
-                DrawSourceTooltip( fileName, frame.line );
+                DrawSourceTooltip( fileName, frame.line, frame.line );
                 if( ImGui::IsItemClicked( 1 ) )
                 {
                     if( !ViewDispatch( fileName, frame.line, frame.symAddr ) )

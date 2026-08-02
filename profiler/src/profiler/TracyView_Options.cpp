@@ -470,7 +470,7 @@ void View::DrawOptions()
                         ImGui::TextDisabled( "(%s) %s", RealToString( l.second->timeline.size() ), LocationToString( fileName, sl.line ) );
                         if( ImGui::IsItemHovered() )
                         {
-                            DrawSourceTooltip( fileName, sl.line, 1, 1 );
+                            DrawSourceTooltip( fileName, sl.line, sl.line, 1, 1 );
                             if( ImGui::IsItemClicked( 1 ) )
                             {
                                 if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
@@ -557,7 +557,7 @@ void View::DrawOptions()
                         ImGui::TextDisabled( "(%s) %s", RealToString( l.second->timeline.size() ), LocationToString( fileName, sl.line ) );
                         if( ImGui::IsItemHovered() )
                         {
-                            DrawSourceTooltip( fileName, sl.line, 1, 1 );
+                            DrawSourceTooltip( fileName, sl.line, sl.line, 1, 1 );
                             if( ImGui::IsItemClicked( 1 ) )
                             {
                                 if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
@@ -644,7 +644,7 @@ void View::DrawOptions()
                         ImGui::TextDisabled( "(%s) %s", RealToString( l.second->timeline.size() ), LocationToString( fileName, sl.line ) );
                         if( ImGui::IsItemHovered() )
                         {
-                            DrawSourceTooltip( fileName, sl.line, 1, 1 );
+                            DrawSourceTooltip( fileName, sl.line, sl.line, 1, 1 );
                             if( ImGui::IsItemClicked( 1 ) )
                             {
                                 if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )

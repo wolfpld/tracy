@@ -648,12 +648,12 @@ void View::DrawCallstackTable( const CallstackFrameId* data, size_t size, const 
                             if( sym )
                             {
                                 const auto symtxt = m_worker.GetString( sym->file );
-                                DrawSourceTooltip( symtxt, sym->line );
+                                DrawSourceTooltip( symtxt, sym->line, sym->line );
                             }
                         }
                         else
                         {
-                            DrawSourceTooltip( filename, frame.line );
+                            DrawSourceTooltip( filename, frame.line, frame.line );
                         }
                         if( ImGui::IsItemClicked( 1 ) )
                         {

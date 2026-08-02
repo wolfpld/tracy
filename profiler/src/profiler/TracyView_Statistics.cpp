@@ -745,7 +745,7 @@ void View::DrawStatistics()
                     TextDisabledUnformatted( LocationToString( file, srcloc.line ) );
                     if( ImGui::IsItemHovered() )
                     {
-                        DrawSourceTooltip( file, srcloc.line );
+                        DrawSourceTooltip( file, srcloc.line, srcloc.line );
                         if( ImGui::IsItemClicked( 1 ) )
                         {
                             if( SourceFileValid( file, m_worker.GetCaptureTime(), *this, m_worker ) )

@@ -512,7 +512,7 @@ private:
                 ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.25f ) );
                 ImGui::Separator();
                 ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.25f ) );
-                m_view->DrawSourceTooltip( m_worker->GetString( idx ), lineStart, 3, 3, false );
+                m_view->DrawSourceTooltip( m_worker->GetString( idx ), lineStart, lineEnd, 3, 3, false );
             }
             else
             {

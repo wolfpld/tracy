@@ -308,7 +308,7 @@ void View::DrawZoneInfoWindow()
         TextFocusedClipboard( "Location:", LocationToString( fileName, srcloc.line ), LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ), 3 );
         if( ImGui::IsItemHovered() )
         {
-            DrawSourceTooltip( fileName, srcloc.line );
+            DrawSourceTooltip( fileName, srcloc.line, srcloc.line );
             if( ImGui::IsItemClicked( ImGuiMouseButton_Right ) && SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
             {
                 ViewSourceCheckKeyMod( fileName, srcloc.line, m_worker.GetString( srcloc.function ) );
@@ -922,7 +922,7 @@ void View::DrawZoneInfoWindow()
             TextDisabledUnformatted( LocationToString( fileName, srcloc.line ) );
             if( ImGui::IsItemHovered() )
             {
-                DrawSourceTooltip( fileName, srcloc.line );
+                DrawSourceTooltip( fileName, srcloc.line, srcloc.line );
                 if( ImGui::IsItemClicked( 1 ) )
                 {
                     if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
@@ -1541,7 +1541,7 @@ void View::DrawGpuInfoWindow()
             TextDisabledUnformatted( LocationToString( fileName, srcloc.line ) );
             if( ImGui::IsItemHovered() )
             {
-                DrawSourceTooltip( fileName, srcloc.line );
+                DrawSourceTooltip( fileName, srcloc.line, srcloc.line );
                 if( ImGui::IsItemClicked( 1 ) )
                 {
                     if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )

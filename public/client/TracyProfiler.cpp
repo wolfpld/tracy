@@ -4749,10 +4749,10 @@ TRACY_API void ___tracy_emit_zone_text_fmt( TracyCZoneCtx ctx, const char* fmt, 
         TracyQueueCommitC( zoneValidationThread );
     }
 #endif
-    TracyQueuePrepare( tracy::QueueType::ZoneText );
+    TracyQueuePrepareC( tracy::QueueType::ZoneText );
     tracy::MemWrite( &item->zoneTextFat.text, (uint64_t)ptr );
     tracy::MemWrite( &item->zoneTextFat.size, (uint16_t)size );
-    TracyQueueCommit( zoneTextFatThread );
+    TracyQueueCommitC( zoneTextFatThread );
 }
 
 TRACY_API void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size_t size )
@@ -4798,10 +4798,10 @@ TRACY_API void ___tracy_emit_zone_name_fmt( TracyCZoneCtx ctx, const char* fmt, 
         TracyQueueCommitC( zoneValidationThread );
     }
 #endif
-    TracyQueuePrepare( tracy::QueueType::ZoneName );
+    TracyQueuePrepareC( tracy::QueueType::ZoneName );
     tracy::MemWrite( &item->zoneTextFat.text, (uint64_t)ptr );
     tracy::MemWrite( &item->zoneTextFat.size, (uint16_t)size );
-    TracyQueueCommit( zoneTextFatThread );
+    TracyQueueCommitC( zoneTextFatThread );
 }
 
 TRACY_API void ___tracy_emit_zone_color( TracyCZoneCtx ctx, uint32_t color ) {

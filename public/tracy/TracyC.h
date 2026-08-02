@@ -58,7 +58,9 @@ typedef const void* TracyCSharedLockCtx;
 #define TracyCZoneNC(c,x,y,z)
 #define TracyCZoneEnd(c)
 #define TracyCZoneText(c,x,y)
+#define TracyCZoneTextF(c,x,...)
 #define TracyCZoneName(c,x,y)
+#define TracyCZoneNameF(c,x,...)
 #define TracyCZoneColor(c,x)
 #define TracyCZoneValue(c,x)
 

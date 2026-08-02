@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #include "../common/TracyApi.h"
-#include "../common/TracyFormat.hpp"
+#include "../common/TracyFormat.h"
 
 #ifdef __cplusplus
 extern "C" {

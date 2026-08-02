@@ -20,7 +20,7 @@
 #include "../common/TracyQueue.hpp"
 #include "../common/TracyAlign.hpp"
 #include "../common/TracyAlloc.hpp"
-#include "../common/TracyFormat.hpp"
+#include "../common/TracyFormat.h"
 #include "../common/TracyMutex.hpp"
 #include "../common/TracyProtocol.hpp"
 
@@ -44,7 +44,7 @@
 #  define TRACY_HAS_CNTVCT
 #endif
 
-#if !defined TRACY_DISALLOW_HW_TIMER 
+#if !defined TRACY_DISALLOW_HW_TIMER
 #  if ( defined TRACY_HAS_RDTSC || defined TRACY_HAS_CNTVCT )
 #    define TRACY_HW_TIMER
 #  elif defined TARGET_OS_IOS && TARGET_OS_IOS == 1 // For now, !defined(TRACY_HW_TIMER) implies TRACY_TIMER_FALLBACK, so define TRACY_HW_TIMER to use mach_absolute_time() on iOS
@@ -248,7 +248,7 @@ public:
             uint64_t value;
             __asm__ __volatile__(
                //"isb \n"              // ommitting "Instruction Synchronization Barrier"
-                "mrs %0, CNTVCT_EL0" 
+                "mrs %0, CNTVCT_EL0"
                 : "=r" (value)          // Output: write 'register %0' to 'value'
                 :                       // No inputs
                 : "memory"              // Clobber list: memory (e.g., compiler barrier)
@@ -454,7 +454,7 @@ public:
 
         TracyLfqCommit;
     }
-    
+
     static tracy_force_inline void LogString( MessageSourceType source, MessageSeverity severity, uint32_t color, int32_t callstack_depth, size_t txtLength, const char* txt )
     {
         assert( txtLength < (std::numeric_limits<uint16_t>::max)() );

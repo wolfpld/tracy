@@ -9,7 +9,7 @@
 #include "../common/TracySystem.hpp"
 #include "../common/TracyAlign.hpp"
 #include "../common/TracyAlloc.hpp"
-#include "../common/TracyFormat.hpp"
+#include "../common/TracyFormat.h"
 #include "TracyProfiler.hpp"
 #include "TracyCallstack.hpp"
 

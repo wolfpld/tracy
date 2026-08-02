@@ -372,6 +372,9 @@ public:
         const auto queryId = m_ctx->NextQueryId();
         m_ctx->m_immediateDevCtx->End(m_ctx->GetQueryObjectFromId(queryId));
 
+#ifdef TRACY_ON_DEMAND
+        if( GetProfiler().ConnectionId() != m_connectionId ) return;
+#endif
         auto* item = Profiler::QueueSerial();
         MemWrite( &item->hdr.type, QueueType::GpuZoneEndSerial );
         MemWrite( &item->gpuZoneEnd.cpuTime, Profiler::GetTime() );
@@ -385,6 +388,7 @@ private:
     tracy_force_inline D3D11ZoneScope( D3D11Ctx* ctx, bool active )
 #ifdef TRACY_ON_DEMAND
         : m_active( active && GetProfiler().IsConnected() )
+        , m_connectionId( GetProfiler().ConnectionId() )
 #else
         : m_active( active )
 #endif
@@ -408,6 +412,10 @@ private:
     }
 
     const bool m_active;
+
+#ifdef TRACY_ON_DEMAND
+    uint64_t m_connectionId = 0;
+#endif
 
     D3D11Ctx* m_ctx;
 };

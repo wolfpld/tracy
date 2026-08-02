@@ -558,6 +558,9 @@ namespace tracy
     class D3D12ZoneScope
     {
         const bool m_active;
+#ifdef TRACY_ON_DEMAND
+        uint64_t m_connectionId = 0;
+#endif
         D3D12QueueCtx* m_ctx = nullptr;
         ID3D12GraphicsCommandList* m_cmdList = nullptr;
         uint32_t m_queryId = 0;
@@ -612,6 +615,7 @@ namespace tracy
         tracy_force_inline D3D12ZoneScope(D3D12QueueCtx* ctx, ID3D12GraphicsCommandList* cmdList, bool active)
 #ifdef TRACY_ON_DEMAND
             : m_active(active&& GetProfiler().IsConnected())
+            , m_connectionId(GetProfiler().ConnectionId())
 #else
             : m_active(active)
 #endif
@@ -656,13 +660,20 @@ namespace tracy
 
             const auto queryId = m_queryId + 1;  // Our end query slot is immediately after the begin slot.
 
-            auto* item = Profiler::QueueSerial();
-            MemWrite(&item->hdr.type, QueueType::GpuZoneEndSerial);
-            MemWrite(&item->gpuZoneEnd.cpuTime, Profiler::GetTime());
-            MemWrite(&item->gpuZoneEnd.thread, GetThreadHandle());
-            MemWrite(&item->gpuZoneEnd.queryId, static_cast<uint16_t>(queryId));
-            MemWrite(&item->gpuZoneEnd.context, m_ctx->GetId());
-            Profiler::QueueSerialFinish();
+#ifdef TRACY_ON_DEMAND
+            if (GetProfiler().ConnectionId() == m_connectionId)
+            {
+#endif
+                auto* item = Profiler::QueueSerial();
+                MemWrite(&item->hdr.type, QueueType::GpuZoneEndSerial);
+                MemWrite(&item->gpuZoneEnd.cpuTime, Profiler::GetTime());
+                MemWrite(&item->gpuZoneEnd.thread, GetThreadHandle());
+                MemWrite(&item->gpuZoneEnd.queryId, static_cast<uint16_t>(queryId));
+                MemWrite(&item->gpuZoneEnd.context, m_ctx->GetId());
+                Profiler::QueueSerialFinish();
+#ifdef TRACY_ON_DEMAND
+            }
+#endif
 
             m_cmdList->EndQuery(m_ctx->m_queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, queryId);
             // NOTE: can't quite move this ResolveQueryData() call to Collect()...

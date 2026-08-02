@@ -715,6 +715,9 @@ namespace tracy
     class WebGPUZoneScope
     {
         const bool m_active;
+#ifdef TRACY_ON_DEMAND
+        uint64_t m_connectionId = 0;
+#endif
         WebGPUQueueCtx* m_ctx = nullptr;
         WGPUCommandEncoder m_encoder = nullptr;
         uint64_t m_rawTicket = 0;
@@ -831,6 +834,7 @@ namespace tracy
         tracy_force_inline WebGPUZoneScope(WebGPUQueueCtx* ctx, WGPUCommandEncoder encoder, PassDescriptor& passDesc, const SourceLocationData* srcLocation, bool active)
 #ifdef TRACY_ON_DEMAND
             : m_active(active && GetProfiler().IsConnected())
+            , m_connectionId(GetProfiler().ConnectionId())
 #else
             : m_active(active)
 #endif
@@ -844,6 +848,7 @@ namespace tracy
         tracy_force_inline WebGPUZoneScope(WebGPUQueueCtx* ctx, WGPUCommandEncoder encoder, PassDescriptor& passDesc, const SourceLocationData* srcLocation, int32_t depth, bool active)
 #ifdef TRACY_ON_DEMAND
             : m_active(active && GetProfiler().IsConnected())
+            , m_connectionId(GetProfiler().ConnectionId())
 #else
             : m_active(active)
 #endif
@@ -857,6 +862,7 @@ namespace tracy
         tracy_force_inline WebGPUZoneScope(WebGPUQueueCtx* ctx, uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, WGPUCommandEncoder encoder, PassDescriptor& passDesc, bool active)
 #ifdef TRACY_ON_DEMAND
             : m_active(active && GetProfiler().IsConnected())
+            , m_connectionId(GetProfiler().ConnectionId())
 #else
             : m_active(active)
 #endif
@@ -870,6 +876,7 @@ namespace tracy
         tracy_force_inline WebGPUZoneScope(WebGPUQueueCtx* ctx, uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, WGPUCommandEncoder encoder, PassDescriptor& passDesc, int32_t depth, bool active)
 #ifdef TRACY_ON_DEMAND
             : m_active(active && GetProfiler().IsConnected())
+            , m_connectionId(GetProfiler().ConnectionId())
 #else
             : m_active(active)
 #endif
@@ -885,13 +892,20 @@ namespace tracy
 
             const auto queryId = m_queryId + 1;
 
-            auto* item = Profiler::QueueSerial();
-            MemWrite(&item->hdr.type, QueueType::GpuZoneEndSerial);
-            MemWrite(&item->gpuZoneEnd.cpuTime, Profiler::GetTime());
-            MemWrite(&item->gpuZoneEnd.thread, GetThreadHandle());
-            MemWrite(&item->gpuZoneEnd.queryId, static_cast<uint16_t>(queryId));
-            MemWrite(&item->gpuZoneEnd.context, m_ctx->GetId());
-            Profiler::QueueSerialFinish();
+#ifdef TRACY_ON_DEMAND
+            if (GetProfiler().ConnectionId() == m_connectionId)
+            {
+#endif
+                auto* item = Profiler::QueueSerial();
+                MemWrite(&item->hdr.type, QueueType::GpuZoneEndSerial);
+                MemWrite(&item->gpuZoneEnd.cpuTime, Profiler::GetTime());
+                MemWrite(&item->gpuZoneEnd.thread, GetThreadHandle());
+                MemWrite(&item->gpuZoneEnd.queryId, static_cast<uint16_t>(queryId));
+                MemWrite(&item->gpuZoneEnd.context, m_ctx->GetId());
+                Profiler::QueueSerialFinish();
+#ifdef TRACY_ON_DEMAND
+            }
+#endif
 
             if (m_queryId % 32 == 0)
                 ResolveQueryBatch(m_queryId-32);

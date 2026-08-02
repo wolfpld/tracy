@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include "../common/TracyApi.h"
+#include "../common/TracyFormat.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,7 +58,9 @@ typedef const void* TracyCSharedLockCtx;
 #define TracyCZoneNC(c,x,y,z)
 #define TracyCZoneEnd(c)
 #define TracyCZoneText(c,x,y)
+#define TracyCZoneTextF(c,x,...)
 #define TracyCZoneName(c,x,y)
+#define TracyCZoneNameF(c,x,...)
 #define TracyCZoneColor(c,x)
 #define TracyCZoneValue(c,x)
 
@@ -240,7 +243,9 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc( uint64_t srcloc, int32_t
 TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc_callstack( uint64_t srcloc, int32_t depth, int32_t active );
 TRACY_API void ___tracy_emit_zone_end( TracyCZoneCtx ctx );
 TRACY_API void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size_t size );
+TRACY_API void ___tracy_emit_zone_text_fmt( TracyCZoneCtx ctx, const char* fmt, ... ) TRACY_ATTRIBUTE_FORMAT_PRINTF(2, 3);
 TRACY_API void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size_t size );
+TRACY_API void ___tracy_emit_zone_name_fmt( TracyCZoneCtx ctx, const char* fmt, ... ) TRACY_ATTRIBUTE_FORMAT_PRINTF(2, 3);
 TRACY_API void ___tracy_emit_zone_color( TracyCZoneCtx ctx, uint32_t color );
 TRACY_API void ___tracy_emit_zone_value( TracyCZoneCtx ctx, uint64_t value );
 
@@ -280,7 +285,9 @@ TRACY_API int32_t ___tracy_connected(void);
 #define TracyCZoneEnd( ctx ) ___tracy_emit_zone_end( ctx );
 
 #define TracyCZoneText( ctx, txt, size ) ___tracy_emit_zone_text( ctx, txt, size );
+#define TracyCZoneTextF( ctx, fmt, ... ) ___tracy_emit_zone_text_fmt( ctx, fmt, ##__VA_ARGS__ );
 #define TracyCZoneName( ctx, txt, size ) ___tracy_emit_zone_name( ctx, txt, size );
+#define TracyCZoneNameF( ctx, fmt, ... ) ___tracy_emit_zone_name_fmt( ctx, fmt, ##__VA_ARGS__ );
 #define TracyCZoneColor( ctx, color ) ___tracy_emit_zone_color( ctx, color );
 #define TracyCZoneValue( ctx, value ) ___tracy_emit_zone_value( ctx, value );
 

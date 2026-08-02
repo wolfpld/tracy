@@ -1,5 +1,5 @@
-#ifndef __TRACYFORMAT_HPP__
-#define __TRACYFORMAT_HPP__
+#ifndef __TRACYFORMAT_H__
+#define __TRACYFORMAT_H__
 
 #if (defined(__GNUC__) || defined(__clang__))
 #  define TRACY_ATTRIBUTE_FORMAT_PRINTF(fmt_idx, arg_idx) \

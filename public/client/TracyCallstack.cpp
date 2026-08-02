@@ -1283,9 +1283,12 @@ char* NormalizePath( const char* path )
         case 2:
             if( memcmp( ptr, "..", 2 ) == 0 )
             {
-                const char* back = res + rsz - 1;
-                while( back > res && *back != '/' ) back--;
-                rsz = back - res;
+                if( rsz > 0 )
+                {
+                    const char* back = res + rsz - 1;
+                    while( back > res && *back != '/' ) back--;
+                    rsz = back - res;
+                }
                 ptr = next + 1;
                 continue;
             }

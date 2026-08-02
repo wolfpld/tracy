@@ -433,12 +433,48 @@ private:
         }
     }
 
+    static void ExtractLine( const std::string& str, uint32_t& lineStart, uint32_t& lineEnd )
+    {
+        constexpr auto Parse = []( const char* str ) -> uint32_t {
+            if( *str == 0 || *str == '-' || *str == '+' ) return 0;
+            char* endptr;
+            const auto val = strtoul( str, &endptr, 10 );
+            if( endptr == str || *endptr != 0 ) return 0;
+            return uint32_t( val );
+        };
+
+        auto first = str.find_first_not_of( " \t" );
+        if( first == std::string::npos ) return;
+        auto last = str.find_last_not_of( " \t" );
+        const auto trimmed = str.substr( first, last - first + 1 );
+
+        const auto dash = trimmed.find( '-' );
+        if( dash == std::string::npos )
+        {
+            lineStart = Parse( trimmed.c_str() );
+            lineEnd = lineStart;
+            return;
+        }
+
+        auto startStr = trimmed.substr( 0, dash );
+        auto endStr = trimmed.substr( dash + 1 );
+        auto sf = startStr.find_first_not_of( " \t" );
+        auto ef = endStr.find_first_not_of( " \t" );
+        if( sf == std::string::npos || ef == std::string::npos ) return;
+        auto se = startStr.find_last_not_of( " \t" );
+        auto ee = endStr.find_last_not_of( " \t" );
+        lineStart = Parse( startStr.substr( sf, se - sf + 1 ).c_str() );
+        lineEnd = Parse( endStr.substr( ef, ee - ef + 1 ).c_str() );
+        if( lineStart == 0 || lineEnd == 0 ) lineStart = lineEnd = 0;
+    }
+
     void LinkHover()
     {
         const auto isSource = link.starts_with( "source:" ) && m_view && m_worker;
         const auto isAnchor = link.starts_with( "#" ) && m_view;
         StringIdx idx;
-        uint32_t line = 0;
+        uint32_t lineStart = 0;
+        uint32_t lineEnd = 0;
 
         ImGui::SetMouseCursor( ImGuiMouseCursor_Hand );
         ImGui::BeginTooltip();
@@ -458,9 +494,17 @@ private:
             TextFocused( "Source:", fn.c_str() );
             if( separator != std::string::npos )
             {
-                line = atoi( source.substr( separator + 1 ).c_str() );
-                ImGui::SameLine( 0, 0 );
-                ImGui::Text( ":%i", line );
+                ExtractLine( source.substr( separator + 1 ), lineStart, lineEnd );
+                if( lineStart != 0 )
+                {
+                    ImGui::SameLine( 0, 0 );
+                    ImGui::Text( ":%i", lineStart );
+                    if( lineEnd != lineStart )
+                    {
+                        ImGui::SameLine( 0, 0 );
+                        ImGui::Text( "-%i", lineEnd );
+                    }
+                }
             }
 
             if( idx.Active() )
@@ -468,7 +512,7 @@ private:
                 ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.25f ) );
                 ImGui::Separator();
                 ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.25f ) );
-                m_view->DrawSourceTooltip( m_worker->GetString( idx ), line, 3, 3, false );
+                m_view->DrawSourceTooltip( m_worker->GetString( idx ), lineStart, 3, 3, false );
             }
             else
             {
@@ -509,7 +553,7 @@ private:
                 if( idx.Active() )
                 {
                     auto str = m_worker->GetString( idx );
-                    m_view->ViewSymbolSource( str, line );
+                    m_view->ViewSymbolSource( str, lineStart );
                 }
             }
             else if( isAnchor )

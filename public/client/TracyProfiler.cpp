@@ -4568,6 +4568,9 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin( const struct ___tracy_source_l
     ctx.active = active;
 #endif
     if( !ctx.active ) return ctx;
+#ifdef TRACY_ON_DEMAND
+    ctx.connectionId = tracy::GetProfiler().ConnectionId();
+#endif
     const auto id = tracy::GetProfiler().GetNextZoneId();
     ctx.id = id;
 
@@ -4596,6 +4599,9 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___trac
     ctx.active = active;
 #endif
     if( !ctx.active ) return ctx;
+#ifdef TRACY_ON_DEMAND
+    ctx.connectionId = tracy::GetProfiler().ConnectionId();
+#endif
     const auto id = tracy::GetProfiler().GetNextZoneId();
     ctx.id = id;
 
@@ -4633,6 +4639,9 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc( uint64_t srcloc, int32_t
         tracy::tracy_free( (void*)srcloc );
         return ctx;
     }
+#ifdef TRACY_ON_DEMAND
+    ctx.connectionId = tracy::GetProfiler().ConnectionId();
+#endif
     const auto id = tracy::GetProfiler().GetNextZoneId();
     ctx.id = id;
 
@@ -4665,6 +4674,9 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc_callstack( uint64_t srclo
         tracy::tracy_free( (void*)srcloc );
         return ctx;
     }
+#ifdef TRACY_ON_DEMAND
+    ctx.connectionId = tracy::GetProfiler().ConnectionId();
+#endif
     const auto id = tracy::GetProfiler().GetNextZoneId();
     ctx.id = id;
 
@@ -4692,6 +4704,9 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc_callstack( uint64_t srclo
 TRACY_API void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
 {
     if( !ctx.active ) return;
+#ifdef TRACY_ON_DEMAND
+    if( tracy::GetProfiler().ConnectionId() != ctx.connectionId ) return;
+#endif
 #ifndef TRACY_NO_VERIFY
     {
         TracyQueuePrepareC( tracy::QueueType::ZoneValidation );
@@ -4710,6 +4725,9 @@ TRACY_API void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size
 {
     assert( size < std::numeric_limits<uint16_t>::max() );
     if( !ctx.active ) return;
+#ifdef TRACY_ON_DEMAND
+    if( tracy::GetProfiler().ConnectionId() != ctx.connectionId ) return;
+#endif
     auto ptr = (char*)tracy::tracy_malloc( size );
     memcpy( ptr, txt, size );
 #ifndef TRACY_NO_VERIFY
@@ -4730,6 +4748,9 @@ TRACY_API void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size
 TRACY_API void ___tracy_emit_zone_text_fmt( TracyCZoneCtx ctx, const char* fmt, ... )
 {
     if( !ctx.active ) return;
+#ifdef TRACY_ON_DEMAND
+    if( tracy::GetProfiler().ConnectionId() != ctx.connectionId ) return;
+#endif
     va_list args;
     va_start( args, fmt );
     auto size = vsnprintf( nullptr, 0, fmt, args );
@@ -4759,6 +4780,9 @@ TRACY_API void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size
 {
     assert( size < std::numeric_limits<uint16_t>::max() );
     if( !ctx.active ) return;
+#ifdef TRACY_ON_DEMAND
+    if( tracy::GetProfiler().ConnectionId() != ctx.connectionId ) return;
+#endif
     auto ptr = (char*)tracy::tracy_malloc( size );
     memcpy( ptr, txt, size );
 #ifndef TRACY_NO_VERIFY
@@ -4779,6 +4803,9 @@ TRACY_API void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size
 TRACY_API void ___tracy_emit_zone_name_fmt( TracyCZoneCtx ctx, const char* fmt, ... )
 {
     if( !ctx.active ) return;
+#ifdef TRACY_ON_DEMAND
+    if( tracy::GetProfiler().ConnectionId() != ctx.connectionId ) return;
+#endif
     va_list args;
     va_start( args, fmt );
     auto size = vsnprintf( nullptr, 0, fmt, args );
@@ -4806,6 +4833,9 @@ TRACY_API void ___tracy_emit_zone_name_fmt( TracyCZoneCtx ctx, const char* fmt, 
 
 TRACY_API void ___tracy_emit_zone_color( TracyCZoneCtx ctx, uint32_t color ) {
     if( !ctx.active ) return;
+#ifdef TRACY_ON_DEMAND
+    if( tracy::GetProfiler().ConnectionId() != ctx.connectionId ) return;
+#endif
 #ifndef TRACY_NO_VERIFY
     {
         TracyQueuePrepareC( tracy::QueueType::ZoneValidation );
@@ -4825,6 +4855,9 @@ TRACY_API void ___tracy_emit_zone_color( TracyCZoneCtx ctx, uint32_t color ) {
 TRACY_API void ___tracy_emit_zone_value( TracyCZoneCtx ctx, uint64_t value )
 {
     if( !ctx.active ) return;
+#ifdef TRACY_ON_DEMAND
+    if( tracy::GetProfiler().ConnectionId() != ctx.connectionId ) return;
+#endif
 #ifndef TRACY_NO_VERIFY
     {
         TracyQueuePrepareC( tracy::QueueType::ZoneValidation );

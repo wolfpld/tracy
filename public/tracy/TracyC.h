@@ -162,6 +162,9 @@ struct ___tracy_c_zone_context
 {
     uint32_t id;
     int32_t active;
+#ifdef TRACY_ON_DEMAND
+    uint64_t connectionId;
+#endif
 };
 
 struct ___tracy_gpu_time_data

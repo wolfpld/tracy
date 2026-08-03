@@ -1395,13 +1395,20 @@ void TracyLlm::AppendResponse( const char* name, const nlohmann::json& delta )
             {
                 assert( back[name].is_string() );
                 back[name].get_ref<std::string&>().append( str );
+                m_usedCtx++;
             }
             else
             {
-                back[name] = std::move( str );
+                for( auto c : str )
+                {
+                    if( c != '\n' )
+                    {
+                        back[name] = std::move( str );
+                        m_usedCtx++;
+                        break;
+                    }
+                }
             }
-
-            m_usedCtx++;
         }
         else if( json.is_array() )
         {

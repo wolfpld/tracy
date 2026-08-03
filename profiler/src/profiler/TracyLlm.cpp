@@ -965,6 +965,60 @@ static void Replace( std::string& str, std::string_view from, std::string_view t
     }
 }
 
+static nlohmann::json BuildVisibleChat( const nlohmann::json& chat )
+{
+    nlohmann::json filtered = nlohmann::json::array();
+    for( const auto& msg : chat )
+    {
+        if( !msg.contains( "role" ) ) continue;
+        const auto& role = msg["role"].get_ref<const std::string&>();
+        if( role == "system" ) continue;
+        if( role == "assistant" )
+        {
+            if( !msg.contains( "content" ) ) continue;
+            filtered.emplace_back( nlohmann::json{
+                { "role", "assistant" },
+                { "content", msg["content"] }
+            } );
+        }
+        else if( role == "user" && msg.contains( "content" ) )
+        {
+            const auto& content = msg["content"].get_ref<const std::string&>();
+            if( content.starts_with( "<attachment>\n" ) )
+            {
+                try
+                {
+                    constexpr auto tagSize = sizeof( "<attachment>\n" ) - 1;
+                    auto j = nlohmann::json::parse( content.c_str() + tagSize, content.c_str() + content.size() );
+                    if( j.contains( "type" ) )
+                    {
+                        filtered.emplace_back( nlohmann::json{
+                            { "role", "user" },
+                            { "content", "<attachment>\n" + nlohmann::json { { "type", j["type"] } }.dump() }
+                        } );
+                    }
+                }
+                catch( const nlohmann::json::exception& ) {}
+            }
+            else
+            {
+                filtered.emplace_back( nlohmann::json{
+                    { "role", "user" },
+                    { "content", content }
+                } );
+            }
+        }
+        else
+        {
+            filtered.emplace_back( nlohmann::json{
+                { "role", role },
+                { "content", "" }
+            } );
+        }
+    }
+    return filtered;
+}
+
 void TracyLlm::ResetChat()
 {
     *m_input = 0;
@@ -1228,8 +1282,11 @@ void TracyLlm::SendMessage()
 
     if( needSummary )
     {
-        auto query = chat;
-        query[0]["content"] = "Provide a one-line topic summary for the user input. Do NOT answer the question. The summary should be slogan-like, 5-8 words max. Reply with ONLY the summary, nothing else. Match the language of the user's query.";
+        auto query = BuildVisibleChat( chat );
+        query.insert( query.begin(), nlohmann::json {
+            { "role", "system" },
+            { "content", "Provide a one-line topic summary for the user input. Do NOT answer the question. The summary should be slogan-like, 5-8 words max. Reply with ONLY the summary, nothing else. Match the language of the user's query." }
+        } );
         const int chatId = m_chatId.load( std::memory_order_acquire );
         QueueFastMessageLocking( query, [this, chatId]( const nlohmann::json& res ) {
             if( m_chatId.load( std::memory_order_acquire ) != chatId ) return;
@@ -1471,10 +1528,10 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
 
             if( s_config.llmSuggestion )
             {
-                auto suggestionQuery = chat;
-                suggestionQuery.push_back( nlohmann::json {
-                    {"role", "user"},
-                    {"content", "Based on this conversation, suggest one useful follow-up question the user might want to ask next. It should be relevant, actionable, and something the user would genuinely want to explore. Reply with ONLY the question text, in the user's language, from the user's perspective, under 80 characters."}
+                auto suggestionQuery = BuildVisibleChat( chat );
+                suggestionQuery.emplace_back( nlohmann::json {
+                    { "role", "user" },
+                    { "content", "Your task is to figure out what the user will want to ask next. You will be given the entire conversation history, and you must act upon it. You must give one useful follow-up question. It must be relevant, actionable, and something the user would genuinely want to explore. You MUST write assuming the perspective of the user writing the next question to the assistant. You must write in user's language and keep the answer below 80 characters." }
                 } );
                 const int chatId = m_chatId.load( std::memory_order_acquire );
                 QueueFastMessageLocking( suggestionQuery, [this, chatId]( const nlohmann::json& res ) {

@@ -154,7 +154,7 @@ void TracyLlm::Draw( WindowConstraints& constraints )
     if( ImGui::IsItemHovered() )
     {
         ImGui::BeginTooltip();
-        ImGui::TextUnformatted( "Always verify the chat responses, as they may contain incorrect or misleading informations." );
+        ImGui::TextUnformatted( "Always verify the chat responses, as they may be incorrect or misleading." );
         ImGui::EndTooltip();
     }
     ImGui::SameLine();

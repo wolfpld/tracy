@@ -1440,6 +1440,9 @@ namespace tracy
             #else
             tracyMemWrite(item->gpuNewContext.flags, tracy::GpuContextFlags(0));
             #endif
+            #ifdef TRACY_ON_DEMAND
+            GetProfiler().DeferItem(*item);
+            #endif
             Profiler::QueueSerialFinish();
 
             constexpr const char* tracyCtxName = "CUDA GPU/Device Activity";

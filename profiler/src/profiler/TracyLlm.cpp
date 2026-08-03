@@ -399,18 +399,34 @@ void TracyLlm::Draw( WindowConstraints& constraints )
             }
             ImGui::SameLine();
             ImGui::TextDisabled( "(bytes)" );
-            constraints.MarkMinWidth();
             if( !s_config.llmLimitToolReplySize ) ImGui::EndDisabled();
-            if( !models.empty() )
+            ImGui::SameLine();
+            TextDisabledUnformatted( "Effective: " );
+            ImGui::SameLine();
+            bool known = false;
+            if( s_config.llmLimitToolReplySize )
+            {
+                known = true;
+                TextDisabledUnformatted( MemSizeToString( s_config.llmMaxToolReplySizeValue ) );
+            }
+            else if( !models.empty() )
             {
                 const auto ctxSize = models[m_modelIdx].contextSize;
                 const int ctxBasedLimit = TracyLlmTools::CalcCtxBasedLimit( ctxSize );
                 if( ctxBasedLimit > 0 )
                 {
-                    ImGui::SameLine();
-                    ImGui::TextDisabled( "(ctx: %d bytes)", ctxBasedLimit);
+                    known = true;
+                    TextDisabledUnformatted( MemSizeToString( ctxBasedLimit ) );
                 }
             }
+            if( !known )
+            {
+                TextDisabledUnformatted( MemSizeToString( DefaultToolReplyLimit ) );
+                ImGui::SameLine();
+                TextColoredUnformatted( 0xFF00FFFF, ICON_FA_TRIANGLE_EXCLAMATION );
+                TooltipIfHovered( "Will change when model context size is known" );
+            }
+            constraints.MarkMinWidth();
 
             char buf[1024];
 

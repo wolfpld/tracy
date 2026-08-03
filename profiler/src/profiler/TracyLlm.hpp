@@ -16,6 +16,8 @@
 namespace tracy
 {
 
+constexpr int DefaultToolReplyLimit = 48 * 1024;
+
 class TracyLlmApi;
 class TracyLlmChat;
 class TracyLlmTools;

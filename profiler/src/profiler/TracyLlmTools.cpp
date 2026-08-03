@@ -376,11 +376,9 @@ int TracyLlmTools::CalcCtxBasedLimit( int ctxSize )
 
 int TracyLlmTools::CalcMaxSize() const
 {
-    constexpr int defaultLimit = 48*1024;
-    const int limit = s_config.llmLimitToolReplySize ? s_config.llmMaxToolReplySizeValue : defaultLimit;
+    if( s_config.llmLimitToolReplySize ) return s_config.llmMaxToolReplySizeValue;
     const int ctxLimit = CalcCtxBasedLimit( m_ctxSize );
-    if( ctxLimit <= 0 ) return limit;
-    return std::min( ctxLimit, limit );
+    return ctxLimit > 0 ? ctxLimit : DefaultToolReplyLimit;
 }
 
 std::string TracyLlmTools::TrimString( std::string&& str ) const

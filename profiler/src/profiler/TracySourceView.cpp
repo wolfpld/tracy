@@ -4,7 +4,7 @@
 #include <sstream>
 #include <stdio.h>
 
-#include "imgui.h"
+#include "imgui_internal.h"
 #include "TracyCharUtil.hpp"
 #include "TracyColor.hpp"
 #include "TracyConfig.hpp"
@@ -1212,6 +1212,11 @@ void SourceView::RenderSymbolView( Worker& worker, View& view, WindowConstraints
             vec.reserve( map.size() );
             for( auto& v : map ) vec.emplace_back( ChildStat { v.first, v.second } );
             pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return lhs.count > rhs.count; } );
+
+            ImGuiContext& g = *GImGui;
+            g.NextWindowData.HasFlags |= ImGuiNextWindowDataFlags_HasWindowFlags;
+            g.NextWindowData.WindowFlags = ImGuiWindowFlags_AlwaysVerticalScrollbar;
+
             if( ImGui::BeginTable( "##ccd", 7, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY ) )
             {
                 ImGui::TableSetupScrollFreeze( 0, 1 );

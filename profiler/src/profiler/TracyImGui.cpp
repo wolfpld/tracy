@@ -169,8 +169,8 @@ bool PrintTextWrapped( const char* text, const char* end, bool strikethrough, bo
         ImGui::SameLine( 0, 0 );
         auto x1 = ImGui::GetCursorScreenPos().x + scale;
         ImGui::NewLine();
-        if( strikethrough ) ImGui::GetWindowDrawList()->AddLine( ImVec2( x0, y1 ), ImVec2( x1, y1 ), color, scale );
-        if( underline ) ImGui::GetWindowDrawList()->AddLine( ImVec2( x0, y2 ), ImVec2( x1, y2 ), color, scale );
+        if( strikethrough ) ImGui::GetWindowDrawList()->AddLineH( x0, x1, y1, color, scale );
+        if( underline ) ImGui::GetWindowDrawList()->AddLineH( x0, x1, y2, color, scale );
     }
     else
     {
@@ -194,8 +194,8 @@ bool PrintTextWrapped( const char* text, const char* end, bool strikethrough, bo
             ImGui::SameLine( 0, 0 );
             auto x1 = ImGui::GetCursorScreenPos().x + scale;
             ImGui::NewLine();
-            if( strikethrough ) ImGui::GetWindowDrawList()->AddLine( ImVec2( x0, y1 ), ImVec2( x1, y1 ), color, scale );
-            if( underline ) ImGui::GetWindowDrawList()->AddLine( ImVec2( x0, y2 ), ImVec2( x1, y2 ), color, scale );
+            if( strikethrough ) ImGui::GetWindowDrawList()->AddLineH( x0, x1, y1, color, scale );
+            if( underline ) ImGui::GetWindowDrawList()->AddLineH( x0, x1, y2, color, scale );
         }
         else
         {
@@ -222,7 +222,7 @@ bool DragHeightSplitter( const char* id, float& height, float minHeight, float m
     const auto p0 = ImGui::GetItemRectMin();
     const auto p1 = ImGui::GetItemRectMax();
     const float y = ( p0.y + p1.y ) * 0.5f;
-    draw->AddLine( ImVec2( p0.x, y ), ImVec2( p1.x, y ), color, thickness );
+    draw->AddLineH( p0.x, p1.x, y, color, thickness );
 
     return active;
 }

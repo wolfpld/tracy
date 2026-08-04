@@ -648,7 +648,7 @@ void View::DrawThreadCropper( const int depth, const uint64_t tid, const float x
             draw->AddCircle( center, hradius, 0xFFFFFFFF, 0, hoverCircleThickness );
             const float wPosX = ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMin().x;
             const float wSizeX = ImGui::GetWindowContentRegionMax().x;
-            draw->AddLine( ImVec2( wPosX, yPos + ( lane + 1 ) * ostep ), ImVec2( wPosX + wSizeX, yPos + ( lane + 1 ) * ostep ), 0x880000FF, 2.0f * GetScale() );
+            draw->AddLineH( wPosX, wPosX + wSizeX, yPos + ( lane + 1 ) * ostep, 0x880000FF, 2.0f * GetScale() );
             if( clicked )
             {
                 const int newDepthLimit = lane + 1;

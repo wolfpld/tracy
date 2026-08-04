@@ -261,9 +261,8 @@ public:
         {
             const auto scale = GetScale();
             const auto pos = ImGui::GetCursorScreenPos();
-            const auto offset = ImVec2( 8.f * scale, 0 );
             ImGui::Unindent();
-            ImGui::GetWindowDrawList()->AddLine( origin - offset, pos - offset, color, 2.f * scale );
+            ImGui::GetWindowDrawList()->AddLineV( origin.x - 8.f * scale, origin.y, pos.y, color, 2.f * scale );
             break;
         }
         default:

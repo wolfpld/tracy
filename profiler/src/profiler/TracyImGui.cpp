@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <algorithm>
 #include <string>
+#include <string.h>
 
 #include "TracyPrint.hpp"
 #include "TracyImGui.hpp"
@@ -160,6 +161,17 @@ bool PrintTextWrapped( const char* text, const char* end, bool strikethrough, bo
     }
 
     auto endLine = ImGui::GetFont()->CalcWordWrapPosition( fontSize, text, end, left );
+    // A word wider than the leftover that continues previous text must move whole
+    // to the next line, not be cut mid-word. ImGui's CalcWordWrapPosition() only
+    // cuts words that fit on no line (i.e. words wider than the full line width),
+    // so a mid-word cut on a glued continuation is a wrap-width artifact.
+    if( endLine < end && endLine > text && endLine[-1] != ' ' && endLine[-1] != '\n' && endLine[0] != ' ' && endLine[0] != '\n' )
+    {
+        const auto isWordChar = []( char c ) { return c != ' ' && c != '\n' && strchr( ",.;:!?\"'()", c ) == nullptr; };
+        const char* ws = endLine;
+        while( ws > text && isWordChar( ws[-1] ) ) ws--;
+        if( ws > text ) endLine = ws;   // continuation word -> move it whole
+    }
     if( strikethrough || underline )
     {
         auto y1 = ImGui::GetCursorScreenPos().y + fontSize05;

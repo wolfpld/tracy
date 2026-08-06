@@ -52,16 +52,16 @@ jobs:
         cmake --build merge/build --parallel
     - name: Stage release files
       run: |
-        mkdir -p ${{ github.workspace }}/linux-cli
-        cp update/build/tracy-update ${{ github.workspace }}/linux-cli/
-        cp capture/build/tracy-capture ${{ github.workspace }}/linux-cli/
-        cp capture/build/tracy-capture-daemon ${{ github.workspace }}/linux-cli/
-        cp csvexport/build/tracy-csvexport ${{ github.workspace }}/linux-cli/
-        cp import/build/tracy-import-chrome ${{ github.workspace }}/linux-cli/
-        cp import/build/tracy-import-fuchsia ${{ github.workspace }}/linux-cli/
-        cp merge/build/tracy-merge ${{ github.workspace }}/linux-cli/
-        strip ${{ github.workspace }}/linux-cli/tracy-*
+        mkdir -p linux-cli
+        cp update/build/tracy-update linux-cli/
+        cp capture/build/tracy-capture linux-cli/
+        cp capture/build/tracy-capture-daemon linux-cli/
+        cp csvexport/build/tracy-csvexport linux-cli/
+        cp import/build/tracy-import-chrome linux-cli/
+        cp import/build/tracy-import-fuchsia linux-cli/
+        cp merge/build/tracy-merge linux-cli/
+        strip linux-cli/tracy-*
     - uses: actions/upload-artifact@v4
       with:
         name: linux-cli
-        path: ${{ github.workspace }}/linux-cli
+        path: linux-cli

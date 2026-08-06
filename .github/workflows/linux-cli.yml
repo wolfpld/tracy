@@ -1,0 +1,66 @@
+name: linux-cli
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+  workflow_call:
+
+env:
+  CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm-cache
+
+jobs:
+  build-linux-cli:
+    runs-on: ubuntu-latest
+    container: ubuntu:24.04
+    steps:
+    - name: Install dependencies
+      run: |
+        apt-get update
+        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+          build-essential cmake git ca-certificates curl
+    - name: Trust git repo
+      run: git config --global --add safe.directory '*'
+    - uses: actions/checkout@v4
+    - name: Cache CPM packages
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.CPM_SOURCE_CACHE }}
+        key: ${{ runner.os }}-cpm-${{ hashFiles('**/vendor.cmake', '**/CMakeLists.txt') }}
+        restore-keys: ${{ runner.os }}-cpm-
+    - name: Build update
+      run: |
+        cmake -B update/build -S update -DCMAKE_BUILD_TYPE=Release -DNO_ISA_EXTENSIONS=ON -DGIT_REV=${{ github.sha }}
+        cmake --build update/build --parallel
+    - name: Build capture
+      run: |
+        cmake -B capture/build -S capture -DCMAKE_BUILD_TYPE=Release -DNO_ISA_EXTENSIONS=ON -DGIT_REV=${{ github.sha }}
+        cmake --build capture/build --parallel
+    - name: Build csvexport
+      run: |
+        cmake -B csvexport/build -S csvexport -DCMAKE_BUILD_TYPE=Release -DNO_ISA_EXTENSIONS=ON -DGIT_REV=${{ github.sha }}
+        cmake --build csvexport/build --parallel
+    - name: Build import
+      run: |
+        cmake -B import/build -S import -DCMAKE_BUILD_TYPE=Release -DNO_ISA_EXTENSIONS=ON -DGIT_REV=${{ github.sha }}
+        cmake --build import/build --parallel
+    - name: Build merge
+      run: |
+        cmake -B merge/build -S merge -DCMAKE_BUILD_TYPE=Release -DNO_ISA_EXTENSIONS=ON -DGIT_REV=${{ github.sha }}
+        cmake --build merge/build --parallel
+    - name: Stage release files
+      run: |
+        mkdir -p ${{ github.workspace }}/linux-cli
+        cp update/build/tracy-update ${{ github.workspace }}/linux-cli/
+        cp capture/build/tracy-capture ${{ github.workspace }}/linux-cli/
+        cp capture/build/tracy-capture-daemon ${{ github.workspace }}/linux-cli/
+        cp csvexport/build/tracy-csvexport ${{ github.workspace }}/linux-cli/
+        cp import/build/tracy-import-chrome ${{ github.workspace }}/linux-cli/
+        cp import/build/tracy-import-fuchsia ${{ github.workspace }}/linux-cli/
+        cp merge/build/tracy-merge ${{ github.workspace }}/linux-cli/
+    - uses: actions/upload-artifact@v4
+      with:
+        name: linux-cli
+        path: ${{ github.workspace }}/linux-cli

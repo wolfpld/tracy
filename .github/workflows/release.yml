@@ -17,8 +17,11 @@ jobs:
   release-build-appimage:
     uses: ./.github/workflows/appimage.yml
 
+  release-build-linux-cli:
+    uses: ./.github/workflows/linux-cli.yml
+
   attach-to-release:
-    needs: [release-build-windows, release-build-macos, release-build-manual, release-build-appimage]
+    needs: [release-build-windows, release-build-macos, release-build-manual, release-build-appimage, release-build-linux-cli]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -37,16 +40,19 @@ jobs:
         cd macos
         chmod +x tracy-* tracy-profiler.app/Contents/MacOS/*
         zip -r ../macos-$VERSION_NO_V.zip .
-    - name: Create versioned AppImage
+    - name: Create versioned Linux zip
       run: |
         VERSION="${{ github.event.release.tag_name }}"
         VERSION_NO_V="${VERSION#v}"
-        mv appimage/tracy-profiler-x86_64.AppImage tracy-profiler-$VERSION_NO_V-x86_64.AppImage
-        chmod +x tracy-profiler-$VERSION_NO_V-x86_64.AppImage
+        mkdir linux
+        cp appimage/* linux/
+        cp linux-cli/* linux/
+        cd linux
+        zip -r ../linux-$VERSION_NO_V.zip .
     - uses: softprops/action-gh-release@v2
       with:
         files: |
           windows-*.zip
           macos-*.zip
-          tracy-profiler-*.AppImage
+          linux-*.zip
           manual/tracy.pdf

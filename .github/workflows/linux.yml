@@ -81,6 +81,7 @@ jobs:
         cp profiler/build/tracy-profiler bin
         cp update/build/tracy-update bin
         cp capture/build/tracy-capture bin
+        cp capture/build/tracy-capture-daemon bin
         cp csvexport/build/tracy-csvexport bin
         cp import/build/tracy-import-chrome bin
         cp import/build/tracy-import-fuchsia bin

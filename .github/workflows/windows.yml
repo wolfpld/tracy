@@ -61,6 +61,7 @@ jobs:
         copy profiler\build\Release\tracy-profiler.exe bin
         copy update\build\Release\tracy-update.exe bin
         copy capture\build\Release\tracy-capture.exe bin
+        copy capture\build\Release\tracy-capture-daemon.exe bin
         copy csvexport\build\Release\tracy-csvexport.exe bin
         copy import\build\Release\tracy-import-chrome.exe bin
         copy import\build\Release\tracy-import-fuchsia.exe bin

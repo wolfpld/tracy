@@ -20,7 +20,7 @@ jobs:
       run: |
         apt-get update
         DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-          build-essential cmake git ca-certificates curl
+          build-essential cmake git ca-certificates curl nodejs
     - name: Trust git repo
       run: git config --global --add safe.directory '*'
     - uses: actions/checkout@v4

@@ -774,7 +774,7 @@ static void DrawContents()
             ImGui::Separator();
             if( ImGui::Selectable( ICON_FA_VIDEO " Performance profiling Mutter, GNOME Shell & apps with Tracy – Ivan Molodetskikh – GUADEC 2026" ) )
             {
-                tracy::OpenWebpage( "https://youtu.be/Q4O7dhreLDU?t=21080" );
+                tracy::OpenWebpage( "https://youtu.be/KFp3iCdlP7c" );
             }
             if( ImGui::Selectable( ICON_FA_VIDEO " An Introduction to Tracy Profiler in C++ – Marcos Slomp – CppCon 2023" ) )
             {

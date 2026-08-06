@@ -60,6 +60,7 @@ jobs:
         cp import/build/tracy-import-chrome ${{ github.workspace }}/linux-cli/
         cp import/build/tracy-import-fuchsia ${{ github.workspace }}/linux-cli/
         cp merge/build/tracy-merge ${{ github.workspace }}/linux-cli/
+        strip ${{ github.workspace }}/linux-cli/tracy-*
     - uses: actions/upload-artifact@v4
       with:
         name: linux-cli

@@ -65,6 +65,8 @@ jobs:
         cp import/build/tracy-import-chrome bin
         cp import/build/tracy-import-fuchsia bin
         cp merge/build/tracy-merge bin
+        strip bin/tracy-profiler.app/Contents/MacOS/tracy-profiler
+        strip bin/tracy-update bin/tracy-capture bin/tracy-capture-daemon bin/tracy-csvexport bin/tracy-import-chrome bin/tracy-import-fuchsia bin/tracy-merge
     - uses: actions/upload-artifact@v4
       with:
         name: macos

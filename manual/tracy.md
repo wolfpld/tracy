@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-07-28 <https://github.com/wolfpld/tracy>
+2026-08-06 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -2045,7 +2045,7 @@ Unlike C++, there's no automatic destruction mechanism in C, so you will need to
 
 [^55]: GCC and Clang provide `__attribute__((cleanup))` which can used to run a function when a variable goes out of scope.
 
-Zone text and name may be set by using the `TracyCZoneText(ctx, txt, size)`, `TracyCZoneValue(ctx, value)` and `TracyCZoneName(ctx, txt, size)` macros. Make sure you are following the zone stack rules, as described in section [3.4.2](#multizone)!
+Zone text and name may be set by using the `TracyCZoneText(ctx, txt, size)`, `TracyCZoneValue(ctx, value)` and `TracyCZoneName(ctx, txt, size)` macros. For printf-style formatting, use the `TracyCZoneTextF(ctx, fmt, ...)` and `TracyCZoneNameF(ctx, fmt, ...)` variants, which accept a format string and arguments instead of a fixed-length text buffer. Make sure you are following the zone stack rules, as described in section [3.4.2](#multizone)!
 
 #### Zone context data structure {#zonectx}
 

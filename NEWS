@@ -8,6 +8,9 @@ vx.xx.x (2026-xx-xx)
 - API break: removed "secure" variants of memory alloc and free macros. The
   secure code path is now always enabled. Migrate by removing "Secure" from
   the macros you use, e.g. TracySecureAlloc(...) -> TracyAlloc(...).
+- Added printf-style variants of the C API zone text and name macros:
+  TracyCZoneTextF and TracyCZoneNameF now accept a format string and
+  arguments, instead of a fixed-length text buffer.
 - Added tracy-capture-daemon for automated multi-client trace capture.
 - Added tracy-merge utility for combining multiple trace files into one.
 - Added support for Windows on ARM64 with MSVC.

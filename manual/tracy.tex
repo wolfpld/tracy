@@ -2332,7 +2332,7 @@ Refer to sections~\ref{markingzones} and~\ref{multizone} for description of macr
 
 Unlike C++, there's no automatic destruction mechanism in C, so you will need to mark where the zone ends manually. To do so use the \texttt{TracyCZoneEnd(ctx)} macro.\footnote{GCC and Clang provide \texttt{\_\_attribute\_\_((cleanup))} which can used to run a function when a variable goes out of scope.}
 
-Zone text and name may be set by using the \texttt{TracyCZoneText(ctx, txt, size)}, \texttt{TracyCZoneValue(ctx, value)} and \texttt{TracyCZoneName(ctx, txt, size)} macros. Make sure you are following the zone stack rules, as described in section~\ref{multizone}!
+Zone text and name may be set by using the \texttt{TracyCZoneText(ctx, txt, size)}, \texttt{TracyCZoneValue(ctx, value)} and \texttt{TracyCZoneName(ctx, txt, size)} macros. For printf-style formatting, use the \texttt{TracyCZoneTextF(ctx, fmt, ...)} and \texttt{TracyCZoneNameF(ctx, fmt, ...)} variants, which accept a format string and arguments instead of a fixed-length text buffer. Make sure you are following the zone stack rules, as described in section~\ref{multizone}!
 
 \paragraph{Zone context data structure}
 \label{zonectx}

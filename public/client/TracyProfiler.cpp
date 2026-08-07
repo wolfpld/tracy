@@ -4444,6 +4444,7 @@ void Profiler::HandleSymbolCodeQuery( uint64_t symbol, uint32_t size )
 void Profiler::HandleSourceCodeQuery( char* data, char* image, uint32_t id )
 {
     bool ok = false;
+#ifndef TRACY_NO_CODE_TRANSFER
     FILE* f = fopen( data, "rb" );
     if( f )
     {
@@ -4469,7 +4470,7 @@ void Profiler::HandleSourceCodeQuery( char* data, char* image, uint32_t id )
         fclose( f );
     }
 
-#ifdef TRACY_DEBUGINFOD
+#  ifdef TRACY_DEBUGINFOD
     else if( image && data[0] == '/' )
     {
         size_t size;
@@ -4509,7 +4510,7 @@ void Profiler::HandleSourceCodeQuery( char* data, char* image, uint32_t id )
     {
         TracyDebug( "DebugInfo invalid query fn: %s, image: %s", data, image );
     }
-#endif
+#  endif
 
     if( !ok && m_sourceCallback )
     {
@@ -4532,6 +4533,7 @@ void Profiler::HandleSourceCodeQuery( char* data, char* image, uint32_t id )
             }
         }
     }
+#endif
 
     if( !ok )
     {

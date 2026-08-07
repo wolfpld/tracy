@@ -164,6 +164,8 @@ vx.xx.x (2026-xx-xx)
 - Added TRACY_DISALLOW_HW_TIMER define for virtualized environments and WSL2,
   which may not have reliable access to hardware timer registers. Falls back
   to standard library timer with reduced resolution.
+- Fixed TRACY_NO_CODE_TRANSFER define. It didn't prevent source code transfer
+  before.
 - Fixed DPI scaling on macOS.
 - Thread names are no longer truncated to 15 characters on Apple.
 - Executable path is now inspected when looking for PDB files on Windows.

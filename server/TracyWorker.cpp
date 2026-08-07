@@ -9050,7 +9050,7 @@ void Worker::CacheSource( const StringRef& str, const StringIdx& image )
     {
         CacheSourceFromFile( file );
     }
-    else if( execTime != 0 )
+    else if( execTime != 0 && m_codeTransfer )
     {
         QuerySourceFile( file, image.Active() ? GetString( image ) : nullptr );
     }

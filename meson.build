@@ -201,6 +201,7 @@ common_includes = [
     'public/common/TracyString.hpp',
     'public/common/TracySystem.hpp',
     'public/common/TracyTaggedUserlandAddress.hpp',
+    'public/common/TracyVersion.hpp',
     'public/common/TracyWinFamily.hpp',
     'public/common/TracyYield.hpp'
 ]

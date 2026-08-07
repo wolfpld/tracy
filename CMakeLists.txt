@@ -224,6 +224,7 @@ set(common_includes
     ${TRACY_PUBLIC_DIR}/common/TracyString.hpp
     ${TRACY_PUBLIC_DIR}/common/TracySystem.hpp
     ${TRACY_PUBLIC_DIR}/common/TracyTaggedUserlandAddress.hpp
+    ${TRACY_PUBLIC_DIR}/common/TracyVersion.hpp
     ${TRACY_PUBLIC_DIR}/common/TracyWinFamily.hpp
     ${TRACY_PUBLIC_DIR}/common/TracyYield.hpp)
 

@@ -215,6 +215,7 @@ set(common_includes
     ${TRACY_PUBLIC_DIR}/common/TracyApi.h
     ${TRACY_PUBLIC_DIR}/common/TracyColor.hpp
     ${TRACY_PUBLIC_DIR}/common/TracyForceInline.hpp
+    ${TRACY_PUBLIC_DIR}/common/TracyFormat.h
     ${TRACY_PUBLIC_DIR}/common/TracyMutex.hpp
     ${TRACY_PUBLIC_DIR}/common/TracyProtocol.hpp
     ${TRACY_PUBLIC_DIR}/common/TracyQueue.hpp

@@ -192,6 +192,7 @@ common_includes = [
     'public/common/TracyApi.h',
     'public/common/TracyColor.hpp',
     'public/common/TracyForceInline.hpp',
+    'public/common/TracyFormat.h',
     'public/common/TracyMutex.hpp',
     'public/common/TracyProtocol.hpp',
     'public/common/TracyQueue.hpp',

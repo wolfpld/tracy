@@ -2718,6 +2718,24 @@ Some profiling data can only be retrieved using the kernel facilities, which are
 
 [^59]: To make this easier, you can run MSVC with admin privileges, which will be inherited by your program when you start it from within the IDE.
 
+> [!TIP]
+> **Linux file descriptor limits**
+>
+> On Linux systems with many CPUs, Tracy may open a file descriptor for each CPU when collecting tracepoint data. If the process reaches its soft file descriptor limit, the profiled application may fail to open files and Tracy may report `Too many open files`. Check the current limit with `ulimit -n` and raise it in the shell that starts the profiled application:
+>
+> ```sh
+> ulimit -n 4096
+> ./your-program
+> ```
+>
+> When launching the application through `sudo`, set the limit in the same command, for example:
+>
+> ```sh
+> sudo sh -c 'ulimit -n 4096 && exec ./your-program'
+> ```
+>
+> The appropriate value depends on the number of CPUs and the events being collected.
+
 As this system-level tracing functionality is part of the automated collection process, no user intervention is necessary to enable it (assuming that the program was granted the rights needed). However, if, for some reason, you would want to prevent your application from trying to access kernel data, you may recompile your program with the `TRACY_NO_SYSTEM_TRACING` define. If you want to disable this functionality dynamically at runtime instead, you can set the `TRACY_NO_SYSTEM_TRACING` environment variable to "1".
 
 > [!TIP]

@@ -38,9 +38,9 @@ jobs:
       run: |
         cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
         if [ "${ACT:-}" != "true" ] && [ "${FORGEJO_ACTIONS:-}" != "true" ]; then
-          cmake --build profiler/build
-        else
           cmake --build profiler/build --parallel 2
+        else
+          cmake --build profiler/build --parallel
         fi
     - name: Update utility
       run: |

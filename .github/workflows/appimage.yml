@@ -8,6 +8,13 @@ on:
   workflow_dispatch:
   workflow_call:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: appimage-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm-cache
 

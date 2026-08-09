@@ -4,6 +4,13 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
 jobs:
   release-build-windows:
     uses: ./.github/workflows/windows.yml

@@ -8,6 +8,13 @@ on:
   workflow_dispatch:
   workflow_call:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: latex-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-manual:
 

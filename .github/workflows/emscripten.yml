@@ -7,6 +7,13 @@ on:
     branches: [ master ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: emscripten-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm-cache
 

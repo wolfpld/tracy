@@ -33,46 +33,49 @@ jobs:
         path: ${{ env.CPM_SOURCE_CACHE }}
         key: ${{ runner.os }}-cpm-${{ hashFiles('**/vendor.cmake', '**/CMakeLists.txt') }}
         restore-keys: ${{ runner.os }}-cpm-
+    - name: Determine build parallelism
+      run: |
+        if [ "${ACT:-}" != "true" ] && [ "${FORGEJO_ACTIONS:-}" != "true" ]; then
+          echo "CMAKE_PARALLEL=--parallel 2" >> "$GITHUB_ENV"
+        else
+          echo "CMAKE_PARALLEL=--parallel" >> "$GITHUB_ENV"
+        fi
     - name: Dyna example / clang
       run: |
         CC=clang CXX=clang++ cmake -B examples/dyna/build-clang -S examples/dyna -DCMAKE_BUILD_TYPE=Release
-        cmake --build examples/dyna/build-clang --parallel
+        cmake --build examples/dyna/build-clang $CMAKE_PARALLEL
     - name: Dyna example / gcc
       run: |
         CC=gcc CXX=g++ cmake -B examples/dyna/build-gcc -S examples/dyna -DCMAKE_BUILD_TYPE=Release
-        cmake --build examples/dyna/build-gcc --parallel
+        cmake --build examples/dyna/build-gcc $CMAKE_PARALLEL
     - name: Profiler GUI
       run: |
         cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
-        if [ "${ACT:-}" != "true" ] && [ "${FORGEJO_ACTIONS:-}" != "true" ]; then
-          cmake --build profiler/build --parallel 2
-        else
-          cmake --build profiler/build --parallel
-        fi
+        cmake --build profiler/build $CMAKE_PARALLEL
     - name: Update utility
       run: |
         cmake -B update/build -S update -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
-        cmake --build update/build --parallel
+        cmake --build update/build $CMAKE_PARALLEL
     - name: Capture utility
       run: |
         cmake -B capture/build -S capture -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
-        cmake --build capture/build --parallel
+        cmake --build capture/build $CMAKE_PARALLEL
     - name: Csvexport utility
       run: |
         cmake -B csvexport/build -S csvexport -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
-        cmake --build csvexport/build --parallel
+        cmake --build csvexport/build $CMAKE_PARALLEL
     - name: Import utilities
       run: |
         cmake -B import/build -S import -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
-        cmake --build import/build --parallel
+        cmake --build import/build $CMAKE_PARALLEL
     - name: Merge utility
       run: |
         cmake -B merge/build -S merge -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
-        cmake --build merge/build --parallel
+        cmake --build merge/build $CMAKE_PARALLEL
     - name: Library (cmake)
       run: |
         cmake -B build -DCMAKE_BUILD_TYPE=Release -DTRACY_ENABLE=ON
-        cmake --build build --parallel
+        cmake --build build $CMAKE_PARALLEL
       env:
         CMAKE_INSTALL_PREFIX: ${{ github.workspace }}/bin
     - name: Library (meson)

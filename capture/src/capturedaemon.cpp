@@ -168,7 +168,13 @@ void CaptureThread( ClientSession* session, const std::string& address, uint16_t
         
         std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
     }
-    
+
+    if( worker.IsConnected() )
+    {
+        worker.Disconnect();
+        while( worker.IsConnected() ) std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+    }
+
     printf( "\nSaving %s...", outputFile.c_str() );
     fflush( stdout );
     

@@ -137,6 +137,7 @@ int main( int argc, char** argv )
         {
             worker.Disconnect();
             s_disconnect.store(false, std::memory_order_relaxed );
+            while( worker.IsConnected() ) std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
             break;
         }
 

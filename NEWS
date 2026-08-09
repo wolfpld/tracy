@@ -2,7 +2,7 @@ Note: There is no guarantee that version mismatched client and server will
 be able to talk with each other. Network protocol breakages won't be listed
 here.
 
-vx.xx.x (2026-xx-xx)
+v0.14.0 (2026-08-09)
 --------------------
 
 - API break: removed "secure" variants of memory alloc and free macros. The

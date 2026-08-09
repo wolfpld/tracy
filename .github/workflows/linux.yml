@@ -29,11 +29,11 @@ jobs:
     - name: Dyna example / clang
       run: |
         CC=clang CXX=clang++ cmake -B examples/dyna/build-clang -S examples/dyna -DCMAKE_BUILD_TYPE=Release
-        cmake --build examples/dyna/build-clang
+        cmake --build examples/dyna/build-clang --parallel
     - name: Dyna example / gcc
       run: |
         CC=gcc CXX=g++ cmake -B examples/dyna/build-gcc -S examples/dyna -DCMAKE_BUILD_TYPE=Release
-        cmake --build examples/dyna/build-gcc
+        cmake --build examples/dyna/build-gcc --parallel
     - name: Profiler GUI
       run: |
         cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}

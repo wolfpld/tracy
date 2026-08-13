@@ -191,7 +191,7 @@ bool View::DrawConnection()
                 if( ImGui::BeginTable( "##traceparams", 2, ImGuiTableFlags_Borders ) )
                 {
                     ImGui::TableSetupColumn( "Name" );
-                    ImGui::TableSetupColumn( "Value", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
+                    ImGui::TableSetupColumn( "Value", ImGuiTableColumnFlags_WidthStretch );
                     ImGui::TableHeadersRow();
                     size_t idx = 0;
                     for( auto& p : params )
@@ -215,7 +215,7 @@ bool View::DrawConnection()
                         case ParameterType::Integer:
                         {
                             auto val = int( p.val );
-                            ImGui::SetNextItemWidth( 100 * GetScale() );
+                            ImGui::SetNextItemWidth( -FLT_MIN );
                             if( ImGui::InputInt( "", &val, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue ) )
                             {
                                 m_worker.SetParameter( idx, int32_t( val ) );

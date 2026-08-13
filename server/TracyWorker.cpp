@@ -3191,22 +3191,23 @@ void Worker::DispatchFailure( const QueueItem& ev, const char*& ptr )
     else
     {
         uint8_t sz8;
-        uint16_t sz;
+        uint16_t sz16;
+        uint32_t sz;
         switch( ev.hdr.type )
         {
         case QueueType::SingleStringData:
             ptr += sizeof( QueueHeader );
-            memcpy( &sz, ptr, sizeof( sz ) );
-            ptr += sizeof( sz );
-            sz += ProtocolOffset8Bit;
+            memcpy( &sz16, ptr, sizeof( sz16 ) );
+            ptr += sizeof( sz16 );
+            sz = sz16 + ProtocolOffset8Bit;
             AddSingleStringFailure( ptr, sz );
             ptr += sz;
             break;
         case QueueType::SecondStringData:
             ptr += sizeof( QueueHeader );
-            memcpy( &sz, ptr, sizeof( sz ) );
-            ptr += sizeof( sz );
-            sz += ProtocolOffset8Bit;
+            memcpy( &sz16, ptr, sizeof( sz16 ) );
+            ptr += sizeof( sz16 );
+            sz = sz16 + ProtocolOffset8Bit;
             AddSecondString( ptr, sz );
             ptr += sz;
             break;
@@ -3408,22 +3409,23 @@ bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
     else
     {
         uint8_t sz8;
-        uint16_t sz;
+        uint16_t sz16;
+        uint32_t sz;
         switch( ev.hdr.type )
         {
         case QueueType::SingleStringData:
             ptr += sizeof( QueueHeader );
-            memcpy( &sz, ptr, sizeof( sz ) );
-            ptr += sizeof( sz );
-            sz += ProtocolOffset8Bit;
+            memcpy( &sz16, ptr, sizeof( sz16 ) );
+            ptr += sizeof( sz16 );
+            sz = sz16 + ProtocolOffset8Bit;
             AddSingleString( ptr, sz );
             ptr += sz;
             return true;
         case QueueType::SecondStringData:
             ptr += sizeof( QueueHeader );
-            memcpy( &sz, ptr, sizeof( sz ) );
-            ptr += sizeof( sz );
-            sz += ProtocolOffset8Bit;
+            memcpy( &sz16, ptr, sizeof( sz16 ) );
+            ptr += sizeof( sz16 );
+            sz = sz16 + ProtocolOffset8Bit;
             AddSecondString( ptr, sz );
             ptr += sz;
             return true;

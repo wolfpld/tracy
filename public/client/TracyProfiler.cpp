@@ -3519,9 +3519,8 @@ void Profiler::SendSingleString16( const char* ptr, size_t len )
     QueueItem item;
     MemWrite( &item.hdr.type, QueueType::SingleStringData );
 
-    // Ignoring u16+ range by design
     assert( len > std::numeric_limits<uint8_t>::max() );
-    assert( len <= std::numeric_limits<uint16_t>::max() );
+    assert( len <= ProtocolOffset8Bit + std::numeric_limits<uint16_t>::max() );
     auto l16 = uint16_t( len - ProtocolOffset8Bit );
 
     NeedDataSize( QueueDataSize[(int)QueueType::SingleStringData] + sizeof( l16 ) + len );
@@ -3551,9 +3550,8 @@ void Profiler::SendSecondString16( const char* ptr, size_t len )
     QueueItem item;
     MemWrite( &item.hdr.type, QueueType::SecondStringData );
 
-    // Ignoring u16+ range by design
     assert( len > std::numeric_limits<uint8_t>::max() );
-    assert( len <= std::numeric_limits<uint16_t>::max() );
+    assert( len <= ProtocolOffset8Bit + std::numeric_limits<uint16_t>::max() );
     auto l16 = uint16_t( len - ProtocolOffset8Bit );
 
     NeedDataSize( QueueDataSize[(int)QueueType::SecondStringData] + sizeof( l16 ) + len );

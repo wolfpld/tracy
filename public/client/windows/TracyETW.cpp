@@ -117,17 +117,17 @@ static_assert( offsetof( StackWalkEvent, stack ) == 16, "unexpected StackWalkEve
 struct VSyncDPC
 {
     static constexpr USHORT EventId = 17; // 0x11
-    void*       dxgAdapter;
+    uint64_t    dxgAdapter;
     uint32_t    vidPnTargetId;
     uint64_t    scannedPhysicalAddress;
     uint32_t    vidPnSourceId;
     uint32_t    frameNumber;
     int64_t     frameQpcTime;
-    void*       hFlipDevice;
+    uint64_t    hFlipDevice;
     uint32_t    flipType;
     uint64_t    flipFenceId;
 };
-static_assert( sizeof( VSyncDPC ) == 64, "unexpected VSyncInfo struct size/alignment" );
+static_assert( sizeof( VSyncDPC ) == 64, "unexpected VSyncDPC struct size/alignment" );
 
 // --------------------------
 
@@ -517,6 +517,8 @@ static ULONG EnableContextSwitchMonitoring( Session& session )
 
 static ULONG EnableVSyncMonitoring( Session& session )
 {
+    if( !IsOS64Bit() )
+        return 0 /* ERROR_SUCCESS */;   // TODO: fabricate SetLastError(ERROR_NOT_SUPPORTED) instead?
 // TODO: is this correct?
 #if ( _WIN32_WINNT < _WIN32_WINNT_WINBLUE )
     return ETWError( ERROR_NOT_SUPPORTED );

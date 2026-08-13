@@ -2079,6 +2079,11 @@ void Profiler::Worker()
                 size = MemRead( &item.gpuContextNameFat.size );
                 SendSingleString( (const char*)ptr, size );
                 break;
+            case QueueType::SectionSetup:
+                ptr = MemRead( &item.sectionSetupFat.text );
+                size = MemRead( &item.sectionSetupFat.size );
+                SendSingleString( (const char*)ptr, size );
+                break;
             default:
                 break;
             }

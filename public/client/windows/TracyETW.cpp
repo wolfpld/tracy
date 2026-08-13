@@ -127,7 +127,11 @@ struct VSyncDPC
     uint32_t    flipType;
     uint64_t    flipFenceId;
 };
-static_assert( sizeof( VSyncDPC ) == 64, "unexpected VSyncInfo struct size/alignment" );
+#if defined( _WIN64 )
+static_assert( sizeof( VSyncDPC ) == 64, "unexpected VSyncDPC struct size/alignment" );
+#else
+static_assert( sizeof( VSyncDPC ) == 48, "unexpected VSyncDPC struct size/alignment" );
+#endif
 
 // --------------------------
 

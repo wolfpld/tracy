@@ -194,9 +194,15 @@ bool SysTraceStart( int64_t& samplingPeriod )
         return false;
 
 #ifndef TRACY_NO_CONTEXT_SWITCH
+#ifdef TRACY_NO_WAIT_STACKS
+    const bool noWaitStacks = true;
+#else
+    const char* noWaitStacksEnv = GetEnvVar( "TRACY_NO_WAIT_STACKS" );
+    const bool noWaitStacks = noWaitStacksEnv && noWaitStacksEnv[0] == '1';
+#endif
     if( etw::EnableProcessAndThreadMonitoring( session_kernel ) != ERROR_SUCCESS )
         return etw::StopSession( session_kernel ), false;
-    if( etw::EnableContextSwitchMonitoring( session_kernel ) != ERROR_SUCCESS )
+    if( etw::EnableContextSwitchMonitoring( session_kernel, !noWaitStacks ) != ERROR_SUCCESS )
         return etw::StopSession( session_kernel ), false;
 #endif
 
@@ -408,6 +414,7 @@ static std::atomic<bool> traceActive { false };
 static int s_numCpus = 0;
 static int s_numBuffers = 0;
 static int s_ctxBufferIdx = 0;
+static bool s_ctxSwitchCallchain = false;
 
 static RingBuffer* s_ring = nullptr;
 
@@ -718,6 +725,13 @@ bool SysTraceStart( int64_t& samplingPeriod )
     const bool noVsync = noVsyncEnv && noVsyncEnv[0] == '1';
 #endif
 
+#ifdef TRACY_NO_WAIT_STACKS
+    const bool noWaitStacks = true;
+#else
+    const char* noWaitStacksEnv = GetEnvVar( "TRACY_NO_WAIT_STACKS" );
+    const bool noWaitStacks = noWaitStacksEnv && noWaitStacksEnv[0] == '1';
+#endif
+
     int samplingFrequency = GetSamplingFrequency();
     if( samplingFrequency > 0 )
     {
@@ -987,14 +1001,20 @@ bool SysTraceStart( int64_t& samplingPeriod )
     // context switches
     if( !noCtxSwitch && switchId != -1 )
     {
+        s_ctxSwitchCallchain = !noWaitStacks;
+
         pe = {};
         pe.type = PERF_TYPE_TRACEPOINT;
         pe.size = sizeof( perf_event_attr );
         pe.sample_period = 1;
-        pe.sample_type = PERF_SAMPLE_TIME | PERF_SAMPLE_RAW | PERF_SAMPLE_CALLCHAIN;
+        pe.sample_type = PERF_SAMPLE_TIME | PERF_SAMPLE_RAW;
+        if( s_ctxSwitchCallchain )
+        {
+            pe.sample_type |= PERF_SAMPLE_CALLCHAIN;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION( 4, 8, 0 )
-        pe.sample_max_stack = 127;
+            pe.sample_max_stack = 127;
 #endif
+        }
         pe.disabled = 1;
         pe.inherit = 1;
         pe.config = switchId;
@@ -1348,8 +1368,8 @@ void SysTraceWorker( void* ptr )
                         {
                             // Layout: See /sys/kernel/debug/tracing/events/sched/sched_switch/format
                             //   u64 time    // PERF_SAMPLE_TIME
-                            //   u64 cnt     // PERF_SAMPLE_CALLCHAIN
-                            //   u64 ip[cnt] // PERF_SAMPLE_CALLCHAIN
+                            //   u64 cnt     // PERF_SAMPLE_CALLCHAIN, if enabled
+                            //   u64 ip[cnt] // PERF_SAMPLE_CALLCHAIN, if enabled
                             //   u32 size
                             //   u8  data[size]
                             // Data (not ABI stable, but has not changed since it was added, in 2009):
@@ -1364,11 +1384,16 @@ void SysTraceWorker( void* ptr )
 
                             offset += sizeof( perf_event_header ) + sizeof( uint64_t );
 
-                            uint64_t cnt;
-                            ring.Read( &cnt, offset, sizeof( uint64_t ) );
-                            offset += sizeof( uint64_t );
-                            const auto traceOffset = offset;
-                            offset += sizeof( uint64_t ) * cnt + sizeof( uint32_t ) + 8 + 16;
+                            uint64_t cnt = 0;
+                            uint64_t traceOffset = 0;
+                            if( s_ctxSwitchCallchain )
+                            {
+                                ring.Read( &cnt, offset, sizeof( uint64_t ) );
+                                offset += sizeof( uint64_t );
+                                traceOffset = offset;
+                                offset += sizeof( uint64_t ) * cnt;
+                            }
+                            offset += sizeof( uint32_t ) + 8 + 16;
 
                             struct
                             {

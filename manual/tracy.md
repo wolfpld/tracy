@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-08-06 <https://github.com/wolfpld/tracy>
+2026-08-14 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -400,6 +400,7 @@ Each enabled option is passed down to your program as a preprocessor macro of th
 | `TRACY_NO_SYSTEM_TRACING` | Prevent the client from accessing kernel data, which disables all system-level tracing (section [3.18](#automated)). |
 | `TRACY_NO_CONTEXT_SWITCH` | Disable capture of context switch data (section [3.18.3](#contextswitches)). |
 | `TRACY_NO_SAMPLING` | Disable call stack sampling (section [3.18.5](#sampling)). |
+| `TRACY_NO_WAIT_STACKS` | Disable capture of context switch call stacks, while keeping the context switch events themselves (section [3.18.5.1](#waitstacks)). |
 | `TRACY_NO_VSYNC_CAPTURE` | Disable capture of hardware Vsync events (section [3.18.8](#vsync)). |
 | `TRACY_NO_CODE_TRANSFER` | Disable retrieval of the program's machine code and source files (section [3.18.7](#executableretrieval)). |
 | `TRACY_NO_FRAME_IMAGE` | Disable frame image support, along with the compression thread it needs (section [3.3.3](#frameimages)). |
@@ -2806,6 +2807,8 @@ The sampling functionality also captures call stacks for context switch events. 
 3.  Unexpected waits, which should be immediately taken care of. After all, what's the point of profiling and optimizing your program if it is constantly waiting for something? An example of such an unexpected wait may be some anti-virus service interfering with each of your file read operations. In this case, you could have assumed that the system would buffer a large chunk of the data after the first read to make it immediately available to the application in the following calls.
 
 Since context switch samples are captured at scheduling events rather than by the statistical sampling timer, they are not an unbiased measure of program execution. They are therefore only displayed on the timeline and in the wait stacks window, and are excluded from the sampling statistics, the per-symbol sample data, child calls, entry stacks, flame graph, zone call stack reconstruction, and so on.
+
+Collection of wait stacks makes the kernel walk the stack at context switch events, which may add considerable overhead on weaker hardware. Use the `TRACY_NO_WAIT_STACKS` macro to disable capture of wait stacks, while still keeping the context switch events themselves.
 
 > [!CAUTION]
 > **Platform differences**

@@ -530,6 +530,7 @@ Each enabled option is passed down to your program as a preprocessor macro of th
 \texttt{TRACY\_NO\_SYSTEM\_TRACING} & Prevent the client from accessing kernel data, which disables all system-level tracing (section~\ref{automated}). \\
 \texttt{TRACY\_NO\_CONTEXT\_SWITCH} & Disable capture of context switch data (section~\ref{contextswitches}). \\
 \texttt{TRACY\_NO\_SAMPLING} & Disable call stack sampling (section~\ref{sampling}). \\
+\texttt{TRACY\_NO\_WAIT\_STACKS} & Disable capture of context switch call stacks, while keeping the context switch events themselves (section~\ref{waitstacks}). \\
 \texttt{TRACY\_NO\_VSYNC\_CAPTURE} & Disable capture of hardware Vsync events (section~\ref{vsync}). \\
 \texttt{TRACY\_NO\_CODE\_TRANSFER} & Disable retrieval of the program's machine code and source files (section~\ref{executableretrieval}). \\
 \texttt{TRACY\_NO\_FRAME\_IMAGE} & Disable frame image support, along with the compression thread it needs (section~\ref{frameimages}). \\
@@ -3152,6 +3153,8 @@ The sampling functionality also captures call stacks for context switch events. 
 \end{enumerate}
 
 Since context switch samples are captured at scheduling events rather than by the statistical sampling timer, they are not an unbiased measure of program execution. They are therefore only displayed on the timeline and in the wait stacks window, and are excluded from the sampling statistics, the per-symbol sample data, child calls, entry stacks, flame graph, zone call stack reconstruction, and so on.
+
+Collection of wait stacks makes the kernel walk the stack at context switch events, which may add considerable overhead on weaker hardware. Use the \texttt{TRACY\_NO\_WAIT\_STACKS} macro to disable capture of wait stacks, while still keeping the context switch events themselves.
 
 \begin{bclogo}[
 noborder=true,

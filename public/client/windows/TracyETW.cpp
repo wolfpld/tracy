@@ -488,7 +488,7 @@ static ULONG EnableCPUProfiling( Session& session, int microseconds = 125 /* 8KH
     return status;
 }
 
-static ULONG EnableContextSwitchMonitoring( Session& session )
+static ULONG EnableContextSwitchMonitoring( Session& session, bool waitStacks )
 {
     if( IsSingletonKernelLoggerSession( session ) )
     {
@@ -510,6 +510,9 @@ static ULONG EnableContextSwitchMonitoring( Session& session )
         if( status != ERROR_SUCCESS )
             return status;
     }
+
+    if( !waitStacks )
+        return ERROR_SUCCESS;
 
     ULONG status = EnableStackWalk( session, ThreadGuid, CSwitch::Opcode );
     return status;

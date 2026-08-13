@@ -121,6 +121,7 @@ set_option(TRACY_NO_CODE_TRANSFER "Disable collection of source code" OFF TracyC
 set_option(TRACY_NO_CONTEXT_SWITCH "Disable capture of context switches" OFF TracyClient)
 set_option(TRACY_NO_EXIT "Client executable does not exit until all profile data is sent to server" OFF TracyClient)
 set_option(TRACY_NO_SAMPLING "Disable call stack sampling" OFF TracyClient)
+set_option(TRACY_NO_WAIT_STACKS "Disable capture of context switch call stacks" OFF TracyClient)
 set_option(TRACY_NO_VERIFY "Disable zone validation for C API" OFF TracyClient)
 set_option(TRACY_NO_VSYNC_CAPTURE "Disable capture of hardware Vsync events" OFF TracyClient)
 set_option(TRACY_NO_FRAME_IMAGE "Disable the frame image support and its thread" OFF TracyClient)

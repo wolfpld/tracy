@@ -24,6 +24,7 @@ void View::DrawNotificationArea()
             ImGui::TextWrapped( "Such behavior is typically caused by the symbol resolution performed client-side. If this is a problem, you may try the following options:" );
             ImGui::BulletText( "Disable inline-symbol resolution with TRACY_NO_CALLSTACK_INLINES" );
             ImGui::BulletText( "Disable call stack sampling with TRACY_NO_SAMPLING" );
+            ImGui::BulletText( "Disable context switch call stacks with TRACY_NO_WAIT_STACKS" );
             ImGui::BulletText( "Change sampling frequency with TRACY_SAMPLING_HZ" );
             ImGui::BulletText( "Disable symbol resolution altogether with TRACY_NO_CALLSTACK" );
             ImGui::TextWrapped( "For more information, please refer to the manual." );

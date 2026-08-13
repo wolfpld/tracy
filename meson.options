@@ -11,6 +11,7 @@ option('no_code_transfer', type : 'boolean', value : false, description : 'Disab
 option('no_context_switch', type : 'boolean', value : false, description : 'Disable capture of context switches')
 option('no_exit', type : 'boolean', value : false, description : 'Client executable does not exit until all profile data is sent to server')
 option('no_sampling', type : 'boolean', value : false, description : 'Disable call stack sampling')
+option('no_wait_stacks', type : 'boolean', value : false, description : 'Disable capture of context switch call stacks')
 option('no_verify', type : 'boolean', value : false, description : 'Disable zone validation for C API')
 option('no_vsync_capture', type : 'boolean', value : false, description : 'Disable capture of hardware Vsync events')
 option('no_frame_image', type : 'boolean', value : false, description : 'Disable the frame image support and its thread')

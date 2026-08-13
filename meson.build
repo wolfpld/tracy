@@ -61,6 +61,10 @@ if get_option('no_sampling')
   tracy_common_args += ['-DTRACY_NO_SAMPLING']
 endif
 
+if get_option('no_wait_stacks')
+  tracy_common_args += ['-DTRACY_NO_WAIT_STACKS']
+endif
+
 if get_option('no_verify')
   tracy_common_args += ['-DTRACY_NO_VERIFY']
 endif

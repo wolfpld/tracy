@@ -446,7 +446,8 @@ public:
         MemWrite( &item->plotConfig.type, (uint8_t)type );
         MemWrite( &item->plotConfig.step, (uint8_t)step );
         MemWrite( &item->plotConfig.fill, (uint8_t)fill );
-        MemWrite( &item->plotConfig.color, color );
+        const uint32_t plotColor = uint32_t( ( color & 0xFF ) << 16 ) | ( color & 0xFF00 ) | uint32_t( ( color & 0xFF0000 ) >> 16 );
+        MemWrite( &item->plotConfig.color, plotColor );
 
 #ifdef TRACY_ON_DEMAND
         GetProfiler().DeferItem( *item );

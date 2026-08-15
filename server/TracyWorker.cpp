@@ -6302,14 +6302,19 @@ MemEvent* Worker::ProcessMemAllocImpl( MemData& memdata, const QueueMemAlloc& ev
     if( m_data.lastTime < time ) m_data.lastTime = time;
     NoticeThread( ev.thread );
 
-    const auto thread = CompressThread( ev.thread );
+    uint64_t tid = ev.thread;
+    auto td = RetrieveThread( tid, m_data.threadDataLast );
+    assert( td );
+    if( td->fiber ) tid = td->fiber->id;
+
+    const auto thread = CompressThread( tid );
 
     auto it = memdata.active.find( ev.ptr );
     if( it != memdata.active.end() )
     {
         if( !m_ignoreMemAllocFaults )
         {
-            MemAllocTwiceFailure( ev.thread );
+            MemAllocTwiceFailure( tid );
             return nullptr;
         }
 
@@ -6369,7 +6374,12 @@ MemEvent* Worker::ProcessMemFreeImpl( MemData& memdata, const QueueMemFree& ev )
     if( m_data.lastTime < time ) m_data.lastTime = time;
     NoticeThread( ev.thread );
 
-    auto mem = MemDataFree( memdata, it, time, CompressThread( ev.thread ) );
+    uint64_t tid = ev.thread;
+    auto td = RetrieveThread( tid, m_data.threadDataLast );
+    assert( td );
+    if( td->fiber ) tid = td->fiber->id;
+
+    auto mem = MemDataFree( memdata, it, time, CompressThread( tid ) );
     MemAllocChanged( memdata, time );
     return mem;
 }

@@ -1713,11 +1713,14 @@ Tracy can monitor the memory usage of your application. Knowledge about each per
 \item Memory allocation hot-spot tree.
 \end{itemize}
 
-To mark memory events, use the \texttt{TracyAlloc(ptr, size)} and \texttt{TracyFree(ptr)} macros. Typically you would do that in overloads of \texttt{operator new} and \texttt{operator delete}, for example:
+To mark memory events, use the \texttt{TracyAlloc(ptr, size)} and \texttt{TracyFree(ptr)} macros. Typically, you would place them in overloads of \texttt{operator new} and \texttt{operator delete}. The order in which memory events actually occur must match the order reported to the profiler, so a mutex or similar synchronization primitive is required to make the whole operation atomic. Here is an example implementation:
 
 \begin{lstlisting}
+std::mutex memoryLock;
+
 void* operator new(std::size_t count)
 {
+    std::lock_guard lock(memoryLock);
     auto ptr = malloc(count);
     TracyAlloc(ptr, count);
     return ptr;
@@ -1725,6 +1728,7 @@ void* operator new(std::size_t count)
 
 void operator delete(void* ptr) noexcept
 {
+    std::lock_guard lock(memoryLock);
     TracyFree(ptr);
     free(ptr);
 }

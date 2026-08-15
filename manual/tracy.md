@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-08-14 <https://github.com/wolfpld/tracy>
+2026-08-15 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -1511,10 +1511,13 @@ Tracy can monitor the memory usage of your application. Knowledge about each per
 
 - Memory allocation hot-spot tree.
 
-To mark memory events, use the `TracyAlloc(ptr, size)` and `TracyFree(ptr)` macros. Typically you would do that in overloads of `operator new` and `operator delete`, for example:
+To mark memory events, use the `TracyAlloc(ptr, size)` and `TracyFree(ptr)` macros. Typically, you would place them in overloads of `operator new` and `operator delete`. The order in which memory events actually occur must match the order reported to the profiler, so a mutex or similar synchronization primitive is required to make the whole operation atomic. Here is an example implementation:
+
+    std::mutex memoryLock;
 
     void* operator new(std::size_t count)
     {
+        std::lock_guard lock(memoryLock);
         auto ptr = malloc(count);
         TracyAlloc(ptr, count);
         return ptr;
@@ -1522,6 +1525,7 @@ To mark memory events, use the `TracyAlloc(ptr, size)` and `TracyFree(ptr)` macr
 
     void operator delete(void* ptr) noexcept
     {
+        std::lock_guard lock(memoryLock);
         TracyFree(ptr);
         free(ptr);
     }

@@ -56,7 +56,7 @@ static bool SourceFileValid( const char* fn, uint64_t olderThan )
 static const uint8_t FileHeader[8] { 't', 'r', 'a', 'c', 'y', Version::Major, Version::Minor, Version::Patch };
 constexpr size_t FileHeaderMagic = 5;
 static const int CurrentVersion = FileVersion( Version::Major, Version::Minor, Version::Patch );
-static const int MinSupportedVersion = FileVersion( 0, 9, 0 );
+static const int MinSupportedVersion = FileVersion( 0, 11, 0 );
 
 
 static void UpdateLockCountLockable( LockMap& lockmap, size_t pos )
@@ -587,16 +587,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
     f.Read( m_data.cpuManufacturer, 12 );
     m_data.cpuManufacturer[12] = '\0';
 
-    if( fileVer >= FileVersion( 0, 9, 2 ) )
-    {
-        uint8_t flag;
-        f.Read( flag );
-        m_onDemand = flag;
-    }
-    else
-    {
-        m_onDemand = m_data.frameOffset != 0;
-    }
+    uint8_t flag;
+    f.Read( flag );
+    m_onDemand = flag;
 
     uint64_t sz;
     {

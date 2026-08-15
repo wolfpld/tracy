@@ -76,7 +76,7 @@ namespace tracy
     {
         friend class D3D12ZoneScope;
 
-        uint8_t m_contextId = 255;  // 255 represents "invalid id"
+        int32_t m_contextId = InvalidGpuContextId;
 
         std::mutex m_collectionMutex;
 
@@ -128,7 +128,7 @@ namespace tracy
                 MemWrite(&item->gpuCalibration.gpuTime, int64_t(gpuTimestamp));
                 MemWrite(&item->gpuCalibration.cpuTime, int64_t(cpuTimestamp));
                 MemWrite(&item->gpuCalibration.cpuDelta, cpuDeltaNS);
-                MemWrite(&item->gpuCalibration.context, GetId());
+                MemWrite(&item->gpuCalibration.context, static_cast<uint8_t>(GetId()));
                 SubmitQueueItem(item);
             }
         }
@@ -239,7 +239,7 @@ namespace tracy
             cpuTimestamp = Profiler::GetTime();
 
             // All setup/init checks completed: ready to create the context.
-            m_contextId = GetGpuCtxCounter().fetch_add(1);
+            m_contextId = NextGpuContextId();
             ZoneValue(m_contextId);
 
             auto* item = Profiler::QueueSerial();
@@ -288,7 +288,7 @@ namespace tracy
             m_queue->Release();
         }
 
-        tracy_force_inline uint8_t GetId() const
+        tracy_force_inline int32_t GetId() const
         {
             return m_contextId;
         }
@@ -300,7 +300,7 @@ namespace tracy
 
             auto item = Profiler::QueueSerial();
             MemWrite( &item->hdr.type, QueueType::GpuContextName );
-            MemWrite( &item->gpuContextNameFat.context, GetId());
+            MemWrite( &item->gpuContextNameFat.context, static_cast<uint8_t>(GetId()));
             MemWrite( &item->gpuContextNameFat.ptr, (uint64_t)ptr );
             MemWrite( &item->gpuContextNameFat.size, len );
             SubmitQueueItem(item);
@@ -458,7 +458,7 @@ namespace tracy
             MemWrite(&item->hdr.type, QueueType::GpuTime);
             MemWrite(&item->gpuTime.gpuTime, static_cast<int64_t>(gpuTimestamp));
             MemWrite(&item->gpuTime.queryId, static_cast<uint16_t>(queryId));
-            MemWrite(&item->gpuTime.context, GetId());
+            MemWrite(&item->gpuTime.context, static_cast<uint8_t>(GetId()));
             Profiler::QueueSerialFinish();
             m_shadowBuffer[queryId] = gpuTimestamp;
             TracyD3D12Debug(
@@ -608,7 +608,7 @@ namespace tracy
             MemWrite( &item->gpuZoneBegin.srcloc, srcLocationAddr );
             MemWrite( &item->gpuZoneBegin.thread, GetThreadHandle() );
             MemWrite( &item->gpuZoneBegin.queryId, static_cast<uint16_t>( m_queryId ) );
-            MemWrite( &item->gpuZoneBegin.context, m_ctx->GetId() );
+            MemWrite( &item->gpuZoneBegin.context, static_cast<uint8_t>(m_ctx->GetId()) );
             Profiler::QueueSerialFinish();
         }
 
@@ -669,7 +669,7 @@ namespace tracy
                 MemWrite(&item->gpuZoneEnd.cpuTime, Profiler::GetTime());
                 MemWrite(&item->gpuZoneEnd.thread, GetThreadHandle());
                 MemWrite(&item->gpuZoneEnd.queryId, static_cast<uint16_t>(queryId));
-                MemWrite(&item->gpuZoneEnd.context, m_ctx->GetId());
+                MemWrite( &item->gpuZoneEnd.context, static_cast<uint8_t>(m_ctx->GetId()) );
                 Profiler::QueueSerialFinish();
 #ifdef TRACY_ON_DEMAND
             }
@@ -695,12 +695,6 @@ namespace tracy
     {
         auto* ctx = static_cast<D3D12QueueCtx*>(tracy_malloc(sizeof(D3D12QueueCtx)));
         new (ctx) D3D12QueueCtx{ device, queue };
-        // constructor may have failed:
-        if (ctx->GetId() == 255)
-        {
-            DestroyD3D12Context(ctx);
-            return nullptr;
-        }
         return ctx;
     }
 

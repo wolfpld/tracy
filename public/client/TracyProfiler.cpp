@@ -1240,7 +1240,7 @@ struct ProfilerData
     moodycamel::ConcurrentQueue<QueueItem> queue;
     Profiler profiler;
     std::atomic<uint32_t> lockCounter { 0 };
-    std::atomic<uint8_t> gpuCtxCounter { 0 };
+    std::atomic<uint32_t> gpuCtxCounter { 0 };
     std::atomic<ThreadNameData*> threadNameData { nullptr };
 };
 
@@ -1385,7 +1385,7 @@ TRACY_API Profiler& MANGLED_NAME_BASED_ON_CONFIG(GetProfiler)() { return GetProf
 TRACY_API moodycamel::ConcurrentQueue<QueueItem>& GetQueue() { return GetProfilerData().queue; }
 TRACY_API int64_t GetInitTime() { return GetProfilerData().initTime; }
 TRACY_API std::atomic<uint32_t>& GetLockCounter() { return GetProfilerData().lockCounter; }
-TRACY_API std::atomic<uint8_t>& GetGpuCtxCounter() { return GetProfilerData().gpuCtxCounter; }
+TRACY_API std::atomic<uint32_t>& GetGpuCtxCounter() { return GetProfilerData().gpuCtxCounter; }
 TRACY_API GpuCtxWrapper& GetGpuCtx() { return GetProfilerThreadData().gpuCtx; }
 TRACY_API uint32_t GetThreadHandle() { return detail::GetThreadHandleImpl(); }
 std::atomic<ThreadNameData*>& GetThreadNameData() { return GetProfilerData().threadNameData; }
@@ -1471,7 +1471,7 @@ static EarlyMainThreadTokenRepair init_order(104) s_earlyMainThreadTokenRepair;
 #  endif
 
 std::atomic<uint32_t> init_order(104) s_lockCounter( 0 );
-std::atomic<uint8_t> init_order(104) s_gpuCtxCounter( 0 );
+std::atomic<uint32_t> init_order(104) s_gpuCtxCounter( 0 );
 
 thread_local GpuCtxWrapper init_order(104) s_gpuCtx { nullptr };
 
@@ -1490,7 +1490,7 @@ TRACY_API Profiler& MANGLED_NAME_BASED_ON_CONFIG(GetProfiler)() { return s_profi
 TRACY_API moodycamel::ConcurrentQueue<QueueItem>& GetQueue() { return s_queue; }
 TRACY_API int64_t GetInitTime() { return s_initTime.val; }
 TRACY_API std::atomic<uint32_t>& GetLockCounter() { return s_lockCounter; }
-TRACY_API std::atomic<uint8_t>& GetGpuCtxCounter() { return s_gpuCtxCounter; }
+TRACY_API std::atomic<uint32_t>& GetGpuCtxCounter() { return s_gpuCtxCounter; }
 TRACY_API GpuCtxWrapper& GetGpuCtx() { return s_gpuCtx; }
 TRACY_API uint32_t GetThreadHandle() { return s_threadHandle.val; }
 
@@ -1500,6 +1500,18 @@ std::atomic<ThreadNameData*>& GetThreadNameData() { return s_threadNameData; }
 TRACY_API LuaZoneState& GetLuaZoneState() { return s_luaZoneState; }
 #  endif
 #endif
+
+TRACY_API int32_t NextGpuContextId()
+{
+    const auto id = GetGpuCtxCounter().fetch_add( 1, std::memory_order_relaxed );
+    if( id > UINT8_MAX )
+    {
+        Profiler::LogString( MessageSourceType::Tracy, MessageSeverity::Error, 0, 0, "Tracy: more than 256 GPU contexts in this process; gpu context ids are 8-bit" );
+        assert( false );
+        return InvalidGpuContextId;
+    }
+    return int32_t( id );
+}
 
 TRACY_API bool ProfilerAvailable() { return s_instance != nullptr; }
 TRACY_API bool ProfilerAllocatorAvailable() { return !RpThreadShutdown; }

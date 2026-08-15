@@ -105,7 +105,7 @@ public:
 #endif
         : m_device( device )
         , m_timeDomain( VK_TIME_DOMAIN_DEVICE_EXT )
-        , m_context( GetGpuCtxCounter().fetch_add( 1, std::memory_order_relaxed ) )
+        , m_context( NextGpuContextId() )
         , m_head( 0 )
         , m_tail( 0 )
         , m_oldCnt( 0 )
@@ -114,7 +114,7 @@ public:
         , m_vkGetCalibratedTimestampsEXT( vkGetCalibratedTimestampsEXT )
 #endif
     {
-        assert( m_context != 255 );
+        assert( m_context != InvalidGpuContextId );
 
 #if defined TRACY_VK_USE_SYMBOL_TABLE
         PopulateSymbolTable(instance, instanceProcAddr, deviceProcAddr);
@@ -190,7 +190,7 @@ public:
 #endif
         : m_device( device )
         , m_timeDomain( VK_TIME_DOMAIN_DEVICE_EXT )
-        , m_context( GetGpuCtxCounter().fetch_add(1, std::memory_order_relaxed) )
+        , m_context( NextGpuContextId() )
         , m_head( 0 )
         , m_tail( 0 )
         , m_oldCnt( 0 )
@@ -199,7 +199,7 @@ public:
         , m_vkGetCalibratedTimestampsEXT( vkGetCalibratedTimestampsEXT )
 #endif
     {
-        assert( m_context != 255);
+        assert( m_context != InvalidGpuContextId);
 
 #if defined TRACY_VK_USE_SYMBOL_TABLE
         PopulateSymbolTable(instance, instanceProcAddr, deviceProcAddr);
@@ -242,7 +242,7 @@ public:
 
         auto item = Profiler::QueueSerial();
         MemWrite( &item->hdr.type, QueueType::GpuContextName );
-        MemWrite( &item->gpuContextNameFat.context, m_context );
+        MemWrite( &item->gpuContextNameFat.context, uint8_t( m_context ) );
         MemWrite( &item->gpuContextNameFat.ptr, (uint64_t)ptr );
         MemWrite( &item->gpuContextNameFat.size, len );
 #ifdef TRACY_ON_DEMAND
@@ -309,7 +309,7 @@ public:
             MemWrite( &item->hdr.type, QueueType::GpuTime );
             MemWrite( &item->gpuTime.gpuTime, m_res[idx * 2] );
             MemWrite( &item->gpuTime.queryId, uint16_t( wrappedTail + idx ) );
-            MemWrite( &item->gpuTime.context, m_context );
+            MemWrite( &item->gpuTime.context, uint8_t( m_context ) );
             Profiler::QueueSerialFinish();
         }
 
@@ -327,7 +327,7 @@ public:
                 MemWrite( &item->gpuCalibration.gpuTime, tgpu );
                 MemWrite( &item->gpuCalibration.cpuTime, refCpu );
                 MemWrite( &item->gpuCalibration.cpuDelta, delta );
-                MemWrite( &item->gpuCalibration.context, m_context );
+                MemWrite( &item->gpuCalibration.context, uint8_t( m_context ) );
                 Profiler::QueueSerialFinish();
             }
         }
@@ -345,7 +345,7 @@ public:
         return id % m_queryCount;
     }
 
-    tracy_force_inline uint8_t GetId() const
+    tracy_force_inline int32_t GetId() const
     {
         return m_context;
     }
@@ -473,7 +473,7 @@ private:
         MemWrite( &item->gpuNewContext.gpuTime, tgpu );
         memset( &item->gpuNewContext.thread, 0, sizeof( item->gpuNewContext.thread ) );
         MemWrite( &item->gpuNewContext.period, period );
-        MemWrite( &item->gpuNewContext.context, m_context );
+        MemWrite( &item->gpuNewContext.context, uint8_t( m_context ) );
         MemWrite( &item->gpuNewContext.flags, GpuContextFlags( flags ) );
         MemWrite( &item->gpuNewContext.type, GpuContextType::Vulkan );
 
@@ -517,7 +517,7 @@ private:
     int64_t m_qpcToNs;
 #endif
     int64_t m_prevCalibration;
-    uint8_t m_context;
+    int32_t m_context;
 
     std::atomic<uint64_t> m_head;
     uint64_t m_tail;
@@ -553,7 +553,7 @@ public:
         MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
         MemWrite( &item->gpuZoneBegin.thread, GetThreadHandle() );
         MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
-        MemWrite( &item->gpuZoneBegin.context, ctx->GetId() );
+        MemWrite( &item->gpuZoneBegin.context, uint8_t( ctx->GetId() ) );
         Profiler::QueueSerialFinish();
     }
 
@@ -587,7 +587,7 @@ public:
         MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
         MemWrite( &item->gpuZoneBegin.thread, GetThreadHandle() );
         MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
-        MemWrite( &item->gpuZoneBegin.context, ctx->GetId() );
+        MemWrite( &item->gpuZoneBegin.context, uint8_t( ctx->GetId() ) );
         Profiler::QueueSerialFinish();
     }
 
@@ -613,7 +613,7 @@ public:
         MemWrite( &item->gpuZoneBegin.srcloc, srcloc );
         MemWrite( &item->gpuZoneBegin.thread, GetThreadHandle() );
         MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
-        MemWrite( &item->gpuZoneBegin.context, ctx->GetId() );
+        MemWrite( &item->gpuZoneBegin.context, uint8_t( ctx->GetId() ) );
         Profiler::QueueSerialFinish();
     }
 
@@ -648,7 +648,7 @@ public:
         MemWrite( &item->gpuZoneBegin.srcloc, srcloc );
         MemWrite( &item->gpuZoneBegin.thread, GetThreadHandle() );
         MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
-        MemWrite( &item->gpuZoneBegin.context, ctx->GetId() );
+        MemWrite( &item->gpuZoneBegin.context, uint8_t( ctx->GetId() ) );
         Profiler::QueueSerialFinish();
     }
 
@@ -667,7 +667,7 @@ public:
         MemWrite( &item->gpuZoneEnd.cpuTime, Profiler::GetTime() );
         MemWrite( &item->gpuZoneEnd.thread, GetThreadHandle() );
         MemWrite( &item->gpuZoneEnd.queryId, uint16_t( queryId ) );
-        MemWrite( &item->gpuZoneEnd.context, m_ctx->GetId() );
+        MemWrite( &item->gpuZoneEnd.context, uint8_t( m_ctx->GetId() ) );
         Profiler::QueueSerialFinish();
     }
 

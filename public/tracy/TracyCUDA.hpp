@@ -576,7 +576,7 @@ namespace tracy
 
             auto item = Profiler::QueueSerial();
             tracyMemWrite(item->hdr.type, QueueType::GpuContextName);
-            tracyMemWrite(item->gpuContextNameFat.context, m_tracyGpuContext);
+            tracyMemWrite(item->gpuContextNameFat.context, (uint8_t)m_tracyGpuContext);
             tracyMemWrite(item->gpuContextNameFat.ptr, (uint64_t)ptr);
             tracyMemWrite(item->gpuContextNameFat.size, len);
             SubmitQueueItem(item);
@@ -623,7 +623,7 @@ namespace tracy
                 tracyMemWrite(item->gpuCalibration.gpuTime, (int64_t)tCUpti);
                 tracyMemWrite(item->gpuCalibration.cpuTime, tTracy);
                 tracyMemWrite(item->gpuCalibration.cpuDelta, deltaTicksCUpti);
-                tracyMemWrite(item->gpuCalibration.context, m_tracyGpuContext);
+                tracyMemWrite(item->gpuCalibration.context, (uint8_t)m_tracyGpuContext);
                 Profiler::QueueSerialFinish();
             }
             #endif
@@ -644,8 +644,8 @@ namespace tracy
             //uint32_t timelineId = tracy::GetThreadHandle();
             uint32_t timelineId = tracyTimelineId(cudaContextId, cudaStreamId);
             uint16_t queryId = m_queryIdGen.fetch_add(2);
-            tracyAnnounceGpuTimestamp(apiStart, apiEnd, queryId, m_tracyGpuContext, pSrcLoc, timelineId);
-            tracySubmitGpuTimestamp(gpuStart, gpuEnd, queryId, m_tracyGpuContext);
+            tracyAnnounceGpuTimestamp(apiStart, apiEnd, queryId, (uint8_t)m_tracyGpuContext, pSrcLoc, timelineId);
+            tracySubmitGpuTimestamp(gpuStart, gpuEnd, queryId, (uint8_t)m_tracyGpuContext);
         }
 
         void OnEventsProcessed() {
@@ -1410,17 +1410,17 @@ namespace tracy
 
         };
 
-        CUDACtx(uint8_t gpuContextID = 255)
+        CUDACtx(int32_t gpuContextID = InvalidGpuContextId)
         {
             ZoneScoped;
 
-            if (gpuContextID != 255) {
+            if (gpuContextID != InvalidGpuContextId) {
                 m_tracyGpuContext = gpuContextID;
                 return;
             }
 
-            m_tracyGpuContext = GetGpuCtxCounter().fetch_add(1, std::memory_order_relaxed);
-            assert(m_tracyGpuContext != 255);
+            m_tracyGpuContext = NextGpuContextId();
+            assert(m_tracyGpuContext != InvalidGpuContextId);
 
             TracyTimestamp tTracy;
             CUptiTimestamp tCUpti;
@@ -1434,7 +1434,7 @@ namespace tracy
             tracyMemWrite(item->gpuNewContext.thread, (uint32_t)0);
             tracyMemWrite(item->gpuNewContext.period, 1.0f);
             tracyMemWrite(item->gpuNewContext.type, GpuContextType::CUDA);
-            tracyMemWrite(item->gpuNewContext.context, m_tracyGpuContext);
+            tracyMemWrite(item->gpuNewContext.context, (uint8_t)m_tracyGpuContext);
             #if TRACY_CUDA_CALIBRATED_CONTEXT
             tracyMemWrite(item->gpuNewContext.flags, GpuContextCalibration);
             #else
@@ -1470,7 +1470,7 @@ namespace tracy
             CUDACtx* ctx = nullptr;
             std::mutex m;
             int ref_count = 0;
-            uint8_t ctx_id = 255;
+            int32_t ctx_id = InvalidGpuContextId;
             static Singleton& Get() {
                 static Singleton singleton;
                 return singleton;
@@ -1481,7 +1481,7 @@ namespace tracy
         ProfilerStats stats = {};
         #endif
 
-        uint8_t m_tracyGpuContext = 255;
+        int32_t m_tracyGpuContext = InvalidGpuContextId;
         static constexpr size_t cacheline = 64;
         alignas(cacheline) std::atomic<uint16_t> m_queryIdGen = 0;
     };

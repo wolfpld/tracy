@@ -79,14 +79,9 @@ uint8_t gpu_context_allocate( ToolData* data )
     float timestamp_period = 1.0f;
     data->previous_cpu_time = cpu_timestamp;
 
-    // Allocate the process-unique GPU context ID. There's a max of 255 available;
-    // if we are recreating devices a lot we may exceed that. Don't do that, or
-    // wrap around and get weird (but probably still usable) numbers.
-    uint8_t context_id = tracy::GetGpuCtxCounter().fetch_add( 1, std::memory_order_relaxed );
-    if( context_id >= 255 )
-    {
-        context_id %= 255;
-    }
+    // Allocate the process-unique GPU context ID. There's a max of 256 available
+    // (ids are 8-bit); if we are recreating devices a lot we may exceed that.
+    uint8_t context_id = uint8_t( tracy::NextGpuContextId() );
 
     uint8_t context_flags = 0;
 #ifdef TRACY_ROCPROF_CALIBRATION

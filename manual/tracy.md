@@ -1566,6 +1566,8 @@ Tracy provides bindings for profiling OpenGL, Vulkan, Direct3D 11, Direct3D 12, 
 
 Note that the CPU and GPU timers may be unsynchronized unless you create a calibrated context, but the availability of calibrated contexts is limited. You can try to correct the desynchronization of uncalibrated contexts in the profiler's options (section [5.4](#options)).
 
+GPU contexts are identified by a process-wide unique id, assigned when the context is created (the context creation macros do this automatically). Ids are 8 bits wide (0--255) and are allocated sequentially, so a process can create at most 256 GPU contexts.
+
 > [!TIP]
 > **Check the scope**
 >
@@ -2203,7 +2205,7 @@ Moreover, there are two sets of functions described below. The standard set send
 
 A GPU context can be created with the `___tracy_emit_gpu_new_context` function (or the serialized variant). You'll need to specify:
 
-- `context` -- a unique context id.
+- `context` -- a unique context id (8-bit, 0--255; see section [3.10](#gpuprofiling)).
 
 - `gpuTime` -- an initial GPU timestamp.
 

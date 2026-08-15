@@ -536,6 +536,8 @@ enum GpuContextFlags : uint8_t
     GpuContextCalibration   = 1 << 0
 };
 
+constexpr int32_t InvalidGpuContextId = -1;
+
 struct QueueGpuNewContext
 {
     int64_t cpuTime;

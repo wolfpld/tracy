@@ -95,7 +95,8 @@ TRACY_API moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken();
 TRACY_API Profiler& MANGLED_NAME_BASED_ON_CONFIG(GetProfiler)();
 tracy_force_inline Profiler& GetProfiler() { return MANGLED_NAME_BASED_ON_CONFIG(GetProfiler)(); }
 TRACY_API std::atomic<uint32_t>& GetLockCounter();
-TRACY_API std::atomic<uint8_t>& GetGpuCtxCounter();
+TRACY_API std::atomic<uint32_t>& GetGpuCtxCounter();
+TRACY_API int32_t NextGpuContextId();
 TRACY_API GpuCtxWrapper& GetGpuCtx();
 TRACY_API uint32_t GetThreadHandle();
 TRACY_API bool ProfilerAvailable();

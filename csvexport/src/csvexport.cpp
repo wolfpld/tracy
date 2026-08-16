@@ -26,17 +26,17 @@ void print_usage_exit(int e)
     fprintf(stderr, "Usage:\n");
     fprintf(stderr, "  extract [OPTION...] <trace file>\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "  -h, --help               Print usage\n");
-    fprintf(stderr, "  -V, --version            Show version information\n");
-    fprintf(stderr, "  -f, --filter arg         Filter zone names (default: "")\n");
-    fprintf(stderr, "  -s, --sep arg            CSV separator (default: ,)\n");
-    fprintf(stderr, "  -c, --case               Case sensitive filtering\n");
-    fprintf(stderr, "  -e, --self               Get self times\n");
-    fprintf(stderr, "  -u, --unwrap             Report each cpu zone event\n");
-    fprintf(stderr, "  -g, --gpu                Report each gpu zone event\n" );
-    fprintf(stderr, "  -m, --messages           Report only messages\n");
-    fprintf(stderr, "  -p, --plot               Report plot data (only with -u)\n");
-    fprintf(stderr, "  -t, --truncated_mean arg Report truncated mean (arg is the percentile. Default is 90)\n");
+    fprintf(stderr, "  -h, --help                 Print usage\n");
+    fprintf(stderr, "  -V, --version              Show version information\n");
+    fprintf(stderr, "  -f, --filter arg           Filter zone names (default: "")\n");
+    fprintf(stderr, "  -s, --sep arg              CSV separator (default: ,)\n");
+    fprintf(stderr, "  -c, --case                 Case sensitive filtering\n");
+    fprintf(stderr, "  -e, --self                 Get self times\n");
+    fprintf(stderr, "  -u, --unwrap               Report each cpu zone event\n");
+    fprintf(stderr, "  -g, --gpu                  Report each gpu zone event\n" );
+    fprintf(stderr, "  -m, --messages             Report only messages\n");
+    fprintf(stderr, "  -p, --plot                 Report plot data (only with -u)\n");
+    fprintf(stderr, "  -t, --truncated_mean[=arg] Report truncated mean (arg is the percentile. Default is 90)\n");
 
     exit(e);
 }
@@ -66,8 +66,8 @@ Args parse_args(int argc, char** argv)
     struct option long_opts[] = {
         { "help", no_argument, NULL, 'h' },
         { "version", no_argument, NULL, 'V' },
-        { "filter", optional_argument, NULL, 'f' },
-        { "sep", optional_argument, NULL, 's' },
+        { "filter", required_argument, NULL, 'f' },
+        { "sep", required_argument, NULL, 's' },
         { "case", no_argument, NULL, 'c' },
         { "self", no_argument, NULL, 'e' },
         { "unwrap", no_argument, NULL, 'u' },
@@ -79,7 +79,7 @@ Args parse_args(int argc, char** argv)
     };
 
     int c;
-    while ((c = getopt_long(argc, argv, "hf:s:ceugmpV", long_opts, NULL)) != -1)
+    while ((c = getopt_long(argc, argv, "hf:s:t:ceugmpV", long_opts, NULL)) != -1)
     {
         switch (c)
         {

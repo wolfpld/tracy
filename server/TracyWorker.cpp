@@ -5812,7 +5812,10 @@ void Worker::ProcessPlotConfig( const QueuePlotConfig& ev )
     plot->format = (PlotValueFormatting)ev.type;
     plot->showSteps = ev.step;
     plot->fill = ev.fill;
-    plot->color = ev.color & 0xFFFFFF;
+    plot->color =
+        ( ( ev.color & 0x0000FF ) << 16 ) |
+        ( ( ev.color & 0x00FF00 )       ) |
+        ( ( ev.color & 0xFF0000 ) >> 16 );
 }
 
 void Worker::ProcessMessage( const QueueMessageMetadata& ev )

@@ -37,11 +37,11 @@ using TracyVkCtx = void*;
 #  error "You must include Vulkan headers before including TracyVulkan.hpp"
 #endif
 
-#include <assert.h>
 #include <stdlib.h>
 #include "Tracy.hpp"
 #include "../client/TracyProfiler.hpp"
 #include "../client/TracyCallstack.hpp"
+#include "../common/TracyAssert.hpp"
 
 #include <atomic>
 
@@ -114,7 +114,7 @@ public:
         , m_vkGetCalibratedTimestampsEXT( vkGetCalibratedTimestampsEXT )
 #endif
     {
-        assert( m_context != InvalidGpuContextId );
+        TRACY_ASSERT( m_context != InvalidGpuContextId );
 
 #if defined TRACY_VK_USE_SYMBOL_TABLE
         PopulateSymbolTable(instance, instanceProcAddr, deviceProcAddr);
@@ -199,16 +199,16 @@ public:
         , m_vkGetCalibratedTimestampsEXT( vkGetCalibratedTimestampsEXT )
 #endif
     {
-        assert( m_context != InvalidGpuContextId);
+        TRACY_ASSERT( m_context != InvalidGpuContextId);
 
 #if defined TRACY_VK_USE_SYMBOL_TABLE
         PopulateSymbolTable(instance, instanceProcAddr, deviceProcAddr);
         m_vkGetCalibratedTimestampsEXT = m_symbols.vkGetCalibratedTimestampsEXT;
 #endif
 
-        assert( VK_FUNCTION_WRAPPER( vkResetQueryPool ) != nullptr );
-        assert( VK_FUNCTION_WRAPPER( vkGetPhysicalDeviceCalibrateableTimeDomainsEXT ) != nullptr );
-        assert( VK_FUNCTION_WRAPPER( vkGetCalibratedTimestampsEXT ) != nullptr );
+        TRACY_ASSERT( VK_FUNCTION_WRAPPER( vkResetQueryPool ) != nullptr );
+        TRACY_ASSERT( VK_FUNCTION_WRAPPER( vkGetPhysicalDeviceCalibrateableTimeDomainsEXT ) != nullptr );
+        TRACY_ASSERT( VK_FUNCTION_WRAPPER( vkGetCalibratedTimestampsEXT ) != nullptr );
 
         FindAvailableTimeDomains( physdev, VK_FUNCTION_WRAPPER( vkGetPhysicalDeviceCalibrateableTimeDomainsEXT ) );
 
@@ -271,7 +271,7 @@ public:
             return;
         }
 #endif
-        assert( head > m_tail );
+        TRACY_ASSERT( head > m_tail );
 
         const unsigned int wrappedTail = (unsigned int)( m_tail % m_queryCount );
 
@@ -284,7 +284,7 @@ public:
         else
         {
             cnt = (unsigned int)( head - m_tail );
-            assert( cnt <= m_queryCount );
+            TRACY_ASSERT( cnt <= m_queryCount );
             if( wrappedTail + cnt > m_queryCount )
             {
                 cnt = m_queryCount - wrappedTail;
@@ -363,15 +363,15 @@ private:
 #elif defined __linux__ && defined CLOCK_MONOTONIC_RAW
         return tCpu;
 #else
-        assert( false );
+        TRACY_ASSERT( false );
         return 0;
 #endif
     }
 
     tracy_force_inline bool GetCalibratedTimestamps( int64_t& tCpu, int64_t& tGpu, uint64_t& tDeviation )
     {
-        assert( m_device );
-        assert( m_timeDomain != VK_TIME_DOMAIN_DEVICE_EXT );
+        TRACY_ASSERT( m_device );
+        TRACY_ASSERT( m_timeDomain != VK_TIME_DOMAIN_DEVICE_EXT );
         VkCalibratedTimestampInfoEXT spec[2] = {
             { VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT, nullptr, VK_TIME_DOMAIN_DEVICE_EXT },
             { VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT, nullptr, m_timeDomain },

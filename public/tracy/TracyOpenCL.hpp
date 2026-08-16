@@ -36,19 +36,19 @@ using TracyCLCtx = void*;
 #include <CL/cl.h>
 
 #include <atomic>
-#include <cassert>
 #include <sstream>
 
 #include "Tracy.hpp"
 #include "../client/TracyCallstack.hpp"
 #include "../client/TracyProfiler.hpp"
 #include "../common/TracyAlloc.hpp"
+#include "../common/TracyAssert.hpp"
 
 #define TRACY_CL_TO_STRING_INDIRECT(T) #T
 #define TRACY_CL_TO_STRING(T) TRACY_CL_TO_STRING_INDIRECT(T)
 #define TRACY_CL_ASSERT(p) if(!(p)) {                                                         \
     TracyMessageL( "TRACY_CL_ASSERT failed on " TracyFile ":" TRACY_CL_TO_STRING(TracyLine) );  \
-    assert(false && "TRACY_CL_ASSERT failed");                                                \
+    TRACY_ASSERT(false && "TRACY_CL_ASSERT failed");                                                \
 }
 #define TRACY_CL_CHECK_ERROR(err) if(err != CL_SUCCESS) {                    \
     std::ostringstream oss;                                                  \
@@ -56,7 +56,7 @@ using TracyCLCtx = void*;
         << ": error code " << err;                                           \
     auto msg = oss.str();                                                    \
     TracyMessage(msg.data(), msg.size());                                    \
-    assert(false && "TRACY_CL_CHECK_ERROR failed");                          \
+    TRACY_ASSERT(false && "TRACY_CL_CHECK_ERROR failed");                          \
 }
 
 namespace tracy {
@@ -164,7 +164,7 @@ namespace tracy {
                     if (eventInfo.event == nullptr) {
                         TracyMessageL("A TracyCLZone must be paird with a TracyCLZoneSetEvent, check your code!");
                     }
-                    assert(false && "clGetEventInfo failed, maybe a TracyCLZone is not paired with TracyCLZoneSetEvent");
+                    TRACY_ASSERT(false && "clGetEventInfo failed, maybe a TracyCLZone is not paired with TracyCLZoneSetEvent");
                     continue;
                 }
                 if (eventStatus != CL_COMPLETE) return;
@@ -178,7 +178,7 @@ namespace tracy {
                 if (err == CL_PROFILING_INFO_NOT_AVAILABLE)
                 {
                     TracyMessageL("command queue is not created with CL_QUEUE_PROFILING_ENABLE flag, check your code!");
-                    assert(false && "command queue is not created with CL_QUEUE_PROFILING_ENABLE flag");
+                    TRACY_ASSERT(false && "command queue is not created with CL_QUEUE_PROFILING_ENABLE flag");
                 }
                 else
                     TRACY_CL_CHECK_ERROR(err);

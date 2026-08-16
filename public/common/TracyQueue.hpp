@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "TracyAssert.hpp"
 #include "TracyTaggedUserlandAddress.hpp"
 #include "TracyForceInline.hpp"
 
@@ -439,13 +440,13 @@ tracy_force_inline uint8_t MakeMessageMetadata(MessageSourceType source, Message
 
 tracy_force_inline MessageSourceType MessageSourceFromMetadata(uint8_t metadata)
 {
-    assert( ( metadata & 0x0F ) < (uint8_t)MessageSourceType::COUNT );
+    TRACY_ASSERT( ( metadata & 0x0F ) < (uint8_t)MessageSourceType::COUNT );
     return (MessageSourceType)( metadata & 0x0F );
 }
 
 tracy_force_inline MessageSeverity MessageSeverityFromMetadata(uint8_t metadata)
 {
-    assert( ( ( metadata & 0xF0 ) >> 4 ) < (uint8_t)MessageSeverity::COUNT );
+    TRACY_ASSERT( ( ( metadata & 0xF0 ) >> 4 ) < (uint8_t)MessageSeverity::COUNT );
     return (MessageSeverity)( ( metadata & 0xF0 ) >> 4 );
 }
 

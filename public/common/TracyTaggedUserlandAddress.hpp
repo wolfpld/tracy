@@ -2,8 +2,8 @@
 #define __TRACYTAGGEDPTR_HPP__
 
 #include <stdint.h>
-#include <assert.h>
 
+#include "TracyAssert.hpp"
 #include "TracyForceInline.hpp"
 
 namespace tracy
@@ -18,7 +18,7 @@ public:
     TaggedUserlandAddress() = default;
     tracy_force_inline explicit TaggedUserlandAddress( uint64_t address, uint8_t tag = 0 )
     {
-        assert( ( address & highBits ) == 0 );
+        TRACY_ASSERT( ( address & highBits ) == 0 );
         m_storage = ( address << ptrShift ) | tag;
     }
 

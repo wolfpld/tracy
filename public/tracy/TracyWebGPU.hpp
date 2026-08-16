@@ -45,6 +45,7 @@ using TracyWebGPUCtx = void*;
 #include "../client/TracyCallstack.hpp"
 #include "../common/TracyAlign.hpp"
 #include "../common/TracyAlloc.hpp"
+#include "../common/TracyAssert.hpp"
 
 #include <atomic>
 #include <mutex>
@@ -52,7 +53,6 @@ using TracyWebGPUCtx = void*;
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <cassert>
 #include <chrono>
 #include <thread>
 
@@ -83,7 +83,7 @@ extern "C" int32_t IsDebuggerPresent(void);
 #else
 #define TracyWebGPUDebug(...)
 #define TracyWebGPUBreak()
-#define TracyWebGPUAssert(predicate, ...) assert(predicate);
+#define TracyWebGPUAssert(predicate, ...) TRACY_ASSERT(predicate);
 #endif
 
 #define TracyWebGPULog(severity, msg) do { char buffer [1024]; int len = snprintf(buffer, sizeof(buffer), "TracyWebGPU: %s", msg); tracy::Profiler::LogString( tracy::MessageSourceType::Tracy, tracy::MessageSeverity::severity, tracy::Color::Red4, 0, len, buffer ); } while(false)

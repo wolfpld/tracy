@@ -1,6 +1,7 @@
 #include "TracyDebug.hpp"
 #include "TracyStringHelpers.hpp"
 #include "TracySysTrace.hpp"
+#include "../common/TracyAssert.hpp"
 #include "../common/TracySystem.hpp"
 
 #ifdef TRACY_HAS_SYSTEM_TRACING
@@ -50,7 +51,6 @@ static int SamplingFrequencyToPeriodNs( int samplingHz )
 #    endif
 
 #    define INITGUID
-#    include <assert.h>
 #    include <string.h>
 #    include <windows.h>
 #    include <dbghelp.h>
@@ -160,7 +160,7 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
         }
         break;
     case etw::DxgKrnlGuid.Data1:
-        assert( hdr.EventDescriptor.Id == etw::VSyncDPC::EventId );
+        TRACY_ASSERT( hdr.EventDescriptor.Id == etw::VSyncDPC::EventId );
         {
             const auto vs = (const etw::VSyncDPC*)record->UserData;
             TracyLfqPrepare( QueueType::FrameVsync );
@@ -1167,11 +1167,11 @@ void SysTraceWorker( void* ptr )
             const auto head = ring.LoadHead();
             const auto tail = ring.GetTail();
             if( head == tail ) continue;
-            assert( head > tail );
+            TRACY_ASSERT( head > tail );
             hadData = true;
 
             const auto id = ring.GetId();
-            assert( id != EventContextSwitch );
+            TRACY_ASSERT( id != EventContextSwitch );
             const auto end = head - tail;
             uint64_t pos = 0;
             if( id == EventCallstack )
@@ -1277,7 +1277,7 @@ void SysTraceWorker( void* ptr )
                     pos += hdr.size;
                 }
             }
-            assert( pos == end );
+            TRACY_ASSERT( pos == end );
             ring.Advance( end );
         }
         if( !traceActive.load( std::memory_order_relaxed ) ) break;
@@ -1302,7 +1302,7 @@ void SysTraceWorker( void* ptr )
                         ring.Read( time + idx, pos[idx] + sizeof( hdr ), sizeof( int64_t ) );
                         return true;
                     }
-                    assert( hdr.size > 0 );
+                    TRACY_ASSERT( hdr.size > 0 );
                     pos[idx] += hdr.size;
                 }
                 return false;
@@ -1351,7 +1351,7 @@ void SysTraceWorker( void* ptr )
                     // Found any event
                     if( sel >= 0 )
                     {
-                        assert( pos[sel] < end[sel] );
+                        TRACY_ASSERT( pos[sel] < end[sel] );
 
                         auto& ring = ringArray[ctxBufferIdx + sel];
                         auto rbPos = pos[sel];
@@ -1472,7 +1472,7 @@ void SysTraceWorker( void* ptr )
                         }
                         else
                         {
-                            assert( rid == EventVsync );
+                            TRACY_ASSERT( rid == EventVsync );
                             // Layout:
                             //   u64 time
                             //   u32 size

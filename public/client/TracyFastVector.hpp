@@ -1,10 +1,10 @@
 #ifndef __TRACYFASTVECTOR_HPP__
 #define __TRACYFASTVECTOR_HPP__
 
-#include <assert.h>
 #include <stddef.h>
 
 #include "../common/TracyAlloc.hpp"
+#include "../common/TracyAssert.hpp"
 #include "../common/TracyForceInline.hpp"
 
 namespace tracy
@@ -22,7 +22,7 @@ public:
         , m_write( m_ptr )
         , m_end( m_ptr + capacity )
     {
-        assert( capacity != 0 );
+        TRACY_ASSERT( capacity != 0 );
     }
 
     FastVector( const FastVector& ) = delete;
@@ -47,11 +47,11 @@ public:
     T* end() { return m_write; }
     const T* end() const { return m_write; }
 
-    T& front() { assert( !empty() ); return m_ptr[0]; }
-    const T& front() const { assert( !empty() ); return m_ptr[0]; }
+    T& front() { TRACY_ASSERT( !empty() ); return m_ptr[0]; }
+    const T& front() const { TRACY_ASSERT( !empty() ); return m_ptr[0]; }
 
-    T& back() { assert( !empty() ); return m_write[-1]; }
-    const T& back() const { assert( !empty() ); return m_write[-1]; }
+    T& back() { TRACY_ASSERT( !empty() ); return m_write[-1]; }
+    const T& back() const { TRACY_ASSERT( !empty() ); return m_write[-1]; }
 
     T& operator[]( size_t idx ) { return m_ptr[idx]; }
     const T& operator[]( size_t idx ) const { return m_ptr[idx]; }

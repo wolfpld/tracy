@@ -1,7 +1,7 @@
 #include "TracyDxt1.hpp"
+#include "../common/TracyAssert.hpp"
 #include "../common/TracyForceInline.hpp"
 
-#include <assert.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -584,7 +584,7 @@ static tracy_force_inline void ProcessRGB_AVX( const uint8_t* src, char*& dst )
 
 void CompressImageDxt1( const char* src, char* dst, int w, int h )
 {
-    assert( (w % 4) == 0 && (h % 4) == 0 );
+    TRACY_ASSERT( (w % 4) == 0 && (h % 4) == 0 );
 
 #ifdef __AVX2__
     if( w%8 == 0 )

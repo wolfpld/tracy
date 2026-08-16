@@ -564,6 +564,7 @@ Each enabled option is passed down to your program as a preprocessor macro of th
 \textbf{Diagnostics} & \\
 \texttt{TRACY\_VERBOSE} & Print detailed information about the detected features to the standard error output (section~\ref{troubleshooting}). \\
 \texttt{TRACY\_NO\_INTERNAL\_MESSAGE} & Don't send the profiler's own diagnostic messages to the server (section~\ref{troubleshooting}). \\
+\texttt{TRACY\_ASSERT} & Route the client's internal checks through a custom assert implementation, instead of the standard \texttt{assert}. Define \texttt{TRACY\_ASSERT(condition)} before including any Tracy header; the macro must accept a single condition argument. \\
 \end{longtable}
 \end{footnotesize}
 

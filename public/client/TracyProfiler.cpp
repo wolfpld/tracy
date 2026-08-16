@@ -56,7 +56,6 @@
 #endif
 
 #include <algorithm>
-#include <assert.h>
 #include <atomic>
 #include <chrono>
 #include <limits>
@@ -69,6 +68,7 @@
 
 #include "../common/TracyAlign.hpp"
 #include "../common/TracyAlloc.hpp"
+#include "../common/TracyAssert.hpp"
 #include "../common/TracySocket.hpp"
 #include "../common/TracySystem.hpp"
 #include "../common/TracyYield.hpp"
@@ -1169,7 +1169,7 @@ TRACY_API void TracyCrashHandler( int signal, siginfo_t* info, void* /*ucontext*
 #ifdef TRACY_HAS_SYSTEM_TRACING
 static void StartSystemTracing( int64_t& samplingPeriod )
 {
-    assert( s_sysTraceThread == nullptr );
+    TRACY_ASSERT( s_sysTraceThread == nullptr );
 
     // use TRACY_NO_SYS_TRACE=1 to force disabling sys tracing (even if available in the underlying system)
     // as it can have significant impact on the size of the traces
@@ -1184,7 +1184,7 @@ static void StartSystemTracing( int64_t& samplingPeriod )
         Thread* sysTraceThread = (Thread*)tracy_malloc( sizeof( Thread ) );
         new( sysTraceThread ) Thread( SysTraceWorker, nullptr );
         Thread* prev = s_sysTraceThread.exchange( sysTraceThread );
-        assert( prev == nullptr );
+        TRACY_ASSERT( prev == nullptr );
         std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
     }
 }
@@ -1280,7 +1280,7 @@ TRACY_API void StartupProfiler()
 }
 static ProfilerData& GetProfilerData()
 {
-    assert( s_profilerData );
+    TRACY_ASSERT( s_profilerData );
     return *s_profilerData;
 }
 TRACY_API void ShutdownProfiler()
@@ -1338,13 +1338,13 @@ public:
     {
         int val = pthread_key_create(&m_key, sDestructor);
         static_cast<void>(val); // unused
-        assert(val == 0);
+        TRACY_ASSERT(val == 0);
     }
     ~ProfilerThreadDataKey()
     {
         int val = pthread_key_delete(m_key);
         static_cast<void>(val); // unused
-        assert(val == 0);
+        TRACY_ASSERT(val == 0);
     }
     ProfilerThreadData& get()
     {
@@ -1507,7 +1507,7 @@ TRACY_API int32_t NextGpuContextId()
     if( id > UINT8_MAX )
     {
         Profiler::LogString( MessageSourceType::Tracy, MessageSeverity::Error, 0, 0, "Tracy: more than 256 GPU contexts in this process; gpu context ids are 8-bit" );
-        assert( false );
+        TRACY_ASSERT( false );
         return InvalidGpuContextId;
     }
     return int32_t( id );
@@ -1561,7 +1561,7 @@ Profiler::Profiler()
     , m_crashHandlerInstalled( false )
     , m_programName( nullptr )
 {
-    assert( !s_instance );
+    TRACY_ASSERT( !s_instance );
     s_instance = this;
 
 #ifndef TRACY_DELAYED_INIT
@@ -1764,7 +1764,7 @@ Profiler::~Profiler()
         tracy_free( m_broadcast );
     }
 
-    assert( s_instance );
+    TRACY_ASSERT( s_instance );
     s_instance = nullptr;
 }
 
@@ -1990,7 +1990,7 @@ void Profiler::Worker()
                     lastBroadcast = t;
                     const auto ts = std::chrono::duration_cast<std::chrono::seconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
                     broadcastMsg.activeTime = int32_t( ts - m_epoch );
-                    assert( broadcastMsg.activeTime >= 0 );
+                    TRACY_ASSERT( broadcastMsg.activeTime >= 0 );
                     m_broadcast->Send( broadcastPort, &broadcastMsg, broadcastLen );
                 }
             }
@@ -2522,7 +2522,7 @@ void Profiler::ClearQueues( moodycamel::ConsumerToken& token )
 {
     for(;;)
     {
-        const auto sz = GetQueue().try_dequeue_bulk_single( token, [](const uint64_t&){}, []( QueueItem* item, size_t sz ) { assert( sz > 0 ); while( sz-- > 0 ) FreeAssociatedMemory( *item++ ); } );
+        const auto sz = GetQueue().try_dequeue_bulk_single( token, [](const uint64_t&){}, []( QueueItem* item, size_t sz ) { TRACY_ASSERT( sz > 0 ); while( sz-- > 0 ) FreeAssociatedMemory( *item++ ); } );
         if( sz == 0 ) break;
     }
 
@@ -2563,7 +2563,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
         {
             if( connectionLost ) return;
             InitAllocator();
-            assert( sz > 0 );
+            TRACY_ASSERT( sz > 0 );
             int64_t refThread = m_refTimeThread;
             int64_t refCtx = m_refTimeCtx;
             int64_t refGpu = m_refTimeGpu;
@@ -2921,7 +2921,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
 #endif
                         break;
                     default:
-                        assert( false );
+                        TRACY_ASSERT( false );
                         break;
                     }
                 }
@@ -2948,7 +2948,7 @@ Profiler::DequeueStatus Profiler::DequeueContextSwitches( tracy::moodycamel::Con
     const auto sz = GetQueue().try_dequeue_bulk_single( token, [] ( const uint64_t& ) {},
         [this, &timeStop] ( QueueItem* item, size_t sz )
         {
-            assert( sz > 0 );
+            TRACY_ASSERT( sz > 0 );
             int64_t refCtx = m_refTimeCtx;
             while( sz-- > 0 )
             {
@@ -3008,9 +3008,9 @@ Profiler::DequeueStatus Profiler::DequeueContextSwitches( tracy::moodycamel::Con
     switch( ThreadCtxCheck( thread ) ) \
     { \
     case ThreadCtxStatus::Same: break; \
-    case ThreadCtxStatus::Changed: assert( m_refTimeThread == 0 ); refThread = 0; break; \
+    case ThreadCtxStatus::Changed: TRACY_ASSERT( m_refTimeThread == 0 ); refThread = 0; break; \
     case ThreadCtxStatus::ConnectionLost: return DequeueStatus::ConnectionLost; \
-    default: assert( false ); break; \
+    default: TRACY_ASSERT( false ); break; \
     }
 
 Profiler::DequeueStatus Profiler::DequeueSerial()
@@ -3336,7 +3336,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                 }
 #endif
                 default:
-                    assert( false );
+                    TRACY_ASSERT( false );
                     break;
                 }
             }
@@ -3423,7 +3423,7 @@ char* Profiler::SafeCopyProlog( const char* data, size_t size )
     bool success = true;
     char* buf = m_safeSendBuffer;
 #ifndef NDEBUG
-    assert( !m_inUse.exchange(true) );
+    TRACY_ASSERT( !m_inUse.exchange(true) );
 #endif
 
     if( size > SafeSendBufferSize ) buf = (char*)tracy_malloc( size );
@@ -3489,7 +3489,7 @@ bool Profiler::SendData( const char* data, size_t len )
 
 void Profiler::SendString( uint64_t str, const char* ptr, size_t len, QueueType type )
 {
-    assert( type == QueueType::StringData ||
+    TRACY_ASSERT( type == QueueType::StringData ||
             type == QueueType::ThreadName ||
             type == QueueType::PlotName ||
             type == QueueType::FrameName ||
@@ -3501,7 +3501,7 @@ void Profiler::SendString( uint64_t str, const char* ptr, size_t len, QueueType 
     MemWrite( &item.hdr.type, type );
     MemWrite( &item.stringTransfer.ptr, str );
 
-    assert( len <= std::numeric_limits<uint16_t>::max() );
+    TRACY_ASSERT( len <= std::numeric_limits<uint16_t>::max() );
     auto l16 = uint16_t( len );
 
     NeedDataSize( QueueDataSize[(int)type] + sizeof( l16 ) + l16 );
@@ -3516,7 +3516,7 @@ void Profiler::SendSingleString8( const char* ptr, size_t len )
     QueueItem item;
     MemWrite( &item.hdr.type, QueueType::SingleStringData8 );
 
-    assert( len <= std::numeric_limits<uint8_t>::max() );
+    TRACY_ASSERT( len <= std::numeric_limits<uint8_t>::max() );
     auto l8 = uint8_t( len );
 
     NeedDataSize( QueueDataSize[(int)QueueType::SingleStringData8] + sizeof( l8 ) + len );
@@ -3531,8 +3531,8 @@ void Profiler::SendSingleString16( const char* ptr, size_t len )
     QueueItem item;
     MemWrite( &item.hdr.type, QueueType::SingleStringData );
 
-    assert( len > std::numeric_limits<uint8_t>::max() );
-    assert( len <= ProtocolOffset8Bit + std::numeric_limits<uint16_t>::max() );
+    TRACY_ASSERT( len > std::numeric_limits<uint8_t>::max() );
+    TRACY_ASSERT( len <= ProtocolOffset8Bit + std::numeric_limits<uint16_t>::max() );
     auto l16 = uint16_t( len - ProtocolOffset8Bit );
 
     NeedDataSize( QueueDataSize[(int)QueueType::SingleStringData] + sizeof( l16 ) + len );
@@ -3547,7 +3547,7 @@ void Profiler::SendSecondString8( const char* ptr, size_t len )
     QueueItem item;
     MemWrite( &item.hdr.type, QueueType::SecondStringData8 );
 
-    assert( len <= std::numeric_limits<uint8_t>::max() );
+    TRACY_ASSERT( len <= std::numeric_limits<uint8_t>::max() );
     auto l8 = uint8_t( len );
 
     NeedDataSize( QueueDataSize[(int)QueueType::SecondStringData8] + sizeof( l8 ) + len );
@@ -3562,8 +3562,8 @@ void Profiler::SendSecondString16( const char* ptr, size_t len )
     QueueItem item;
     MemWrite( &item.hdr.type, QueueType::SecondStringData );
 
-    assert( len > std::numeric_limits<uint8_t>::max() );
-    assert( len <= ProtocolOffset8Bit + std::numeric_limits<uint16_t>::max() );
+    TRACY_ASSERT( len > std::numeric_limits<uint8_t>::max() );
+    TRACY_ASSERT( len <= ProtocolOffset8Bit + std::numeric_limits<uint16_t>::max() );
     auto l16 = uint16_t( len - ProtocolOffset8Bit );
 
     NeedDataSize( QueueDataSize[(int)QueueType::SecondStringData] + sizeof( l16 ) + len );
@@ -3575,7 +3575,7 @@ void Profiler::SendSecondString16( const char* ptr, size_t len )
 
 void Profiler::SendLongString( uint64_t str, const char* ptr, size_t len, QueueType type )
 {
-    assert( type == QueueType::FrameImageData ||
+    TRACY_ASSERT( type == QueueType::FrameImageData ||
             type == QueueType::SymbolCode ||
             type == QueueType::SourceCode );
 
@@ -3583,8 +3583,8 @@ void Profiler::SendLongString( uint64_t str, const char* ptr, size_t len, QueueT
     MemWrite( &item.hdr.type, type );
     MemWrite( &item.stringTransfer.ptr, str );
 
-    assert( len <= std::numeric_limits<uint32_t>::max() );
-    assert( QueueDataSize[(int)type] + sizeof( uint32_t ) + len <= TargetFrameSize );
+    TRACY_ASSERT( len <= std::numeric_limits<uint32_t>::max() );
+    TRACY_ASSERT( QueueDataSize[(int)type] + sizeof( uint32_t ) + len <= TargetFrameSize );
     auto l32 = uint32_t( len );
 
     NeedDataSize( QueueDataSize[(int)type] + sizeof( l32 ) + l32 );
@@ -3619,7 +3619,7 @@ void Profiler::SendSourceLocationPayload( uint64_t _ptr )
 
     uint16_t len;
     memcpy( &len, ptr, sizeof( len ) );
-    assert( len > 2 );
+    TRACY_ASSERT( len > 2 );
     len -= 2;
     ptr += 2;
 
@@ -3739,7 +3739,7 @@ void Profiler::QueueExternalName( uint64_t ptr )
 
 void Profiler::QueueKernelCode( uint64_t symbol, uint32_t size )
 {
-    assert( symbol >> 63 != 0 );
+    TRACY_ASSERT( symbol >> 63 != 0 );
 #ifdef TRACY_HAS_CALLSTACK
     m_symbolQueue.emplace( SymbolQueueItem { SymbolQueueItemType::KernelCode, symbol, size } );
 #else
@@ -3749,8 +3749,8 @@ void Profiler::QueueKernelCode( uint64_t symbol, uint32_t size )
 
 void Profiler::QueueSourceCodeQuery( uint32_t id )
 {
-    assert( m_exectime != 0 );
-    assert( m_queryData );
+    TRACY_ASSERT( m_exectime != 0 );
+    TRACY_ASSERT( m_queryData );
     m_symbolQueue.emplace( SymbolQueueItem { SymbolQueueItemType::SourceCode, uint64_t( m_queryData ), uint64_t( m_queryImage ), id } );
     m_queryData = nullptr;
     m_queryImage = nullptr;
@@ -3858,7 +3858,7 @@ void Profiler::HandleSymbolQueueItem( const SymbolQueueItem& si )
         HandleSourceCodeQuery( (char*)si.ptr, (char*)si.extra, si.id );
         break;
     default:
-        assert( false );
+        TRACY_ASSERT( false );
         break;
     }
 }
@@ -3993,7 +3993,7 @@ bool Profiler::HandleServerQuery()
     case ServerQueryDataTransfer:
         if( m_queryData )
         {
-            assert( !m_queryImage );
+            TRACY_ASSERT( !m_queryImage );
             m_queryImage = m_queryData;
         }
         m_queryDataPtr = m_queryData = (char*)tracy_malloc( ptr + 11 );
@@ -4011,7 +4011,7 @@ bool Profiler::HandleServerQuery()
         break;
 #endif
     default:
-        assert( false );
+        TRACY_ASSERT( false );
         break;
     }
 
@@ -4175,7 +4175,7 @@ void Profiler::ReportTopology()
     {
         packageInfo = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)tracy_malloc( psz );
         auto res = _GetLogicalProcessorInformationEx( RelationProcessorPackage, packageInfo, &psz );
-        assert( res );
+        TRACY_ASSERT( res );
     }
     else
     {
@@ -4188,7 +4188,7 @@ void Profiler::ReportTopology()
     {
         dieInfo = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)tracy_malloc( dsz );
         auto res = _GetLogicalProcessorInformationEx( RelationProcessorDie, dieInfo, &dsz );
-        assert( res );
+        TRACY_ASSERT( res );
     }
     else
     {
@@ -4201,7 +4201,7 @@ void Profiler::ReportTopology()
     {
         coreInfo = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)tracy_malloc( csz );
         auto res = _GetLogicalProcessorInformationEx( RelationProcessorCore, coreInfo, &csz );
-        assert( res );
+        TRACY_ASSERT( res );
     }
     else
     {
@@ -4220,7 +4220,7 @@ void Profiler::ReportTopology()
     auto ptr = packageInfo;
     while( (char*)ptr < ((char*)packageInfo) + psz )
     {
-        assert( ptr->Relationship == RelationProcessorPackage );
+        TRACY_ASSERT( ptr->Relationship == RelationProcessorPackage );
         // FIXME account for GroupCount
         auto mask = ptr->Processor.GroupMask[0].Mask;
         int core = 0;
@@ -4238,7 +4238,7 @@ void Profiler::ReportTopology()
     ptr = dieInfo;
     while( (char*)ptr < ((char*)dieInfo) + dsz )
     {
-        assert( ptr->Relationship == RelationProcessorDie );
+        TRACY_ASSERT( ptr->Relationship == RelationProcessorDie );
         // FIXME account for GroupCount
         auto mask = ptr->Processor.GroupMask[0].Mask;
         int core = 0;
@@ -4256,7 +4256,7 @@ void Profiler::ReportTopology()
     ptr = coreInfo;
     while( (char*)ptr < ((char*)coreInfo) + csz )
     {
-        assert( ptr->Relationship == RelationProcessorCore );
+        TRACY_ASSERT( ptr->Relationship == RelationProcessorCore );
         // FIXME account for GroupCount
         auto mask = ptr->Processor.GroupMask[0].Mask;
         int core = 0;
@@ -4422,7 +4422,7 @@ void Profiler::ProcessSysTime()
 
 void Profiler::HandleParameter( uint64_t payload )
 {
-    assert( m_paramCallback );
+    TRACY_ASSERT( m_paramCallback );
     const auto idx = uint32_t( payload >> 32 );
     const auto val = int32_t( payload & 0xFFFFFFFF );
     m_paramCallback( m_paramCallbackData, idx, val );
@@ -4740,7 +4740,7 @@ TRACY_API void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
 
 TRACY_API void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size_t size )
 {
-    assert( size < std::numeric_limits<uint16_t>::max() );
+    TRACY_ASSERT( size < std::numeric_limits<uint16_t>::max() );
     if( !ctx.active ) return;
 #ifdef TRACY_ON_DEMAND
     if( tracy::GetProfiler().ConnectionId() != ctx.connectionId ) return;
@@ -4773,7 +4773,7 @@ TRACY_API void ___tracy_emit_zone_text_fmt( TracyCZoneCtx ctx, const char* fmt, 
     auto size = vsnprintf( nullptr, 0, fmt, args );
     va_end( args );
     if( size < 0 ) return;
-    assert( size < (std::numeric_limits<uint16_t>::max)() );
+    TRACY_ASSERT( size < (std::numeric_limits<uint16_t>::max)() );
 
     char* ptr = (char*)tracy::tracy_malloc( size_t( size ) + 1 );
     va_start( args, fmt );
@@ -4795,7 +4795,7 @@ TRACY_API void ___tracy_emit_zone_text_fmt( TracyCZoneCtx ctx, const char* fmt, 
 
 TRACY_API void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size_t size )
 {
-    assert( size < std::numeric_limits<uint16_t>::max() );
+    TRACY_ASSERT( size < std::numeric_limits<uint16_t>::max() );
     if( !ctx.active ) return;
 #ifdef TRACY_ON_DEMAND
     if( tracy::GetProfiler().ConnectionId() != ctx.connectionId ) return;
@@ -4828,7 +4828,7 @@ TRACY_API void ___tracy_emit_zone_name_fmt( TracyCZoneCtx ctx, const char* fmt, 
     auto size = vsnprintf( nullptr, 0, fmt, args );
     va_end( args );
     if( size < 0 ) return;
-    assert( size < (std::numeric_limits<uint16_t>::max)() );
+    TRACY_ASSERT( size < (std::numeric_limits<uint16_t>::max)() );
 
     char* ptr = (char*)tracy::tracy_malloc( size_t( size ) + 1 );
     va_start( args, fmt );
@@ -5304,7 +5304,7 @@ TRACY_API struct __tracy_lockable_context_data* ___tracy_announce_lockable_ctx( 
     new(&lockdata->m_lockCount) std::atomic<uint32_t>( 0 );
     new(&lockdata->m_active) std::atomic<bool>( false );
 #endif
-    assert( lockdata->m_id != (std::numeric_limits<uint32_t>::max)() );
+    TRACY_ASSERT( lockdata->m_id != (std::numeric_limits<uint32_t>::max)() );
 
     auto item = tracy::Profiler::QueueSerial();
     tracy::MemWrite( &item->hdr.type, tracy::QueueType::LockAnnounce );
@@ -5442,7 +5442,7 @@ TRACY_API void ___tracy_mark_lockable_ctx( struct __tracy_lockable_context_data*
 
 TRACY_API void ___tracy_custom_name_lockable_ctx( struct __tracy_lockable_context_data* lockdata, const char* name, size_t nameSz )
 {
-    assert( nameSz < (std::numeric_limits<uint16_t>::max)() );
+    TRACY_ASSERT( nameSz < (std::numeric_limits<uint16_t>::max)() );
     auto ptr = (char*)tracy::tracy_malloc( nameSz );
     memcpy( ptr, name, nameSz );
     auto item = tracy::Profiler::QueueSerial();
@@ -5468,7 +5468,7 @@ TRACY_API struct __tracy_shared_lockable_context_data* ___tracy_announce_shared_
     new(&lockdata->m_base.m_lockCount) std::atomic<uint32_t>( 0 );
     new(&lockdata->m_base.m_active) std::atomic<bool>( false );
 #endif
-    assert( lockdata->m_base.m_id != (std::numeric_limits<uint32_t>::max)() );
+    TRACY_ASSERT( lockdata->m_base.m_id != (std::numeric_limits<uint32_t>::max)() );
 
     auto item = tracy::Profiler::QueueSerial();
     tracy::MemWrite( &item->hdr.type, tracy::QueueType::LockAnnounce );

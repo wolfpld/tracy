@@ -8,6 +8,7 @@
 #include "TracyFastVector.hpp"
 #include "TracyStringHelpers.hpp"
 #include "../common/TracyAlloc.hpp"
+#include "../common/TracyAssert.hpp"
 #include "../common/TracyString.hpp"
 #include "../common/TracySystem.hpp"
 
@@ -238,7 +239,7 @@ private:
         if( cache->ContainsImage( startAddress ) ) return 0;
 
         const uint32_t headerCount = info->dlpi_phnum;
-        assert( headerCount > 0 );
+        TRACY_ASSERT( headerCount > 0 );
 
         // headers aren't guaranteed to be in address order; find the max
         uint64_t endAddress = startAddress;
@@ -321,7 +322,7 @@ static ImageCache* s_krnlCache;
 
 void CreateImageCaches()
 {
-    assert( s_imageCache == nullptr && s_krnlCache == nullptr );
+    TRACY_ASSERT( s_imageCache == nullptr && s_krnlCache == nullptr );
     s_imageCache = new ( tracy_malloc( sizeof( UserlandImageCache ) ) ) UserlandImageCache();
     s_krnlCache = new ( tracy_malloc( sizeof( ImageCache ) ) ) ImageCache();
 }
@@ -677,7 +678,7 @@ void DbgHelpInit()
         }
     }
 
-    assert( length < sizeof( buffer ) );
+    TRACY_ASSERT( length < sizeof( buffer ) );
     if( SetEnvironmentVariableA( "_NT_SYMBOL_PATH", buffer ) == FALSE ) SymError( "SetEnvironmentVariableA", GetLastError() );
  
     SymSetOptions( SymGetOptions() | SYMOPT_LOAD_LINES );
@@ -897,7 +898,7 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
 
 const char* GetKernelModulePath( uint64_t addr )
 {
-    assert( IsKernelAddress( addr ) );
+    TRACY_ASSERT( IsKernelAddress( addr ) );
     if( !s_krnlCache ) return nullptr;
     const ImageEntry* imageEntry = s_krnlCache->GetImageForAddress( addr );
     if( imageEntry ) return imageEntry->m_path;
@@ -1195,9 +1196,9 @@ static void InitKernelSymbols()
             }
             else
             {
-                assert( false );
+                TRACY_ASSERT( false );
             }
-            assert( ( v & ~0xF ) == 0 );
+            TRACY_ASSERT( ( v & ~0xF ) == 0 );
             addr <<= 4;
             addr |= v;
             ptr++;
@@ -1257,7 +1258,7 @@ static void InitKernelSymbols()
     {
         if( v.name ) *dst++ = v;
     }
-    assert( dst == s_kernelSym + validCnt );
+    TRACY_ASSERT( dst == s_kernelSym + validCnt );
 
     TracyDebug( "Loaded %zu kernel symbols (%zu code sections)", tmpSym.size(), validCnt );
 }
@@ -1405,7 +1406,7 @@ int GetDebugInfoDescriptor( const char* buildid_data, size_t buildid_size, const
 
 const uint8_t* GetBuildIdForImage( const char* image, size_t& size )
 {
-    assert( image );
+    TRACY_ASSERT( image );
     for( auto& v : *s_di_known )
     {
         if( strcmp( image, v.filename ) == 0 )
@@ -1827,7 +1828,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
         {
             cb_num = 0;
             backtrace_pcinfo( cb_bts, ptr, CallstackDataCb, CallstackErrorCb, nullptr );
-            assert( cb_num > 0 );
+            TRACY_ASSERT( cb_num > 0 );
 
             backtrace_syminfo( cb_bts, ptr, SymInfoCallback, SymInfoError, nullptr );
         }

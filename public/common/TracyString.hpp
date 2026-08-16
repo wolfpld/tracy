@@ -1,16 +1,17 @@
 #ifndef __TRACYSTRING_HPP__
 #define __TRACYSTRING_HPP__
 
-#include <assert.h>
 #include <stddef.h>
 #include <string.h>
+
+#include "TracyAssert.hpp"
 
 namespace tracy
 {
 
 static inline size_t strzcpy( char* __restrict dst, const char* __restrict src, size_t dstSize )
 {
-    assert( dstSize > 0 );
+    TRACY_ASSERT( dstSize > 0 );
 
     const auto end = (const char*)memchr( src, '\0', dstSize );
     if( end != nullptr )

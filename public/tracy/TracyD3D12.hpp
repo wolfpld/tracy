@@ -34,12 +34,12 @@ using TracyD3D12Ctx = void*;
 
 #include "Tracy.hpp"
 #include "../client/TracyFastVector.hpp"
+#include "../common/TracyAssert.hpp"
 
 #include <atomic>
 #include <mutex>
 #include <cstdlib>
 #include <cstring>
-#include <cassert>
 #include <d3d12.h>
 #include <dxgi.h>
 
@@ -62,7 +62,7 @@ using TracyD3D12Ctx = void*;
 #else
 #   define TracyD3D12Debug(...)
 #   define TracyD3D12Break()
-#   define TracyD3D12Assert(predicate, ...) assert(predicate);
+#   define TracyD3D12Assert(predicate, ...) TRACY_ASSERT(predicate);
 #endif
 
 #define TracyD3D12Log(severity, msg) tracy::Profiler::LogString( tracy::MessageSourceType::Tracy, tracy::MessageSeverity::severity, tracy::Color::Red4, 0, msg );

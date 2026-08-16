@@ -58,7 +58,6 @@ using TracyMetalCtx = void;
 #endif
 
 #include <atomic>
-#include <cassert>
 #include <cstdlib>
 
 #include "Tracy.hpp"
@@ -66,6 +65,7 @@ using TracyMetalCtx = void;
 #include "../client/TracyCallstack.hpp"
 #include "../common/TracyAlign.hpp"
 #include "../common/TracyAlloc.hpp"
+#include "../common/TracyAssert.hpp"
 
 // ok to import if in obj-c code
 #import <Metal/Metal.h>
@@ -297,11 +297,11 @@ private:
         
         if (m_device == nil)
         {
-            TracyMetalPanic({assert(false);} return, "device is nil.");
+            TracyMetalPanic({TRACY_ASSERT(false);} return, "device is nil.");
         }
         if (![m_device supportsCounterSampling:MTLCounterSamplingPointAtStageBoundary])
         {
-            TracyMetalPanic({assert(false);} return, "ERROR: timestamp sampling at pipeline stage boundary is not supported.");
+            TracyMetalPanic({TRACY_ASSERT(false);} return, "ERROR: timestamp sampling at pipeline stage boundary is not supported.");
         }
         if (![m_device supportsCounterSampling:MTLCounterSamplingPointAtDrawBoundary])
         {
@@ -436,7 +436,7 @@ private:
         }
         if (timestampCounterSet == nil)
         {
-            TracyMetalPanic({assert(false);} return nil, "ERROR: timestamp counters are not supported on the platform.");
+            TracyMetalPanic({TRACY_ASSERT(false);} return nil, "ERROR: timestamp counters are not supported on the platform.");
         }
 
         MTLCounterSampleBufferDescriptor* sampleDescriptor = [[MTLCounterSampleBufferDescriptor alloc] init];
@@ -450,7 +450,7 @@ private:
         if (error != nil)
         {
             //NSLog(@"%@ | %@", error.localizedDescription, error.localizedFailureReason);
-            TracyMetalPanic({assert(false);} return nil,
+            TracyMetalPanic({TRACY_ASSERT(false);} return nil,
                 "ERROR: unable to create sample buffer for timestamp counters : %s | %s",
                 [error.localizedDescription cString], [error.localizedFailureReason cString]);
         }
@@ -487,7 +487,7 @@ public:
 #endif
     {
         if ( !m_active ) return;
-        if (desc == nil) TracyMetalPanic({assert(false);} return, "compute pass descriptor is nil.");
+        if (desc == nil) TracyMetalPanic({TRACY_ASSERT(false);} return, "compute pass descriptor is nil.");
         m_ctx = ctx;
 
         auto& query = m_query = ctx->NextQuery();
@@ -508,7 +508,7 @@ public:
 #endif
     {
         if ( !m_active ) return;
-        if (desc == nil) TracyMetalPanic({assert(false); }return, "blit pass descriptor is nil.");
+        if (desc == nil) TracyMetalPanic({TRACY_ASSERT(false); }return, "blit pass descriptor is nil.");
         m_ctx = ctx;
 
         auto& query = m_query = ctx->NextQuery();
@@ -529,7 +529,7 @@ public:
 #endif
     {
         if ( !m_active ) return;
-        if (desc == nil) TracyMetalPanic({assert(false);} return, "render pass descriptor is nil.");
+        if (desc == nil) TracyMetalPanic({TRACY_ASSERT(false);} return, "render pass descriptor is nil.");
         m_ctx = ctx;
 
         auto& query = m_query = ctx->NextQuery();

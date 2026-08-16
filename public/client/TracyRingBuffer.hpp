@@ -1,5 +1,4 @@
 #include <atomic>
-#include <assert.h>
 #include <errno.h>
 #include <linux/perf_event.h>
 #include <stdint.h>
@@ -9,6 +8,7 @@
 #include <unistd.h>
 
 #include "TracyDebug.hpp"
+#include "../common/TracyAssert.hpp"
 #include "../common/TracyForceInline.hpp"
 
 namespace tracy
@@ -25,8 +25,8 @@ public:
         , m_fd( fd )
     {
         const auto pageSize = uint32_t( getpagesize() );
-        assert( size >= pageSize );
-        assert( __builtin_popcount( size ) == 1 );
+        TRACY_ASSERT( size >= pageSize );
+        TRACY_ASSERT( __builtin_popcount( size ) == 1 );
         m_mapSize = size + pageSize;
         auto mapAddr = mmap( nullptr, m_mapSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0 );
         if( mapAddr == MAP_FAILED )
@@ -38,7 +38,7 @@ public:
             return;
         }
         m_metadata = (perf_event_mmap_page*)mapAddr;
-        assert( m_metadata->data_offset == pageSize );
+        TRACY_ASSERT( m_metadata->data_offset == pageSize );
         m_buffer = ((char*)mapAddr) + pageSize;
         m_tail = m_metadata->data_tail;
     }

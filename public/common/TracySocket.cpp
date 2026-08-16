@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <inttypes.h>
 #include <new>
 #include <stdio.h>
@@ -7,6 +6,7 @@
 #include <sys/types.h>
 
 #include "TracyAlloc.hpp"
+#include "TracyAssert.hpp"
 #include "TracySocket.hpp"
 #include "TracySystem.hpp"
 
@@ -125,7 +125,7 @@ Socket::~Socket()
 
 bool Socket::Connect( const char* addr, uint16_t port )
 {
-    assert( !IsValid() );
+    TRACY_ASSERT( !IsValid() );
 
     if( m_ptr )
     {
@@ -238,8 +238,8 @@ bool Socket::Connect( const char* addr, uint16_t port )
 
 bool Socket::ConnectBlocking( const char* addr, uint16_t port )
 {
-    assert( !IsValid() );
-    assert( !m_ptr );
+    TRACY_ASSERT( !IsValid() );
+    TRACY_ASSERT( !m_ptr );
 
     struct addrinfo hints;
     struct addrinfo *res, *ptr;
@@ -281,7 +281,7 @@ bool Socket::ConnectBlocking( const char* addr, uint16_t port )
 void Socket::Close()
 {
     const auto sock = m_sock.load( std::memory_order_relaxed );
-    assert( sock != -1 );
+    TRACY_ASSERT( sock != -1 );
 #ifdef _WIN32
     closesocket( sock );
 #else
@@ -294,7 +294,7 @@ int Socket::Send( const void* _buf, int len )
 {
     const auto sock = m_sock.load( std::memory_order_relaxed );
     auto buf = (const char*)_buf;
-    assert( sock != -1 );
+    TRACY_ASSERT( sock != -1 );
     auto start = buf;
     while( len > 0 )
     {
@@ -487,7 +487,7 @@ static int addrinfo_and_socket_for_family( uint16_t port, int ai_family, struct 
 
 bool ListenSocket::Listen( uint16_t port, int backlog )
 {
-    assert( m_sock == -1 );
+    TRACY_ASSERT( m_sock == -1 );
 
     struct addrinfo* res = nullptr;
 
@@ -556,7 +556,7 @@ Socket* ListenSocket::Accept()
 
 void ListenSocket::Close()
 {
-    assert( m_sock != -1 );
+    TRACY_ASSERT( m_sock != -1 );
 #ifdef _WIN32
     closesocket( m_sock );
 #else
@@ -580,7 +580,7 @@ UdpBroadcast::~UdpBroadcast()
 
 bool UdpBroadcast::Open( const char* addr, uint16_t port )
 {
-    assert( m_sock == -1 );
+    TRACY_ASSERT( m_sock == -1 );
 
     struct addrinfo hints;
     struct addrinfo *res, *ptr;
@@ -628,7 +628,7 @@ bool UdpBroadcast::Open( const char* addr, uint16_t port )
 
 void UdpBroadcast::Close()
 {
-    assert( m_sock != -1 );
+    TRACY_ASSERT( m_sock != -1 );
 #ifdef _WIN32
     closesocket( m_sock );
 #else
@@ -639,7 +639,7 @@ void UdpBroadcast::Close()
 
 int UdpBroadcast::Send( uint16_t port, const void* data, int len )
 {
-    assert( m_sock != -1 );
+    TRACY_ASSERT( m_sock != -1 );
     struct sockaddr_in addr;
     addr.sin_family = AF_INET;
     addr.sin_port = htons( port );
@@ -685,7 +685,7 @@ UdpListen::~UdpListen()
 
 bool UdpListen::Listen( uint16_t port )
 {
-    assert( m_sock == -1 );
+    TRACY_ASSERT( m_sock == -1 );
 
     int sock;
     if( ( sock = socket( AF_INET, SOCK_DGRAM, 0 ) ) == -1 ) return false;
@@ -738,7 +738,7 @@ bool UdpListen::Listen( uint16_t port )
 
 void UdpListen::Close()
 {
-    assert( m_sock != -1 );
+    TRACY_ASSERT( m_sock != -1 );
 #ifdef _WIN32
     closesocket( m_sock );
 #else

@@ -9,6 +9,7 @@
 #include "../common/TracySystem.hpp"
 #include "../common/TracyAlign.hpp"
 #include "../common/TracyAlloc.hpp"
+#include "../common/TracyAssert.hpp"
 #include "../common/TracyFormat.h"
 #include "TracyProfiler.hpp"
 #include "TracyCallstack.hpp"
@@ -87,7 +88,7 @@ public:
 
     tracy_force_inline void Text( const char* txt, size_t size )
     {
-        assert( size < (std::numeric_limits<uint16_t>::max)() );
+        TRACY_ASSERT( size < (std::numeric_limits<uint16_t>::max)() );
         if( !m_active ) return;
 #ifdef TRACY_ON_DEMAND
         if( GetProfiler().ConnectionId() != m_connectionId ) return;
@@ -111,7 +112,7 @@ public:
         auto size = vsnprintf( nullptr, 0, fmt, args );
         va_end( args );
         if( size < 0 ) return;
-        assert( size < (std::numeric_limits<uint16_t>::max)() );
+        TRACY_ASSERT( size < (std::numeric_limits<uint16_t>::max)() );
 
         char* ptr = (char*)tracy_malloc( size_t( size ) + 1 );
         va_start( args, fmt );
@@ -126,7 +127,7 @@ public:
 
     tracy_force_inline void Name( const char* txt, size_t size )
     {
-        assert( size < (std::numeric_limits<uint16_t>::max)() );
+        TRACY_ASSERT( size < (std::numeric_limits<uint16_t>::max)() );
         if( !m_active ) return;
 #ifdef TRACY_ON_DEMAND
         if( GetProfiler().ConnectionId() != m_connectionId ) return;
@@ -150,7 +151,7 @@ public:
         auto size = vsnprintf( nullptr, 0, fmt, args );
         va_end( args );
         if( size < 0 ) return;
-        assert( size < (std::numeric_limits<uint16_t>::max)() );
+        TRACY_ASSERT( size < (std::numeric_limits<uint16_t>::max)() );
 
         char* ptr = (char*)tracy_malloc( size_t( size ) + 1 );
         va_start( args, fmt );

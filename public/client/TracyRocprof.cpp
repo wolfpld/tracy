@@ -1,3 +1,4 @@
+#include "../common/TracyAssert.hpp"
 #include "../server/tracy_robin_hood.h"
 #include "TracyProfiler.hpp"
 #include "TracyThread.hpp"
@@ -238,7 +239,7 @@ void record_callback( rocprofiler_dispatch_counting_service_data_t dispatch_data
                       rocprofiler_record_counter_t* record_data, size_t record_count,
                       rocprofiler_user_data_t /*user_data*/, void* callback_data )
 {
-    assert( callback_data != nullptr );
+    TRACY_ASSERT( callback_data != nullptr );
     ToolData* data = static_cast<ToolData*>( callback_data );
     if( !data->init ) return;
 
@@ -257,7 +258,7 @@ void record_callback( rocprofiler_dispatch_counting_service_data_t dispatch_data
         auto _lk = std::unique_lock{ data->mut };
         // An assumption is made here that the counter values are supplied after the dispatch
         // complete callback.
-        assert( data->dispatch_data.count( dispatch_data.dispatch_info.dispatch_id ) );
+        TRACY_ASSERT( data->dispatch_data.count( dispatch_data.dispatch_info.dispatch_id ) );
         DispatchData& ddata = data->dispatch_data[dispatch_data.dispatch_info.dispatch_id];
         query_id = ddata.query_id;
         thread_id = ddata.thread_id;
@@ -285,7 +286,7 @@ void dispatch_callback( rocprofiler_dispatch_counting_service_data_t dispatch_da
                         rocprofiler_profile_config_id_t* config, rocprofiler_user_data_t* /*user_data*/,
                         void* callback_data )
 {
-    assert( callback_data != nullptr );
+    TRACY_ASSERT( callback_data != nullptr );
     ToolData* data = static_cast<ToolData*>( callback_data );
     if( !data->init ) return;
 
@@ -379,7 +380,7 @@ void dispatch_callback( rocprofiler_dispatch_counting_service_data_t dispatch_da
 void tool_callback_tracing_callback( rocprofiler_callback_tracing_record_t record, rocprofiler_user_data_t* user_data,
                                      void* callback_data )
 {
-    assert( callback_data != nullptr );
+    TRACY_ASSERT( callback_data != nullptr );
     ToolData* data = static_cast<ToolData*>( callback_data );
 
     // Kernel symbol registrations happen at HIP init time, before any Tracy

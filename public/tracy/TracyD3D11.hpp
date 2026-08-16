@@ -33,17 +33,17 @@ using TracyD3D11Ctx = void*;
 #else
 
 #include <atomic>
-#include <assert.h>
 #include <stdlib.h>
 
 #include "Tracy.hpp"
 #include "../client/TracyProfiler.hpp"
 #include "../client/TracyCallstack.hpp"
+#include "../common/TracyAssert.hpp"
 #include "../common/TracyYield.hpp"
 
 #include <d3d11.h>
 
-#define TracyD3D11Panic(msg, ...) do { assert(false && "TracyD3D11: " msg); TracyMessageLC("TracyD3D11: " msg, tracy::Color::Red4); __VA_ARGS__; } while(false);
+#define TracyD3D11Panic(msg, ...) do { TRACY_ASSERT(false && "TracyD3D11: " msg); TracyMessageLC("TracyD3D11: " msg, tracy::Color::Red4); __VA_ARGS__; } while(false);
 
 namespace tracy
 {

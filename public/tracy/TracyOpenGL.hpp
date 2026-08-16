@@ -37,7 +37,6 @@ public:
 #else
 
 #include <atomic>
-#include <assert.h>
 #include <stdlib.h>
 #ifdef TRACY_OPENGL_AUTO_CALIBRATION
 #  include <chrono>
@@ -48,6 +47,7 @@ public:
 #include "../client/TracyCallstack.hpp"
 #include "../common/TracyAlign.hpp"
 #include "../common/TracyAlloc.hpp"
+#include "../common/TracyAssert.hpp"
 
 #if !defined GL_TIMESTAMP && defined GL_TIMESTAMP_EXT
 #  define GL_TIMESTAMP GL_TIMESTAMP_EXT
@@ -121,7 +121,7 @@ public:
     {
         ZoneScopedC( Color::Red4 );
 
-        assert( m_context != InvalidGpuContextId );
+        TRACY_ASSERT( m_context != InvalidGpuContextId );
 
         if( !CheckFeature( "GL_ARB_timer_query" ) && !CheckFeature( "GL_EXT_disjoint_timer_query" ) )
         {
@@ -146,7 +146,7 @@ public:
             Profiler::LogString( MessageSourceType::Tracy, MessageSeverity::Warning, Color::Tomato, 0,
                 "OpenGL driver does not implement GL_TIMESTAMP precision." );
         }
-        assert( bits > 0 );
+        TRACY_ASSERT( bits > 0 );
 
         int64_t tgpu;
         glGetInteger64v( GL_TIMESTAMP, &tgpu );
@@ -320,7 +320,7 @@ private:
     {
         const auto id = m_head;
         m_head = ( m_head + 1 ) % QueryCount;
-        assert( m_head != m_tail );
+        TRACY_ASSERT( m_head != m_tail );
         return id;
     }
 

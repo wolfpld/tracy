@@ -1,7 +1,6 @@
 #ifdef __linux__
 
 #include <algorithm>
-#include <assert.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <unistd.h>
@@ -10,6 +9,7 @@
 #include "TracyElf.hpp"
 #include "TracyKCore.hpp"
 #include "../common/TracyAlloc.hpp"
+#include "../common/TracyAssert.hpp"
 
 
 namespace tracy
@@ -24,7 +24,7 @@ KCore::KCore()
     elf_ehdr ehdr;
     if( read( m_fd, &ehdr, sizeof( ehdr ) ) != sizeof( ehdr ) ) goto err;
 
-    assert( ehdr.e_phentsize == sizeof( elf_phdr ) );
+    TRACY_ASSERT( ehdr.e_phentsize == sizeof( elf_phdr ) );
 
     for( elf_half i=0; i<ehdr.e_phnum; i++ )
     {

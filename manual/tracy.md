@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-08-15 <https://github.com/wolfpld/tracy>
+2026-08-16 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -434,6 +434,7 @@ Each enabled option is passed down to your program as a preprocessor macro of th
 | **Diagnostics** |  |
 | `TRACY_VERBOSE` | Print detailed information about the detected features to the standard error output (section [2.1.12](#troubleshooting)). |
 | `TRACY_NO_INTERNAL_MESSAGE` | Don't send the profiler's own diagnostic messages to the server (section [2.1.12](#troubleshooting)). |
+| `TRACY_ASSERT` | Route the client's internal checks through a custom assert implementation, instead of the standard `assert`. Define `TRACY_ASSERT(condition)` before including any Tracy header; the macro must accept a single condition argument. |
 
 _Tracy CMake options_
 

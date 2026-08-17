@@ -85,10 +85,6 @@ if get_option('patchable_nopsleds')
   tracy_common_args += ['-DTRACY_PATCHABLE_NOPSLEDS']
 endif
 
-if get_option('delayed_init')
-  tracy_common_args += ['-DTRACY_DELAYED_INIT']
-endif
-
 if get_option('manual_lifetime')
   tracy_common_args += ['-DTRACY_MANUAL_LIFETIME']
 endif

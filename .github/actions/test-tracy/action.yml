@@ -24,8 +24,8 @@ runs:
         cmake --build tests/tracy/build --parallel
         cmake -E rm -rf tests/tracy/build
 
-        # same with TRACY_DELAYED_INIT and TRACY_MANUAL_LIFETIME
-        cmake -B tests/tracy/build -S tests/tracy -DCMAKE_BUILD_TYPE=Release -DTRACY_DELAYED_INIT=ON -DTRACY_MANUAL_LIFETIME=ON ${{ inputs.extra_cmake_flags }}
+        # same with TRACY_MANUAL_LIFETIME
+        cmake -B tests/tracy/build -S tests/tracy -DCMAKE_BUILD_TYPE=Release -DTRACY_MANUAL_LIFETIME=ON ${{ inputs.extra_cmake_flags }}
         cmake --build tests/tracy/build --parallel
         cmake -E rm -rf tests/tracy/build
 

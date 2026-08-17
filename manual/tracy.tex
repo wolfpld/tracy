@@ -556,8 +556,7 @@ Each enabled option is passed down to your program as a preprocessor macro of th
 \texttt{TRACY\_DISALLOW\_HW\_TIMER} & Never use the hardware timer, even if it \emph{appears} to be available. Requires \texttt{TRACY\_TIMER\_FALLBACK}. \\
 & \\
 \textbf{Special environments} & \\
-\texttt{TRACY\_DELAYED\_INIT} & Gather the profiler data into a single structure, initialized on first use instead of at load time (section~\ref{multidll}). \\
-\texttt{TRACY\_MANUAL\_LIFETIME} & Provide the \texttt{StartupProfiler} and \texttt{ShutdownProfiler} functions for manual profiler lifetime management. Requires \texttt{TRACY\_DELAYED\_INIT} (section~\ref{multidll}). \\
+\texttt{TRACY\_MANUAL\_LIFETIME} & Provide the \texttt{StartupProfiler} and \texttt{ShutdownProfiler} functions for manual profiler lifetime management (section~\ref{multidll}). \\
 \texttt{TRACY\_PLATFORM\_HEADER} & Path to a header providing the \texttt{TRACY\_HAS\_CUSTOM\_*} hooks for an unsupported platform (section~\ref{customplatform}). \\
 \texttt{TRACY\_PATCHABLE\_NOPSLEDS} & Emit nopsleds in front of the timer reads, so that system-level tools such as \emph{rr} can patch them. \\
 & \\
@@ -649,9 +648,9 @@ For that, you need a \emph{profiler DLL} to which your executable and the other 
 
 If you are targeting Windows with Microsoft Visual Studio or MinGW, add the \texttt{TRACY\_IMPORTS} define to your application.
 
-If you are experiencing crashes or freezes when manually loading/unloading a separate DLL with Tracy integration, you might want to try defining both \texttt{TRACY\_DELAYED\_INIT} and \texttt{TRACY\_MANUAL\_LIFETIME} macros.
+If you are experiencing crashes or freezes when manually loading/unloading a separate DLL with Tracy integration, you might want to try defining the \texttt{TRACY\_MANUAL\_LIFETIME} macro.
 
-\texttt{TRACY\_DELAYED\_INIT} enables a path where profiler data is gathered into one structure and initialized on the first request rather than statically at the DLL load at the expense of atomic load on each request to the profiler data. \texttt{TRACY\_MANUAL\_LIFETIME} flag augments this behavior to provide manual \texttt{StartupProfiler} and \texttt{ShutdownProfiler} functions that allow you to create and destroy the profiler data manually. This manual management removes the need to do an atomic load on each call and lets you define an appropriate place to free the resources.
+\texttt{TRACY\_MANUAL\_LIFETIME} provides the \texttt{StartupProfiler} and \texttt{ShutdownProfiler} functions that allow you to create and destroy the profiler data manually, letting you define an appropriate place to free the resources. Under \texttt{TRACY\_MANUAL\_LIFETIME} the profiler does not exist until \texttt{StartupProfiler()} is called and ceases to exist after \texttt{ShutdownProfiler()}. Using any instrumentation, zones, locks, plots, messages, and so on before startup or after shutdown is an error. Use \texttt{TracyIsStarted} to guard instrumentation that may run conditionally.
 
 \begin{bclogo}[
 noborder=true,
@@ -2836,7 +2835,6 @@ You can integrate Tracy with CMake by adding the git submodule folder as a subdi
 option(TRACY_ENABLE "" ON)
 # must be enabled
 option(TRACY_Fortran "" ON)
-option(TRACY_DELAYED_INIT "" ON)
 option(TRACY_MANUAL_LIFETIME "" ON)
 add_subdirectory(3rdparty/tracy)  # target: TracyClientF90 or alias Tracy::TracyClientF90
 \end{lstlisting}
@@ -2870,7 +2868,6 @@ When using CMake 3.11 or newer, you can use Tracy via CMake FetchContent. In thi
 
 \begin{lstlisting}
 option(TRACY_Fortran "" ON)
-option(TRACY_DELAYED_INIT "" ON)
 option(TRACY_MANUAL_LIFETIME "" ON)
 
 FetchContent_Declare(

@@ -22,7 +22,6 @@ option('disallow_hw_timer', type : 'boolean', value : false, description : 'Disa
 option('libunwind_backtrace', type : 'boolean', value : false, description : 'Use libunwind backtracing where supported')
 option('symbol_offline_resolve', type : 'boolean', value : false, description : 'Instead of full runtime symbol resolution, only resolve the image path and offset to enable offline symbol resolution')
 option('libbacktrace_elf_dynload_support', type : 'boolean', value : false, description : 'Enable libbacktrace to support dynamically loaded elfs in symbol resolution resolution after the first symbol resolve operation')
-option('delayed_init', type : 'boolean', value : false, description : 'Enable delayed initialization of the library (init on first call)')
 option('manual_lifetime', type : 'boolean', value : false, description : 'Enable the manual lifetime management of the profile')
 option('fibers', type : 'boolean', value : false, description : 'Enable fibers support')
 option('no_crash_handler', type : 'boolean', value : false, description : 'Disable crash handling')

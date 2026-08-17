@@ -83,10 +83,6 @@
 #include "TracySysTrace.hpp"
 #include "../tracy/TracyC.h"
 
-#if defined TRACY_MANUAL_LIFETIME && !defined(TRACY_DELAYED_INIT)
-#  error "TRACY_MANUAL_LIFETIME requires enabled TRACY_DELAYED_INIT"
-#endif
-
 #ifdef TRACY_PORT
 #  ifndef TRACY_DATA_PORT
 #    define TRACY_DATA_PORT TRACY_PORT
@@ -96,11 +92,7 @@
 #  endif
 #endif
 
-#ifdef __APPLE__
-#  ifndef TRACY_DELAYED_INIT
-#    define TRACY_DELAYED_INIT
-#  endif
-#else
+#ifndef __APPLE__
 #  ifdef __GNUC__
 #    define init_order( val ) __attribute__ ((init_priority(val)))
 #  else

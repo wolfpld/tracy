@@ -127,7 +127,6 @@ set_option(TRACY_NO_VSYNC_CAPTURE "Disable capture of hardware Vsync events" OFF
 set_option(TRACY_NO_FRAME_IMAGE "Disable the frame image support and its thread" OFF TracyClient)
 set_option(TRACY_NO_SYSTEM_TRACING "Disable systrace sampling" OFF TracyClient)
 set_option(TRACY_PATCHABLE_NOPSLEDS "Enable nopsleds for efficient patching by system-level tools (e.g. rr)" OFF TracyClient)
-set_option(TRACY_DELAYED_INIT "Enable delayed initialization of the library (init on first call)" OFF TracyClient)
 set_option(TRACY_MANUAL_LIFETIME "Enable the manual lifetime management of the profile" OFF TracyClient)
 set_option(TRACY_FIBERS "Enable fibers support" OFF TracyClient)
 set_option(TRACY_NO_CRASH_HANDLER "Disable crash handling" OFF TracyClient)
@@ -153,9 +152,6 @@ if(rocprofiler-sdk_FOUND)
 endif()
 
 # handle incompatible combinations
-if(TRACY_MANUAL_LIFETIME AND NOT TRACY_DELAYED_INIT)
-    message(FATAL_ERROR "TRACY_MANUAL_LIFETIME can not be activated with disabled TRACY_DELAYED_INIT")
-endif()
 if(TRACY_DISALLOW_HW_TIMER AND NOT TRACY_TIMER_FALLBACK)
     message(FATAL_ERROR "TRACY_DISALLOW_HW_TIMER can not be activated with disabled TRACY_TIMER_FALLBACK")
 endif()

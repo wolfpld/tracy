@@ -28,7 +28,6 @@ target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
     $<INSTALL_INTERFACE:include/tracy>)
 target_compile_definitions(${PROJECT_NAME} PRIVATE
     TRACY_ENABLE
-    TRACY_DELAYED_INIT
     TRACY_MANUAL_LIFETIME
     TRACY_NO_FRAME_IMAGE
 )

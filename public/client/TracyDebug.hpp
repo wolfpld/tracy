@@ -1,6 +1,8 @@
 #ifndef __TRACYDEBUG_HPP__
 #define __TRACYDEBUG_HPP__
 
+#include "TracyMangle.hpp"
+
 #ifdef TRACY_ON_DEMAND
 #  define TRACY_VERBOSE_EARLY_OUT_COND if( !GetProfiler().IsConnected() ) break
 #else

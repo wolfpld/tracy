@@ -197,7 +197,10 @@ if(VENDOR_GUI)
 
     add_library(TracyImGui STATIC EXCLUDE_FROM_ALL ${IMGUI_SOURCES})
     target_include_directories(TracyImGui PUBLIC ${ImGui_SOURCE_DIR})
-    target_link_libraries(TracyImGui PUBLIC TracyFreetype)
+    target_link_libraries(TracyImGui PUBLIC
+        TracyFreetype
+        ${CMAKE_DL_LIBS}
+    )
     target_compile_definitions(TracyImGui PRIVATE "IMGUI_ENABLE_FREETYPE")
     target_compile_definitions(TracyImGui PUBLIC "IMGUI_USE_WCHAR32")
     #target_compile_definitions(TracyImGui PUBLIC "IMGUI_DISABLE_OBSOLETE_FUNCTIONS")

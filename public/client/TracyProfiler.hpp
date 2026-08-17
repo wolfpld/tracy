@@ -91,7 +91,8 @@ struct GpuCtxWrapper
     GpuCtx* ptr;
 };
 
-TRACY_API moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken();
+TRACY_API moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* MANGLED_NAME_BASED_ON_CONFIG(GetToken)();
+tracy_force_inline moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken() { return MANGLED_NAME_BASED_ON_CONFIG(GetToken)(); }
 TRACY_API Profiler& MANGLED_NAME_BASED_ON_CONFIG(GetProfiler)();
 tracy_force_inline Profiler& GetProfiler() { return MANGLED_NAME_BASED_ON_CONFIG(GetProfiler)(); }
 TRACY_API std::atomic<uint32_t>& GetLockCounter();

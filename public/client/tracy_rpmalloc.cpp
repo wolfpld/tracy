@@ -743,7 +743,7 @@ get_thread_id(void) {
 	__asm__("movq %%fs:0, %0" : "=r" (tid) : : );
 #    endif
 #  elif defined(__arm__)
-	__asm__ volatile ("mrc p15, 0, %0, c13, c0, 3" : "=r" (tid));
+	tid = (uintptr_t)__builtin_thread_pointer();
 #  elif defined(__aarch64__)
 #    if defined(__MACH__)
 	// tpidr_el0 likely unused, always return 0 on iOS

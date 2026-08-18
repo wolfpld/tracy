@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-08-17 <https://github.com/wolfpld/tracy>
+2026-08-18 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -511,7 +511,7 @@ If you are targeting Windows with Microsoft Visual Studio or MinGW, add the `TRA
 
 If you are experiencing crashes or freezes when manually loading/unloading a separate DLL with Tracy integration, you might want to try defining the `TRACY_MANUAL_LIFETIME` macro.
 
-`TRACY_MANUAL_LIFETIME` provides the `StartupProfiler` and `ShutdownProfiler` functions that allow you to create and destroy the profiler data manually, letting you define an appropriate place to free the resources. Under `TRACY_MANUAL_LIFETIME` the profiler does not exist until `StartupProfiler()` is called and ceases to exist after `ShutdownProfiler()`. Using any instrumentation, zones, locks, plots, messages, and so on before startup or after shutdown is an error. Use `TracyIsStarted` to guard instrumentation that may run conditionally.
+`TRACY_MANUAL_LIFETIME` provides the `StartupProfiler` and `ShutdownProfiler` functions that allow you to create and destroy the profiler data manually, letting you define an appropriate place to free the resources. Under `TRACY_MANUAL_LIFETIME` the profiler does not exist until `StartupProfiler()` is called and ceases to exist after `ShutdownProfiler()`. Using any instrumentation, zones, locks, plots, messages, and so on before startup or after shutdown is an error. Use `TracyIsStarted` to guard instrumentation that may run conditionally. If the profiler has been initialized, it must be shut down before the program exits.
 
 > [!IMPORTANT]
 > **Keep everything consistent**

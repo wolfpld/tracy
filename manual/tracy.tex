@@ -3058,6 +3058,27 @@ Tracy will perform an automatic collection of system data without user intervent
 
 Some profiling data can only be retrieved using the kernel facilities, which are not available to users with normal privilege level. To collect such data, you will need to elevate your rights to the administrator level. You can do so either by running the profiled program from the \texttt{root} account on Unix or through the \emph{Run as administrator} option on Windows\footnote{To make this easier, you can run MSVC with admin privileges, which will be inherited by your program when you start it from within the IDE.}. On Android, you will need to have a rooted device (see section~\ref{androidlunacy} for additional information).
 
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bclampe
+]{Linux file descriptor limits}
+On Linux systems with many CPUs, Tracy may open a file descriptor for each CPU when collecting tracepoint data. If the process reaches its soft file descriptor limit, the profiled application may fail to open files and Tracy may report \texttt{Too many open files}. Check the current limit with \texttt{ulimit -n} and raise it in the shell that starts the profiled application:
+
+\begin{lstlisting}
+ulimit -n 4096
+./your-program
+\end{lstlisting}
+
+When launching the application through \texttt{sudo}, set the limit in the same command, for example:
+
+\begin{lstlisting}
+sudo sh -c 'ulimit -n 4096 && exec ./your-program'
+\end{lstlisting}
+
+The appropriate value depends on the number of CPUs and the events being collected.
+\end{bclogo}
+
 As this system-level tracing functionality is part of the automated collection process, no user intervention is necessary to enable it (assuming that the program was granted the rights needed). However, if, for some reason, you would want to prevent your application from trying to access kernel data, you may recompile your program with the \texttt{TRACY\_NO\_SYSTEM\_TRACING} define. If you want to disable this functionality dynamically at runtime instead, you can set the \texttt{TRACY\_NO\_SYSTEM\_TRACING} environment variable to \enquote{1}.
 
 \begin{bclogo}[

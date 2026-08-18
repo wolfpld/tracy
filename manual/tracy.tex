@@ -650,7 +650,7 @@ If you are targeting Windows with Microsoft Visual Studio or MinGW, add the \tex
 
 If you are experiencing crashes or freezes when manually loading/unloading a separate DLL with Tracy integration, you might want to try defining the \texttt{TRACY\_MANUAL\_LIFETIME} macro.
 
-\texttt{TRACY\_MANUAL\_LIFETIME} provides the \texttt{StartupProfiler} and \texttt{ShutdownProfiler} functions that allow you to create and destroy the profiler data manually, letting you define an appropriate place to free the resources. Under \texttt{TRACY\_MANUAL\_LIFETIME} the profiler does not exist until \texttt{StartupProfiler()} is called and ceases to exist after \texttt{ShutdownProfiler()}. Using any instrumentation, zones, locks, plots, messages, and so on before startup or after shutdown is an error. Use \texttt{TracyIsStarted} to guard instrumentation that may run conditionally.
+\texttt{TRACY\_MANUAL\_LIFETIME} provides the \texttt{StartupProfiler} and \texttt{ShutdownProfiler} functions that allow you to create and destroy the profiler data manually, letting you define an appropriate place to free the resources. Under \texttt{TRACY\_MANUAL\_LIFETIME} the profiler does not exist until \texttt{StartupProfiler()} is called and ceases to exist after \texttt{ShutdownProfiler()}. Using any instrumentation, zones, locks, plots, messages, and so on before startup or after shutdown is an error. Use \texttt{TracyIsStarted} to guard instrumentation that may run conditionally. If the profiler has been initialized, it must be shut down before the program exits.
 
 \begin{bclogo}[
 noborder=true,

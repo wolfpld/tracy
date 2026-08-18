@@ -158,7 +158,8 @@ includes = [
     'public/tracy/TracyLua.hpp',
     'public/tracy/TracyOpenCL.hpp',
     'public/tracy/TracyOpenGL.hpp',
-    'public/tracy/TracyVulkan.hpp'
+    'public/tracy/TracyVulkan.hpp',
+    'public/tracy/TracyWebGPU.hpp'
 ]
 
 client_includes = [

@@ -1167,7 +1167,11 @@ size_t s_kernelSymCnt;
 static void InitKernelSymbols()
 {
     FILE* f = fopen( "/proc/kallsyms", "rb" );
-    if( !f ) return;
+    if( !f )
+    {
+        TracyDebug( "Failed to read /proc/kallsyms, kernel symbols will be unavailable." );
+        return;
+    }
     tracy::FastVector<KernelSymbol> tmpSym( 512 * 1024 );
     size_t linelen = 16 * 1024;     // linelen must be big enough to prevent reallocs in getline()
     auto linebuf = (char*)tracy_malloc( linelen );

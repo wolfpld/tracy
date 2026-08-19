@@ -1112,6 +1112,14 @@ bool SysTraceStart( int64_t& samplingPeriod )
 
     tracy_free( iter );
 
+    if( s_numBuffers == 0 )
+    {
+        tracy_free( s_ring );
+        s_ring = nullptr;
+        TracyDebug( "Failed to setup any system tracing events, system tracing disabled." );
+        return false;
+    }
+
     traceActive.store( true, std::memory_order_relaxed );
     return true;
 }

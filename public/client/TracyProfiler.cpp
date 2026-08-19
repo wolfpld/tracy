@@ -3980,7 +3980,14 @@ bool Profiler::HandleServerQuery()
         break;
 #endif
     case ServerQuerySourceCode:
+#ifdef TRACY_HAS_CALLSTACK
         QueueSourceCodeQuery( uint32_t( ptr ) );
+#else
+        TRACY_ASSERT( m_queryData );
+        HandleSourceCodeQuery( m_queryData, m_queryImage, uint32_t( ptr ) );
+        m_queryData = nullptr;
+        m_queryImage = nullptr;
+#endif
         break;
     case ServerQueryDataTransfer:
         if( m_queryData )

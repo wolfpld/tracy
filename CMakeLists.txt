@@ -276,6 +276,11 @@ configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
         INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/TracyConfig.cmake
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
+write_basic_package_version_file(
+        "${CMAKE_CURRENT_BINARY_DIR}/TracyConfigVersion.cmake"
+        COMPATIBILITY SameMinorVersion)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/TracyConfigVersion.cmake"
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
 
 option(TRACY_CLIENT_PYTHON "Whether to build Tracy python client library" OFF)
 

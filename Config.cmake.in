@@ -1,5 +1,7 @@
 @PACKAGE_INIT@
 
+set(TRACY_VERSION_STRING "@TRACY_VERSION_STRING@")
+
 include(CMakeFindDependencyMacro)
 find_dependency(Threads REQUIRED)
 

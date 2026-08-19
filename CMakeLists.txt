@@ -211,6 +211,7 @@ set(common_includes
     ${TRACY_PUBLIC_DIR}/common/TracyAlign.hpp
     ${TRACY_PUBLIC_DIR}/common/TracyAlloc.hpp
     ${TRACY_PUBLIC_DIR}/common/TracyApi.h
+    ${TRACY_PUBLIC_DIR}/common/TracyAssert.hpp
     ${TRACY_PUBLIC_DIR}/common/TracyColor.hpp
     ${TRACY_PUBLIC_DIR}/common/TracyForceInline.hpp
     ${TRACY_PUBLIC_DIR}/common/TracyFormat.h

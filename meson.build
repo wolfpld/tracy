@@ -191,6 +191,7 @@ common_includes = [
     'public/common/TracyAlign.hpp',
     'public/common/TracyAlloc.hpp',
     'public/common/TracyApi.h',
+    'public/common/TracyAssert.hpp',
     'public/common/TracyColor.hpp',
     'public/common/TracyForceInline.hpp',
     'public/common/TracyFormat.h',

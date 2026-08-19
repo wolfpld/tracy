@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-08-18 <https://github.com/wolfpld/tracy>
+2026-08-19 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -477,6 +477,8 @@ By default, Tracy will begin profiling even before the program enters the `main`
 You should note that if on-demand profiling is *disabled* (which is the default), then the recorded events will be stored in the system memory until a server connection is made and the data can be uploaded[^12]. Depending on the amount of the things profiled, the requirements for event storage can quickly grow up to a couple of gigabytes. Furthermore, since this data is no longer available after the initial connection, you won't be able to perform a second connection to a client unless the on-demand mode is used.
 
 [^12]: This memory is never released, but the profiler reuses it for collection of other events.
+
+In on-demand mode, each connection to the server is a separate capture. A zone is included in a capture only if both its begin and end events occur during that connection: if the connection is lost and re-established while a zone is open, the end event is dropped and the zone remains unclosed in the previous capture. Zones that begin and end during a later connection, even while an older zone is still open, appear in the new capture as top-level zones.
 
 > [!CAUTION]
 > **Caveats**

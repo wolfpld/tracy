@@ -133,8 +133,38 @@ struct SourceLocationData
 #ifdef TRACY_ON_DEMAND
 struct LuaZoneState
 {
-    uint32_t counter;
-    bool active;
+    LuaZoneState() = default;
+    ~LuaZoneState() { if( stack ) tracy_free( stack ); }
+    LuaZoneState( const LuaZoneState& ) = delete;
+    LuaZoneState& operator=( const LuaZoneState& ) = delete;
+
+    tracy_force_inline void Push( uint64_t connectionId )
+    {
+        if( size == capacity )
+        {
+            const auto newCapacity = capacity ? capacity * 2 : 16;
+            stack = (uint64_t*)tracy_realloc( stack, newCapacity * sizeof( uint64_t ) );
+            capacity = newCapacity;
+        }
+        stack[size] = connectionId;
+        size++;
+    }
+
+    tracy_force_inline uint64_t Pop()
+    {
+        TRACY_ASSERT( size > 0 );
+        return stack[--size];
+    }
+
+    tracy_force_inline uint64_t Top()
+    {
+        return size ? stack[size - 1] : 0;
+    }
+
+private:
+    uint64_t* stack = nullptr;
+    uint32_t size = 0;
+    uint32_t capacity = 0;
 };
 #endif
 

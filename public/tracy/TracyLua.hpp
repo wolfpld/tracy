@@ -222,10 +222,9 @@ static tracy_force_inline void SendLuaCallstack( lua_State* L, uint32_t depth )
 static inline int LuaZoneBeginS( lua_State* L )
 {
 #ifdef TRACY_ON_DEMAND
-    const auto zoneCnt = GetLuaZoneState().counter++;
-    if( zoneCnt != 0 && !GetLuaZoneState().active ) return 0;
-    GetLuaZoneState().active = GetProfiler().IsConnected();
-    if( !GetLuaZoneState().active ) return 0;
+    const auto connectionId = GetProfiler().IsConnected() ? GetProfiler().ConnectionId() : 0;
+    GetLuaZoneState().Push( connectionId );
+    if( !connectionId ) return 0;
 #endif
 
 #if defined TRACY_CALLSTACK && TRACY_CALLSTACK > 0
@@ -254,10 +253,9 @@ static inline int LuaZoneBeginS( lua_State* L )
 static inline int LuaZoneBeginNS( lua_State* L )
 {
 #ifdef TRACY_ON_DEMAND
-    const auto zoneCnt = GetLuaZoneState().counter++;
-    if( zoneCnt != 0 && !GetLuaZoneState().active ) return 0;
-    GetLuaZoneState().active = GetProfiler().IsConnected();
-    if( !GetLuaZoneState().active ) return 0;
+    const auto connectionId = GetProfiler().IsConnected() ? GetProfiler().ConnectionId() : 0;
+    GetLuaZoneState().Push( connectionId );
+    if( !connectionId ) return 0;
 #endif
 
 #if defined TRACY_CALLSTACK && TRACY_CALLSTACK > 0
@@ -292,10 +290,9 @@ static inline int LuaZoneBegin( lua_State* L )
     return LuaZoneBeginS( L );
 #else
 #ifdef TRACY_ON_DEMAND
-    const auto zoneCnt = GetLuaZoneState().counter++;
-    if( zoneCnt != 0 && !GetLuaZoneState().active ) return 0;
-    GetLuaZoneState().active = GetProfiler().IsConnected();
-    if( !GetLuaZoneState().active ) return 0;
+    const auto connectionId = GetProfiler().IsConnected() ? GetProfiler().ConnectionId() : 0;
+    GetLuaZoneState().Push( connectionId );
+    if( !connectionId ) return 0;
 #endif
 
     lua_Debug dbg;
@@ -319,10 +316,9 @@ static inline int LuaZoneBeginN( lua_State* L )
     return LuaZoneBeginNS( L );
 #else
 #ifdef TRACY_ON_DEMAND
-    const auto zoneCnt = GetLuaZoneState().counter++;
-    if( zoneCnt != 0 && !GetLuaZoneState().active ) return 0;
-    GetLuaZoneState().active = GetProfiler().IsConnected();
-    if( !GetLuaZoneState().active ) return 0;
+    const auto connectionId = GetProfiler().IsConnected() ? GetProfiler().ConnectionId() : 0;
+    GetLuaZoneState().Push( connectionId );
+    if( !connectionId ) return 0;
 #endif
 
     lua_Debug dbg;
@@ -345,14 +341,8 @@ static inline int LuaZoneBeginN( lua_State* L )
 static inline int LuaZoneEnd( lua_State* L )
 {
 #ifdef TRACY_ON_DEMAND
-    TRACY_ASSERT( GetLuaZoneState().counter != 0 );
-    GetLuaZoneState().counter--;
-    if( !GetLuaZoneState().active ) return 0;
-    if( !GetProfiler().IsConnected() )
-    {
-        GetLuaZoneState().active = false;
-        return 0;
-    }
+    const auto connectionId = GetLuaZoneState().Pop();
+    if( !connectionId || GetProfiler().ConnectionId() != connectionId ) return 0;
 #endif
 
     TracyQueuePrepare( QueueType::ZoneEnd );
@@ -364,12 +354,8 @@ static inline int LuaZoneEnd( lua_State* L )
 static inline int LuaZoneText( lua_State* L )
 {
 #ifdef TRACY_ON_DEMAND
-    if( !GetLuaZoneState().active ) return 0;
-    if( !GetProfiler().IsConnected() )
-    {
-        GetLuaZoneState().active = false;
-        return 0;
-    }
+    const auto connectionId = GetLuaZoneState().Top();
+    if( !connectionId || GetProfiler().ConnectionId() != connectionId ) return 0;
 #endif
 
     auto txt = lua_tostring( L, 1 );
@@ -389,12 +375,8 @@ static inline int LuaZoneText( lua_State* L )
 static inline int LuaZoneName( lua_State* L )
 {
 #ifdef TRACY_ON_DEMAND
-    if( !GetLuaZoneState().active ) return 0;
-    if( !GetProfiler().IsConnected() )
-    {
-        GetLuaZoneState().active = false;
-        return 0;
-    }
+    const auto connectionId = GetLuaZoneState().Top();
+    if( !connectionId || GetProfiler().ConnectionId() != connectionId ) return 0;
 #endif
 
     auto txt = lua_tostring( L, 1 );
@@ -525,10 +507,9 @@ static inline void LuaHook( lua_State* L, lua_Debug* ar )
     if ( ar->event == LUA_HOOKCALL )
     {
 #ifdef TRACY_ON_DEMAND
-        const auto zoneCnt = GetLuaZoneState().counter++;
-        if ( zoneCnt != 0 && !GetLuaZoneState().active ) return;
-        GetLuaZoneState().active = GetProfiler().IsConnected();
-        if ( !GetLuaZoneState().active ) return;
+        const auto connectionId = GetProfiler().IsConnected() ? GetProfiler().ConnectionId() : 0;
+        GetLuaZoneState().Push( connectionId );
+        if ( !connectionId ) return;
 #endif
         lua_getinfo( L, "Snl", ar );
 
@@ -543,14 +524,8 @@ static inline void LuaHook( lua_State* L, lua_Debug* ar )
     }
     else if (ar->event == LUA_HOOKRET) {
 #ifdef TRACY_ON_DEMAND
-        TRACY_ASSERT( GetLuaZoneState().counter != 0 );
-        GetLuaZoneState().counter--;
-        if ( !GetLuaZoneState().active ) return;
-        if ( !GetProfiler().IsConnected() )
-        {
-            GetLuaZoneState().active = false;
-            return;
-        }
+        const auto connectionId = GetLuaZoneState().Pop();
+        if ( !connectionId || GetProfiler().ConnectionId() != connectionId ) return;
 #endif
         TracyQueuePrepare( QueueType::ZoneEnd );
         MemWrite( &item->zoneEnd.time, Profiler::GetTime() );

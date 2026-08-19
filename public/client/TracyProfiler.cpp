@@ -1472,7 +1472,7 @@ static std::atomic<ThreadNameData*> init_order(104) s_threadNameDataInstance( nu
 std::atomic<ThreadNameData*>& s_threadNameData = s_threadNameDataInstance;
 
 #  ifdef TRACY_ON_DEMAND
-thread_local LuaZoneState init_order(104) s_luaZoneState { 0, false };
+thread_local LuaZoneState init_order(104) s_luaZoneState;
 #  endif
 
 static Profiler init_order(105) s_profiler;

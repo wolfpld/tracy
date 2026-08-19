@@ -398,6 +398,7 @@ void SysTraceGetExternalName( uint64_t thread, const char*& threadName, const ch
 #    include <sys/mman.h>
 #    include <sys/ioctl.h>
 #    include <sys/syscall.h>
+#    include <sys/utsname.h>
 
 #    if defined __i386 || defined __x86_64__
 #      include "TracyCpuid.hpp"
@@ -636,6 +637,29 @@ static char* GetTraceFsPath()
     return ret;
 }
 
+// Categories of the running kernel's perf_event_open() ABI, defined by the
+// perf_event_attr fields Tracy uses. use_clockid/clockid exist since Linux
+// 4.1 (commit 34f439278c), sample_max_stack since Linux 4.8 (commit
+// 97c79a38cd); older kernels reject the fields (EINVAL / E2BIG) and all of
+// system tracing dies. Kernels whose version cannot be determined are
+// treated as the least capable.
+enum PerfKernelAbi
+{
+    PerfAbiPre41,        // < 4.1: no use_clockid, no sample_max_stack
+    PerfAbi41To47,       // 4.1-4.7: use_clockid, no sample_max_stack
+    PerfAbi48AndNewer,   // >= 4.8: use_clockid, sample_max_stack
+};
+
+static PerfKernelAbi ClassifyPerfKernelAbi( const char* release )
+{
+    int major, minor;
+    if( sscanf( release, "%d.%d", &major, &minor ) != 2 ) return PerfAbiPre41;
+    const int version = KERNEL_VERSION( major, minor, 0 );
+    if( version < KERNEL_VERSION( 4, 1, 0 ) ) return PerfAbiPre41;
+    if( version < KERNEL_VERSION( 4, 8, 0 ) ) return PerfAbi41To47;
+    return PerfAbi48AndNewer;
+}
+
 bool SysTraceStart( int64_t& samplingPeriod )
 {
 #ifndef CLOCK_MONOTONIC_RAW
@@ -674,10 +698,19 @@ bool SysTraceStart( int64_t& samplingPeriod )
     TracyDebug( "sched_waking id: %i", wakingId );
     TracyDebug( "drm_vblank_event id: %i", vsyncId );
 
+    struct utsname kernelInfo;
+    const bool gotKernelInfo = uname( &kernelInfo ) == 0;
+    const PerfKernelAbi perfAbi = gotKernelInfo ? ClassifyPerfKernelAbi( kernelInfo.release ) : PerfAbiPre41;
+
     bool useMonotonicClockRaw = !HardwareSupportsInvariantTSC();
 #if !defined TRACY_HW_TIMER || !defined TRACY_HAS_RDTSC
     useMonotonicClockRaw = true;
 #endif
+    if( useMonotonicClockRaw && perfAbi < PerfAbi41To47 )
+    {
+        TracyDebug( "Kernel %s: perf_event_open() ABI predates 4.1, use_clockid not supported, using the default event clock.", gotKernelInfo ? kernelInfo.release : "version unknown" );
+        useMonotonicClockRaw = false;
+    }
     if( useMonotonicClockRaw )
     {
         TracyDebug( "Using CLOCK_MONOTONIC_RAW for Linux perf events." );
@@ -798,7 +831,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
     pe.sample_freq = samplingFrequency;
     pe.sample_type = PERF_SAMPLE_TID | PERF_SAMPLE_TIME | PERF_SAMPLE_CALLCHAIN;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION( 4, 8, 0 )
-    pe.sample_max_stack = 127;
+    if( perfAbi >= PerfAbi48AndNewer ) pe.sample_max_stack = 127;
 #endif
     pe.disabled = 1;
     pe.freq = 1;
@@ -1012,7 +1045,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
         {
             pe.sample_type |= PERF_SAMPLE_CALLCHAIN;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION( 4, 8, 0 )
-            pe.sample_max_stack = 127;
+            if( perfAbi >= PerfAbi48AndNewer ) pe.sample_max_stack = 127;
 #endif
         }
         pe.disabled = 1;

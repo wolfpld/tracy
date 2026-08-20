@@ -278,8 +278,8 @@ namespace tracy
 #if TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
             if (m_readbackBuffer)
             {
-                D3D12_RANGE fullRange { 0, m_queryLimit * sizeof(UINT64) };
-                m_readbackBuffer->Unmap(0, &fullRange);
+                D3D12_RANGE emptyWrittenRange { 0, 0 };
+                m_readbackBuffer->Unmap(0, &emptyWrittenRange);
                 m_persistentTimestampBuffer = nullptr;
             }
 #endif
@@ -543,8 +543,8 @@ namespace tracy
         void UnmapTimestampBuffer(UINT64*)
         {
 #if !TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
-            D3D12_RANGE fullRange { 0, m_queryLimit * sizeof(UINT64) };
-            m_readbackBuffer->Unmap(0, &fullRange);
+            D3D12_RANGE emptyWrittenRange { 0, 0 };
+            m_readbackBuffer->Unmap(0, &emptyWrittenRange);
 #endif
         }
 

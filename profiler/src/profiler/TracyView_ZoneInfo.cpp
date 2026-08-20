@@ -69,12 +69,17 @@ struct ChildGroup
     const char* name;
 };
 
-static void SortChildGroups( Vector<ChildGroup*>& cgvec, const ImGuiTableColumnSortSpecs& sortspec, const Worker& worker )
+template<typename Adapter, typename V>
+static void SortChildGroups( Vector<ChildGroup*>& cgvec, const ImGuiTableColumnSortSpecs& sortspec, const Worker& worker, const V& children )
 {
     const bool asc = sortspec.SortDirection == ImGuiSortDirection_Ascending;
     if( sortspec.ColumnIndex == 0 )
     {
-        for( auto& it : cgvec ) it->name = worker.GetZoneName( worker.GetSourceLocation( it->srcloc ) );
+        Adapter a;
+        for( auto& it : cgvec )
+            it->name = it->v.size() == 1
+                ? worker.GetZoneName( a(children[it->v.front()]) )
+                : worker.GetZoneName( worker.GetSourceLocation( it->srcloc ) );
         if( asc )
         {
             pdqsort_branchless( cgvec.begin(), cgvec.end(), []( const auto& lhs, const auto& rhs ) {
@@ -1252,7 +1257,7 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
         ImGui::TableHeadersRow();
 
         const auto& sortspec = *ImGui::TableGetSortSpecs()->Specs;
-        SortChildGroups( cgvec, sortspec, m_worker );
+        SortChildGroups<Adapter>( cgvec, sortspec, m_worker, children );
 
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
@@ -1754,7 +1759,7 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
         ImGui::TableHeadersRow();
 
         const auto& sortspec = *ImGui::TableGetSortSpecs()->Specs;
-        SortChildGroups( cgvec, sortspec, m_worker );
+        SortChildGroups<Adapter>( cgvec, sortspec, m_worker, children );
 
         ImGui::TableNextRow();
         ImGui::TableNextColumn();

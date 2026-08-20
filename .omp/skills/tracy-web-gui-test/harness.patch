@@ -1,0 +1,221 @@
+diff -r a/profiler/CMakeLists.txt b/profiler/CMakeLists.txt
+--- a/profiler/CMakeLists.txt
++++ b/profiler/CMakeLists.txt
+@@ -340,7 +340,7 @@
+         -sMAXIMUM_MEMORY=4gb
+         -sSTACK_SIZE=1048576
+         -sPTHREAD_POOL_SIZE=8
+-        -sEXPORTED_FUNCTIONS=_main,_nativeOpenFile,_tracy_paste_clipboard
++        -sEXPORTED_FUNCTIONS=_main,_nativeOpenFile,_tracy_paste_clipboard,_debug_snapshot,_debug_clear
+         -sEXPORTED_RUNTIME_METHODS=ccall
+         -sENVIRONMENT=web,worker
+         --preload-file embed.tracy
+diff -r a/profiler/src/BackendEmscripten.cpp b/profiler/src/BackendEmscripten.cpp
+--- a/profiler/src/BackendEmscripten.cpp
++++ b/profiler/src/BackendEmscripten.cpp
+@@ -1,6 +1,8 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <cstdarg>
++#include <algorithm>
+ #include <EGL/egl.h>
+ #include <EGL/eglext.h>
+ #include <GLES2/gl2.h>
+@@ -10,7 +12,146 @@
+ #include "Backend.hpp"
+ #include "RunQueue.hpp"
+ #include "profiler/TracyImGui.hpp"
++#include "imgui_internal.h"
+ 
++// ================= DEBUG HARNESS (temporary copy, not for upstream) =================
++struct DbgEvent
++{
++    int type;    // 0=move 1=down 2=up 3=enter 4=leave 5=wheel
++    int button;
++    int targetX;
++    int targetY;
++    double appX; // what was passed to ImGui (targetX * dpr), -1 if n/a
++    double appY;
++    double t;    // DOMHighResTimeStamp
++    int wheelX;
++    int wheelY;
++};
++struct DbgFrame
++{
++    double t;
++    int tick;        // emscripten main-loop tick count (rAF)
++    int imguiFrame;  // ImGui::GetFrameCount()
++    float mx, my;    // io.MousePos
++    int md0, md1, md2;
++    int queue;       // pending ImGui input events
++    int wasActive;   // tracy::s_wasActive at tick start
++    unsigned hi;     // ImGui hovered item ID
++    unsigned ai;     // ImGui active item ID
++};
++static DbgEvent s_dbgEvents[512];
++static int s_dbgEventHead = 0, s_dbgEventN = 0;
++static DbgFrame s_dbgFrames[512];
++static int s_dbgFrameHead = 0, s_dbgFrameN = 0;
++static int s_dbgTick = 0;
++
++static void DbgPushEvent( int type, int button, int tx, int ty, double ax, double ay, double t, int wx = 0, int wy = 0 )
++{
++    auto& e = s_dbgEvents[s_dbgEventHead];
++    e.type = type; e.button = button; e.targetX = tx; e.targetY = ty;
++    e.appX = ax; e.appY = ay; e.t = t; e.wheelX = wx; e.wheelY = wy;
++    s_dbgEventHead = ( s_dbgEventHead + 1 ) % 512;
++    if ( s_dbgEventN < 512 ) s_dbgEventN++;
++}
++
++static void DbgPushFrame()
++{
++    auto& f = s_dbgFrames[s_dbgFrameHead];
++    auto& io = ImGui::GetIO();
++    f.t = EM_ASM_DOUBLE( { return performance.now(); } );
++    f.tick = s_dbgTick;
++    f.imguiFrame = ImGui::GetFrameCount();
++    f.mx = io.MousePos.x; f.my = io.MousePos.y;
++    f.md0 = io.MouseDown[0]; f.md1 = io.MouseDown[1]; f.md2 = io.MouseDown[2];
++    auto ctx = ImGui::GetCurrentContext();
++    f.queue = ctx ? int( ctx->InputEventsQueue.Size ) : -1;
++    f.wasActive = tracy::s_wasActive;
++    f.hi = ctx ? ctx->HoveredId : 0;
++    f.ai = ctx ? ctx->ActiveId : 0;
++    s_dbgFrameHead = ( s_dbgFrameHead + 1 ) % 512;
++    if ( s_dbgFrameN < 512 ) s_dbgFrameN++;
++}
++
++extern "C" EMSCRIPTEN_KEEPALIVE void debug_clear()
++{
++    s_dbgEventHead = s_dbgEventN = s_dbgFrameHead = s_dbgFrameN = 0;
++}
++
++// Escape a C string for embedding in a JSON string literal (", \, control chars).
++static void JsonEscape( char* out, size_t outsz, const char* in )
++{
++    size_t o = 0;
++    for( const unsigned char* p = ( const unsigned char* )in; *p; p++ )
++    {
++        if ( *p == '"' || *p == '\\' )
++        {
++            if ( o + 2 >= outsz ) break;
++            out[o++] = '\\';
++            out[o++] = char( *p );
++        }
++        else if ( *p < 0x20 )
++        {
++            if ( o + 6 >= outsz ) break;
++            o += size_t( snprintf( out + o, outsz - o, "\\u%04x", *p ) );
++        }
++        else
++        {
++            if ( o + 1 >= outsz ) break;
++            out[o++] = char( *p );
++        }
++    }
++    out[o] = 0;
++}
++
++extern "C" EMSCRIPTEN_KEEPALIVE const char* debug_snapshot()
++{
++    static char buf[512 * 1024];
++    size_t off = 0;
++    auto put = [ & ]( const char* fmt, ... )
++    {
++        if ( off + 1 >= sizeof( buf ) ) return;
++        va_list args;
++        va_start( args, fmt );
++        int n = vsnprintf( buf + off, sizeof( buf ) - off - 1, fmt, args );
++        va_end( args );
++        if ( n > 0 ) off = std::min( off + size_t( n ), sizeof( buf ) - 1 );
++    };
++    const auto dpr = EM_ASM_DOUBLE( { return window.devicePixelRatio; } );
++    const auto innerW = EM_ASM_INT( { return window.innerWidth; } );
++    const auto innerH = EM_ASM_INT( { return window.innerHeight; } );
++    const auto bufW = EM_ASM_INT( { return document.getElementById( 'canvas' ).width; } );
++    const auto bufH = EM_ASM_INT( { return document.getElementById( 'canvas' ).height; } );
++    const auto rectL = EM_ASM_DOUBLE( { var r = document.getElementById( 'canvas' ).getBoundingClientRect(); return r.left; } );
++    const auto rectT = EM_ASM_DOUBLE( { var r = document.getElementById( 'canvas' ).getBoundingClientRect(); return r.top; } );
++    const auto rectW = EM_ASM_DOUBLE( { var r = document.getElementById( 'canvas' ).getBoundingClientRect(); return r.width; } );
++    const auto rectH = EM_ASM_DOUBLE( { var r = document.getElementById( 'canvas' ).getBoundingClientRect(); return r.height; } );
++    char title[256];
++    EM_ASM( { stringToUTF8( document.title, $0, 256 ); }, title );
++    char cursor[64];
++    EM_ASM( { stringToUTF8( document.getElementById( 'canvas' ).style.cursor || "", $0, 64 ); }, cursor );
++    char title_e[1536];
++    char cursor_e[384];
++    JsonEscape( title_e, sizeof( title_e ), title );
++    JsonEscape( cursor_e, sizeof( cursor_e ), cursor );
++    put( "{\"dpr\":%.6f,\"innerW\":%d,\"innerH\":%d,\"bufW\":%d,\"bufH\":%d,\"rectL\":%.3f,\"rectT\":%.3f,\"rectW\":%.3f,\"rectH\":%.3f,\"title\":\"%s\",\"cursor\":\"%s\",\"frames\":[", dpr, innerW, innerH, bufW, bufH, rectL, rectT, rectW, rectH, title_e, cursor_e );
++    const int fn = std::min( s_dbgFrameN, 64 );
++    for ( int i = 0; i < fn; i++ )
++    {
++        auto& f = s_dbgFrames[ ( s_dbgFrameHead - fn + i + 512 ) % 512 ];
++        put( "%s{\"t\":%.3f,\"tick\":%d,\"f\":%d,\"mx\":%.1f,\"my\":%.1f,\"md\":[%d,%d,%d],\"q\":%d,\"wa\":%d,\"hi\":%u,\"ai\":%u}", i ? "," : "", f.t, f.tick, f.imguiFrame, f.mx, f.my, f.md0, f.md1, f.md2, f.queue, f.wasActive, f.hi, f.ai );
++    }
++    put( "],\"events\":[");
++    const int en = std::min( s_dbgEventN, 64 );
++    for ( int i = 0; i < en; i++ )
++    {
++        auto& e = s_dbgEvents[ ( s_dbgEventHead - en + i + 512 ) % 512 ];
++        put( "%s{\"type\":%d,\"btn\":%d,\"tx\":%d,\"ty\":%d,\"ax\":%.3f,\"ay\":%.3f,\"t\":%.3f,\"wx\":%d,\"wy\":%d}", i ? "," : "", e.type, e.button, e.targetX, e.targetY, e.appX, e.appY, e.t, e.wheelX, e.wheelY );
++    }
++    put( "]}");
++    buf[off] = 0;
++    return buf;
++}
++
+ static std::function<void()> s_redraw;
+ static std::function<void(float)> s_scaleChanged;
+ static std::function<int(void)> s_isBusy;
+@@ -223,32 +364,38 @@
+     emscripten_set_mousedown_callback( "#canvas", nullptr, EM_TRUE, []( int, const EmscriptenMouseEvent* e, void* ) -> EM_BOOL {
+         ImGui::GetIO().AddMouseButtonEvent( e->button == 0 ? 0 : 3 - e->button, true );
+         tracy::s_wasActive = true;
++        DbgPushEvent( 1, e->button, e->targetX, e->targetY, -1, -1, e->timestamp );
+         return EM_TRUE;
+     } );
+     emscripten_set_mouseup_callback( "#canvas", nullptr, EM_TRUE, []( int, const EmscriptenMouseEvent* e, void* ) -> EM_BOOL {
+         ImGui::GetIO().AddMouseButtonEvent( e->button == 0 ? 0 : 3 - e->button, false );
+         tracy::s_wasActive = true;
++        DbgPushEvent( 2, e->button, e->targetX, e->targetY, -1, -1, e->timestamp );
+         return EM_TRUE;
+     } );
+     emscripten_set_mousemove_callback( "#canvas", nullptr, EM_TRUE, []( int, const EmscriptenMouseEvent* e, void* ) -> EM_BOOL {
+         const auto scale = EM_ASM_DOUBLE( { return window.devicePixelRatio; } );
+         ImGui::GetIO().AddMousePosEvent( e->targetX * scale, e->targetY * scale );
+         tracy::s_wasActive = true;
++        DbgPushEvent( 0, -1, e->targetX, e->targetY, e->targetX * scale, e->targetY * scale, e->timestamp );
+         return EM_TRUE;
+     } );
+-    emscripten_set_mouseleave_callback( "#canvas", nullptr, EM_TRUE, []( int, const EmscriptenMouseEvent*, void* ) -> EM_BOOL {
++    emscripten_set_mouseleave_callback( "#canvas", nullptr, EM_TRUE, []( int, const EmscriptenMouseEvent* e, void* ) -> EM_BOOL {
+         ImGui::GetIO().AddFocusEvent( false );
+         tracy::s_wasActive = true;
++        DbgPushEvent( 4, -1, e->targetX, e->targetY, -1, -1, e->timestamp );
+         return EM_TRUE;
+     } );
+-    emscripten_set_mouseenter_callback( "#canvas", nullptr, EM_TRUE, []( int, const EmscriptenMouseEvent*, void* ) -> EM_BOOL {
++    emscripten_set_mouseenter_callback( "#canvas", nullptr, EM_TRUE, []( int, const EmscriptenMouseEvent* e, void* ) -> EM_BOOL {
+         ImGui::GetIO().AddFocusEvent( true );
+         tracy::s_wasActive = true;
++        DbgPushEvent( 3, -1, e->targetX, e->targetY, -1, -1, e->timestamp );
+         return EM_TRUE;
+     } );
+     emscripten_set_wheel_callback( "#canvas", nullptr, EM_TRUE, []( int, const EmscriptenWheelEvent* e, void* ) -> EM_BOOL {
+         ImGui::GetIO().AddMouseWheelEvent( e->deltaX * -0.05, e->deltaY * -0.05 );
+         tracy::s_wasActive = true;
++        DbgPushEvent( 5, -1, e->mouse.targetX, e->mouse.targetY, -1, -1, e->mouse.timestamp, int( e->deltaX ), int( e->deltaY ) );
+         return EM_TRUE;
+     } );
+     emscripten_set_keydown_callback( EMSCRIPTEN_EVENT_TARGET_WINDOW, nullptr, EM_TRUE, [] ( int, const EmscriptenKeyboardEvent* e, void* ) -> EM_BOOL {
+@@ -298,6 +445,8 @@
+ 
+ void Backend::NewFrame( int& w, int& h )
+ {
++    s_dbgTick++;
++    DbgPushFrame();
+     const auto scale = GetDpiScale();
+     if( scale != s_prevScale )
+     {

@@ -28,6 +28,80 @@ inline uint32_t GetZoneCallstack<GpuEvent>( const GpuEvent& ev, const Worker& wo
     return ev.callstack.Val();
 }
 
+static void SortChildIndices( uint32_t* cti, size_t count, const uint64_t* ctt, const Vector<const char*>* ctn, const ImGuiTableColumnSortSpecs& sortspec )
+{
+    const bool asc = sortspec.SortDirection == ImGuiSortDirection_Ascending;
+    if( sortspec.ColumnIndex == 0 )
+    {
+        const Vector<const char*>& names = *ctn;
+        if( asc )
+        {
+            pdqsort_branchless( cti, cti + count, [&names, ctt]( const auto& lhs, const auto& rhs ) {
+                const int cmp = strcmp( names[lhs], names[rhs] );
+                if( cmp != 0 ) return cmp < 0;
+                return ctt[lhs] > ctt[rhs];
+            } );
+        }
+        else
+        {
+            pdqsort_branchless( cti, cti + count, [&names, ctt]( const auto& lhs, const auto& rhs ) {
+                const int cmp = strcmp( names[lhs], names[rhs] );
+                if( cmp != 0 ) return cmp > 0;
+                return ctt[lhs] > ctt[rhs];
+            } );
+        }
+    }
+    else if( asc )
+    {
+        pdqsort_branchless( cti, cti + count, [ctt]( const auto& lhs, const auto& rhs ) { return ctt[lhs] < ctt[rhs]; } );
+    }
+    else
+    {
+        pdqsort_branchless( cti, cti + count, [ctt]( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
+    }
+}
+
+struct ChildGroup
+{
+    int16_t srcloc;
+    uint64_t t;
+    Vector<uint32_t> v;
+    const char* name;
+};
+
+static void SortChildGroups( Vector<ChildGroup*>& cgvec, const ImGuiTableColumnSortSpecs& sortspec, const Worker& worker )
+{
+    const bool asc = sortspec.SortDirection == ImGuiSortDirection_Ascending;
+    if( sortspec.ColumnIndex == 0 )
+    {
+        for( auto& it : cgvec ) it->name = worker.GetZoneName( worker.GetSourceLocation( it->srcloc ) );
+        if( asc )
+        {
+            pdqsort_branchless( cgvec.begin(), cgvec.end(), []( const auto& lhs, const auto& rhs ) {
+                const int cmp = strcmp( lhs->name, rhs->name );
+                if( cmp != 0 ) return cmp < 0;
+                return lhs->t > rhs->t;
+            } );
+        }
+        else
+        {
+            pdqsort_branchless( cgvec.begin(), cgvec.end(), []( const auto& lhs, const auto& rhs ) {
+                const int cmp = strcmp( lhs->name, rhs->name );
+                if( cmp != 0 ) return cmp > 0;
+                return lhs->t > rhs->t;
+            } );
+        }
+    }
+    else if( asc )
+    {
+        pdqsort_branchless( cgvec.begin(), cgvec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->t < rhs->t; } );
+    }
+    else
+    {
+        pdqsort_branchless( cgvec.begin(), cgvec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->t > rhs->t; } );
+    }
+}
+
 void View::CalcZoneTimeData( unordered_flat_map<int16_t, ZoneTimeData>& data, int64_t& ztime, const ZoneEvent& zone )
 {
     assert( zone.HasChildren() );
@@ -1145,12 +1219,6 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
 
     if( m_groupChildrenLocations )
     {
-        struct ChildGroup
-        {
-            int16_t srcloc;
-            uint64_t t;
-            Vector<uint32_t> v;
-        };
         uint64_t ctime = 0;
         unordered_flat_map<int16_t, ChildGroup> cmap;
         cmap.reserve( 128 );
@@ -1178,23 +1246,30 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
             cgvec[idx++] = &it.second;
         }
 
-        pdqsort_branchless( cgvec.begin(), cgvec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->t > rhs->t; } );
+        if( !ImGui::BeginTable( "##childzones", 2, ImGuiTableFlags_Sortable | ImGuiTableFlags_BordersInnerV ) ) return;
+        ImGui::TableSetupColumn( "Zone" );
+        ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortDescending );
+        ImGui::TableHeadersRow();
 
-        ImGui::Columns( 2 );
-        ImGui::Indent( ImGui::GetTreeNodeToLabelSpacing() * 2 );
+        const auto& sortspec = *ImGui::TableGetSortSpecs()->Specs;
+        SortChildGroups( cgvec, sortspec, m_worker );
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
         TextColoredUnformatted( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
-        ImGui::Unindent( ImGui::GetTreeNodeToLabelSpacing() * 2 );
-        ImGui::NextColumn();
+        ImGui::TableNextColumn();
         char buf[128];
         PrintStringPercent( buf, TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
         ImGui::ProgressBar( double( ztime - ctime ) * rztime, ImVec2( -1, ty ), buf );
-        ImGui::NextColumn();
+
         for( size_t i=0; i<msz; i++ )
         {
             bool expandGroup = false;
             const auto& cgr = *cgvec[i];
             const auto& srcloc = m_worker.GetSourceLocation( cgr.srcloc );
             const auto txt = m_worker.GetZoneName( srcloc );
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
             if( cgr.v.size() == 1 )
             {
                 auto& cev = a(children[cgr.v.front()]);
@@ -1240,12 +1315,11 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
                 ImGui::SameLine();
                 ImGui::TextDisabled( "(\xc3\x97%s)", RealToString( cgr.v.size() ) );
             }
-            ImGui::NextColumn();
+            ImGui::TableNextColumn();
             const auto part = double( cgr.t ) * rztime;
             char buf[128];
             PrintStringPercent( buf, TimeToString( cgr.t ), part * 100 );
             ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
-            ImGui::NextColumn();
             if( expandGroup )
             {
                 auto ctt = std::unique_ptr<uint64_t[]>( new uint64_t[cgr.v.size()] );
@@ -1259,7 +1333,13 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
                     cti[i] = uint32_t( i );
                 }
 
-                pdqsort_branchless( cti.get(), cti.get() + cgr.v.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
+                Vector<const char*> ctn;
+                if( sortspec.ColumnIndex == 0 )
+                {
+                    ctn.reserve_and_use( cgr.v.size() );
+                    for( size_t i=0; i<cgr.v.size(); i++ ) ctn[i] = m_worker.GetZoneName( a(children[cgr.v[i]]) );
+                }
+                SortChildIndices( cti.get(), cgr.v.size(), ctt.get(), sortspec.ColumnIndex == 0 ? &ctn : nullptr, sortspec );
 
                 ImGuiListClipper clipper;
                 clipper.Begin( cgr.v.size() );
@@ -1270,6 +1350,8 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
                         auto& cev = a(children[cgr.v[cti[i]]]);
                         const auto txt = m_worker.GetZoneName( cev );
                         bool b = false;
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
                         ImGui::Indent();
                         ImGui::PushID( (int)cgr.v[cti[i]] );
                         if( ImGui::Selectable( txt, &b, ImGuiSelectableFlags_SpanAllColumns ) )
@@ -1287,18 +1369,17 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
                         }
                         ImGui::PopID();
                         ImGui::Unindent();
-                        ImGui::NextColumn();
+                        ImGui::TableNextColumn();
                         const auto part = double( ctt[cti[i]] ) * rztime;
                         char buf[128];
                         PrintStringPercent( buf, TimeToString( ctt[cti[i]] ), part * 100 );
                         ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
-                        ImGui::NextColumn();
                     }
                 }
                 ImGui::TreePop();
             }
         }
-        ImGui::EndColumns();
+        ImGui::EndTable();
     }
     else
     {
@@ -1315,17 +1396,28 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
             cti[i] = uint32_t( i );
         }
 
-        pdqsort_branchless( cti.get(), cti.get() + children.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
+        if( !ImGui::BeginTable( "##childzones", 2, ImGuiTableFlags_Sortable | ImGuiTableFlags_BordersInnerV ) ) return;
+        ImGui::TableSetupColumn( "Zone" );
+        ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortDescending );
+        ImGui::TableHeadersRow();
 
-        ImGui::Columns( 2 );
-        ImGui::Indent( ImGui::GetTreeNodeToLabelSpacing() );
+        const auto& sortspec = *ImGui::TableGetSortSpecs()->Specs;
+        Vector<const char*> ctn;
+        if( sortspec.ColumnIndex == 0 )
+        {
+            ctn.reserve_and_use( children.size() );
+            for( size_t i=0; i<children.size(); i++ ) ctn[i] = m_worker.GetZoneName( a(children[i]) );
+        }
+        SortChildIndices( cti.get(), children.size(), ctt.get(), sortspec.ColumnIndex == 0 ? &ctn : nullptr, sortspec );
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
         TextColoredUnformatted( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
-        ImGui::Unindent( ImGui::GetTreeNodeToLabelSpacing() );
-        ImGui::NextColumn();
+        ImGui::TableNextColumn();
         char buf[128];
         PrintStringPercent( buf, TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
         ImGui::ProgressBar( double( ztime - ctime ) * rztime, ImVec2( -1, ty ), buf );
-        ImGui::NextColumn();
+
         ImGuiListClipper clipper;
         clipper.Begin( children.size() );
         while( clipper.Step() )
@@ -1335,9 +1427,11 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
                 auto& cev = a(children[cti[i]]);
                 const auto txt = m_worker.GetZoneName( cev );
                 bool b = false;
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
                 SmallColorBox( GetSrcLocColor( m_worker.GetSourceLocation( cev.SrcLoc() ), 0 ) );
                 ImGui::SameLine();
-                ImGui::PushID( (int)i );
+                ImGui::PushID( i );
                 if( ImGui::Selectable( txt, &b, ImGuiSelectableFlags_SpanAllColumns ) )
                 {
                     ShowZoneInfo( cev );
@@ -1352,15 +1446,14 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
                     ZoneTooltip( cev );
                 }
                 ImGui::PopID();
-                ImGui::NextColumn();
+                ImGui::TableNextColumn();
                 const auto part = double( ctt[cti[i]] ) * rztime;
                 char buf[128];
                 PrintStringPercent( buf, TimeToString( ctt[cti[i]] ), part * 100 );
                 ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
-                ImGui::NextColumn();
             }
         }
-        ImGui::EndColumns();
+        ImGui::EndTable();
     }
 }
 
@@ -1628,12 +1721,6 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
 
     if( m_groupChildrenLocations )
     {
-        struct ChildGroup
-        {
-            int16_t srcloc;
-            uint64_t t;
-            Vector<uint32_t> v;
-        };
         uint64_t ctime = 0;
         unordered_flat_map<int16_t, ChildGroup> cmap;
         cmap.reserve( 128 );
@@ -1661,23 +1748,30 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
             cgvec[idx++] = &it.second;
         }
 
-        pdqsort_branchless( cgvec.begin(), cgvec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->t > rhs->t; } );
+        if( !ImGui::BeginTable( "##childzones", 2, ImGuiTableFlags_Sortable | ImGuiTableFlags_BordersInnerV ) ) return;
+        ImGui::TableSetupColumn( "Zone" );
+        ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortDescending );
+        ImGui::TableHeadersRow();
 
-        ImGui::Columns( 2 );
-        ImGui::Indent( ImGui::GetTreeNodeToLabelSpacing() );
+        const auto& sortspec = *ImGui::TableGetSortSpecs()->Specs;
+        SortChildGroups( cgvec, sortspec, m_worker );
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
         TextColoredUnformatted( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
-        ImGui::Unindent( ImGui::GetTreeNodeToLabelSpacing() );
-        ImGui::NextColumn();
+        ImGui::TableNextColumn();
         char buf[128];
         PrintStringPercent( buf, TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
         ImGui::ProgressBar( double( ztime - ctime ) * rztime, ImVec2( -1, ty ), buf );
-        ImGui::NextColumn();
+
         for( size_t i=0; i<msz; i++ )
         {
             bool expandGroup = false;
             const auto& cgr = *cgvec[i];
             const auto& srcloc = m_worker.GetSourceLocation( cgr.srcloc );
             const auto txt = m_worker.GetZoneName( srcloc );
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
             if( cgr.v.size() == 1 )
             {
                 auto& cev = a(children[cgr.v.front()]);
@@ -1719,12 +1813,11 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
                 ImGui::SameLine();
                 ImGui::TextDisabled( "(\xc3\x97%s)", RealToString( cgr.v.size() ) );
             }
-            ImGui::NextColumn();
+            ImGui::TableNextColumn();
             const auto part = double( cgr.t ) * rztime;
             char buf[128];
             PrintStringPercent( buf, TimeToString( cgr.t ), part * 100 );
             ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
-            ImGui::NextColumn();
             if( expandGroup )
             {
                 auto ctt = std::unique_ptr<uint64_t[]>( new uint64_t[cgr.v.size()] );
@@ -1738,41 +1831,53 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
                     cti[i] = uint32_t( i );
                 }
 
-                pdqsort_branchless( cti.get(), cti.get() + cgr.v.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
-
-                for( size_t i=0; i<cgr.v.size(); i++ )
+                Vector<const char*> ctn;
+                if( sortspec.ColumnIndex == 0 )
                 {
-                    auto& cev = a(children[cgr.v[cti[i]]]);
-                    const auto txt = m_worker.GetZoneName( cev );
-                    bool b = false;
-                    ImGui::Indent();
-                    ImGui::PushID( (int)cgr.v[cti[i]] );
-                    if( ImGui::Selectable( txt, &b, ImGuiSelectableFlags_SpanAllColumns ) )
+                    ctn.reserve_and_use( cgr.v.size() );
+                    for( size_t i=0; i<cgr.v.size(); i++ ) ctn[i] = m_worker.GetZoneName( a(children[cgr.v[i]]) );
+                }
+                SortChildIndices( cti.get(), cgr.v.size(), ctt.get(), sortspec.ColumnIndex == 0 ? &ctn : nullptr, sortspec );
+
+                ImGuiListClipper clipper;
+                clipper.Begin( cgr.v.size() );
+                while( clipper.Step() )
+                {
+                    for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
                     {
-                        ShowZoneInfo( cev, m_gpuInfoWindowThread );
-                    }
-                    if( ImGui::IsItemHovered() )
-                    {
-                        m_gpuHighlight = &cev;
-                        if( IsMouseClicked( ImGuiMouseButton_Middle ) )
+                        auto& cev = a(children[cgr.v[cti[i]]]);
+                        const auto txt = m_worker.GetZoneName( cev );
+                        bool b = false;
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
+                        ImGui::Indent();
+                        ImGui::PushID( (int)cgr.v[cti[i]] );
+                        if( ImGui::Selectable( txt, &b, ImGuiSelectableFlags_SpanAllColumns ) )
                         {
-                            ZoomToZone( cev );
+                            ShowZoneInfo( cev, m_gpuInfoWindowThread );
                         }
-                        ZoneTooltip( cev );
+                        if( ImGui::IsItemHovered() )
+                        {
+                            m_gpuHighlight = &cev;
+                            if( IsMouseClicked( ImGuiMouseButton_Middle ) )
+                            {
+                                ZoomToZone( cev );
+                            }
+                            ZoneTooltip( cev );
+                        }
+                        ImGui::PopID();
+                        ImGui::Unindent();
+                        ImGui::TableNextColumn();
+                        const auto part = double( ctt[cti[i]] ) / ztime;
+                        char buf[128];
+                        PrintStringPercent( buf, TimeToString( ctt[cti[i]] ), part * 100 );
+                        ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
                     }
-                    ImGui::PopID();
-                    ImGui::Unindent();
-                    ImGui::NextColumn();
-                    const auto part = double( ctt[cti[i]] ) * rztime;
-                    char buf[128];
-                    PrintStringPercent( buf, TimeToString( ctt[cti[i]] ), part * 100 );
-                    ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
-                    ImGui::NextColumn();
                 }
                 ImGui::TreePop();
             }
         }
-        ImGui::EndColumns();
+        ImGui::EndTable();
     }
     else
     {
@@ -1789,42 +1894,61 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
             cti[i] = uint32_t( i );
         }
 
-        pdqsort_branchless( cti.get(), cti.get() + children.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
+        if( !ImGui::BeginTable( "##childzones", 2, ImGuiTableFlags_Sortable | ImGuiTableFlags_BordersInnerV ) ) return;
+        ImGui::TableSetupColumn( "Zone" );
+        ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortDescending );
+        ImGui::TableHeadersRow();
 
-        ImGui::Columns( 2 );
+        const auto& sortspec = *ImGui::TableGetSortSpecs()->Specs;
+        Vector<const char*> ctn;
+        if( sortspec.ColumnIndex == 0 )
+        {
+            ctn.reserve_and_use( children.size() );
+            for( size_t i=0; i<children.size(); i++ ) ctn[i] = m_worker.GetZoneName( a(children[i]) );
+        }
+        SortChildIndices( cti.get(), children.size(), ctt.get(), sortspec.ColumnIndex == 0 ? &ctn : nullptr, sortspec );
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
         TextColoredUnformatted( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
-        ImGui::NextColumn();
+        ImGui::TableNextColumn();
         char buf[128];
         PrintStringPercent( buf, TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
         ImGui::ProgressBar( double( ztime - ctime ) / ztime, ImVec2( -1, ty ), buf );
-        ImGui::NextColumn();
-        for( size_t i=0; i<children.size(); i++ )
+
+        ImGuiListClipper clipper;
+        clipper.Begin( children.size() );
+        while( clipper.Step() )
         {
-            auto& cev = a(children[cti[i]]);
-            bool b = false;
-            ImGui::PushID( (int)i );
-            if( ImGui::Selectable( m_worker.GetZoneName( cev ), &b, ImGuiSelectableFlags_SpanAllColumns ) )
+            for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
             {
-                ShowZoneInfo( cev, m_gpuInfoWindowThread );
-            }
-            if( ImGui::IsItemHovered() )
-            {
-                m_gpuHighlight = &cev;
-                if( IsMouseClicked( ImGuiMouseButton_Middle ) )
+                auto& cev = a(children[cti[i]]);
+                bool b = false;
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::PushID( i );
+                if( ImGui::Selectable( m_worker.GetZoneName( cev ), &b, ImGuiSelectableFlags_SpanAllColumns ) )
                 {
-                    ZoomToZone( cev );
+                    ShowZoneInfo( cev, m_gpuInfoWindowThread );
                 }
-                ZoneTooltip( cev );
+                if( ImGui::IsItemHovered() )
+                {
+                    m_gpuHighlight = &cev;
+                    if( IsMouseClicked( ImGuiMouseButton_Middle ) )
+                    {
+                        ZoomToZone( cev );
+                    }
+                    ZoneTooltip( cev );
+                }
+                ImGui::PopID();
+                ImGui::TableNextColumn();
+                const auto part = double( ctt[cti[i]] ) / ztime;
+                char buf[128];
+                PrintStringPercent( buf, TimeToString( ctt[cti[i]] ), part * 100 );
+                ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
             }
-            ImGui::PopID();
-            ImGui::NextColumn();
-            const auto part = double( ctt[cti[i]] ) / ztime;
-            char buf[128];
-            PrintStringPercent( buf, TimeToString( ctt[cti[i]] ), part * 100 );
-            ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
-            ImGui::NextColumn();
         }
-        ImGui::EndColumns();
+        ImGui::EndTable();
     }
 }
 

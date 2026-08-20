@@ -66,12 +66,14 @@ jobs:
     if: github.ref == 'refs/heads/master'
     steps:
     - uses: actions/download-artifact@v4
-    - uses: wlixcc/SFTP-Deploy-Action@v1.2.4
+    - uses: eiserv/easySFTP@v3
       with:
         username: ${{ secrets.USERNAME }}
-        server: ${{ secrets.SERVER }}
+        host: ${{ secrets.SERVER }}
         port: ${{ secrets.PORT }}
-        ssh_private_key: ${{ secrets.PRIVATE_KEY }}
-        local_path: './emscripten/*'
-        remote_path: ${{ secrets.REMOTE_PATH }}
-        sftp_only: true
+        private-key: ${{ secrets.PRIVATE_KEY }}
+        source: emscripten
+        target: ${{ secrets.REMOTE_PATH }}
+        # Same trust model as before. Pin the key instead once a
+        # KNOWN_HOSTS secret exists: known-hosts: ${{ secrets.KNOWN_HOSTS }}
+        allow-any-host-key: true

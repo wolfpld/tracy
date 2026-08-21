@@ -277,6 +277,7 @@ void View::DrawTimeline()
 
     auto draw = ImGui::GetWindowDrawList();
     const auto w = ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ScrollbarSize;
+    if( w <= 0.f ) return;
     const auto timespan = m_vd.zvEnd - m_vd.zvStart;
     auto pxns = w / double( timespan );
 

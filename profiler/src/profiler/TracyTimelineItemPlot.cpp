@@ -199,7 +199,7 @@ void TimelineItemPlot::Preprocess( const TimelineContext& ctx, TaskDispatch& td,
         while( it < end )
         {
             auto next = std::upper_bound( it, end, int64_t( it->time.Val() + MinVisNs ), [] ( const auto& l, const auto& r ) { return l < r.time.Val(); } );
-            assert( next > it );
+            if( next <= it ) next = it + 1;
             const auto rsz = uint32_t( next - it );
             if( rsz < 4 )
             {

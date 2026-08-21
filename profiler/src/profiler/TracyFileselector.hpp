@@ -10,6 +10,7 @@ namespace tracy::Fileselector
 void Init( size_t type, void* handle );
 void Shutdown();
 bool HasFailed();
+const char* GetError();
 
 void OpenFile( const char* ext, const char* desc, const std::function<void(const char*)>& callback );
 void SaveFile( const char* ext, const char* desc, const std::function<void(const char*)>& callback );

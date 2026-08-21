@@ -1,5 +1,6 @@
 #include "TracyFileselector.hpp"
 
+#include <string>
 #ifndef TRACY_NO_FILESELECTOR
 #  ifdef __EMSCRIPTEN__
 #    include <emscripten.h>
@@ -15,6 +16,7 @@ static bool s_hasFailed = false;
 
 #if !defined TRACY_NO_FILESELECTOR && !defined __EMSCRIPTEN__
 static nfdwindowhandle_t s_windowHandle;
+static std::string s_error;
 #endif
 
 void Init( size_t type, void* handle )
@@ -46,6 +48,15 @@ bool HasFailed()
     {
         return false;
     }
+}
+
+const char* GetError()
+{
+#if !defined TRACY_NO_FILESELECTOR && !defined __EMSCRIPTEN__
+    return s_error.empty() ? nullptr : s_error.c_str();
+#else
+    return nullptr;
+#endif
 }
 
 #ifdef __EMSCRIPTEN__
@@ -99,6 +110,11 @@ static bool OpenFileImpl( const char* ext, const char* desc, const std::function
     }
     else
     {
+        if( res == NFD_ERROR )
+        {
+            const auto err = NFD_GetError();
+            if( err ) s_error = err;
+        }
         return res != NFD_ERROR;
     }
 #  endif
@@ -125,6 +141,11 @@ static bool SaveFileImpl( const char* ext, const char* desc, const std::function
     }
     else
     {
+        if( res == NFD_ERROR )
+        {
+            const auto err = NFD_GetError();
+            if( err ) s_error = err;
+        }
         return res != NFD_ERROR;
     }
 #endif

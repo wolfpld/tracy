@@ -181,6 +181,7 @@ if(VENDOR_GUI)
             "${CMAKE_CURRENT_LIST_DIR}/imgui-no-samplers.patch"
             "${CMAKE_CURRENT_LIST_DIR}/imgui-no-default-font.patch"
             "${CMAKE_CURRENT_LIST_DIR}/imgui-macos-clipboard.patch"
+            "${CMAKE_CURRENT_LIST_DIR}/imgui-phantom-column.patch"
     )
 
     set(IMGUI_SOURCES

@@ -1,0 +1,14 @@
+diff --git a/imgui_tables.cpp b/imgui_tables.cpp
+--- a/imgui_tables.cpp
++++ b/imgui_tables.cpp
+@@ -4082,7 +4082,9 @@
+     }
+     if (load_flags & ImGuiTableFlags_Reorderable)
+         column->DisplayOrder = column_settings->DisplayOrder;
+-    else
++    else if (column_settings->Index != -1)
++        // An Index of -1 means this column had no "Column N" line in the .ini file (columns without saved
++        // data are not written). Keep the display order as initialized (identity for non-reorderable tables). (#9519)
+         column->DisplayOrder = column_settings->Index; // Because default depends on previous Index, we need to set that up and cannot rely on TableInitColumnDefaults()
+     if ((load_flags & ImGuiTableFlags_Hideable) && column_settings->IsEnabled != -1)
+         column->IsUserEnabled = column->IsUserEnabledNextFrame = (column_settings->IsEnabled == 1);

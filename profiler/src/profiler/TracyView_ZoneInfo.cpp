@@ -1358,6 +1358,7 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
                         ImGui::Indent();
+                        ImGui::Indent();
                         ImGui::PushID( (int)cgr.v[cti[i]] );
                         if( ImGui::Selectable( txt, &b, ImGuiSelectableFlags_SpanAllColumns ) )
                         {
@@ -1373,6 +1374,7 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
                             ZoneTooltip( cev );
                         }
                         ImGui::PopID();
+                        ImGui::Unindent();
                         ImGui::Unindent();
                         ImGui::TableNextColumn();
                         const auto part = double( ctt[cti[i]] ) * rztime;

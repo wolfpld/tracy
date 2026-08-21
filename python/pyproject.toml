@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "tracy_client"
-version = "0.13.1"
+dynamic = ["version"]
 description = "A real time, nanosecond resolution, remote telemetry, hybrid frame and sampling profiler for games and other applications."
 authors = [
   { name = "Bartosz Taudul", email = "wolf@nereid.pl" },
@@ -16,6 +16,7 @@ homepage = "https://github.com/wolfpld/tracy"
 source = "https://github.com/wolfpld/tracy"
 
 [tool.scikit-build]
+minimum-version = "0.11"
 cmake.version = ">=3.15.0"
 ninja.version = ">=1.11"
 cmake.source-dir = ".."
@@ -27,3 +28,9 @@ wheel.packages = ["tracy_client"]
 TRACY_CLIENT_PYTHON = "ON"
 TRACY_STATIC = "OFF"
 CMAKE_INSTALL_BINDIR = ""
+
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "../public/common/TracyVersion.hpp"
+regex = 'Major = (?P<major>[0-9]+);\s*constexpr int Minor = (?P<minor>[0-9]+);\s*constexpr int Patch = (?P<patch>[0-9]+);'
+result = "{major}.{minor}.{patch}"

@@ -20,7 +20,7 @@ import urllib.request
 import uuid
 from contextlib import asynccontextmanager, redirect_stdout
 
-import mcp.server.fastmcp as fastmcp
+from mcp.server.mcpserver import MCPServer
 
 # Suppress noisy ASGI shutdown errors known to occur with SSE and Control-C.
 # These occur when Starlette attempts to send a 500 error after the loop is cancelled
@@ -35,6 +35,10 @@ _PID_FILE  = os.path.join(_HERE, "tracy_mcp.pid")
 _CRASH_LOG_FILE = os.path.join(_HERE, "tracy_mcp.crash.log")
 _PREFERRED_PORT = int(os.environ.get("TRACY_MCP_PORT", "47380"))
 _TRANSPORT = os.environ.get("TRACY_MCP_TRANSPORT", "streamable-http").strip().lower()
+# MCPServer.run()'s own defaults -- tracked here too since v2's Settings no
+# longer exposes them for us to read back (SDK v1 -> v2 migration).
+_SSE_PATH = "/sse"
+_STREAMABLE_HTTP_PATH = "/mcp"
 
 # Shared documentation surfaces. system.prompt.md is Tracy Assist's source
 # system prompt; exposing it as an MCP resource keeps analysis guidance in
@@ -166,7 +170,7 @@ def _http_ping(port: int, timeout_s: float = 2.0) -> bool:
     error one, proves the transport is alive; only a timeout or refused
     connection means it's not.
     """
-    path = mcp_server.settings.sse_path if _TRANSPORT == "sse" else mcp_server.settings.streamable_http_path
+    path = _SSE_PATH if _TRANSPORT == "sse" else _STREAMABLE_HTTP_PATH
     try:
         urllib.request.urlopen(f"http://127.0.0.1:{port}{path}", timeout=timeout_s)
         return True
@@ -379,7 +383,7 @@ async def _sweep_loop() -> None:
 
 
 @asynccontextmanager
-async def _lifespan(_server: fastmcp.FastMCP):
+async def _lifespan(_server: MCPServer):
     sweep_task = asyncio.create_task(_sweep_loop())
     try:
         yield
@@ -391,7 +395,7 @@ async def _lifespan(_server: fastmcp.FastMCP):
             pass
 
 
-mcp_server = fastmcp.FastMCP("Tracy Profiler", lifespan=_lifespan)
+mcp_server = MCPServer("Tracy Profiler", lifespan=_lifespan)
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
 instances: dict[str, TracyInstance] = {}
@@ -919,17 +923,18 @@ if __name__ == "__main__":
     port = _find_free_port()
     _write_pid_and_port(port)
 
-    path = (
-        mcp_server.settings.sse_path
-        if _TRANSPORT == "sse"
-        else mcp_server.settings.streamable_http_path
-    )
+    path = _SSE_PATH if _TRANSPORT == "sse" else _STREAMABLE_HTTP_PATH
     print(f"Tracy MCP listening on http://127.0.0.1:{port}{path}", file=sys.stderr)
 
-    mcp_server.settings.host = "127.0.0.1"
-    mcp_server.settings.port = port
+    # v2's MCPServer takes transport options on run(), not the constructor
+    # or a mutable settings object (SDK v1 -> v2 migration).
+    run_kwargs = {"host": "127.0.0.1", "port": port}
+    if _TRANSPORT == "sse":
+        run_kwargs["sse_path"] = _SSE_PATH
+    else:
+        run_kwargs["streamable_http_path"] = _STREAMABLE_HTTP_PATH
     try:
-        mcp_server.run(transport=_TRANSPORT)
+        mcp_server.run(transport=_TRANSPORT, **run_kwargs)
     except KeyboardInterrupt:
         print("\nTracy MCP server stopped.", file=sys.stderr)
         sys.exit(0)

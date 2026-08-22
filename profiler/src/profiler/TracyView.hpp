@@ -350,7 +350,7 @@ private:
     void DrawAnnotationList();
     void DrawSampleParents();
     void DrawRanges();
-    void DrawRangeEntry( Range& range, const char* label, uint32_t color, int id );
+    void DrawRangeEntry( Range& range, const char* label, const char* tooltip, uint32_t color, int id );
     bool ShouldDrawRange( const RangeId& id ) const;
     void DrawWaitStacks();
     void DrawManual();

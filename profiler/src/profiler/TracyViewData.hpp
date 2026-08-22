@@ -14,6 +14,7 @@ struct RangeEntry
     Range* range;
     uint32_t color;
     const char* name;
+    const char* tooltip;
 };
 
 enum class RangeId

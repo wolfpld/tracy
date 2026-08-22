@@ -52,12 +52,12 @@ void View::DrawRanges()
     {
         if( first ) first = false;
         else ImGui::Separator();
-        DrawRangeEntry( *r.range, r.name, r.color, idx++ );
+        DrawRangeEntry( *r.range, r.name, r.tooltip, r.color, idx++ );
     }
     ImGui::End();
 }
 
-void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, int id )
+void View::DrawRangeEntry( Range& range, const char* label, const char* tooltip, uint32_t color, int id )
 {
     ImGui::PushID( id );
     SmallColorBox( color );
@@ -70,6 +70,7 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, int 
             range.max = m_vd.zvEnd;
         }
     }
+    if( tooltip ) TooltipIfHovered( tooltip );
     if( range.active )
     {
         TextFocused( ICON_FA_STOPWATCH " Time range:", TimeToStringExact( range.min ) );

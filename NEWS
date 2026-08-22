@@ -2,6 +2,51 @@ Note: There is no guarantee that version mismatched client and server will
 be able to talk with each other. Network protocol breakages won't be listed
 here.
 
+v0.14.1 (2026-08-22)
+--------------------
+
+- Dropped support for loading pre-0.11 traces.
+- Silenced MSVC warning C4366: The result of the unary '&' operator may be
+  unaligned.
+- Fixed section setup in on-demand mode.
+- Hardened string length encoding in protocol.
+- Fixed compilation failure related to VSync when targeting 32-bit on
+  Windows.
+- Added TRACY_NO_WAIT_STACKS compile time macro.
+- Improved documentation of requirements in edge cases:
+  - Memory allocation reporting needs to be done under a lock.
+  - Manual lifetime management requires shutdown of the profiler.
+  - Documented how zones behave when crossing the on-demand connection
+    boundary.
+  - Mention that statistics time range limit also affects source view.
+- Memory events are now attributed to virtual fiber threads.
+- Added TRACY_ASSERT macro allowing user-defined handling of asserts in the
+  profiler.
+- Fixed csvexport options: -t, --sep, --filter.
+- Configuration of plot color now matches the documented RGB channels order.
+- Link profiler executable with libdl (required by old glibc versions).
+- Improve coverage of link-time macro mismatch detection.
+- Removed TRACY_DELAYED_INIT option. It was no-op since 2020.
+- Fixed illegal instruction in rpmalloc on ARMv6 and older.
+- Fixed handling of source code queries in no-callstack builds. Previously
+  the profiling session would hang at exit.
+- Hardened Lua on-demand handling.
+- Fixed system tracing on Linux kernels older than 4.1.
+- Linux system tracing setup failures are now reported via Tracy debug
+  message functionality.
+- Improved version handling in CMake / Meson / Python build systems.
+- Fixed D3D12 readback buffer error.
+- Child zone list in zone info window can be now sorted by name or by time.
+- File dialog failures (e.g. related to the XDG portal) are now reported
+  in the modal dialog.
+- Fixed NO_FILESELECTOR builds.
+- Fixed possible profiler hang when there was not enough space to draw
+  a plot on the timeline.
+- Update check can be now interrupted, e.g. when exiting the profiler.
+- Patched the file selector library to use modern Wayland protocol for
+  setting parent-child window relation.
+
+
 v0.14.0 (2026-08-09)
 --------------------
 

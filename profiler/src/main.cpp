@@ -373,6 +373,8 @@ int main( int argc, char** argv )
     backend.Show();
     backend.Run();
 
+    HttpRequestAbort();
+
     if( loadThread.joinable() ) loadThread.join();
     if( updateThread.joinable() ) updateThread.join();
     if( updateNotesThread.joinable() ) updateNotesThread.join();

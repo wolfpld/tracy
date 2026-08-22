@@ -10,7 +10,7 @@
 set -e
 
 WS="${TRACY_WEB_WS:-/tmp/tracy-protocol}"
-# The skill is project-scoped: <repo>/.omp/skills/tracy-web-gui-test/
+# The skill is project-scoped: <repo>/.omp/skills/tracy-gui-verify/
 SKILL_DIR=$(cd "$(dirname "$0")" && pwd)
 if [ -n "$TRACY_WEB_REPO" ]; then
 	REPO="$TRACY_WEB_REPO"

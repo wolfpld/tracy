@@ -1,6 +1,6 @@
 ---
-name: tracy-web-gui-test
-description: Build, serve, and drive the Tracy Profiler's emscripten (web) GUI in a headless browser with verified mouse/keyboard semantics. Use when developing or testing the profiler GUI.
+name: tracy-gui-verify
+description: Build, serve, and drive the Tracy Profiler's emscripten (web) GUI in a headless browser with verified mouse/keyboard semantics. Use when developing or testing the profiler GUI. No X11/Wayland/DISPLAY required — the browser is the display server.
 ---
 
 # Test the Tracy web GUI in a browser
@@ -21,7 +21,7 @@ sh <this-skill-dir>/setup.sh            # workspace=/tmp/tracy-protocol
 # or: TRACY_WEB_WS=/elsewhere TRACY_WEB_REPO=<repo> sh setup.sh
 ```
 
-`<this-skill-dir>` is the project-scoped `.omp/skills/tracy-web-gui-test/`
+`<this-skill-dir>` is the project-scoped `.omp/skills/tracy-gui-verify/`
 under the active project root — not a fixed home directory. If multiple
 copies exist (one per project that has used this skill), use the copy
 inside the repo being tested; `TRACY_WEB_REPO` controls which repo is

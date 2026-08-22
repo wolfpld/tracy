@@ -23,7 +23,6 @@ public:
     ~Socket();
 
     bool Connect( const char* addr, uint16_t port );
-    bool ConnectBlocking( const char* addr, uint16_t port );
     void Close();
 
     int Send( const void* buf, int len );

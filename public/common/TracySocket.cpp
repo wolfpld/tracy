@@ -450,6 +450,11 @@ bool Socket::IsValid() const
     return m_sock.load( std::memory_order_relaxed ) >= 0;
 }
 
+bool Socket::IsConnecting() const
+{
+    return m_ptr != nullptr;
+}
+
 
 ListenSocket::ListenSocket()
     : m_sock( -1 )

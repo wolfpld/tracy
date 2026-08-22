@@ -190,11 +190,11 @@ void Plot()
     unsigned char i = 0;
     for(;;)
     {
-        for( int j=0; j<1024; j++ )
+        for( int j=0; j<8; j++ )
         {
             TracyPlot( "Test plot", (int64_t)i++ );
         }
-        std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+        std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
     }
 }
 
@@ -204,7 +204,7 @@ void MessageTest()
     for(;;)
     {
         TracyMessage( "Tock", 4 );
-        std::this_thread::sleep_for( std::chrono::milliseconds( 5 ) );
+        std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
     }
 }
 
@@ -228,7 +228,7 @@ void DepthTest()
     for(;;)
     {
         TracyLogString( tracy::MessageSeverity::Debug, 0, TRACY_CALLSTACK, "Fibonacci Sleep" );
-        std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+        std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
         ZoneScoped;
         const auto txt = "Fibonacci (15)";
         ZoneText( txt, strlen( txt ) );
@@ -298,7 +298,7 @@ void CallstackTime()
     tracy::SetThreadName( "Callstack time" );
     for(;;)
     {
-        std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+        std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
         CaptureCallstack();
     }
 }
@@ -354,7 +354,7 @@ void ArenaAllocatorTest()
             const auto allocSize = 1024 + j * 128 - i * 64;
             TracyAllocN( aptr, allocSize, arenaAllocName );
             aptr += allocSize;
-            std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+            std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
         }
         TracyMemoryDiscard( arenaAllocName );
         aptr = arena;
@@ -383,7 +383,7 @@ void LuaTest()
 
     for(;;)
     {
-        std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+        std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
         ZoneScopedN( "Lua script execution" );
 
         if( luaL_dostring( L, luaScript ) != 0 )
@@ -393,7 +393,7 @@ void LuaTest()
             lua_pop( L, 1 );
         }
 
-        std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+        std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
     }
 
     lua_close( L );
@@ -425,7 +425,7 @@ void LuaHookTest()
 
     for(;;)
     {
-        std::this_thread::sleep_for( std::chrono::milliseconds( 20 ) );
+        std::this_thread::sleep_for( std::chrono::milliseconds( 200 ) );
         ZoneScopedN( "Lua hook script execution" );
 
         if( luaL_dostring( L, luaScript ) != 0 )
@@ -435,7 +435,7 @@ void LuaHookTest()
             lua_pop( L, 1 );
         }
 
-        std::this_thread::sleep_for( std::chrono::milliseconds( 20 ) );
+        std::this_thread::sleep_for( std::chrono::milliseconds( 200 ) );
     }
 
     lua_close( L );
@@ -597,6 +597,7 @@ int main()
     {
         std::cerr << "Could not find image.jpg in the current working directory, skipping" << std::endl;
     }
+
     for(;;)
     {
         TracyMessageL( "Tick" );
@@ -611,7 +612,7 @@ int main()
         if( ( randValue % 1000 ) == 0 ) 
             TracyLogString( tracy::MessageSeverity::Fatal, 0, TRACY_CALLSTACK, "Random fatal error" );
     
-        std::this_thread::sleep_for( std::chrono::milliseconds( 2 ) );
+        std::this_thread::sleep_for( std::chrono::milliseconds( 20 ) );
         {
             ZoneScoped;
             if(s_triggerCrash.load(std::memory_order_relaxed))
@@ -627,7 +628,7 @@ int main()
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 return 2;
             }
-            std::this_thread::sleep_for( std::chrono::milliseconds( 2 ) );
+            std::this_thread::sleep_for( std::chrono::milliseconds( 20 ) );
         }
         if(image != nullptr)
         {

@@ -233,6 +233,8 @@ if(VENDOR_GUI)
             GITHUB_REPOSITORY btzy/nativefiledialog-extended
             GIT_TAG 3cd252a8f7ca32419b1ca235c2990ba6a0ecba7c
             EXCLUDE_FROM_ALL TRUE
+            PATCHES
+                "${CMAKE_CURRENT_LIST_DIR}/nfd-xdg-foreign-v2.patch"
             OPTIONS
                 "BUILD_SHARED_LIBS OFF"
                 "NFD_PORTAL ${NFD_PORTAL}"

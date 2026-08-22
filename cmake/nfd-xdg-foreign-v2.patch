@@ -1,0 +1,203 @@
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index d6a9edc..abef8d7 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -32,18 +32,18 @@ if(nfd_PLATFORM STREQUAL PLATFORM_LINUX)
+   if(NFD_WAYLAND)
+     pkg_check_modules(WAYLAND REQUIRED wayland-client)
+     message(STATUS "Using Wayland version: ${WAYLAND_VERSION}")
+-    set(NFD_WAYLAND_PROTOCOL_XDG_FOREIGN ${CMAKE_CURRENT_SOURCE_DIR}/../3ps/wayland-protocols/unstable/xdg-foreign/xdg-foreign-unstable-v1.xml)
++    set(NFD_WAYLAND_PROTOCOL_XDG_FOREIGN ${CMAKE_CURRENT_SOURCE_DIR}/../3ps/wayland-protocols/unstable/xdg-foreign/xdg-foreign-unstable-v2.xml)
+     add_custom_command(
+-      OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/xdg-foreign-unstable-v1.h
+-      COMMAND wayland-scanner client-header < ${NFD_WAYLAND_PROTOCOL_XDG_FOREIGN} > ${CMAKE_CURRENT_BINARY_DIR}/xdg-foreign-unstable-v1.h
++      OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/xdg-foreign-unstable-v2.h
++      COMMAND wayland-scanner client-header < ${NFD_WAYLAND_PROTOCOL_XDG_FOREIGN} > ${CMAKE_CURRENT_BINARY_DIR}/xdg-foreign-unstable-v2.h
+       MAIN_DEPENDENCY ${NFD_WAYLAND_PROTOCOL_XDG_FOREIGN}
+     )
+     add_custom_command(
+-      OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/xdg-foreign-unstable-v1.c
+-      COMMAND wayland-scanner private-code < ${NFD_WAYLAND_PROTOCOL_XDG_FOREIGN} > ${CMAKE_CURRENT_BINARY_DIR}/xdg-foreign-unstable-v1.c
++      OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/xdg-foreign-unstable-v2.c
++      COMMAND wayland-scanner private-code < ${NFD_WAYLAND_PROTOCOL_XDG_FOREIGN} > ${CMAKE_CURRENT_BINARY_DIR}/xdg-foreign-unstable-v2.c
+       MAIN_DEPENDENCY ${NFD_WAYLAND_PROTOCOL_XDG_FOREIGN}
+     )
+-    list(APPEND SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/xdg-foreign-unstable-v1.h ${CMAKE_CURRENT_BINARY_DIR}/xdg-foreign-unstable-v1.c)
++    list(APPEND SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/xdg-foreign-unstable-v2.h ${CMAKE_CURRENT_BINARY_DIR}/xdg-foreign-unstable-v2.c)
+   endif()
+ endif()
+ 
+diff --git a/src/nfd_gtk.cpp b/src/nfd_gtk.cpp
+index 76fdcd7..cec691d 100644
+--- a/src/nfd_gtk.cpp
++++ b/src/nfd_gtk.cpp
+@@ -433,17 +433,17 @@ gint RunDialogWithFocus(GtkDialog* dialog) {
+ 
+ #if defined(NFD_WAYLAND)
+ void DestroyXdgExported(void* context) {
+-    zxdg_exported_v1_destroy(static_cast<struct zxdg_exported_v1*>(context));
++    zxdg_exported_v2_destroy(static_cast<struct zxdg_exported_v2*>(context));
+ }
+ 
+-void zxdg_exported_v1_handle(void* context, struct zxdg_exported_v1*, const char* handle) {
++void zxdg_exported_v2_handle(void* context, struct zxdg_exported_v2*, const char* handle) {
+     GdkWindow* childWindow = static_cast<GdkWindow*>(context);
+     // GDK doesn't modify the string, even though it takes char*, so we can cast away the constness
+     gdk_wayland_window_set_transient_for_exported(childWindow, const_cast<char*>(handle));
+ }
+ 
+-constexpr struct zxdg_exported_v1_listener wayland_xdg_exported_v1_listener{
+-    &zxdg_exported_v1_handle};
++constexpr struct zxdg_exported_v2_listener wayland_xdg_exported_v2_listener{
++    &zxdg_exported_v2_handle};
+ #endif
+ 
+ // This is an RAII class that wraps the parenting of a GtkWidget (the file dialog).
+@@ -645,17 +645,17 @@ struct NativeWindowParenter {
+ 
+ #if defined(NFD_WAYLAND)
+     void SetParentWayland(GdkWindow* childWindow) {
+-        if (wayland_display && wayland_xdg_exporter_v1) {
+-            struct zxdg_exported_v1* exported = zxdg_exporter_v1_export(
+-                wayland_xdg_exporter_v1, static_cast<struct wl_surface*>(parentWindowHandle));
++        if (wayland_display && wayland_xdg_exporter_v2) {
++            struct zxdg_exported_v2* exported = zxdg_exporter_v2_export_toplevel(
++                wayland_xdg_exporter_v2, static_cast<struct wl_surface*>(parentWindowHandle));
+             if (!exported) {
+                 // if we fail to export the wl_surface, act as if the window has no parent
+                 return;
+             }
+-            zxdg_exported_v1_add_listener(
+-                exported, &wayland_xdg_exported_v1_listener, static_cast<void*>(childWindow));
++            zxdg_exported_v2_add_listener(
++                exported, &wayland_xdg_exported_v2_listener, static_cast<void*>(childWindow));
+             wl_display_roundtrip(wayland_display);
+-            zxdg_exported_v1_set_user_data(exported, nullptr);
++            zxdg_exported_v2_set_user_data(exported, nullptr);
+             destroy.fn = &DestroyXdgExported;
+             destroy.context = static_cast<void*>(exported);
+         }
+diff --git a/src/nfd_linux_shared.hpp b/src/nfd_linux_shared.hpp
+index 1413bac..e826f1e 100644
+--- a/src/nfd_linux_shared.hpp
++++ b/src/nfd_linux_shared.hpp
+@@ -14,7 +14,7 @@
+ 
+ #ifdef NFD_WAYLAND
+ #include <wayland-client.h>
+-#include "xdg-foreign-unstable-v1.h"
++#include "xdg-foreign-unstable-v2.h"
+ #endif
+ 
+ namespace {
+@@ -81,9 +81,9 @@ nfdnchar_t* emit_case_insensitive_glob(const nfdnchar_t* begin,
+ #ifdef NFD_WAYLAND
+ struct wl_display* wayland_display;
+ struct wl_registry* wayland_registry;
+-uint32_t wayland_xdg_exporter_v1_name;
+-struct zxdg_exporter_v1* wayland_xdg_exporter_v1;
+-constexpr const char* XDG_EXPORTER_V1 = "zxdg_exporter_v1";
++uint32_t wayland_xdg_exporter_v2_name;
++struct zxdg_exporter_v2* wayland_xdg_exporter_v2;
++constexpr const char* XDG_EXPORTER_V2 = "zxdg_exporter_v2";
+ #endif
+ 
+ void EmptyFn(void*) {}
+@@ -103,19 +103,19 @@ void registry_handle_global(void* context,
+                             uint32_t version) {
+     (void)context;
+     (void)version;
+-    if (strcmp(interface, XDG_EXPORTER_V1) == 0) {
+-        wayland_xdg_exporter_v1_name = name;
+-        wayland_xdg_exporter_v1 = static_cast<struct zxdg_exporter_v1*>(wl_registry_bind(
+-            registry, name, &zxdg_exporter_v1_interface, zxdg_exporter_v1_interface.version));
++    if (strcmp(interface, XDG_EXPORTER_V2) == 0) {
++        wayland_xdg_exporter_v2_name = name;
++        wayland_xdg_exporter_v2 = static_cast<struct zxdg_exporter_v2*>(wl_registry_bind(
++            registry, name, &zxdg_exporter_v2_interface, zxdg_exporter_v2_interface.version));
+     }
+ }
+ 
+ void registry_handle_global_remove(void* context, struct wl_registry* registry, uint32_t name) {
+     (void)context;
+     (void)registry;
+-    if (wayland_xdg_exporter_v1 && name == wayland_xdg_exporter_v1_name) {
+-        zxdg_exporter_v1_destroy(wayland_xdg_exporter_v1);
+-        wayland_xdg_exporter_v1 = nullptr;
++    if (wayland_xdg_exporter_v2 && name == wayland_xdg_exporter_v2_name) {
++        zxdg_exporter_v2_destroy(wayland_xdg_exporter_v2);
++        wayland_xdg_exporter_v2 = nullptr;
+     }
+ }
+ 
+@@ -128,7 +128,7 @@ void NFD_Wayland_Init(void) {
+ 
+ void NFD_Wayland_Quit(void) {
+     if (wayland_display) {
+-        if (wayland_xdg_exporter_v1) zxdg_exporter_v1_destroy(wayland_xdg_exporter_v1);
++        if (wayland_xdg_exporter_v2) zxdg_exporter_v2_destroy(wayland_xdg_exporter_v2);
+         wl_registry_destroy(wayland_registry);
+     }
+ }
+@@ -143,7 +143,7 @@ nfdresult_t NFD_SetWaylandDisplay(wl_display* display) {
+     wayland_display = display;
+     if (wayland_display) {
+         wayland_registry = wl_display_get_registry(wayland_display);
+-        wayland_xdg_exporter_v1 = nullptr;
++        wayland_xdg_exporter_v2 = nullptr;
+         // seems like registry can't be null
+         wl_registry_add_listener(wayland_registry, &wayland_registry_listener, nullptr);
+         wl_display_roundtrip(wayland_display);
+diff --git a/src/nfd_portal.cpp b/src/nfd_portal.cpp
+index df840e0..e66ca7f 100644
+--- a/src/nfd_portal.cpp
++++ b/src/nfd_portal.cpp
+@@ -148,10 +148,10 @@ constexpr const char* DBUS_REQUEST_IFACE = "org.freedesktop.portal.Request";
+ constexpr const char* WAYLAND_PREFIX = "wayland:";
+ 
+ void DestroyXdgExported(void* context) {
+-    zxdg_exported_v1_destroy(static_cast<struct zxdg_exported_v1*>(context));
++    zxdg_exported_v2_destroy(static_cast<struct zxdg_exported_v2*>(context));
+ }
+ 
+-void zxdg_exported_v1_handle(void* context, struct zxdg_exported_v1*, const char* handle) {
++void zxdg_exported_v2_handle(void* context, struct zxdg_exported_v2*, const char* handle) {
+     DBusMessageIter& iter = *static_cast<DBusMessageIter*>(context);
+     const size_t handle_len = strlen(handle);
+     const size_t prefix_len = strlen(WAYLAND_PREFIX);
+@@ -163,8 +163,8 @@ void zxdg_exported_v1_handle(void* context, struct zxdg_exported_v1*, const char
+     NFDi_Free(buf);
+ }
+ 
+-constexpr struct zxdg_exported_v1_listener wayland_xdg_exported_v1_listener{
+-    &zxdg_exported_v1_handle};
++constexpr struct zxdg_exported_v2_listener wayland_xdg_exported_v2_listener{
++    &zxdg_exported_v2_handle};
+ #endif
+ 
+ void AppendOpenFileQueryParentWindow(DBusMessageIter& iter,
+@@ -194,18 +194,18 @@ void AppendOpenFileQueryParentWindow(DBusMessageIter& iter,
+ #endif
+ #ifdef NFD_WAYLAND
+         case NFD_WINDOW_HANDLE_TYPE_WAYLAND: {
+-            if (wayland_display && wayland_xdg_exporter_v1) {
+-                struct zxdg_exported_v1* exported = zxdg_exporter_v1_export(
+-                    wayland_xdg_exporter_v1, static_cast<struct wl_surface*>(parentWindow.handle));
++            if (wayland_display && wayland_xdg_exporter_v2) {
++                struct zxdg_exported_v2* exported = zxdg_exporter_v2_export_toplevel(
++                    wayland_xdg_exporter_v2, static_cast<struct wl_surface*>(parentWindow.handle));
+                 if (!exported) {
+                     // if we fail to export the wl_surface, act as if the window has no parent
+                     dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &STR_EMPTY);
+                     return;
+                 }
+-                zxdg_exported_v1_add_listener(
+-                    exported, &wayland_xdg_exported_v1_listener, static_cast<void*>(&iter));
++                zxdg_exported_v2_add_listener(
++                    exported, &wayland_xdg_exported_v2_listener, static_cast<void*>(&iter));
+                 wl_display_roundtrip(wayland_display);
+-                zxdg_exported_v1_set_user_data(exported, nullptr);
++                zxdg_exported_v2_set_user_data(exported, nullptr);
+                 destroy.fn = &DestroyXdgExported;
+                 destroy.context = static_cast<void*>(exported);
+                 return;

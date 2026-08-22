@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-08-19 <https://github.com/wolfpld/tracy>
+2026-08-22 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -3767,7 +3767,7 @@ To define a time range, drag the left mouse button over the timeline view while 
 
   - * Find zone* -- this will limit find zone results. See chapter [5.7](#findzone) for more details.
 
-  - * Statistics* -- selecting this option will limit statistics results. See chapter [5.6](#statistics) for more details.
+  - * Statistics* -- selecting this option will limit statistics results (section [5.6](#statistics)), as well as the sample statistics shown in the source view (section [5.17](#sourceview)).
 
   - * Flame graph* -- limits flame graph results. Refer to chapter [5.9](#flamegraph).
 

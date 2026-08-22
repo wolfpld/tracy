@@ -1,6 +1,8 @@
 #!/bin/sh
 # Start the Tracy MCP server.
 #
+# First run: pip install -r requirements.txt (next to this script).
+#
 # Set PYTHONPATH to the directory containing TracyServerBindings.so/.pyd.
 # Adjust the Release/Debug suffix to match your CMake build configuration.
 PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$(dirname "$0")/../../build/python/Release"

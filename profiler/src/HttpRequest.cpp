@@ -1,7 +1,10 @@
 #include <assert.h>
+#include <atomic>
+#include <chrono>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <thread>
 
 #include "../public/common/TracySocket.hpp"
 #include "../public/common/TracyVersion.hpp"
@@ -86,24 +89,39 @@ static const char* GetOsInfo()
     return buf;
 }
 
+static std::atomic<bool> s_abort { false };
+
+void HttpRequestAbort()
+{
+    s_abort.store( true, std::memory_order_relaxed );
+}
+
 void HttpRequest( const char* server, const char* resource, int port, const std::function<void(int, char*)>& cb )
 {
     tracy::Socket sock;
-    if( !sock.ConnectBlocking( server, port ) ) return;
+    for(;;)
+    {
+        if( s_abort.load( std::memory_order_relaxed ) ) return;
+        if( sock.Connect( server, port ) ) break;
+        if( !sock.IsConnecting() ) return;
+        std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+    }
     char request[4096];
     const auto len = sprintf( request, "GET %s HTTP/1.1\r\nHost: %s\r\nUser-Agent: Tracy Profiler %i.%i.%i (%s) [%s]\r\nConnection: close\r\nCache-Control: no-cache, no-store, must-revalidate\r\n\r\n", resource, server, tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, GetOsInfo(), tracy::GitRef );
     sock.Send( request, len );
     char response[4096];
-    const auto sz = sock.ReadUpTo( response, 4096 );
+    const auto sz = sock.ReadUpTo( response, 4096, 15, [] { return s_abort.load( std::memory_order_relaxed ); } );
     if( sz < 13 ) return;
     if( memcmp( response, "HTTP/1.1 200", 12 ) != 0 ) return;
     auto hdr = response + 13;
+    const char* hdrEnd = response + sz;
     int contentLength = 0;
     for(;;)
     {
-        while( memcmp( hdr, CRLF, 2 ) != 0 ) hdr++;
+        while( hdr + 2 <= hdrEnd && memcmp( hdr, CRLF, 2 ) != 0 ) hdr++;
+        if( hdr + 2 > hdrEnd ) return;
         hdr += 2;
-        if( memcmp( hdr, "Content-Length: ", 16 ) == 0 )
+        if( hdr + 16 <= hdrEnd && memcmp( hdr, "Content-Length: ", 16 ) == 0 )
         {
             hdr += 16;
             contentLength = atoi( hdr );
@@ -113,9 +131,10 @@ void HttpRequest( const char* server, const char* resource, int port, const std:
     assert( contentLength != 0 );
     for(;;)
     {
-        while( memcmp( hdr, CRLF, 2 ) != 0 ) hdr++;
+        while( hdr + 2 <= hdrEnd && memcmp( hdr, CRLF, 2 ) != 0 ) hdr++;
+        if( hdr + 2 > hdrEnd ) return;
         hdr += 2;
-        if( memcmp( hdr, CRLF, 2 ) == 0 )
+        if( hdr + 2 <= hdrEnd && memcmp( hdr, CRLF, 2 ) == 0 )
         {
             hdr += 2;
             break;
@@ -128,7 +147,7 @@ void HttpRequest( const char* server, const char* resource, int port, const std:
     char* data = new char[contentLength];
     memcpy( data, hdr, partSize );
     auto remaining = contentLength - partSize;
-    if( remaining > 0 ) sock.Read( data + partSize, remaining, 15 );
+    if( remaining > 0 && !sock.Read( data + partSize, remaining, 15, [] { return s_abort.load( std::memory_order_relaxed ); } ) ) return;
 
     cb( contentLength, data );
 }

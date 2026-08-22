@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <atomic>
 #include <chrono>
 #include <stdio.h>
@@ -128,7 +127,7 @@ void HttpRequest( const char* server, const char* resource, int port, const std:
             break;
         }
     }
-    assert( contentLength != 0 );
+    if( contentLength <= 0 ) return;
     for(;;)
     {
         while( hdr + 2 <= hdrEnd && memcmp( hdr, CRLF, 2 ) != 0 ) hdr++;

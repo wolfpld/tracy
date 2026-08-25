@@ -174,7 +174,7 @@ public:
 
         WriteInitialItem( physdev, tcpu, tgpu );
 
-        m_res = (int64_t*)tracy_malloc( sizeof( int64_t ) * m_queryCount );
+        AllocateQueryResultBuffer();
     }
 
 #if defined VK_EXT_host_query_reset
@@ -223,9 +223,7 @@ public:
 
         WriteInitialItem( physdev, tcpu, tgpu );
 
-        // We need the buffer to be twice as large for availability values
-        size_t resSize = sizeof( int64_t ) * m_queryCount * 2;
-        m_res = (int64_t*)tracy_malloc( resSize );
+        AllocateQueryResultBuffer();
     }
 #endif
 
@@ -412,6 +410,12 @@ private:
             m_queryCount /= 2;
             poolInfo.queryCount = m_queryCount;
         }
+    }
+
+    tracy_force_inline void AllocateQueryResultBuffer()
+    {
+        // We need the buffer to be twice as large for availability values
+        m_res = (int64_t*)tracy_malloc( sizeof( int64_t ) * m_queryCount * 2 );
     }
 
     tracy_force_inline void FindAvailableTimeDomains( VkPhysicalDevice physicalDevice, PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT _vkGetPhysicalDeviceCalibrateableTimeDomainsEXT )

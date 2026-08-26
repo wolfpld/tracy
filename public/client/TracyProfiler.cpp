@@ -1524,6 +1524,7 @@ Profiler::Profiler()
     , m_broadcast( nullptr )
     , m_noExit( false )
     , m_userPort( 0 )
+    , m_dataPort( 0 )
     , m_zoneId( 1 )
     , m_sectionId( 1 )
     , m_samplingPeriod( 0 )
@@ -1777,10 +1778,10 @@ void Profiler::Worker()
 
 #ifdef TRACY_DATA_PORT
     const bool dataPortSearch = false;
-    auto dataPort = m_userPort != 0 ? m_userPort : TRACY_DATA_PORT;
+    m_dataPort = m_userPort != 0 ? m_userPort : TRACY_DATA_PORT;
 #else
     const bool dataPortSearch = m_userPort == 0;
-    auto dataPort = m_userPort != 0 ? m_userPort : 8086;
+    m_dataPort = m_userPort != 0 ? m_userPort : 8086;
 #endif
 #ifdef TRACY_BROADCAST_PORT
     const auto broadcastPort = TRACY_BROADCAST_PORT;
@@ -1882,15 +1883,15 @@ void Profiler::Worker()
     bool isListening = false;
     if( !dataPortSearch )
     {
-        isListening = listen.Listen( dataPort, 4 );
+        isListening = listen.Listen( m_dataPort, 4 );
     }
     else
     {
         for( uint32_t i=0; i<20; i++ )
         {
-            if( listen.Listen( dataPort+i, 4 ) )
+            if( listen.Listen( m_dataPort+i, 4 ) )
             {
-                dataPort += i;
+                m_dataPort += i;
                 isListening = true;
                 break;
             }
@@ -1934,7 +1935,7 @@ void Profiler::Worker()
 #endif
 
     int broadcastLen = 0;
-    auto& broadcastMsg = GetBroadcastMessage( procname, pnsz, broadcastLen, dataPort );
+    auto& broadcastMsg = GetBroadcastMessage( procname, pnsz, broadcastLen, m_dataPort );
     uint64_t lastBroadcast = 0;
 
     // Connections loop.
@@ -1974,7 +1975,7 @@ void Profiler::Worker()
                     m_programNameLock.lock();
                     if( m_programName )
                     {
-                        broadcastMsg = GetBroadcastMessage( m_programName, strlen( m_programName ), broadcastLen, dataPort );
+                        broadcastMsg = GetBroadcastMessage( m_programName, strlen( m_programName ), broadcastLen, m_dataPort );
                         m_programName = nullptr;
                     }
                     m_programNameLock.unlock();

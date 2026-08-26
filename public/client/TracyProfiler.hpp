@@ -909,6 +909,11 @@ public:
         return m_isConnected.load( std::memory_order_acquire );
     }
 
+    tracy_force_inline uint32_t GetPort() const
+    {
+        return m_dataPort;
+    }
+
     tracy_force_inline void SetProgramName( const char* name )
     {
         m_programNameLock.lock();
@@ -1170,6 +1175,7 @@ private:
     UdpBroadcast* m_broadcast;
     bool m_noExit;
     uint32_t m_userPort;
+    uint32_t m_dataPort;
     std::atomic<uint32_t> m_zoneId;
     std::atomic<uint32_t> m_sectionId;
     int64_t m_samplingPeriod;

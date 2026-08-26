@@ -115,6 +115,7 @@
 #define TracyParameterRegister(x,y)
 #define TracyParameterSetup(x,y,z,w)
 #define TracyIsConnected false
+#define TracyPort 0
 #define TracyIsStarted false
 #define TracySetProgramName(x)
 
@@ -258,6 +259,7 @@
 #define TracyParameterRegister( cb, data ) tracy::Profiler::ParameterRegister( cb, data )
 #define TracyParameterSetup( idx, name, type, val ) tracy::Profiler::ParameterSetup( idx, name, type, val )
 #define TracyIsConnected tracy::GetProfiler().IsConnected()
+#define TracyPort tracy::GetProfiler().GetPort()
 #define TracySetProgramName( name ) tracy::GetProfiler().SetProgramName( name )
 
 #define TracySectionEnter( fmt, ... ) tracy::Profiler::SectionEnter( 0, fmt, ##__VA_ARGS__ )

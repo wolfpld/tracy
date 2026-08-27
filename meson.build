@@ -1,4 +1,4 @@
-project('tracy', ['cpp'], version: run_command('sh', files('extra/tracy-version.sh'), 'public/common/TracyVersion.hpp', check: true).stdout().strip(), meson_version: '>=1.3.0', default_options : ['cpp_std=c++11'])
+project('tracy', ['cpp'], version: run_command(find_program('python3'), files('extra/tracy-version.py'), 'public/common/TracyVersion.hpp', check: true).stdout().strip(), meson_version: '>=1.3.0', default_options : ['cpp_std=c++11'])
 
 # internal compiler flags
 tracy_compile_args = []

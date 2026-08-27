@@ -227,10 +227,16 @@ tracy_compile_args += tracy_common_args
 
 tracy_deps = [dependency('threads')] + tracy_public_deps
 
+tracy_link_args = []
+if host_machine.system() == 'windows' and (compiler.get_id() == 'gcc' or compiler.get_id() == 'clang')
+  tracy_link_args += ['-lws2_32', '-ldbghelp', '-lsecur32']
+endif
+
 tracy = library('tracy', tracy_src, tracy_header_files,
     dependencies        : tracy_deps,
     include_directories : tracy_public_include_dirs,
     cpp_args            : tracy_compile_args,
+    link_args           : tracy_link_args,
     override_options    : override_options,
     install             : true)
 

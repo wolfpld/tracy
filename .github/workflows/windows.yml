@@ -32,6 +32,12 @@ jobs:
     - uses: microsoft/setup-msbuild@v2
     - name: Trust git repo
       run: git config --global --add safe.directory '*'
+    - name: Install meson
+      run: python -m pip install --upgrade meson
+    - name: Library (meson)
+      run: |
+        meson setup -Dtracy_enable=true build-meson
+        meson compile -C build-meson
     - name: Test application
       uses: ./.github/actions/test-tracy
     - name: Build profiler

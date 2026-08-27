@@ -33,15 +33,19 @@ TaskDispatch::~TaskDispatch()
 
 void TaskDispatch::Queue( const std::function<void(void)>& f )
 {
-    std::lock_guard<std::mutex> lock( m_queueLock );
-    m_queue.emplace_back( f );
+    {
+        std::lock_guard<std::mutex> lock( m_queueLock );
+        m_queue.emplace_back( f );
+    }
     m_cvWork.notify_one();
 }
 
 void TaskDispatch::Queue( std::function<void(void)>&& f )
 {
-    std::lock_guard<std::mutex> lock( m_queueLock );
-    m_queue.emplace_back( std::move( f ) );
+    {
+        std::lock_guard<std::mutex> lock( m_queueLock );
+        m_queue.emplace_back( std::move( f ) );
+    }
     m_cvWork.notify_one();
 }
 

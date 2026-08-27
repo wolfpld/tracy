@@ -35,7 +35,13 @@ jobs:
     - name: Install meson
       run: python -m pip install --upgrade meson
     - name: Library (meson)
+      env:
+        CCACHE_DISABLE: '1'
       run: |
+        $vs = & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+        foreach ($line in & cmd /c "`"$vs\VC\Auxiliary\Build\vcvarsall.bat`" x64 && set") {
+          if ($line -match '^([^=]+)=(.*)$') { [Environment]::SetEnvironmentVariable($matches[1], $matches[2], 'Process') }
+        }
         meson setup -Dtracy_enable=true build-meson
         meson compile -C build-meson
     - name: Test application

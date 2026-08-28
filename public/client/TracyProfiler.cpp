@@ -1778,10 +1778,10 @@ void Profiler::Worker()
 
 #ifdef TRACY_DATA_PORT
     const bool dataPortSearch = false;
-    m_dataPort = m_userPort != 0 ? m_userPort : TRACY_DATA_PORT;
+    auto dataPort = m_userPort != 0 ? m_userPort : TRACY_DATA_PORT;
 #else
     const bool dataPortSearch = m_userPort == 0;
-    m_dataPort = m_userPort != 0 ? m_userPort : 8086;
+    auto dataPort = m_userPort != 0 ? m_userPort : 8086;
 #endif
 #ifdef TRACY_BROADCAST_PORT
     const auto broadcastPort = TRACY_BROADCAST_PORT;
@@ -1883,15 +1883,15 @@ void Profiler::Worker()
     bool isListening = false;
     if( !dataPortSearch )
     {
-        isListening = listen.Listen( m_dataPort, 4 );
+        isListening = listen.Listen( dataPort, 4 );
     }
     else
     {
         for( uint32_t i=0; i<20; i++ )
         {
-            if( listen.Listen( m_dataPort+i, 4 ) )
+            if( listen.Listen( dataPort+i, 4 ) )
             {
-                m_dataPort += i;
+                dataPort += i;
                 isListening = true;
                 break;
             }
@@ -1911,6 +1911,7 @@ void Profiler::Worker()
             std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
         }
     }
+    m_dataPort.store( dataPort, std::memory_order_release );
 
 #ifndef TRACY_NO_BROADCAST
     m_broadcast = (UdpBroadcast*)tracy_malloc( sizeof( UdpBroadcast ) );
@@ -1935,7 +1936,7 @@ void Profiler::Worker()
 #endif
 
     int broadcastLen = 0;
-    auto& broadcastMsg = GetBroadcastMessage( procname, pnsz, broadcastLen, m_dataPort );
+    auto& broadcastMsg = GetBroadcastMessage( procname, pnsz, broadcastLen, dataPort );
     uint64_t lastBroadcast = 0;
 
     // Connections loop.
@@ -1975,7 +1976,7 @@ void Profiler::Worker()
                     m_programNameLock.lock();
                     if( m_programName )
                     {
-                        broadcastMsg = GetBroadcastMessage( m_programName, strlen( m_programName ), broadcastLen, m_dataPort );
+                        broadcastMsg = GetBroadcastMessage( m_programName, strlen( m_programName ), broadcastLen, dataPort );
                         m_programName = nullptr;
                     }
                     m_programNameLock.unlock();

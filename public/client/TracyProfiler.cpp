@@ -1797,13 +1797,22 @@ void Profiler::Worker()
 #endif
 
     m_exectime = 0;
-    const auto execname = GetProcessExecutablePath();
-    if( execname )
+#if defined __linux__ && defined TRACY_HAS_CALLSTACK
+    if( GetExternalTargetPid() != 0 )
     {
-        struct stat st;
-        if( stat( execname, &st ) == 0 )
+        m_exectime = GetExternalTargetExeTime();
+    }
+    else
+#endif
+    {
+        const auto execname = GetProcessExecutablePath();
+        if( execname )
         {
-            m_exectime = (uint64_t)st.st_mtime;
+            struct stat st;
+            if( stat( execname, &st ) == 0 )
+            {
+                m_exectime = (uint64_t)st.st_mtime;
+            }
         }
     }
 
@@ -3743,7 +3752,6 @@ void Profiler::QueueKernelCode( uint64_t symbol, uint32_t size )
 
 void Profiler::QueueSourceCodeQuery( uint32_t id )
 {
-    TRACY_ASSERT( m_exectime != 0 );
     TRACY_ASSERT( m_queryData );
     m_symbolQueue.emplace( SymbolQueueItem { SymbolQueueItemType::SourceCode, uint64_t( m_queryData ), uint64_t( m_queryImage ), id } );
     m_queryData = nullptr;

@@ -570,6 +570,38 @@ static int RunForked( int argc, char** argv )
         return 2;
     }
 
+    while( WIFSTOPPED( status ) && WSTOPSIG( status ) != SIGTRAP )
+    {
+        // A caught signal (the handlers are inherited by the child) arriving between
+        // PTRACE_TRACEME and exec produces a signal-delivery stop before the exec stop.
+        // Re-inject it and keep waiting for the exec stop: running the setup on the
+        // pre-exec child would capture the monitor's own image and mis-symbolicate.
+        // Job-control signals must never be re-injected: re-delivering SIGSTOP/SIGTSTP
+        // re-stops the child, so the exec stop would never be reached (or, for a
+        // stop carrying the 0x80 job-control bit, PTRACE_CONT rejects the signal
+        // number outright). Resume those without a signal instead: the stop is
+        // delivered as a group stop at most once more, and the next resume lifts it.
+        const int rawStopSig = WSTOPSIG( status );
+        const int stopSig = rawStopSig & 0x7f;
+        const int resumeSig = ( rawStopSig & 0x80 || stopSig == SIGSTOP || stopSig == SIGTSTP ) ? 0 : stopSig;
+        if( ptrace( PTRACE_CONT, childPid, 0, (void*)(unsigned long)resumeSig ) != 0 )
+        {
+            fprintf( stderr, "ptrace failed: %s\n", strerror( errno ) );
+            kill( childPid, SIGKILL );
+            waitpid( childPid, nullptr, 0 );
+            return 2;
+        }
+        for(;;)
+        {
+            if( waitpid( childPid, &status, 0 ) >= 0 ) break;
+            if( errno == EINTR ) continue;
+            fprintf( stderr, "waitpid failed: %s\n", strerror( errno ) );
+            kill( childPid, SIGKILL );
+            waitpid( childPid, nullptr, 0 );
+            return 2;
+        }
+    }
+
     if( !WIFSTOPPED( status ) )
     {
         // Child exited or was killed before reaching the post-exec SIGTRAP.

@@ -1,3 +1,4 @@
+#include <dirent.h>
 #include <errno.h>
 #include <getopt.h>
 #include <linux/perf_event.h>
@@ -71,6 +72,98 @@ static bool ProcessIsAlive( pid_t pid )
     // the state char follows the last ')' (comm may contain spaces/parens)
     const char* state = strrchr( buf, ')' );
     return state && state[1] == ' ' && state[2] != 'Z' && state[2] != '\0';
+}
+
+static const char* GetTraceFsPath()
+{
+    static char path[ 4096 ];
+    static char debugPath[ 4096 ];
+    bool haveDebug = false;
+    FILE* f = fopen( "/proc/mounts", "r" );
+    if( !f ) return nullptr;
+    char line[ 4096 ];
+    while( fgets( line, sizeof( line ), f ) )
+    {
+        char dir[ 4096 ];
+        char type[ 64 ];
+        if( sscanf( line, "%*s %4095s %63s", dir, type ) != 2 ) continue;
+        if( strcmp( type, "tracefs" ) == 0 )
+        {
+            snprintf( path, sizeof( path ), "%s", dir );
+            fclose( f );
+            return path;
+        }
+        if( !haveDebug && strcmp( type, "debugfs" ) == 0 )
+        {
+            snprintf( debugPath, sizeof( debugPath ), "%s/tracing", dir );
+            haveDebug = true;
+        }
+    }
+    fclose( f );
+    if( haveDebug )
+    {
+        snprintf( path, sizeof( path ), "%s", debugPath );
+        return path;
+    }
+    return nullptr;
+}
+
+enum class TracepointStatus { Open, NoTraceFs, IdNotReadable, OpenDenied };
+
+// open a system-wide per-CPU tracepoint (the client's sched/vblank shape);
+// report the failure distinctly - tracefs readability (root) and the perf open (paranoid/CAP_PERFMON) are independent gates.
+static TracepointStatus CheckSystemWideTracepoint( const char* eventPath )
+{
+    const char* traceFs = GetTraceFsPath();
+    if( !traceFs ) return TracepointStatus::NoTraceFs;
+
+    char path[512];
+    snprintf( path, sizeof( path ), "%s%s/id", traceFs, eventPath );
+    FILE* f = fopen( path, "r" );
+    if( !f ) return TracepointStatus::IdNotReadable;
+    int id = -1;
+    if( fscanf( f, "%d", &id ) != 1 ) id = -1;
+    fclose( f );
+    if( id < 0 ) return TracepointStatus::IdNotReadable;
+
+    perf_event_attr pe = {};
+    pe.type = PERF_TYPE_TRACEPOINT;
+    pe.size = sizeof( pe );
+    pe.config = (uint64_t)id;
+    pe.sample_period = 1;
+    pe.sample_type = PERF_SAMPLE_TIME | PERF_SAMPLE_RAW;
+    pe.disabled = 1;
+    pe.inherit = 1;
+
+    const long fd = syscall( __NR_perf_event_open, &pe, -1, 0, -1, 0 );
+    if( fd < 0 ) return TracepointStatus::OpenDenied;
+    close( (int)fd );
+    return TracepointStatus::Open;
+}
+
+// Power plots read RAPL energy counters (the client scans the same tree).
+static bool CanReadRapl()
+{
+    const char* base = "/sys/devices/virtual/powercap/intel-rapl";
+    DIR* dir = opendir( base );
+    if( !dir ) return false;
+    struct dirent* ent;
+    bool ok = false;
+    while( ( ent = readdir( dir ) ) )
+    {
+        if( ent->d_type != DT_DIR || strncmp( ent->d_name, "intel-rapl:", 11 ) != 0 ) continue;
+        char path[512];
+        snprintf( path, sizeof( path ), "%s/%s/energy_uj", base, ent->d_name );
+        FILE* f = fopen( path, "r" );
+        if( f )
+        {
+            fclose( f );
+            ok = true;
+            break;
+        }
+    }
+    closedir( dir );
+    return ok;
 }
 
 // Try opening one perf event against the target so we fail fast with a clear

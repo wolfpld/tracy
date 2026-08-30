@@ -1535,6 +1535,10 @@ TRACY_API void SetReservedListenSocket( int fd )
     s_reservedListenFd.store( fd, std::memory_order_release );
 }
 
+static std::atomic<bool> s_dataPortListening(false);
+
+TRACY_API bool IsDataPortListening() { return s_dataPortListening.load( std::memory_order_acquire ); }
+
 constexpr static size_t SafeSendBufferSize = 65536;
 
 Profiler::Profiler()
@@ -1935,6 +1939,8 @@ void Profiler::Worker()
             }
         }
     }
+
+    s_dataPortListening.store( isListening, std::memory_order_release );
     if( !isListening )
     {
         for(;;)

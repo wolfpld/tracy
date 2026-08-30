@@ -84,6 +84,8 @@ TRACY_API bool IsSystemTracingFailed();
 
 TRACY_API void SetReservedListenSocket( int fd );
 
+TRACY_API bool IsDataPortListening();
+
 class GpuCtx;
 class Profiler;
 class Socket;

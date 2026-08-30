@@ -94,7 +94,10 @@ extern struct backtrace_state *backtrace_create_state (
    data to be loaded directly from the file with base_address=0.
    The caller is responsible for converting runtime virtual addresses
    to ELF virtual addresses before passing them to backtrace_pcinfo
-   or backtrace_syminfo.  */
+   or backtrace_syminfo.
+   The filename is copied into state-owned memory (the file is opened
+   lazily on first use), so the caller's buffer need not outlive this
+   call.  */
 
 extern struct backtrace_state *backtrace_create_state_for_file (
     const char *filename, int threaded,

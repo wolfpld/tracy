@@ -353,7 +353,6 @@ void DestroyImageCaches()
 #  include <sys/stat.h>
 #  include <unistd.h>
 
-
 static constexpr uint32_t ExtPT_LOAD = 1;
 
 struct ExternalImageEntry
@@ -361,6 +360,7 @@ struct ExternalImageEntry
     uint64_t startAddress;
     uint64_t endAddress;
     uint64_t loadBias;
+    uint64_t mapsOffset;
     char* path;
     backtrace_state* btState;
     bool btAttempted;
@@ -370,7 +370,6 @@ static FastVector<ExternalImageEntry>* s_extImages = nullptr;
 static pid_t s_externalTargetPid = 0;
 static char s_externalTargetName[64] = {};
 static uint64_t s_externalTargetExeMtime = 0;
-static bool s_extImagesSorted = true;
 // Wall-clock second of the last /proc/<pid>/maps re-parse. Used to rate-limit
 // refreshes so addresses that never resolve (JIT, vDSO, stack) do not trigger
 // a full re-parse on every symbolization.
@@ -485,6 +484,8 @@ static void ParseExternalProcMaps( pid_t pid )
     FILE* f = fopen( mapPath, "r" );
     if( !f ) return;
 
+    FastVector<ExternalImageEntry> fresh( 64 );
+
     char line[1024];
     while( fgets( line, sizeof( line ), f ) )
     {
@@ -501,10 +502,21 @@ static void ParseExternalProcMaps( pid_t pid )
         while( *pathname == ' ' || *pathname == '\t' ) pathname++;
         size_t plen = strlen( pathname );
         while( plen > 0 && ( pathname[plen-1] == '\n' || pathname[plen-1] == '\r' ) ) plen--;
+        if( plen >= 10 && strncmp( pathname + plen - 10, " (deleted)", 10 ) == 0 ) plen -= 10;
         pathname[plen] = '\0';
 
         if( plen == 0 || pathname[0] != '/' ) continue;
-        if( std::find_if( s_extImages->begin(), s_extImages->end(), [start]( const ExternalImageEntry& e ) { return e.startAddress == start; } ) != s_extImages->end() ) continue;
+
+        // list is sorted by start address
+        auto it = std::lower_bound( s_extImages->begin(), s_extImages->end(), start,
+            []( const ExternalImageEntry& e, uint64_t a ) { return e.startAddress > a; } );
+        if( it != s_extImages->end() && it->startAddress == start
+            && it->endAddress == end && it->mapsOffset == offset
+            && strcmp( it->path, pathname ) == 0 )
+        {
+            fresh.push_next()[0] = *it;
+            continue;
+        }
 
         uint64_t pageSize = sysconf( _SC_PAGESIZE );
         uint64_t loadBias = ReadElfSegmentLoadBias( pathname, start, end, offset, pageSize );
@@ -518,24 +530,20 @@ static void ParseExternalProcMaps( pid_t pid )
             .startAddress = start,
             .endAddress = end,
             .loadBias = loadBias,
+            .mapsOffset = offset,
             .path = (char*)tracy_malloc( plen + 1 ),
             .btState = nullptr,
             .btAttempted = false
         };
         memcpy( entry.path, pathname, plen + 1 );
-
-        s_extImagesSorted = false;
-        s_extImages->push_next()[0] = entry;
+        fresh.push_next()[0] = entry;
     }
 
     fclose( f );
 
-    if( !s_extImagesSorted )
-    {
-        std::sort( s_extImages->begin(), s_extImages->end(),
-            []( const ExternalImageEntry& a, const ExternalImageEntry& b ) { return a.startAddress > b.startAddress; } );
-        s_extImagesSorted = true;
-    }
+    std::sort( fresh.begin(), fresh.end(),
+        []( const ExternalImageEntry& a, const ExternalImageEntry& b ) { return a.startAddress > b.startAddress; } );
+    s_extImages->swap( fresh );
 }
 
 static const ExternalImageEntry* FindExternalImage( uint64_t address )

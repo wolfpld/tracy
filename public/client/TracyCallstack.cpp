@@ -351,6 +351,7 @@ void DestroyImageCaches()
 #  include <fcntl.h>
 #  include <signal.h>
 #  include <sys/stat.h>
+#  include <sys/uio.h>
 #  include <unistd.h>
 
 static constexpr uint32_t ExtPT_LOAD = 1;
@@ -700,6 +701,74 @@ const char* GetExternalTargetName()
 uint64_t GetExternalTargetExeTime()
 {
     return s_externalTargetExeMtime;
+}
+
+static bool FindExternalMapping( pid_t pid, uint64_t addr, uint64_t& mapStart, uint64_t& mapEnd, uint64_t& fileOff, char* path, size_t pathSize )
+{
+    char mapPath[64];
+    snprintf( mapPath, sizeof( mapPath ), "/proc/%d/maps", (int)pid );
+    FILE* f = fopen( mapPath, "r" );
+    if( !f ) return false;
+
+    bool found = false;
+    char line[1024];
+    while( fgets( line, sizeof( line ), f ) )
+    {
+        uint64_t start, end, offset;
+        uint32_t devMaj, devMin;
+        uint64_t inode;
+        char perms[8];
+        int consumed = 0;
+
+        if( sscanf( line, "%lx-%lx %7s %lx %x:%x %lu %n", &start, &end, perms, &offset, &devMaj, &devMin, &inode, &consumed ) < 7 ) continue;
+        if( !strchr( perms, 'x' ) ) continue;
+        if( addr < start || addr >= end ) continue;
+
+        char* pathname = line + consumed;
+        while( *pathname == ' ' || *pathname == '\t' ) pathname++;
+        size_t plen = strlen( pathname );
+        while( plen > 0 && ( pathname[plen-1] == '\n' || pathname[plen-1] == '\r' ) ) plen--;
+        pathname[plen] = '\0';
+        if( plen >= 10 && strncmp( pathname + plen - 10, " (deleted)", 10 ) == 0 ) plen -= 10;
+        if( plen == 0 || pathname[0] != '/' ) continue;
+        if( plen >= pathSize ) plen = pathSize - 1;
+        memcpy( path, pathname, plen );
+        path[plen] = '\0';
+
+        mapStart = start;
+        mapEnd = end;
+        fileOff = offset + ( addr - start );
+        found = true;
+        break;
+    }
+
+    fclose( f );
+    return found;
+}
+
+size_t ReadExternalTargetMemory( uint64_t addr, uint32_t size, char* buf )
+{
+    const auto pid = (pid_t)GetExternalTargetPid();
+    if( pid == 0 || size == 0 ) return 0;
+
+    struct iovec local  = { buf, size };
+    struct iovec remote = { (void*)addr, size };
+    if( process_vm_readv( pid, &local, 1, &remote, 1, 0 ) == (ssize_t)size ) return size;
+
+    uint64_t mapStart = 0, mapEnd = 0, fileOff = 0;
+    char path[1024] = {};
+    if( FindExternalMapping( pid, addr, mapStart, mapEnd, fileOff, path, sizeof( path ) ) && addr + size <= mapEnd )
+    {
+        const int fd = OpenExternalImageFile( path, mapStart, mapEnd );
+        if( fd >= 0 )
+        {
+            const ssize_t rd = pread( fd, buf, size, (off_t)fileOff );
+            close( fd );
+            if( rd == (ssize_t)size ) return size;
+        }
+    }
+
+    return 0;
 }
 
 #endif // __linux__

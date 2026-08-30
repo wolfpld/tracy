@@ -93,6 +93,8 @@ bool InitExternalTarget( pid_t targetPid );
 uint32_t GetExternalTargetPid();
 const char* GetExternalTargetName();
 uint64_t GetExternalTargetExeTime();
+
+size_t ReadExternalTargetMemory( uint64_t addr, uint32_t size, char* buf );
 #endif
 
 #ifdef TRACY_DEBUGINFOD

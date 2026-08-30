@@ -97,6 +97,7 @@ public:
     bool Listen( uint16_t port, int backlog );
     Socket* Accept();
     void Close();
+    void Adopt( int fd );
 
     ListenSocket( const ListenSocket& ) = delete;
     ListenSocket( ListenSocket&& ) = delete;

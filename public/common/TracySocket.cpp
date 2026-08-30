@@ -427,6 +427,12 @@ ListenSocket::~ListenSocket()
     if( m_sock != -1 ) Close();
 }
 
+void ListenSocket::Adopt( int fd )
+{
+    TRACY_ASSERT( m_sock == -1 );
+    m_sock = fd;
+}
+
 static int addrinfo_and_socket_for_family( uint16_t port, int ai_family, struct addrinfo** res )
 {
     struct addrinfo hints;

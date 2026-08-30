@@ -82,6 +82,8 @@ TRACY_API bool BeginSamplingProfiling();
 TRACY_API void EndSamplingProfiling();
 TRACY_API bool IsSystemTracingFailed();
 
+TRACY_API void SetReservedListenSocket( int fd );
+
 class GpuCtx;
 class Profiler;
 class Socket;

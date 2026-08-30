@@ -1527,6 +1527,14 @@ TRACY_API bool IsSystemTracingFailed()
 #endif
 }
 
+static std::atomic<int> s_reservedListenFd( -1 );
+
+TRACY_API void SetReservedListenSocket( int fd )
+{
+    TRACY_ASSERT( fd >= 0 );
+    s_reservedListenFd.store( fd, std::memory_order_release );
+}
+
 constexpr static size_t SafeSendBufferSize = 65536;
 
 Profiler::Profiler()
@@ -1905,7 +1913,13 @@ void Profiler::Worker()
 
     ListenSocket listen;
     bool isListening = false;
-    if( !dataPortSearch )
+    const int reservedFd = s_reservedListenFd.exchange( -1, std::memory_order_acquire );
+    if( reservedFd != -1 )
+    {
+        listen.Adopt( reservedFd );
+        isListening = true;
+    }
+    else if( !dataPortSearch )
     {
         isListening = listen.Listen( dataPort, 4 );
     }

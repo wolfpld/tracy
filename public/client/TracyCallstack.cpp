@@ -587,7 +587,34 @@ static backtrace_state* GetExternalBtState( const ExternalImageEntry* entry )
     auto* e = const_cast<ExternalImageEntry*>( entry );
     if( e->btAttempted ) return e->btState;
     e->btAttempted = true;
-    e->btState = backtrace_create_state_for_file( e->path, 0, ExternalBacktraceErrorCb, nullptr );
+    const size_t rootPathSize = strlen( e->path ) + 32;
+    char* rootPath = (char*)tracy_malloc( rootPathSize );
+    const char* statePath = nullptr;
+    char mfPath[80];
+    if( MakeExternalTargetPath( rootPath, rootPathSize, e->path ) >= 0 )
+    {
+        const int probe = open( rootPath, O_RDONLY );
+        if( probe >= 0 )
+        {
+            close( probe );
+            statePath = rootPath;
+        }
+    }
+    if( !statePath )
+    {
+        snprintf( mfPath, sizeof( mfPath ), "/proc/%d/map_files/%lx-%lx", (int)s_externalTargetPid, (unsigned long)e->startAddress, (unsigned long)e->endAddress );
+        const int probe = open( mfPath, O_RDONLY );
+        if( probe >= 0 )
+        {
+            close( probe );
+            statePath = mfPath;
+        }
+    }
+    if( statePath )
+    {
+        e->btState = backtrace_create_state_for_file( statePath, 0, ExternalBacktraceErrorCb, nullptr );
+    }
+    tracy_free( rootPath );
     return e->btState;
 }
 

@@ -482,6 +482,12 @@ static int RunAttached( pid_t pid )
     int hwErrno = 0;
     if( !PreflightSamplingEvent( pid, kernelFrames, hwStats, hwErrno ) ) return 1;
 
+    if( !GetTraceFsPath() )
+    {
+        fprintf( stderr, "No tracefs mount found: the client's system tracing cannot start without it, so no samples would be captured.\n" );
+        return 1;
+    }
+
     tracy::StartupProfiler();
     if( tracy::IsSystemTracingFailed() )
     {
@@ -603,6 +609,14 @@ static int RunForked( int argc, char** argv )
     int hwErrno = 0;
     if( !PreflightSamplingEvent( childPid, kernelFrames, hwStats, hwErrno ) )
     {
+        kill( childPid, SIGKILL );
+        waitpid( childPid, nullptr, 0 );
+        return 1;
+    }
+
+    if( !GetTraceFsPath() )
+    {
+        fprintf( stderr, "No tracefs mount found: the client's system tracing cannot start without it, so no samples would be captured.\n" );
         kill( childPid, SIGKILL );
         waitpid( childPid, nullptr, 0 );
         return 1;

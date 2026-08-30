@@ -388,6 +388,8 @@ static void PrintUsage( const char* progName )
     printf( "Options:\n" );
     printf( "  -p PID        Attach to existing process (PID)\n" );
     printf( "  -n NAME       Attach to existing process by name\n" );
+    printf( "  --hz N        Sampling frequency in Hz (default 10000, range 1..1000000)\n" );
+    printf( "  --port N      Listen port for Tracy servers (default 8086)\n" );
     printf( "  -h            Show this help message\n" );
     printf( "\n" );
     printf( "Examples:\n" );
@@ -501,7 +503,10 @@ static int RunForked( int argc, char** argv )
 
     if( childPid == 0 )
     {
-        // Child process: request ptrace stop at exec, then exec the target
+        // Child process: request ptrace stop at exec, then exec the target.
+        // Don't leak the monitor's own TRACY_* env into a target that links its own client.
+        unsetenv( "TRACY_SAMPLING_HZ" );
+        unsetenv( "TRACY_PORT" );
         if( ptrace( PTRACE_TRACEME, 0, nullptr, nullptr ) < 0 )
         {
             fprintf( stderr, "ptrace(TRACEME) failed: %s\n", strerror( errno ) );
@@ -660,10 +665,15 @@ int main( int argc, char** argv )
     char attachName[128] = {};
     bool wantAttach = false;
 
-    static struct option longOptions[] = {
-        { "pid", required_argument, nullptr, 'p' },
+    enum { OptHz = 256, OptPort };
+
+    static struct option longOptions[] =
+    {
+        { "pid",  required_argument, nullptr, 'p' },
         { "name", required_argument, nullptr, 'n' },
-        { "help", no_argument, nullptr, 'h' },
+        { "hz",   required_argument, nullptr, OptHz },
+        { "port", required_argument, nullptr, OptPort },
+        { "help", no_argument,       nullptr, 'h' },
         { nullptr, 0, nullptr, 0 }
     };
 
@@ -685,6 +695,32 @@ int main( int argc, char** argv )
             snprintf( attachName, sizeof( attachName ), "%s", optarg );
             wantAttach = true;
             break;
+        case OptHz:
+        {
+            const int hz = atoi( optarg );
+            if( hz < 1 || hz > 1000000 )
+            {
+                fprintf( stderr, "Invalid sample rate %s (range 1..1000000 Hz).\n", optarg );
+                return 1;
+            }
+            char buf[16];
+            snprintf( buf, sizeof( buf ), "%d", hz );
+            setenv( "TRACY_SAMPLING_HZ", buf, 1 );
+            break;
+        }
+        case OptPort:
+        {
+            const int port = atoi( optarg );
+            if( port < 1 || port > 65535 )
+            {
+                fprintf( stderr, "Invalid port %s (range 1..65535).\n", optarg );
+                return 1;
+            }
+            char buf[8];
+            snprintf( buf, sizeof( buf ), "%d", port );
+            setenv( "TRACY_PORT", buf, 1 );
+            break;
+        }
         case 'h':
             PrintUsage( argv[0] );
             return 0;

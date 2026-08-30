@@ -4432,29 +4432,35 @@ void Profiler::HandleParameter( uint64_t payload )
 
 void Profiler::HandleSymbolCodeQuery( uint64_t symbol, uint32_t size )
 {
-#if defined __linux__ && defined TRACY_HAS_CALLSTACK
-    // When profiling an external process, symbol addresses are ELF virtual
-    // addresses, not pointers in the monitor's address space.  We cannot
-    // read code bytes directly.
-    if( GetExternalTargetPid() != 0 )
-    {
-        AckSymbolCodeNotAvailable();
-        return;
-    }
-#endif
     if( symbol >> 63 != 0 )
     {
         QueueKernelCode( symbol, size );
+        return;
     }
-    else
-    {
-        auto&& lambda = [ this, symbol ]( const char* buf, size_t size ) {
-            SendLongString( symbol, buf, size, QueueType::SymbolCode );
-        };
 
-        // 'symbol' may have come from a module that has since unloaded, perform a safe copy before sending
-        if( !WithSafeCopy( (const char*)symbol, size, lambda ) ) AckSymbolCodeNotAvailable();
+    auto&& lambda = [ this, symbol ]( const char* buf, size_t size ) {
+        SendLongString( symbol, buf, size, QueueType::SymbolCode );
+    };
+
+#if defined __linux__ && defined TRACY_HAS_CALLSTACK
+    if( GetExternalTargetPid() != 0 )
+    {
+        auto buf = (char*)tracy_malloc_fast( size );
+        if( ReadExternalTargetMemory( symbol, size, buf ) == size )
+        {
+            lambda( buf, size );
+        }
+        else
+        {
+            AckSymbolCodeNotAvailable();
+        }
+        tracy_free_fast( buf );
+        return;
     }
+#endif
+
+    // 'symbol' may have come from a module that has since unloaded, perform a safe copy before sending
+    if( !WithSafeCopy( (const char*)symbol, size, lambda ) ) AckSymbolCodeNotAvailable();
 }
 
 void Profiler::HandleSourceCodeQuery( char* data, char* image, uint32_t id )

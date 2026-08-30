@@ -282,6 +282,102 @@ static bool PreflightSamplingEvent( pid_t pid, bool& kernelFrames, bool& hwStats
     return true;
 }
 
+static const char* FormatHz( int hz )
+{
+    static char buf[32];
+    if( hz >= 1000 && hz % 1000 == 0 )
+    {
+        snprintf( buf, sizeof( buf ), "%d kHz", hz / 1000 );
+    }
+    else
+    {
+        snprintf( buf, sizeof( buf ), "%d Hz", hz );
+    }
+    return buf;
+}
+
+static int EffectiveSamplingHz()
+{
+    const char* env = getenv( "TRACY_SAMPLING_HZ" );
+    int hz = 10000; // client default on Linux
+    if( env )
+    {
+        const int parsed = atoi( env );
+        if( parsed > 0 ) hz = ( parsed > 1000000 ) ? 1000000 : parsed;
+    }
+    // mirror the client's clamp: the kernel caps the rate at perf_event_max_sample_rate
+    FILE* f = fopen( "/proc/sys/kernel/perf_event_max_sample_rate", "r" );
+    if( f )
+    {
+        int sysMax = 0;
+        if( fscanf( f, "%d", &sysMax ) == 1 && sysMax > 0 && sysMax < hz ) hz = sysMax;
+        fclose( f );
+    }
+    return hz;
+}
+
+static int EffectivePort()
+{
+    const char* env = getenv( "TRACY_PORT" );
+    if( env )
+    {
+        const int port = atoi( env );
+        if( port > 0 && port <= 65535 ) return port;
+    }
+    return 8086;
+}
+
+static const char* TracepointReason( TracepointStatus status )
+{
+    switch( status )
+    {
+    case TracepointStatus::NoTraceFs: return "tracefs is not readable — running as root is required";
+    case TracepointStatus::IdNotReadable: return "the event id is not readable — running as root is required";
+    case TracepointStatus::OpenDenied: return "system-wide events are denied — needs perf_event_paranoid <= -1 or CAP_PERFMON";
+    default: return nullptr;
+    }
+}
+
+static void PrintStartupReport( bool kernelFrames, bool hwStats, int hwErrno )
+{
+    const TracepointStatus ctxSwitches = CheckSystemWideTracepoint( "/events/sched/sched_switch" );
+    const TracepointStatus vsync = CheckSystemWideTracepoint( "/events/drm/drm_vblank_event" );
+    const bool power = CanReadRapl();
+
+    printf( "tracy-monitor %i.%i.%i / %s\n", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, tracy::GitRef );
+    printf( "Profiling '%s' (pid %d) on port %d\n", tracy::GetExternalTargetName(), (int)tracy::GetExternalTargetPid(), EffectivePort() );
+    printf( "  sampling:                      %s, %s callchain — leaf-only stacks for -fomit-frame-pointer targets\n", FormatHz( EffectiveSamplingHz() ), kernelFrames ? "kernel" : "user-space" );
+    printf( "  kernel frames:                 %s\n", kernelFrames ? "yes" : "no (kernel sampling denied — perf_event_paranoid > 1 without CAP_PERFMON)" );
+    if( hwStats )
+    {
+        printf( "  hardware sampling statistics:  yes\n" );
+    }
+    else
+    {
+        printf( "  hardware sampling statistics:  no (PMU counters unavailable: %s)\n", strerror( hwErrno ) );
+    }
+    if( ctxSwitches == TracepointStatus::Open )
+    {
+        printf( "  ctx switches / per-thread CPU: yes\n" );
+    }
+    else
+    {
+        printf( "  ctx switches / per-thread CPU: no (%s)\n", TracepointReason( ctxSwitches ) );
+    }
+    printf( "  power (RAPL):                  %s\n", power ? "yes" : "no (needs read access to /sys/devices/virtual/powercap/intel-rapl)" );
+    if( vsync == TracepointStatus::Open )
+    {
+        printf( "  vsync:                         yes\n" );
+    }
+    else
+    {
+        printf( "  vsync:                         no (%s)\n", TracepointReason( vsync ) );
+    }
+    printf( "\n" );
+    printf( "Open the Tracy profiler and connect to this host:port (or it will auto-discover).\n" );
+    fflush( stdout );
+}
+
 static void PrintUsage( const char* progName )
 {
     printf( "tracy-monitor %i.%i.%i / %s\n\n", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, tracy::GitRef );
@@ -335,7 +431,7 @@ static int RunAttached( pid_t pid )
 
     tracy::StartupProfiler();
 
-    printf( "Profiling started. Waiting for Tracy server connection...\n" );
+    PrintStartupReport( kernelFrames, hwStats, hwErrno );
 
     // Wait for the target process to exit, or for a signal
     while( !s_shouldQuit && ProcessIsAlive( pid ) )
@@ -450,7 +546,7 @@ static int RunForked( int argc, char** argv )
         return 2;
     }
 
-    printf( "Profiling started. Waiting for Tracy server connection...\n" );
+    PrintStartupReport( kernelFrames, hwStats, hwErrno );
 
     // Wait for child to exit, or for a signal
     for(;;)

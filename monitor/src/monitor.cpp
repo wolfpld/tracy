@@ -23,6 +23,24 @@
 #include "../public/client/TracyCallstack.hpp"
 #include "GitRef.hpp"
 
+// The monitor is only meaningful with the client's full sampling +
+// symbolication stack. These configurations would either fail to build
+// (TRACY_NO_CALLSTACK: the external-target API lives in the callstack
+// code) or silently produce an empty capture (IsSystemTracingFailed()
+// cannot see them), so reject them here rather than in the client.
+#if defined TRACY_NO_CALLSTACK
+#  error "tracy-monitor requires callstack support: TRACY_NO_CALLSTACK is not supported"
+#endif
+#if defined TRACY_NO_SYSTEM_TRACING
+#  error "tracy-monitor requires system tracing: TRACY_NO_SYSTEM_TRACING is not supported"
+#endif
+#if defined TRACY_NO_SAMPLING
+#  error "tracy-monitor requires callstack sampling: TRACY_NO_SAMPLING is not supported"
+#endif
+#if defined TRACY_SAMPLING_PROFILER_MANUAL_START
+#  error "tracy-monitor starts sampling itself via StartupProfiler(): TRACY_SAMPLING_PROFILER_MANUAL_START is not supported"
+#endif
+
 static volatile sig_atomic_t s_shouldQuit = 0;
 static pid_t s_targetPid = 0;
 static bool s_isForked = false;
@@ -832,6 +850,23 @@ int main( int argc, char** argv )
     sigaction( SIGTERM, &sa, nullptr );
     sigaction( SIGHUP, &sa, nullptr );
     sigaction( SIGQUIT, &sa, nullptr );
+
+    // TRACY_NO_SYS_TRACE / TRACY_NO_SAMPLING would silently disable the monitor's
+    // primary data sources (IsSystemTracingFailed() stays false); refuse them up front.
+    const char* noSysTrace = getenv( "TRACY_NO_SYS_TRACE" );
+    const char* noSampling = getenv( "TRACY_NO_SAMPLING" );
+    if( ( noSysTrace && noSysTrace[0] == '1' ) || ( noSampling && noSampling[0] == '1' ) )
+    {
+        if( noSysTrace && noSysTrace[0] == '1' )
+        {
+            fprintf( stderr, "tracy-monitor: TRACY_NO_SYS_TRACE=1 is set; the monitor requires system tracing. Unset the variable and retry.\n" );
+        }
+        if( noSampling && noSampling[0] == '1' )
+        {
+            fprintf( stderr, "tracy-monitor: TRACY_NO_SAMPLING=1 is set; the monitor requires callstack sampling. Unset the variable and retry.\n" );
+        }
+        return 1;
+    }
 
     pid_t attachPid = 0;
     char attachName[128] = {};

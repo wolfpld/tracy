@@ -920,6 +920,7 @@ std::atomic<bool> s_symbolThreadGone { false };
 #endif
 #ifdef TRACY_HAS_SYSTEM_TRACING
 static std::atomic<Thread*> s_sysTraceThread(nullptr);
+static std::atomic<bool> s_sysTraceStartFailed(false);
 #endif
 
 #if defined __linux__ && !defined TRACY_NO_CRASH_HANDLER
@@ -1175,11 +1176,16 @@ static void StartSystemTracing( int64_t& samplingPeriod )
     }
     else if( SysTraceStart( samplingPeriod ) )
     {
+        s_sysTraceStartFailed.store( false, std::memory_order_release );
         Thread* sysTraceThread = (Thread*)tracy_malloc( sizeof( Thread ) );
         new( sysTraceThread ) Thread( SysTraceWorker, nullptr );
         Thread* prev = s_sysTraceThread.exchange( sysTraceThread );
         TRACY_ASSERT( prev == nullptr );
         std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+    }
+    else
+    {
+        s_sysTraceStartFailed.store( true, std::memory_order_release );
     }
 }
 
@@ -1512,6 +1518,14 @@ TRACY_API bool ProfilerAllocatorAvailable() { return !RpThreadShutdown; }
 
 TRACY_API bool BeginSamplingProfiling() { return GetProfiler().BeginSamplingProfiling(); }
 TRACY_API void EndSamplingProfiling() { return GetProfiler().EndSamplingProfiling(); }
+TRACY_API bool IsSystemTracingFailed()
+{
+#if defined(TRACY_HAS_SYSTEM_TRACING)
+    return s_sysTraceStartFailed.load( std::memory_order_acquire );
+#else
+    return false;
+#endif
+}
 
 constexpr static size_t SafeSendBufferSize = 65536;
 

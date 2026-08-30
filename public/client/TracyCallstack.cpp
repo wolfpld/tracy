@@ -376,9 +376,28 @@ static bool s_extImagesSorted = true;
 // a full re-parse on every symbolization.
 static int64_t s_lastMapsRefresh = 0;
 
-static uint64_t ReadElfMinLoadVaddr( const char* path )
+static int MakeExternalTargetPath( char* buf, size_t bufSize, const char* targetPath )
 {
-    int fd = open( path, O_RDONLY );
+    const int n = snprintf( buf, bufSize, "/proc/%d/root%s", (int)s_externalTargetPid, targetPath );
+    return ( n < 0 || (size_t)n >= bufSize ) ? -1 : n;
+}
+
+static int OpenExternalImageFile( const char* path, uint64_t mapStart, uint64_t mapEnd )
+{
+    char rootPath[4096];
+    if( MakeExternalTargetPath( rootPath, sizeof( rootPath ), path ) >= 0 )
+    {
+        const int fd = open( rootPath, O_RDONLY );
+        if( fd >= 0 ) return fd;
+    }
+    char mfPath[80];
+    snprintf( mfPath, sizeof( mfPath ), "/proc/%d/map_files/%lx-%lx", (int)s_externalTargetPid, (unsigned long)mapStart, (unsigned long)mapEnd );
+    return open( mfPath, O_RDONLY );
+}
+
+static uint64_t ReadElfMinLoadVaddr( const char* path, uint64_t mapStart, uint64_t mapEnd )
+{
+    const int fd = OpenExternalImageFile( path, mapStart, mapEnd );
     if( fd < 0 ) return UINT64_MAX;
 
     elf_ehdr ehdr;
@@ -447,7 +466,7 @@ static void ParseExternalProcMaps( pid_t pid )
         if( plen == 0 || pathname[0] != '/' ) continue;
         if( std::find_if( s_extImages->begin(), s_extImages->end(), [start]( const ExternalImageEntry& e ) { return e.startAddress == start; } ) != s_extImages->end() ) continue;
 
-        uint64_t minVaddr = ReadElfMinLoadVaddr( pathname );
+        uint64_t minVaddr = ReadElfMinLoadVaddr( pathname, start, end );
         uint64_t loadBias;
         if( minVaddr == UINT64_MAX )
         {

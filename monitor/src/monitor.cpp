@@ -445,6 +445,15 @@ static int FindPidsByComm( const char* name, pid_t* outPids, int maxPids )
     return count;
 }
 
+static bool VerifyClientListening()
+{
+    for( int i = 0; i < 40; i++ )
+    {
+        if( tracy::IsDataPortListening() ) return true;
+        usleep( 125000 );
+    }
+    return false;
+}
 static int RunAttached( pid_t pid )
 {
     if( kill( pid, 0 ) != 0 )
@@ -474,6 +483,19 @@ static int RunAttached( pid_t pid )
     if( !PreflightSamplingEvent( pid, kernelFrames, hwStats, hwErrno ) ) return 1;
 
     tracy::StartupProfiler();
+    if( !VerifyClientListening() )
+    {
+        if( const char* port = getenv( "TRACY_PORT" ) )
+        {
+            fprintf( stderr, "The client could not listen on port %s (the port is most likely in use, or the bind was denied). Retry, or choose another port with --port.\n", port );
+        }
+        else
+        {
+            fprintf( stderr, "The client could not listen on any of the scan ports 8086-8105 (they are most likely all in use, or the bind was denied). Retry, or choose another port with --port.\n" );
+        }
+        tracy::ShutdownProfiler();
+        return 1;
+    }
 
     PrintStartupReport( kernelFrames, hwStats, hwErrno );
 
@@ -591,6 +613,22 @@ static int RunForked( int argc, char** argv )
         waitpid( childPid, nullptr, 0 );
         tracy::ShutdownProfiler();
         return 2;
+    }
+
+    if( !VerifyClientListening() )
+    {
+        if( const char* port = getenv( "TRACY_PORT" ) )
+        {
+            fprintf( stderr, "The client could not listen on port %s (the port is most likely in use, or the bind was denied). Retry, or choose another port with --port.\n", port );
+        }
+        else
+        {
+            fprintf( stderr, "The client could not listen on any of the scan ports 8086-8105 (they are most likely all in use, or the bind was denied). Retry, or choose another port with --port.\n" );
+        }
+        kill( childPid, SIGKILL );
+        waitpid( childPid, nullptr, 0 );
+        tracy::ShutdownProfiler();
+        return 1;
     }
 
     PrintStartupReport( kernelFrames, hwStats, hwErrno );

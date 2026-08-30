@@ -863,7 +863,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
     pe.size = sizeof( perf_event_attr );
     pe.config = PERF_COUNT_SW_CPU_CLOCK;
     pe.sample_freq = samplingFrequency;
-    pe.sample_type = PERF_SAMPLE_TID | PERF_SAMPLE_TIME | PERF_SAMPLE_CALLCHAIN;
+    pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_TID | PERF_SAMPLE_TIME | PERF_SAMPLE_CALLCHAIN;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION( 4, 8, 0 )
     if( perfAbi >= PerfAbi48AndNewer ) pe.sample_max_stack = 127;
 #endif
@@ -1187,38 +1187,42 @@ void SysTraceWorker( void* ptr )
                     {
                         auto offset = pos + sizeof( perf_event_header );
 
-                        // Layout:
-                        //   u32 pid, tid
-                        //   u64 time
-                        //   u64 cnt
-                        //   u64 ip[cnt]
+                        // field order matches PERF_SAMPLE_IP | TID | TIME | CALLCHAIN (then buf.cnt ips)
 
 #pragma pack( push, 1 )
                         struct
                         {
+                            uint64_t ip;
+                            uint32_t pid;
                             uint32_t tid;
                             uint64_t t0;
                             uint64_t cnt;
                         } buf;
 #pragma pack( pop )
 
-                        offset += sizeof( uint32_t );
                         ring.Read( &buf, offset, sizeof( buf ) );
                         offset += sizeof( buf );
 
+                        uint64_t* trace;
                         if( buf.cnt > 0 )
                         {
-#if defined TRACY_HW_TIMER && defined TRACY_HAS_RDTSC
-                            buf.t0 = ring.ConvertTimeToTsc( buf.t0 );
-#endif
-                            auto trace = GetCallstackBlock( buf.cnt, ring, offset );
-
-                            TracyLfqPrepare( QueueType::CallstackSample );
-                            MemWrite( &item->callstackSampleFat.time, int64_t( buf.t0 ) );
-                            MemWrite( &item->callstackSampleFat.thread, buf.tid );
-                            MemWrite( &item->callstackSampleFat.ptr, uint64_t( trace ) );
-                            TracyLfqCommit;
+                            trace = GetCallstackBlock( buf.cnt, ring, offset );
                         }
+                        else
+                        {
+                            trace = (uint64_t*)tracy_malloc_fast( 2 * sizeof( uint64_t ) );
+                            trace[0] = 1;
+                            trace[1] = buf.ip;
+                        }
+
+#if defined TRACY_HW_TIMER && defined TRACY_HAS_RDTSC
+                        buf.t0 = ring.ConvertTimeToTsc( buf.t0 );
+#endif
+                        TracyLfqPrepare( QueueType::CallstackSample );
+                        MemWrite( &item->callstackSampleFat.time, int64_t( buf.t0 ) );
+                        MemWrite( &item->callstackSampleFat.thread, buf.tid );
+                        MemWrite( &item->callstackSampleFat.ptr, uint64_t( trace ) );
+                        TracyLfqCommit;
                     }
                     pos += hdr.size;
                 }

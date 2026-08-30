@@ -483,6 +483,12 @@ static int RunAttached( pid_t pid )
     if( !PreflightSamplingEvent( pid, kernelFrames, hwStats, hwErrno ) ) return 1;
 
     tracy::StartupProfiler();
+    if( tracy::IsSystemTracingFailed() )
+    {
+        fprintf( stderr, "The client failed to start sampling although the preflight passed; the capture would contain no samples (the target may have exited between checks, or the kernel rejected the event setup).\n" );
+        tracy::ShutdownProfiler();
+        return 1;
+    }
     if( !VerifyClientListening() )
     {
         if( const char* port = getenv( "TRACY_PORT" ) )
@@ -603,6 +609,14 @@ static int RunForked( int argc, char** argv )
     }
 
     tracy::StartupProfiler();
+    if( tracy::IsSystemTracingFailed() )
+    {
+        fprintf( stderr, "The client failed to start sampling although the preflight passed; the capture would contain no samples (the target may have exited between checks, or the kernel rejected the event setup).\n" );
+        kill( childPid, SIGKILL );
+        waitpid( childPid, nullptr, 0 );
+        tracy::ShutdownProfiler();
+        return 1;
+    }
 
     // Detach ptrace and let the child run. If detach fails the child stays
     // stopped forever, so this has to be fatal.

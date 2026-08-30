@@ -421,10 +421,6 @@ static bool s_ctxSwitchCallchain = false;
 static RingBuffer* s_ring = nullptr;
 
 
-// (pid, cpu) pair for a per-task perf event open. In self-profiling mode we
-// iterate one entry per CPU with pid = our tgid. In monitor mode we iterate
-// one entry per existing thread of the target, with cpu = -1, so inherit=1
-// can cover all descendants without multiplying ring buffers by CPU count.
 struct PerfIterTarget
 {
     pid_t pid;
@@ -518,6 +514,36 @@ enum TraceEventId
     EventContextSwitch,
     EventWaking,
 };
+
+static void ProbePreciseIp( perf_event_attr& pe, pid_t pid );
+
+static bool OpenSampleEvent( const PerfIterTarget& tgt, const perf_event_attr& inPe, int eventId )
+{
+    static bool noKernelAccessLogged = false;
+    perf_event_attr pe = inPe;
+    int fd = perf_event_open( &pe, tgt.pid, tgt.cpu, -1, PERF_FLAG_FD_CLOEXEC );
+    if( fd == -1 )
+    {
+        pe.exclude_kernel = 1;
+        pe.exclude_callchain_kernel = 1;
+        ProbePreciseIp( pe, tgt.pid );
+        fd = perf_event_open( &pe, tgt.pid, tgt.cpu, -1, PERF_FLAG_FD_CLOEXEC );
+        if( fd != -1 && !noKernelAccessLogged )
+        {
+            noKernelAccessLogged = true;
+            TracyDebug( "  No access to kernel samples; user-space only (perf_event_paranoid / capabilities)" );
+        }
+    }
+    if( fd == -1 )
+    {
+        TracyDebug( "  Failed to setup!" );
+        return false;
+    }
+    new( s_ring + s_numBuffers ) RingBuffer( 64 * 1024, fd, eventId );
+    if( !s_ring[s_numBuffers].IsValid() ) return false;
+    s_numBuffers++;
+    return true;
+}
 
 static void ProbePreciseIp( perf_event_attr& pe, unsigned long long config0, unsigned long long config1, pid_t pid )
 {
@@ -856,25 +882,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
         ProbePreciseIp( pe, currentPid );
         for( int i=0; i<numIter; i++ )
         {
-            int fd = perf_event_open( &pe, iter[i].pid, iter[i].cpu, -1, PERF_FLAG_FD_CLOEXEC );
-            if( fd == -1 )
-            {
-                pe.exclude_kernel = 1;
-                ProbePreciseIp( pe, currentPid );
-                fd = perf_event_open( &pe, iter[i].pid, iter[i].cpu, -1, PERF_FLAG_FD_CLOEXEC );
-                if( fd == -1 )
-                {
-                    TracyDebug( "  Failed to setup!");
-                    break;
-                }
-                TracyDebug( "  No access to kernel samples" );
-            }
-            new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventCallstack );
-            if( s_ring[s_numBuffers].IsValid() )
-            {
-                s_numBuffers++;
-                TracyDebug( "  Target %i ok", i );
-            }
+            if( OpenSampleEvent( iter[i], pe, EventCallstack ) ) TracyDebug( "  Target %i ok (EventCallstack)", i );
         }
     }
 
@@ -902,31 +910,13 @@ bool SysTraceStart( int64_t& samplingPeriod )
         ProbePreciseIp( pe, PERF_COUNT_HW_CPU_CYCLES, PERF_COUNT_HW_INSTRUCTIONS, currentPid );
         for( int i=0; i<numIter; i++ )
         {
-            const int fd = perf_event_open( &pe, iter[i].pid, iter[i].cpu, -1, PERF_FLAG_FD_CLOEXEC );
-            if( fd != -1 )
-            {
-                new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventCpuCycles );
-                if( s_ring[s_numBuffers].IsValid() )
-                {
-                    s_numBuffers++;
-                    TracyDebug( "  Target %i ok", i );
-                }
-            }
+            if( OpenSampleEvent( iter[i], pe, EventCpuCycles ) ) TracyDebug( "  Target %i ok (EventCpuCycles)", i );
         }
 
         pe.config = PERF_COUNT_HW_INSTRUCTIONS;
         for( int i=0; i<numIter; i++ )
         {
-            const int fd = perf_event_open( &pe, iter[i].pid, iter[i].cpu, -1, PERF_FLAG_FD_CLOEXEC );
-            if( fd != -1 )
-            {
-                new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventInstructionsRetired );
-                if( s_ring[s_numBuffers].IsValid() )
-                {
-                    s_numBuffers++;
-                    TracyDebug( "  Target %i ok", i );
-                }
-            }
+            if( OpenSampleEvent( iter[i], pe, EventInstructionsRetired ) ) TracyDebug( "  Target %i ok (EventInstructionsRetired)", i );
         }
     }
 
@@ -942,31 +932,13 @@ bool SysTraceStart( int64_t& samplingPeriod )
         }
         for( int i=0; i<numIter; i++ )
         {
-            const int fd = perf_event_open( &pe, iter[i].pid, iter[i].cpu, -1, PERF_FLAG_FD_CLOEXEC );
-            if( fd != -1 )
-            {
-                new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventCacheReference );
-                if( s_ring[s_numBuffers].IsValid() )
-                {
-                    s_numBuffers++;
-                    TracyDebug( "  Target %i ok", i );
-                }
-            }
+            if( OpenSampleEvent( iter[i], pe, EventCacheReference ) ) TracyDebug( "  Target %i ok (EventCacheReference)", i );
         }
 
         pe.config = PERF_COUNT_HW_CACHE_MISSES;
         for( int i=0; i<numIter; i++ )
         {
-            const int fd = perf_event_open( &pe, iter[i].pid, iter[i].cpu, -1, PERF_FLAG_FD_CLOEXEC );
-            if( fd != -1 )
-            {
-                new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventCacheMiss );
-                if( s_ring[s_numBuffers].IsValid() )
-                {
-                    s_numBuffers++;
-                    TracyDebug( "  Target %i ok", i );
-                }
-            }
+            if( OpenSampleEvent( iter[i], pe, EventCacheMiss ) ) TracyDebug( "  Target %i ok (EventCacheMiss)", i );
         }
     }
 
@@ -977,31 +949,13 @@ bool SysTraceStart( int64_t& samplingPeriod )
         ProbePreciseIp( pe, PERF_COUNT_HW_BRANCH_INSTRUCTIONS, PERF_COUNT_HW_BRANCH_MISSES, currentPid );
         for( int i=0; i<numIter; i++ )
         {
-            const int fd = perf_event_open( &pe, iter[i].pid, iter[i].cpu, -1, PERF_FLAG_FD_CLOEXEC );
-            if( fd != -1 )
-            {
-                new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventBranchRetired );
-                if( s_ring[s_numBuffers].IsValid() )
-                {
-                    s_numBuffers++;
-                    TracyDebug( "  Target %i ok", i );
-                }
-            }
+            if( OpenSampleEvent( iter[i], pe, EventBranchRetired ) ) TracyDebug( "  Target %i ok (EventBranchRetired)", i );
         }
 
         pe.config = PERF_COUNT_HW_BRANCH_MISSES;
         for( int i=0; i<numIter; i++ )
         {
-            const int fd = perf_event_open( &pe, iter[i].pid, iter[i].cpu, -1, PERF_FLAG_FD_CLOEXEC );
-            if( fd != -1 )
-            {
-                new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventBranchMiss );
-                if( s_ring[s_numBuffers].IsValid() )
-                {
-                    s_numBuffers++;
-                    TracyDebug( "  Target %i ok", i );
-                }
-            }
+            if( OpenSampleEvent( iter[i], pe, EventBranchMiss ) ) TracyDebug( "  Target %i ok (EventBranchMiss)", i );
         }
     }
 
@@ -1033,7 +987,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
                 if( s_ring[s_numBuffers].IsValid() )
                 {
                     s_numBuffers++;
-                    TracyDebug( "  Core %i ok", i );
+                    TracyDebug( "  Core %i ok (EventVsync)", i );
                 }
             }
         }
@@ -1075,7 +1029,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
                 if( s_ring[s_numBuffers].IsValid() )
                 {
                     s_numBuffers++;
-                    TracyDebug( "  Core %i ok", i );
+                    TracyDebug( "  Core %i ok (EventContextSwitch)", i );
                 }
             }
         }
@@ -1109,7 +1063,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
                     if( s_ring[s_numBuffers].IsValid() )
                     {
                         s_numBuffers++;
-                        TracyDebug( "  Core %i ok", i );
+                        TracyDebug( "  Core %i ok (EventWaking)", i );
                     }
                 }
             }

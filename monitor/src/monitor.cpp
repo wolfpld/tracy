@@ -1,3 +1,9 @@
+// tracy-monitor: profile a process that was not built with the Tracy client.
+// Launch mode: tracy-monitor [OPTIONS] program [args...]; attach mode:
+// tracy-monitor [OPTIONS] -p PID | -n NAME. Runs the standard Tracy client in
+// "external mode". With TRACY_ON_DEMAND, samples are captured only while a
+// Tracy server is connected. See --help for usage and permission requirements.
+//
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -46,7 +52,7 @@ static volatile sig_atomic_t s_shouldQuit = 0;
 static pid_t s_targetPid = 0;
 static bool s_isForked = false;
 
-static void SignalHandler( int sig )
+static void SignalHandler( int /*sig*/ )
 {
     s_shouldQuit = 1;
     if( s_isForked && s_targetPid != 0 )
@@ -75,6 +81,8 @@ static bool ProcessIsAlive( pid_t pid )
     const char* state = strrchr( buf, ')' );
     return state && state[1] == ' ' && state[2] != 'Z' && state[2] != '\0';
 }
+
+// --- capability probes --------------------------------------------------
 
 static const char* GetTraceFsPath()
 {
@@ -167,6 +175,8 @@ static bool CanReadRapl()
     closedir( dir );
     return ok;
 }
+
+// --- sampling preflight ---------------------------------------------------
 
 // verify the per-CPU pid-filtered event mechanism the client relies on:
 // perf_event_open(attr, target, cpu) with a direct mmap of the event's ring
@@ -306,6 +316,8 @@ static bool PreflightSamplingEvent( pid_t pid, bool& kernelFrames, bool& hwStats
     return true;
 }
 
+// --- reporting --------------------------------------------------------------
+
 static const char* FormatHz( int hz )
 {
     static char buf[32];
@@ -405,6 +417,8 @@ static void PrintStartupReport( bool kernelFrames, bool hwStats, int hwErrno )
     fflush( stdout );
 }
 
+// --- attach mode ---------------------------------------------------------------
+
 static int FindPidsByComm( const char* name, pid_t* outPids, int maxPids )
 {
     int count = 0;
@@ -490,6 +504,7 @@ static int RunAttached( pid_t pid )
         tracy::ShutdownProfiler();
         return 1;
     }
+
     if( !VerifyClientListening() )
     {
         if( const char* port = getenv( "TRACY_PORT" ) )
@@ -506,7 +521,7 @@ static int RunAttached( pid_t pid )
 
     PrintStartupReport( kernelFrames, hwStats, hwErrno );
 
-    // Wait for the target process to exit, or for a signal
+    // never signal the target: attach mode must leave it running when we quit
     while( !s_shouldQuit && ProcessIsAlive( pid ) )
     {
         usleep( 100000 );  // 100ms poll
@@ -524,6 +539,8 @@ static int RunAttached( pid_t pid )
     tracy::ShutdownProfiler();
     return 0;
 }
+
+// --- launch mode ---------------------------------------------------------------
 
 static int RunForked( int argc, char** argv )
 {
@@ -737,6 +754,8 @@ static int RunForked( int argc, char** argv )
     tracy::ShutdownProfiler();
     return 0;
 }
+
+// --- CLI --------------------------------------------------------------------
 
 static void PrintUsage( const char* progName )
 {

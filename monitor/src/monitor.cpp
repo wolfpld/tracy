@@ -1,7 +1,10 @@
 #include <dirent.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <getopt.h>
+#include <sys/ioctl.h>
 #include <linux/perf_event.h>
+#include <netinet/in.h>
 #include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -9,6 +12,7 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/ptrace.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/wait.h>
@@ -641,6 +645,76 @@ static int RunForked( int argc, char** argv )
     return 0;
 }
 
+// Reserve the first free port in the client's 8086..8105 scan range and hand the
+// probe socket to the client (SetReservedListenSocket) so the reservation is atomic.
+// The probe must mirror the client's bind exactly (ListenSocket::Listen): IPv6
+// dual-stack first, IPv4 only if socket() itself fails, SO_REUSEADDR,
+// TRACY_ONLY_LOCALHOST narrows to loopback, fd CLOEXEC (no leak into the target).
+static bool ProbeClientBind( int port, bool ipv4Only, bool onlyLocalhost, int& fdOut )
+{
+    fdOut = -1;
+    int s = -1;
+    int family = AF_INET6;
+    if( !ipv4Only ) s = socket( AF_INET6, SOCK_STREAM, 0 );
+    if( s < 0 )
+    {
+        family = AF_INET;
+        s = socket( AF_INET, SOCK_STREAM, 0 );
+    }
+    if( s < 0 ) return false;
+    fcntl( s, F_SETFD, FD_CLOEXEC );
+    int val = 1;
+    setsockopt( s, SOL_SOCKET, SO_REUSEADDR, &val, sizeof( val ) );
+    bool ok = false;
+    if( family == AF_INET6 )
+    {
+        sockaddr_in6 addr = {};
+        addr.sin6_family = AF_INET6;
+        if( onlyLocalhost ) addr.sin6_addr = in6addr_loopback;
+        addr.sin6_port = htons( (uint16_t)port );
+        ok = bind( s, (sockaddr*)&addr, sizeof( addr ) ) == 0 && listen( s, 4 ) == 0;
+    }
+    else
+    {
+        sockaddr_in addr = {};
+        addr.sin_family = AF_INET;
+        addr.sin_addr.s_addr = onlyLocalhost ? htonl( INADDR_LOOPBACK ) : INADDR_ANY;
+        addr.sin_port = htons( (uint16_t)port );
+        ok = bind( s, (sockaddr*)&addr, sizeof( addr ) ) == 0 && listen( s, 4 ) == 0;
+    }
+    if( ok )
+    {
+        fdOut = s;
+    }
+    else
+    {
+        close( s );
+    }
+    return ok;
+}
+
+static void ReservePortIfUnpinned()
+{
+    if( getenv( "TRACY_PORT" ) ) return;
+    const char* onlyIPv4 = getenv( "TRACY_ONLY_IPV4" );
+    const char* onlyLocalhost = getenv( "TRACY_ONLY_LOCALHOST" );
+    const bool ipv4Only = onlyIPv4 && onlyIPv4[0] == '1';
+    const bool localhost = onlyLocalhost && onlyLocalhost[0] == '1';
+    for( int i=0; i<20; i++ )
+    {
+        const int port = 8086 + i;
+        int fd = -1;
+        if( ProbeClientBind( port, ipv4Only, localhost, fd ) )
+        {
+            char buf[8];
+            snprintf( buf, sizeof( buf ), "%d", port );
+            setenv( "TRACY_PORT", buf, 1 );
+            tracy::SetReservedListenSocket( fd );
+            return;
+        }
+    }
+}
+
 int main( int argc, char** argv )
 {
     auto progName = argv[0];
@@ -730,6 +804,22 @@ int main( int argc, char** argv )
         }
     }
 
+    // validate a pinned TRACY_PORT like --port: the client pins to any nonzero value
+    // (single listen, no fallback), so a bad value would report a port never used.
+    {
+        const char* portEnv = getenv( "TRACY_PORT" );
+        if( portEnv )
+        {
+            char* end = nullptr;
+            const long port = strtol( portEnv, &end, 10 );
+            if( end == portEnv || *end != '\0' || port < 1 || port > 65535 )
+            {
+                fprintf( stderr, "Invalid TRACY_PORT '%s' (expected a number in 1..65535); unset it or use --port.\n", portEnv );
+                return 1;
+            }
+        }
+    }
+    ReservePortIfUnpinned();
     if( wantAttach )
     {
         if( attachName[0] )

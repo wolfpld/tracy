@@ -1087,7 +1087,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
 
     tracy_free( iter );
 
-    if( s_numBuffers == 0 )
+    if( s_numBuffers == 0 || ( externalPid != 0 && s_ctxBufferIdx == 0 ) )
     {
         tracy_free( s_ring );
         s_ring = nullptr;

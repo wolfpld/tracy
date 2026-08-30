@@ -397,6 +397,9 @@ static void PrintStartupReport( bool kernelFrames, bool hwStats, int hwErrno )
     {
         printf( "  vsync:                         no (%s)\n", TracepointReason( vsync ) );
     }
+#ifdef TRACY_ON_DEMAND
+    printf( "  recording:                     on-demand: samples are captured only while a Tracy server is connected; pre-connection samples are discarded\n" );
+#endif
     printf( "\n" );
     printf( "Open the Tracy profiler and connect to this host:port (or it will auto-discover).\n" );
     fflush( stdout );

@@ -33,28 +33,6 @@ static void SignalHandler( int sig )
     }
 }
 
-static bool CheckPerfPermissions()
-{
-    FILE* f = fopen( "/proc/sys/kernel/perf_event_paranoid", "r" );
-    if( !f )
-    {
-        fprintf( stderr, "Warning: Cannot read /proc/sys/kernel/perf_event_paranoid\n" );
-        return true;  // Assume OK
-    }
-    int paranoid = 2;
-    if( fscanf( f, "%d", &paranoid ) != 1 ) paranoid = 2;
-    fclose( f );
-
-    if( paranoid > 1 && geteuid() != 0 )
-    {
-        fprintf( stderr, "Warning: perf_event_paranoid = %d. Profiling another process may require:\n", paranoid );
-        fprintf( stderr, "  - Running as root, or\n" );
-        fprintf( stderr, "  - Setting /proc/sys/kernel/perf_event_paranoid to -1 or 0, or\n" );
-        fprintf( stderr, "  - Granting CAP_PERFMON + CAP_SYS_PTRACE capabilities\n" );
-    }
-    return true;
-}
-
 // kill( pid, 0 ) succeeds even for zombies, so liveness also checks the
 // /proc state: a zombie is dead - nothing left to sample, and in attach
 // mode we are not the parent, so we can neither reap it nor learn its exit.
@@ -166,41 +144,141 @@ static bool CanReadRapl()
     return ok;
 }
 
-// Try opening one perf event against the target so we fail fast with a clear
-// message instead of starting the profiler and silently producing no samples.
-static bool PreflightPerfEventOpen( pid_t pid )
+// verify the per-CPU pid-filtered event mechanism the client relies on:
+// perf_event_open(attr, target, cpu) with a direct mmap of the event's ring
+// (the normal client's own topology); exclude_kernel=1 so it works at any
+// paranoid level.
+static bool PreflightOutputMechanism( pid_t pid )
 {
     perf_event_attr pe = {};
     pe.type = PERF_TYPE_SOFTWARE;
-    pe.size = sizeof( perf_event_attr );
+    pe.size = sizeof( pe );
     pe.config = PERF_COUNT_SW_CPU_CLOCK;
+    pe.sample_type = PERF_SAMPLE_TID | PERF_SAMPLE_TIME;
+    pe.sample_freq = 100;
+    pe.freq = 1;
     pe.disabled = 1;
+    pe.inherit = 1;
     pe.exclude_kernel = 1;
-    pe.exclude_hv = 1;
+    pe.exclude_callchain_kernel = 1;
 
     const long fd = syscall( __NR_perf_event_open, &pe, pid, 0, -1, 0 );
     if( fd < 0 )
     {
+        fprintf( stderr, "Warning: preflight per-CPU event open failed: %s\n", strerror( errno ) );
+        return false;
+    }
+    const size_t mapSize = 64 * 1024 + 4096;
+    void* map = mmap( nullptr, mapSize, PROT_READ | PROT_WRITE, MAP_SHARED, (int)fd, 0 );
+    bool ok = map != MAP_FAILED;
+    if( !ok ) fprintf( stderr, "Warning: preflight ring mmap refused: %s (kernel ABI mismatch?)\n", strerror( errno ) );
+    if( map != MAP_FAILED ) munmap( map, mapSize );
+    close( (int)fd );
+    return ok;
+}
+
+// probe whether the client's per-thread hardware PMU counters can open at all
+// (the client drops them silently on failure, losing the IPC/cache/branch plots); informational only.
+static bool ProbeHwCounters( pid_t pid, int& errOut )
+{
+    perf_event_attr pe = {};
+    pe.type = PERF_TYPE_HARDWARE;
+    pe.size = sizeof( pe );
+    pe.config = PERF_COUNT_HW_CPU_CYCLES;
+    pe.disabled = 1;
+    pe.precise_ip = 3;
+    long fd = syscall( __NR_perf_event_open, &pe, pid, -1, -1, 0 );
+    while( fd < 0 && pe.precise_ip > 0 )
+    {
+        pe.precise_ip--;
+        fd = syscall( __NR_perf_event_open, &pe, pid, -1, -1, 0 );
+    }
+    if( fd < 0 && ( errno == EACCES || errno == EPERM ) )
+    {
+        pe.exclude_kernel = 1;
+        fd = syscall( __NR_perf_event_open, &pe, pid, -1, -1, 0 );
+    }
+    if( fd >= 0 )
+    {
+        close( (int)fd );
+        return true;
+    }
+    errOut = errno;
+    return false;
+}
+
+// mirror the client's exact external perf_event_open (SysTraceStart/OpenSampleEvent):
+// a per-CPU event with a pid filter on the target (direct ring mmap), plus an
+// informational hardware PMU probe. Failing fast here yields an accurate
+// capability report instead of starting the profiler with no samples.
+static bool PreflightSamplingEvent( pid_t pid, bool& kernelFrames, bool& hwStats, int& hwErrno )
+{
+    perf_event_attr pe = {};
+    pe.type = PERF_TYPE_SOFTWARE;
+    pe.size = sizeof( pe );
+    pe.config = PERF_COUNT_SW_CPU_CLOCK;
+    pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_TID | PERF_SAMPLE_TIME | PERF_SAMPLE_CALLCHAIN;
+    pe.sample_freq = 1000;
+    pe.freq = 1;
+    pe.disabled = 1;
+    pe.inherit = 1;
+
+    long dataFd = syscall( __NR_perf_event_open, &pe, pid, 0, -1, 0 );
+    if( dataFd < 0 )
+    {
         const int err = errno;
-        if( err == EACCES || err == EPERM )
-        {
-            fprintf( stderr, "Cannot open perf events for pid %d: %s\n", (int)pid, strerror( err ) );
-            fprintf( stderr, "Profiling another process requires one of:\n" );
-            fprintf( stderr, "  - running as root, or\n" );
-            fprintf( stderr, "  - /proc/sys/kernel/perf_event_paranoid <= 0, or\n" );
-            fprintf( stderr, "  - CAP_PERFMON + CAP_SYS_PTRACE capabilities\n" );
-            return false;
-        }
         if( err == ESRCH )
         {
             fprintf( stderr, "Target process %d no longer exists.\n", (int)pid );
             return false;
         }
-        // Other errors may still be recoverable in the real setup path.
-        fprintf( stderr, "Warning: perf_event_open preflight failed: %s\n", strerror( err ) );
-        return true;
+        if( err == EACCES || err == EPERM )
+        {
+            // no kernel access: retry user-space-only, in both the event and the callchain
+            pe.exclude_kernel = 1;
+            pe.exclude_callchain_kernel = 1;
+            dataFd = syscall( __NR_perf_event_open, &pe, pid, 0, -1, 0 );
+            if( dataFd >= 0 )
+            {
+                close( (int)dataFd );
+                kernelFrames = false;
+            }
+        }
+        else
+        {
+            // any other error (EINVAL, ENOSYS under seccomp, exhaustion): the client's same
+            // event shape would fail identically and produce an empty capture, so fail here.
+            fprintf( stderr, "Cannot open perf events for pid %d: %s\n", (int)pid, strerror( err ) );
+            return false;
+        }
     }
-    close( (int)fd );
+    else
+    {
+        close( (int)dataFd );
+        kernelFrames = true;
+    }
+
+    if( dataFd < 0 )
+    {
+        fprintf( stderr, "Cannot open perf events for pid %d: %s\n", (int)pid, strerror( errno ) );
+        fprintf( stderr, "Profiling another process requires one of:\n" );
+        fprintf( stderr, "  - running as root (or CAP_PERFMON + CAP_SYS_PTRACE), or\n" );
+        fprintf( stderr, "  - /proc/sys/kernel/perf_event_paranoid <= 1 for kernel frames,\n" );
+        fprintf( stderr, "    <= -1 for system-wide events (context switches / per-thread\n" );
+        fprintf( stderr, "    CPU / wait stacks), or\n" );
+        fprintf( stderr, "  - in attach mode: the target must belong to the same user\n" );
+        fprintf( stderr, "    (uid and gid) and be dumpable, or the monitor must hold\n" );
+        fprintf( stderr, "    CAP_SYS_PTRACE (yama ptrace_scope does not apply: sampling\n" );
+        fprintf( stderr, "    uses ptrace READ access, and the monitor never attaches).\n" );
+        return false;
+    }
+
+    if( !PreflightOutputMechanism( pid ) )
+    {
+        fprintf( stderr, "Per-CPU sample rings are unavailable on this kernel; external sampling will not work.\n" );
+        return false;
+    }
+    hwStats = ProbeHwCounters( pid, hwErrno );
     return true;
 }
 
@@ -250,7 +328,10 @@ static int RunAttached( pid_t pid )
     printf( " (%s)...\n", tracy::GetExternalTargetName() );
     fflush( stdout );
 
-    if( !PreflightPerfEventOpen( pid ) ) return 1;
+    bool kernelFrames = false;
+    bool hwStats = false;
+    int hwErrno = 0;
+    if( !PreflightSamplingEvent( pid, kernelFrames, hwStats, hwErrno ) ) return 1;
 
     tracy::StartupProfiler();
 
@@ -346,7 +427,10 @@ static int RunForked( int argc, char** argv )
     printf( "Profiling '%s' (pid %d)...\n", tracy::GetExternalTargetName(), (int)childPid );
     fflush( stdout );
 
-    if( !PreflightPerfEventOpen( childPid ) )
+    bool kernelFrames = false;
+    bool hwStats = false;
+    int hwErrno = 0;
+    if( !PreflightSamplingEvent( childPid, kernelFrames, hwStats, hwErrno ) )
     {
         kill( childPid, SIGKILL );
         waitpid( childPid, nullptr, 0 );
@@ -467,8 +551,6 @@ int main( int argc, char** argv )
 
     argv += optind;
     argc -= optind;
-
-    CheckPerfPermissions();
 
     if( wantAttach )
     {

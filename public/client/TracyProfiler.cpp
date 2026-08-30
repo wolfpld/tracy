@@ -416,12 +416,11 @@ static int64_t SetupHwTimer()
 }
 #endif
 
-uint32_t ___tracy_magic_pid_override = 0;
-char ___tracy_magic_process_name[64] = {};
-
 static const char* GetProcessName()
 {
-    if( *___tracy_magic_process_name != 0 ) return ___tracy_magic_process_name;
+#if defined __linux__ && defined TRACY_HAS_CALLSTACK
+    if( GetExternalTargetPid() != 0 ) return GetExternalTargetName();
+#endif
 
     const char* processName = "unknown";
 #ifdef _WIN32
@@ -750,7 +749,10 @@ static const char* GetHostInfo()
 
 static uint64_t GetPid()
 {
-    if( ___tracy_magic_pid_override != 0 ) return uint64_t( ___tracy_magic_pid_override );
+#if defined __linux__ && defined TRACY_HAS_CALLSTACK
+    const auto externalPid = GetExternalTargetPid();
+    if( externalPid != 0 ) return uint64_t( externalPid );
+#endif
 
 #if defined _WIN32
     return uint64_t( GetCurrentProcessId() );
@@ -4430,11 +4432,11 @@ void Profiler::HandleParameter( uint64_t payload )
 
 void Profiler::HandleSymbolCodeQuery( uint64_t symbol, uint32_t size )
 {
-#ifdef __linux__
+#if defined __linux__ && defined TRACY_HAS_CALLSTACK
     // When profiling an external process, symbol addresses are ELF virtual
     // addresses, not pointers in the monitor's address space.  We cannot
     // read code bytes directly.
-    if( ___tracy_magic_pid_override != 0 )
+    if( GetExternalTargetPid() != 0 )
     {
         AckSymbolCodeNotAvailable();
         return;

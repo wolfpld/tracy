@@ -404,6 +404,7 @@ void SysTraceGetExternalName( uint64_t thread, const char*& threadName, const ch
 #      include "TracyCpuid.hpp"
 #    endif
 
+#    include "TracyCallstack.hpp"
 #    include "TracyProfiler.hpp"
 #    include "TracyRingBuffer.hpp"
 #    include "TracyThread.hpp"
@@ -419,7 +420,6 @@ static bool s_ctxSwitchCallchain = false;
 
 static RingBuffer* s_ring = nullptr;
 
-extern uint32_t ___tracy_magic_pid_override;
 
 // (pid, cpu) pair for a per-task perf event open. In self-profiling mode we
 // iterate one entry per CPU with pid = our tgid. In monitor mode we iterate
@@ -476,13 +476,16 @@ static bool CurrentProcOwnsThread( uint32_t tid )
     if( hv == -tid ) return false;
 
     char path[256];
-    if( ___tracy_magic_pid_override != 0 )
+#ifdef TRACY_HAS_CALLSTACK
+    const auto externalPid = GetExternalTargetPid();
+    if( externalPid != 0 )
     {
-        sprintf( path, "/proc/%d/task/%d", (int)___tracy_magic_pid_override, tid );
+        sprintf( path, "/proc/%" PRIu32 "/task/%" PRIu32, externalPid, tid );
     }
     else
+#endif
     {
-        sprintf( path, "/proc/self/task/%d", tid );
+        sprintf( path, "/proc/self/task/%" PRIu32, tid );
     }
     struct stat st;
     if( stat( path, &st ) == 0 )
@@ -780,16 +783,19 @@ bool SysTraceStart( int64_t& samplingPeriod )
         }
     }
     samplingPeriod = SamplingFrequencyToPeriodNs( samplingFrequency );
-    uint32_t currentPid = ___tracy_magic_pid_override != 0 ? ___tracy_magic_pid_override : (uint32_t)getpid();
+#ifdef TRACY_HAS_CALLSTACK
+    const auto externalPid = GetExternalTargetPid();
+#else
+    const uint32_t externalPid = 0;
+#endif
+    uint32_t currentPid = externalPid != 0 ? externalPid : (uint32_t)getpid();
 
     s_numCpus = (int)std::thread::hardware_concurrency();
 
-    // Build the per-task iteration list. In monitor mode this is all existing
-    // threads of the target (one event per thread, any CPU); in self-profiling
-    // it is per-CPU bound to our own tgid.
-    PerfIterTarget* iter = nullptr;
-    int numIter = 0;
-    if( ___tracy_magic_pid_override != 0 )
+    PerfIterTarget* iter;
+    int numIter;
+#ifdef TRACY_HAS_CALLSTACK
+    if( externalPid != 0 )
     {
         uint32_t* tids = nullptr;
         const int numTids = EnumerateTaskTids( (pid_t)currentPid, &tids );
@@ -805,7 +811,9 @@ bool SysTraceStart( int64_t& samplingPeriod )
         TracyDebug( "Monitor mode: tracing %i existing threads of pid %u", numIter, currentPid );
     }
     else
+#endif
     {
+        // Self-profiling: per-CPU events on the client's own pid.
         iter = (PerfIterTarget*)tracy_malloc( sizeof( PerfIterTarget ) * s_numCpus );
         for( int i=0; i<s_numCpus; i++ ) iter[i] = { (pid_t)currentPid, i };
         numIter = s_numCpus;

@@ -17,11 +17,6 @@
 #include "../public/client/TracyCallstack.hpp"
 #include "GitRef.hpp"
 
-namespace tracy {
-    extern uint32_t ___tracy_magic_pid_override;
-    extern char ___tracy_magic_process_name[64];
-}
-
 static volatile sig_atomic_t s_shouldQuit = 0;
 static pid_t s_targetPid = 0;
 static bool s_isForked = false;
@@ -35,25 +30,6 @@ static void SignalHandler( int sig )
         // a blocking waitpid and let the child exit. kill() is async-signal-safe.
         kill( s_targetPid, SIGINT );
     }
-}
-
-static bool ReadProcessName( pid_t pid, char* buf, size_t bufSize )
-{
-    char path[64];
-    snprintf( path, sizeof( path ), "/proc/%d/comm", (int)pid );
-    FILE* f = fopen( path, "r" );
-    if( !f ) return false;
-    if( !fgets( buf, bufSize, f ) )
-    {
-        fclose( f );
-        return false;
-    }
-    fclose( f );
-    // Remove trailing newline
-    size_t len = strlen( buf );
-    while( len > 0 && ( buf[len-1] == '\n' || buf[len-1] == '\r' ) ) len--;
-    buf[len] = '\0';
-    return len > 0;
 }
 
 static bool CheckPerfPermissions()
@@ -154,21 +130,16 @@ static int RunAttached( pid_t pid )
 
     s_targetPid = pid;
 
-    char procName[64] = {};
-    if( ReadProcessName( pid, procName, sizeof( procName ) ) )
-    {
-        memcpy( tracy::___tracy_magic_process_name, procName, sizeof( tracy::___tracy_magic_process_name ) );
-    }
-
     printf( "Attaching to process %d", (int)pid );
-    if( tracy::___tracy_magic_process_name[0] ) printf( " (%s)", tracy::___tracy_magic_process_name );
-    printf( "...\n" );
+    fflush( stdout );
+
+    if( !tracy::InitExternalTarget( pid ) ) return 1;
+
+    printf( " (%s)...\n", tracy::GetExternalTargetName() );
     fflush( stdout );
 
     if( !PreflightPerfEventOpen( pid ) ) return 1;
 
-    if( !tracy::InitExternalTarget( pid ) ) return 1;
-    tracy::___tracy_magic_pid_override = (uint32_t)pid;
     tracy::StartupProfiler();
 
     printf( "Profiling started. Waiting for Tracy server connection...\n" );
@@ -251,17 +222,16 @@ static int RunForked( int argc, char** argv )
         return 2;
     }
 
-    // The child has exec'd but is stopped. Its address space is now the target program.
-    // Read its process name and memory maps.
-    char procName[64] = {};
-    if( ReadProcessName( childPid, procName, sizeof( procName ) ) )
+    // The child is stopped post-exec: read its name/exe/maps and check sampling
+    // permissions while we hold it stopped.
+    if( !tracy::InitExternalTarget( childPid ) )
     {
-        memcpy( tracy::___tracy_magic_process_name, procName, sizeof( tracy::___tracy_magic_process_name ) );
+        kill( childPid, SIGKILL );
+        waitpid( childPid, nullptr, 0 );
+        return 1;
     }
 
-    printf( "Profiling '%s' (pid %d)...\n",
-            tracy::___tracy_magic_process_name[0] ? tracy::___tracy_magic_process_name : argv[0],
-            (int)childPid );
+    printf( "Profiling '%s' (pid %d)...\n", tracy::GetExternalTargetName(), (int)childPid );
     fflush( stdout );
 
     if( !PreflightPerfEventOpen( childPid ) )
@@ -271,16 +241,6 @@ static int RunForked( int argc, char** argv )
         return 1;
     }
 
-    // Initialize the external image cache (target's /proc/pid/maps)
-    if( !tracy::InitExternalTarget( childPid ) )
-    {
-        kill( childPid, SIGKILL );
-        waitpid( childPid, nullptr, 0 );
-        return 1;
-    }
-
-    // Set up the profiler to target the child
-    tracy::___tracy_magic_pid_override = (uint32_t)childPid;
     tracy::StartupProfiler();
 
     // Detach ptrace and let the child run. If detach fails the child stays

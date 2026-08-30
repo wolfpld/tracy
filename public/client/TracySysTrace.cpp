@@ -1565,10 +1565,17 @@ void SysTraceGetExternalName( uint64_t thread, const char*& threadName, const ch
     f = fopen( fn, "rb" );
     if( f )
     {
-        char buf[256];
+        char buf[256] = {};
         const auto sz = fread( buf, 1, 256, f );
         if( sz > 0 && buf[sz-1] == '\n' ) buf[sz-1] = '\0';
-        threadName = CopyString( buf );
+        if( sz > 0 )
+        {
+            threadName = CopyString( buf );
+        }
+        else
+        {
+            threadName = CopyString( "???", 3 );
+        }
         fclose( f );
     }
     else
@@ -1580,15 +1587,22 @@ void SysTraceGetExternalName( uint64_t thread, const char*& threadName, const ch
     f = fopen( fn, "rb" );
     if( f )
     {
-        char* tmp = (char*)tracy_malloc_fast( 8*1024 );
+        char* tmp = (char*)tracy_malloc_fast( 8*1024 + 1 );
         const auto fsz = (ptrdiff_t)fread( tmp, 1, 8*1024, f );
         fclose( f );
+        if( fsz <= 0 )
+        {
+            tracy_free_fast( tmp );
+            name = CopyStringFast( "???", 3 );
+            return;
+        }
+        tmp[fsz] = '\0';
 
         int pid = -1;
         auto line = tmp;
         for(;;)
         {
-            if( memcmp( "Tgid:\t", line, 6 ) == 0 )
+            if( line - tmp + 6 <= fsz && memcmp( "Tgid:\t", line, 6 ) == 0 )
             {
                 pid = atoi( line + 6 );
                 break;
@@ -1612,10 +1626,10 @@ void SysTraceGetExternalName( uint64_t thread, const char*& threadName, const ch
             f = fopen( fn, "rb" );
             if( f )
             {
-                char buf[256];
+                char buf[256] = {};
                 const auto sz = fread( buf, 1, 256, f );
                 if( sz > 0 && buf[sz-1] == '\n' ) buf[sz-1] = '\0';
-                name = CopyStringFast( buf );
+                name = sz > 0 ? CopyStringFast( buf ) : CopyStringFast( "???", 3 );
                 fclose( f );
                 return;
             }

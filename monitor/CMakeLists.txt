@@ -12,6 +12,13 @@ project(
     VERSION ${TRACY_VERSION_STRING}
 )
 
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    message(FATAL_ERROR "tracy-monitor is Linux-only")
+endif()
+if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64|aarch64|arm64)$")
+    message(FATAL_ERROR "tracy-monitor supports x86_64 and aarch64")
+endif()
+
 find_package(Threads REQUIRED)
 
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/config.cmake)

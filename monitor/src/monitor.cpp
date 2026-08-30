@@ -9,6 +9,7 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/ptrace.h>
+#include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -386,11 +387,13 @@ static void PrintUsage( const char* progName )
     printf( "\n" );
     printf( "Options:\n" );
     printf( "  -p PID        Attach to existing process (PID)\n" );
+    printf( "  -n NAME       Attach to existing process by name\n" );
     printf( "  -h            Show this help message\n" );
     printf( "\n" );
     printf( "Examples:\n" );
     printf( "  %s ./my_program arg1 arg2\n", progName );
     printf( "  %s -p 1234\n", progName );
+    printf( "  %s -n my_program\n", progName );
     printf( "\n" );
     printf( "The monitor captures sampling profiling data from an external process\n" );
     printf( "and streams it to a Tracy server for visualization.\n" );
@@ -399,6 +402,41 @@ static void PrintUsage( const char* progName )
     printf( "ensure profiling begins before the first instruction executes.\n" );
     printf( "\n" );
     printf( "In attach mode (-p), the target must already be running.\n" );
+}
+
+static int FindPidsByComm( const char* name, pid_t* outPids, int maxPids )
+{
+    int count = 0;
+    DIR* proc = opendir( "/proc" );
+    if( !proc ) return 0;
+    struct dirent* ent;
+    while( ( ent = readdir( proc ) ) )
+    {
+        if( ent->d_name[0] < '0' || ent->d_name[0] > '9' ) continue;
+        char path[64];
+        snprintf( path, sizeof( path ), "/proc/%s/comm", ent->d_name );
+        FILE* f = fopen( path, "r" );
+        if( !f ) continue;
+        char comm[32] = {};
+        if( fgets( comm, sizeof( comm ), f ) )
+        {
+            size_t len = strlen( comm );
+            while( len > 0 && ( comm[len-1] == '\n' || comm[len-1] == '\r' ) ) comm[--len] = '\0';
+            if( strcmp( comm, name ) == 0 && count < maxPids )
+            {
+                // gate on /proc/<pid>/exe: zombies keep a comm but have no executable to map
+                char exe[256] = {};
+                snprintf( path, sizeof( path ), "/proc/%s/exe", ent->d_name );
+                if( readlink( path, exe, sizeof( exe ) - 1 ) >= 0 )
+                {
+                    outPids[count++] = (pid_t)atoi( ent->d_name );
+                }
+            }
+        }
+        fclose( f );
+    }
+    closedir( proc );
+    return count;
 }
 
 static int RunAttached( pid_t pid )
@@ -619,21 +657,32 @@ int main( int argc, char** argv )
     sigaction( SIGQUIT, &sa, nullptr );
 
     pid_t attachPid = 0;
+    char attachName[128] = {};
     bool wantAttach = false;
 
     static struct option longOptions[] = {
         { "pid", required_argument, nullptr, 'p' },
+        { "name", required_argument, nullptr, 'n' },
         { "help", no_argument, nullptr, 'h' },
         { nullptr, 0, nullptr, 0 }
     };
 
     int c;
-    while( ( c = getopt_long( argc, argv, "+p:h", longOptions, nullptr ) ) != -1 )
+    while( ( c = getopt_long( argc, argv, "+p:n:h", longOptions, nullptr ) ) != -1 )
     {
         switch( c )
         {
         case 'p':
             attachPid = atoi( optarg );
+            wantAttach = true;
+            break;
+        case 'n':
+            if( strlen( optarg ) >= sizeof( attachName ) )
+            {
+                fprintf( stderr, "Process name too long (max %zu characters).\n", sizeof( attachName ) - 1 );
+                return 1;
+            }
+            snprintf( attachName, sizeof( attachName ), "%s", optarg );
             wantAttach = true;
             break;
         case 'h':
@@ -645,11 +694,27 @@ int main( int argc, char** argv )
         }
     }
 
-    argv += optind;
-    argc -= optind;
-
     if( wantAttach )
     {
+        if( attachName[0] )
+        {
+            pid_t pids[32] = {};
+            const int numPids = FindPidsByComm( attachName, pids, 32 );
+            if( numPids == 0 )
+            {
+                fprintf( stderr, "No process named '%s' (names are /proc/<pid>/comm values, truncated to 15 characters).\n", attachName );
+                return 1;
+            }
+            if( numPids > 1 )
+            {
+                fprintf( stderr, "Several processes named '%s':", attachName );
+                for( int i=0; i<numPids; i++ ) fprintf( stderr, " %d", (int)pids[i] );
+                fprintf( stderr, "\nUse -p PID to disambiguate.\n" );
+                return 1;
+            }
+            return RunAttached( pids[0] );
+        }
+
         if( attachPid <= 0 )
         {
             fprintf( stderr, "Invalid PID specified.\n" );
@@ -657,6 +722,9 @@ int main( int argc, char** argv )
         }
         return RunAttached( attachPid );
     }
+
+    argv += optind;
+    argc -= optind;
 
     if( argc < 1 )
     {

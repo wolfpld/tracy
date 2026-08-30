@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/resource.h>
 #include <sys/ptrace.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -866,6 +867,25 @@ int main( int argc, char** argv )
             fprintf( stderr, "tracy-monitor: TRACY_NO_SAMPLING=1 is set; the monitor requires callstack sampling. Unset the variable and retry.\n" );
         }
         return 1;
+    }
+
+    // external sampling opens one event per CPU for each existing thread
+    // (attach) or per CPU (launch) per event type; raise the soft fd limit
+    // so multithreaded targets fit (failing opens degrade gracefully).
+    {
+        struct rlimit rl = {};
+        if( getrlimit( RLIMIT_NOFILE, &rl ) == 0 && rl.rlim_cur < 65536 )
+        {
+            const rlim_t want = rl.rlim_max > 65536 ? 65536 : rl.rlim_max;
+            if( want > rl.rlim_cur )
+            {
+                rl.rlim_cur = want;
+                if( setrlimit( RLIMIT_NOFILE, &rl ) != 0 )
+                {
+                    fprintf( stderr, "tracy-monitor: warning: could not raise RLIMIT_NOFILE (%s); very multithreaded targets may be only partially sampled.\n", strerror( errno ) );
+                }
+            }
+        }
     }
 
     pid_t attachPid = 0;

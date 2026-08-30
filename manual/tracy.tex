@@ -3329,6 +3329,43 @@ Each client is captured to a separate file in the output directory, named accord
 
 Press \keys{\ctrl + C} to stop discovery and gracefully shut down all active captures. Each capture thread will finish writing its trace file before the daemon exits.
 
+\subsection{External monitoring}
+\label{externalmonitoring}
+
+Sometimes, the application you want to profile cannot be built with the Tracy client. This is often the case with third-party or closed-source software, running system services, or programs written in languages without Tracy bindings. For such situations, there is the \texttt{tracy-monitor} utility, contained in the \texttt{monitor} directory. The monitor profiles a process from the outside, without modifying it in any way, on Linux (x86-64 and ARM64).
+
+The monitor samples the target in the same manner as the compiled-in client (see section~\ref{sampling}), so a capture contains:
+
+\begin{itemize}
+\item Sampled call stacks of every thread of the target, resolved to function names, source file and line, including inlined functions. As with regular call stack sampling (chapter~\ref{collectingcallstacks}), the target's executable and shared libraries should carry symbol information for the resolution to work, and programs compiled without frame pointers (typical of optimized builds) will yield call stacks truncated to the innermost function.
+\item Machine code of the profiled functions, so that the disassembly view (section~\ref{executableretrieval}) is fully functional, exactly as in a regular capture.
+\item System-wide CPU usage plots.
+\item Depending on your privileges and system configuration: kernel frames in the call stacks, context switches and wait stacks (sections~\ref{contextswitches} and \ref{waitstacks}), per-thread CPU time, power consumption (RAPL) plots, and hardware vsync events.
+\end{itemize}
+
+The monitor can either start the program you want to profile, or attach to an already running one:
+
+\begin{lstlisting}[language=sh]
+$ tracy-monitor ./my_program arg1 arg2
+$ tracy-monitor -p 12345
+$ tracy-monitor -n my_program
+\end{lstlisting}
+
+In the first form, the monitor launches the program and the profiling begins before its first instruction executes, so the entire lifetime of the program is covered. In this mode, stopping the monitor (\keys{\ctrl + C}) also terminates the profiled program.
+
+The \texttt{-p} option attaches to an already running process by its ID, and \texttt{-n} does the same by its name (the name as known to the operating system, truncated to 15 characters; if several processes share the name, the monitor lists their IDs so you can pick one with \texttt{-p}). In attach mode, the target is left running when the monitor is stopped.
+
+The following options are also available:
+
+\begin{itemize}
+\item \texttt{-{}-hz N} -- sampling frequency in Hz (default: 10000, range 1--1000000).
+\item \texttt{-{}-port N} -- the port on which the monitor accepts connections from the profiler (default: 8086).
+\end{itemize}
+
+After starting, the monitor prints a short report listing the data sources that are actually active in your environment (sampling rate, kernel frames, context switches, hardware sampling statistics, power, vsync), together with the reason for any that are unavailable.
+
+The monitor can also be built with the \texttt{TRACY\_ON\_DEMAND} define (section~\ref{ondemand}): in that case, samples are captured only while a Tracy server is connected, and samples taken before the first connection are discarded.
+
 \subsection{Merging trace files}
 \label{mergingtraces}
 

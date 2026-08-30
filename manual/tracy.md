@@ -11,7 +11,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-08-22 <https://github.com/wolfpld/tracy>
+2026-08-26 <https://github.com/wolfpld/tracy>
 
 # Quick overview {#quick-overview .unnumbered}
 
@@ -1535,7 +1535,7 @@ To mark memory events, use the `TracyAlloc(ptr, size)` and `TracyFree(ptr)` macr
 > [!IMPORTANT]
 > **Important**
 >
-> Each tracked memory-free event must also have a corresponding memory allocation event. Tracy will terminate the profiling session if this assumption is broken (see section [4.9](#instrumentationfailures)). If you encounter this issue, you may want to check for:
+> Each tracked memory-free event must also have a corresponding memory allocation event. Tracy will terminate the profiling session if this assumption is broken (see section [4.10](#instrumentationfailures)). If you encounter this issue, you may want to check for:
 >
 > - Mismatched `malloc`/`new` or `free`/`delete`.
 >
@@ -2072,7 +2072,7 @@ In typical use cases the zone context data structure is hidden from your view, r
 
 #### Zone validation
 
-Since all C API instrumentation has to be done by hand, it is possible to miss some code paths where a zone should be started or ended. Tracy will perform additional validation of instrumentation correctness to prevent bad profiling runs. Read section [4.9](#instrumentationfailures) for more information.
+Since all C API instrumentation has to be done by hand, it is possible to miss some code paths where a zone should be started or ended. Tracy will perform additional validation of instrumentation correctness to prevent bad profiling runs. Read section [4.10](#instrumentationfailures) for more information.
 
 However, the validation comes with a performance cost, which you may not want to pay. Therefore, if you are *entirely sure* that the instrumentation is not broken in any way, you may use the `TRACY_NO_VERIFY` macro, which will disable the validation code.
 
@@ -2644,7 +2644,7 @@ Zone text and name, as well as color and value, may be set by using the `tracy_z
 
 #### Zone validation
 
-Since all Fortran API instrumentation has to be done by hand, it is possible to miss some code paths where a zone should be started or ended. Tracy will perform additional validation of instrumentation correctness to prevent bad profiling runs. Read section [4.9](#instrumentationfailures) for more information.
+Since all Fortran API instrumentation has to be done by hand, it is possible to miss some code paths where a zone should be started or ended. Tracy will perform additional validation of instrumentation correctness to prevent bad profiling runs. Read section [4.10](#instrumentationfailures) for more information.
 
 However, the validation comes with a performance cost, which you may not want to pay. Therefore, if you are *entirely sure* that the instrumentation is not broken in any way, you may use the `TRACY_NO_VERIFY` macro, which will disable the validation code.
 
@@ -2855,7 +2855,7 @@ Tracy will capture small chunks of the executable image during profiling to enab
 
 The discovery of previously unseen executable code may result in reduced performance of real-time capture. This is especially true when the profiling session had just started. However, such behavior is expected and will go back to normal after several moments.
 
-It would be best to be extra careful when working with non-public code, as parts of your program will be embedded in the captured trace. You can disable the collection of program code by compiling the profiled application with the `TRACY_NO_CODE_TRANSFER` define. You can also strip the code from a saved trace using the `update` utility (section [4.7.4](#dataremoval)).
+It would be best to be extra careful when working with non-public code, as parts of your program will be embedded in the captured trace. You can disable the collection of program code by compiling the profiled application with the `TRACY_NO_CODE_TRANSFER` define. You can also strip the code from a saved trace using the `update` utility (section [4.8.4](#dataremoval)).
 
 > [!IMPORTANT]
 > **Important**
@@ -2876,7 +2876,7 @@ Sometimes it is desired to change how the profiled application behaves during th
 
     void Callback(void* data, uint32_t idx, int32_t val)
 
-The `data` parameter will have the same value as was specified in the macro. The `idx` argument is an user-defined parameter index and `val` is the value set in the profiler user interface (in the connection information popup, see section [4.4.2](#connectionpopup)).
+The `data` parameter will have the same value as was specified in the macro. The `idx` argument is an user-defined parameter index and `val` is the value set in the profiler user interface (in the connection information popup, see section [4.5.2](#connectionpopup)).
 
 To specify individual parameters, use the `TracyParameterSetup(idx, name, type, val)` macro. The `idx` value will be passed to the callback function for identification purposes (Tracy doesn't care what it's set to), `name` is the parameter label, displayed on the list of parameters, and `val` is the initial value. Finally, `type` determines how to interpret the `val` value, and can be selected from:
 
@@ -2978,6 +2978,42 @@ Each client is captured to a separate file in the output directory, named accord
 
 Press Ctrl + C to stop discovery and gracefully shut down all active captures. Each capture thread will finish writing its trace file before the daemon exits.
 
+## External monitoring {#externalmonitoring}
+
+Sometimes, the application you want to profile cannot be built with the Tracy client. This is often the case with third-party or closed-source software, running system services, or programs written in languages without Tracy bindings. For such situations, there is the `tracy-monitor` utility, contained in the `monitor` directory. The monitor profiles a process from the outside, without modifying it in any way, on Linux (x86-64 and ARM64).
+
+The monitor samples the target in the same manner as the compiled-in client (see section [3.18.5](#sampling)), so a capture contains:
+
+- Sampled call stacks of every thread of the target, resolved to function names, source file and line, including inlined functions. As with regular call stack sampling (chapter [3.12](#collectingcallstacks)), the target's executable and shared libraries should carry symbol information for the resolution to work, and programs compiled without frame pointers (typical of optimized builds) will yield call stacks truncated to the innermost function.
+
+- Machine code of the profiled functions, so that the disassembly view (section [3.18.7](#executableretrieval)) is fully functional, exactly as in a regular capture.
+
+- System-wide CPU usage plots.
+
+- Depending on your privileges and system configuration: kernel frames in the call stacks, context switches and wait stacks (sections [3.18.3](#contextswitches) and [3.18.5.1](#waitstacks)), per-thread CPU time, power consumption (RAPL) plots, and hardware vsync events.
+
+The monitor can either start the program you want to profile, or attach to an already running one:
+
+``` {.sh language="sh"}
+$ tracy-monitor ./my_program arg1 arg2
+$ tracy-monitor -p 12345
+$ tracy-monitor -n my_program
+```
+
+In the first form, the monitor launches the program and the profiling begins before its first instruction executes, so the entire lifetime of the program is covered. In this mode, stopping the monitor (Ctrl + C) also terminates the profiled program.
+
+The `-p` option attaches to an already running process by its ID, and `-n` does the same by its name (the name as known to the operating system, truncated to 15 characters; if several processes share the name, the monitor lists their IDs so you can pick one with `-p`). In attach mode, the target is left running when the monitor is stopped.
+
+The following options are also available:
+
+- `--hz N` -- sampling frequency in Hz (default: 10000, range 1--1000000).
+
+- `--port N` -- the port on which the monitor accepts connections from the profiler (default: 8086).
+
+After starting, the monitor prints a short report listing the data sources that are actually active in your environment (sampling rate, kernel frames, context switches, hardware sampling statistics, power, vsync), together with the reason for any that are unavailable.
+
+The monitor can also be built with the `TRACY_ON_DEMAND` define (section [2.1.6](#ondemand)): in that case, samples are captured only while a Tracy server is connected, and samples taken before the first connection are discarded.
+
 ## Merging trace files {#mergingtraces}
 
 When you have captured multiple traces using the capture daemon, you can combine them into a single trace file using the `tracy-merge` utility in the `merge` directory. This is useful for analyzing a multi-process application in a single view.
@@ -3023,7 +3059,7 @@ To prevent thread ID collisions between traces from different processes, thread 
 
 If you want to look at the profile data in real-time (or load a saved trace file), you can use the data analysis utility `tracy-profiler` contained in the `profiler` directory. After starting the application, you will be greeted with a welcome dialog (figure [8](#welcomedialog)), presenting a bunch of useful links ( *User manual*,  *Web*,  *Join chat* and  *Sponsor*). The  *Web* button opens a drop-down list with links to the profiler's * Home page* and a bunch of * Feature videos*.
 
-The * Wrench* button opens the about dialog, which also contains a number of global settings you may want to tweak (section [4.4.1](#aboutwindow)).
+The * Wrench* button opens the about dialog, which also contains a number of global settings you may want to tweak (section [4.5.1](#aboutwindow)).
 
 The client *address entry* field and the  *Connect* button are used to connect to a running client[^66]. You can use the connection history button  to display a list of commonly used targets, from which you can quickly select an address. You can remove entries from this list by hovering the  mouse cursor over an entry and pressing the Delete button on the keyboard.
 
@@ -3081,7 +3117,7 @@ You can also adjust some settings that affect global profiler behavior in this w
 
 - *Scroll multipliers* -- Allows you to fine-tune the sensitivity of the horizontal and vertical scroll in the timeline. The default values (1.0) are an attempt at the best possible settings, but differences in hardware manufacturers, platform implementations, and user expectations may require adjustments.
 
-- *Memory limit* -- When enabled, profiler will stop recording data when memory usage exceeds the specified percentage of the total system memory. This mechanism does not measure the current system memory usage or limits. The upper value is not capped, as you may use swap. See section [4.6](#memoryusage) for more information.
+- *Memory limit* -- When enabled, profiler will stop recording data when memory usage exceeds the specified percentage of the total system memory. This mechanism does not measure the current system memory usage or limits. The upper value is not capped, as you may use swap. See section [4.7](#memoryusage) for more information.
 
 - *Enable achievements* -- Enables achievements system, accessed through the  icon in the bottom right corner of the profiler window. It is essentially a gamified tutorial system designed to teach new users how to use the profiler.
 
@@ -3099,7 +3135,7 @@ You can also adjust some settings that affect global profiler behavior in this w
 
 If this is a real-time capture, you will also have access to the connection information pop-up (figure [9](#connectioninfo)) through the * Connection* button, with the capture status similar to the one displayed by the command-line utility. This dialog also shows the connection speed graphed over time and the profiled application's current frames per second and frame time measurements. The *Query backlog* consists of two numbers. The first represents the number of queries that were held back due to the bandwidth volume overwhelming the available network send buffer. The second one shows how many queries are in-flight, meaning requests sent to the client but not yet answered. While these numbers drain down to zero, the performance of real time profiling may be temporarily compromised. The circle displayed next to the bandwidth graph signals the connection status. If it's red, the connection is active. If it's gray, the client has disconnected.
 
-You can use the  *Save trace\...* button to save the current profile data to a file[^69]. The available compression modes are discussed in sections [4.7.1](#archival) and [4.7.3](#fidict). Use the  *Stop* button to disconnect from the client[^70]. The  *Discard* button is used to discard current trace.
+You can use the  *Save trace\...* button to save the current profile data to a file[^69]. The available compression modes are discussed in sections [4.8.1](#archival) and [4.8.3](#fidict). Use the  *Stop* button to disconnect from the client[^70]. The  *Discard* button is used to discard current trace.
 
 [^69]: You should take this literally. If a live capture is in progress and a save is performed, some data may be missing from the capture and won't be saved.
 
@@ -3297,7 +3333,7 @@ In some cases, your program may be incorrectly instrumented. For example, you co
 
 You have instrumented your application, and you have captured a profiling trace. Now you want to look at the collected data. You can do this in the application contained in the `profiler` directory.
 
-The workflow is identical, whether you are viewing a previously saved trace or if you're performing a live capture, as described in section [4.4](#interactiveprofiling).
+The workflow is identical, whether you are viewing a previously saved trace or if you're performing a live capture, as described in section [4.5](#interactiveprofiling).
 
 ## Time display
 
@@ -3320,7 +3356,7 @@ The main profiler window is split into three sections, as seen in figure [14](#
 
 The control menu (top row of buttons) provides access to various profiler features. The buttons perform the following actions:
 
-- * Connection* -- Opens the connection information popup (see section [4.4.2](#connectionpopup)). Only available when live capture is in progress.
+- * Connection* -- Opens the connection information popup (see section [4.5.2](#connectionpopup)). Only available when live capture is in progress.
 
 - * Close* -- This button unloads the current profiling trace and returns to the welcome menu, where another trace can be loaded. In live captures it is replaced by * Pause*, * Resume* and * Stopped* buttons.
 
@@ -3364,7 +3400,7 @@ The control menu (top row of buttons) provides access to various profiler featur
 
 - * Display scale* -- Enables run-time resizing of the displayed content. This may be useful in environments with potentially reduced visibility, e.g. during a presentation. Note that this setting is independent to the UI scaling coming from the system DPI settings. The scale will be preserved across multiple profiler sessions if the *Save UI scale* option is selected in global settings.
 
-- * Tracy Assist* -- Shows the automated assistant chat window (section [6](#tracyassist)). Only available if enabled in global settings (section [4.4.1](#aboutwindow)).
+- * Tracy Assist* -- Shows the automated assistant chat window (section [6](#tracyassist)). Only available if enabled in global settings (section [4.5.1](#aboutwindow)).
 
 [^72]: Or perform any action on the timeline view, apart from changing the zoom level.
 
@@ -3410,7 +3446,7 @@ The following three items show the * view time range*, the * time span* of
 
 #### Notification area
 
-The notification area displays informational notices, for example, how long it took to load a trace from the disk. The three pulsing dots indicator shows that some background tasks are being performed that may need to be completed before full capabilities of the profiler are available. If a crash was captured during profiling (section [2.5](#crashhandling)), a * crash* icon will be displayed. You can click this icon to see the crash call stack. The red  icon indicates that queries are currently being backlogged, while the same yellow icon indicates that some queries are currently in-flight (see chapter [4.4.2](#connectionpopup) for more information).
+The notification area displays informational notices, for example, how long it took to load a trace from the disk. The three pulsing dots indicator shows that some background tasks are being performed that may need to be completed before full capabilities of the profiler are available. If a crash was captured during profiling (section [2.5](#crashhandling)), a * crash* icon will be displayed. You can click this icon to see the crash call stack. The red  icon indicates that queries are currently being backlogged, while the same yellow icon indicates that some queries are currently in-flight (see chapter [4.5.2](#connectionpopup) for more information).
 
 If the drawing of timeline elements was disabled in the options menu (section [5.4](#options)), the profiler will use the following orange icons to remind you about that fact. Click on the icons to enable drawing of the selected elements. Note that collapsed labels (section [5.2.3.4](#zoneslocksplots)) are not taken into account here.
 
@@ -4933,7 +4969,7 @@ With Tracy Profiler, you can use GenAI features to get help using the profiler o
 
 The automated assistant can search the user manual to answer your questions about the profiler. It can also read the source code or analyze captured profile data when you ask about program performance or algorithms. It has the capacity for access to Wikipedia, the ability to search the web, and the capability to access web pages in response to general questions.
 
-This feature can be completely disabled in the *Global settings*, as described in section [4.4.1](#aboutwindow).
+This feature can be completely disabled in the *Global settings*, as described in section [4.5.1](#aboutwindow).
 
 > [!CAUTION]
 > **Caution**

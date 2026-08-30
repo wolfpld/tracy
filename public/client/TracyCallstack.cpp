@@ -438,6 +438,46 @@ static uint64_t ReadElfMinLoadVaddr( const char* path, uint64_t mapStart, uint64
     return minVaddr;
 }
 
+static uint64_t ReadElfSegmentLoadBias( const char* path, uint64_t start, uint64_t end, uint64_t offset, uint64_t pageSize )
+{
+    const int fd = OpenExternalImageFile( path, start, end );
+    if( fd < 0 ) return UINT64_MAX;
+
+    elf_ehdr ehdr;
+    if( read( fd, &ehdr, sizeof( ehdr ) ) != sizeof( ehdr ) ||
+        ehdr.e_ident[0] != 0x7f || ehdr.e_ident[1] != 'E' ||
+        ehdr.e_ident[2] != 'L'  || ehdr.e_ident[3] != 'F' ||
+        ehdr.e_ident[4] != 2 ||
+        ehdr.e_phoff == 0 || ehdr.e_phnum == 0 )
+    {
+        close( fd );
+        return UINT64_MAX;
+    }
+
+    if( lseek( fd, ehdr.e_phoff, SEEK_SET ) == (off_t)-1 )
+    {
+        close( fd );
+        return UINT64_MAX;
+    }
+
+    uint64_t loadBias = UINT64_MAX;
+    for( uint16_t i = 0; i < ehdr.e_phnum; i++ )
+    {
+        elf_phdr phdr;
+        if( read( fd, &phdr, sizeof( phdr ) ) != sizeof( phdr ) ) break;
+        if( phdr.p_type != ExtPT_LOAD ) continue;
+        const uint64_t vaddr = static_cast<uint64_t>( phdr.p_vaddr );
+        if( static_cast<uint64_t>( phdr.p_offset ) - ( vaddr & ( pageSize - 1 ) ) == offset )
+        {
+            loadBias = start - ( vaddr & ~( pageSize - 1 ) );
+            break;
+        }
+    }
+
+    close( fd );
+    return loadBias;
+}
+
 static void ParseExternalProcMaps( pid_t pid )
 {
     char mapPath[64];
@@ -466,17 +506,12 @@ static void ParseExternalProcMaps( pid_t pid )
         if( plen == 0 || pathname[0] != '/' ) continue;
         if( std::find_if( s_extImages->begin(), s_extImages->end(), [start]( const ExternalImageEntry& e ) { return e.startAddress == start; } ) != s_extImages->end() ) continue;
 
-        uint64_t minVaddr = ReadElfMinLoadVaddr( pathname, start, end );
-        uint64_t loadBias;
-        if( minVaddr == UINT64_MAX )
+        uint64_t pageSize = sysconf( _SC_PAGESIZE );
+        uint64_t loadBias = ReadElfSegmentLoadBias( pathname, start, end, offset, pageSize );
+        if( loadBias == UINT64_MAX )
         {
-            loadBias = start;
-        }
-        else
-        {
-            uint64_t pageSize = sysconf( _SC_PAGESIZE );
-            uint64_t alignedVaddr = minVaddr & ~(pageSize - 1);
-            loadBias = start - alignedVaddr - offset;
+            uint64_t minVaddr = ReadElfMinLoadVaddr( pathname, start, end );
+            loadBias = ( minVaddr == UINT64_MAX ) ? start : start - ( minVaddr & ~( pageSize - 1 ) ) - offset;
         }
 
         ExternalImageEntry entry = {

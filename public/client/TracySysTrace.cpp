@@ -830,16 +830,29 @@ bool SysTraceStart( int64_t& samplingPeriod )
             TracyDebug( "Failed to enumerate threads of pid %u; target may have exited.", currentPid );
             return false;
         }
-        iter = (PerfIterTarget*)tracy_malloc( sizeof( PerfIterTarget ) * numTids );
-        for( int i=0; i<numTids; i++ ) iter[i] = { (pid_t)tids[i], -1 };
-        numIter = numTids;
+        if( numTids == 1 )
+        {
+            iter = (PerfIterTarget*)tracy_malloc( sizeof( PerfIterTarget ) * s_numCpus );
+            for( int i=0; i<s_numCpus; i++ ) iter[i] = { (pid_t)tids[0], i };
+            numIter = s_numCpus;
+            TracyDebug( "Monitor mode: per-CPU events on pid %u (launch)", currentPid );
+        }
+        else
+        {
+            iter = (PerfIterTarget*)tracy_malloc( sizeof( PerfIterTarget ) * numTids * s_numCpus );
+            int k = 0;
+            for( int i=0; i<numTids; i++ )
+            {
+                for( int c=0; c<s_numCpus; c++ ) iter[k++] = { (pid_t)tids[i], c };
+            }
+            numIter = numTids * s_numCpus;
+            TracyDebug( "Monitor mode: per-thread per-CPU events for %i threads of pid %u (attach)", numTids, currentPid );
+        }
         tracy_free( tids );
-        TracyDebug( "Monitor mode: tracing %i existing threads of pid %u", numIter, currentPid );
     }
     else
 #endif
     {
-        // Self-profiling: per-CPU events on the client's own pid.
         iter = (PerfIterTarget*)tracy_malloc( sizeof( PerfIterTarget ) * s_numCpus );
         for( int i=0; i<s_numCpus; i++ ) iter[i] = { (pid_t)currentPid, i };
         numIter = s_numCpus;

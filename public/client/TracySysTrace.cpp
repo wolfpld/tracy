@@ -457,6 +457,12 @@ static int EnumerateTaskTids( pid_t pid, uint32_t** out )
         tids[count++] = (uint32_t)tid;
     }
     closedir( dir );
+    if( count == 0 )
+    {
+        tracy_free( tids );
+        *out = nullptr;
+        return 0;
+    }
     *out = tids;
     return (int)count;
 }

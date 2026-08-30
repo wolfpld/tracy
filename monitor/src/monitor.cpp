@@ -402,33 +402,6 @@ static void PrintStartupReport( bool kernelFrames, bool hwStats, int hwErrno )
     fflush( stdout );
 }
 
-static void PrintUsage( const char* progName )
-{
-    printf( "tracy-monitor %i.%i.%i / %s\n\n", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, tracy::GitRef );
-    printf( "Usage: %s [OPTIONS] program [arguments...]\n", progName );
-    printf( "       %s [OPTIONS] -p PID\n", progName );
-    printf( "\n" );
-    printf( "Options:\n" );
-    printf( "  -p PID        Attach to existing process (PID)\n" );
-    printf( "  -n NAME       Attach to existing process by name\n" );
-    printf( "  --hz N        Sampling frequency in Hz (default 10000, range 1..1000000)\n" );
-    printf( "  --port N      Listen port for Tracy servers (default 8086)\n" );
-    printf( "  -h            Show this help message\n" );
-    printf( "\n" );
-    printf( "Examples:\n" );
-    printf( "  %s ./my_program arg1 arg2\n", progName );
-    printf( "  %s -p 1234\n", progName );
-    printf( "  %s -n my_program\n", progName );
-    printf( "\n" );
-    printf( "The monitor captures sampling profiling data from an external process\n" );
-    printf( "and streams it to a Tracy server for visualization.\n" );
-    printf( "\n" );
-    printf( "In launch mode, the target program is started under ptrace control to\n" );
-    printf( "ensure profiling begins before the first instruction executes.\n" );
-    printf( "\n" );
-    printf( "In attach mode (-p), the target must already be running.\n" );
-}
-
 static int FindPidsByComm( const char* name, pid_t* outPids, int maxPids )
 {
     int count = 0;
@@ -762,6 +735,54 @@ static int RunForked( int argc, char** argv )
     return 0;
 }
 
+static void PrintUsage( const char* progName )
+{
+    printf( "tracy-monitor %i.%i.%i / %s\n\n", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, tracy::GitRef );
+    printf( "Profiles a process that was not built with the Tracy client.\n" );
+    printf( "\n" );
+    printf( "Usage: %s [OPTIONS] program [arguments...]\n", progName );
+    printf( "       %s [OPTIONS] -p PID\n", progName );
+    printf( "       %s [OPTIONS] -n NAME\n", progName );
+    printf( "\n" );
+    printf( "Options:\n" );
+    printf( "  -p, --pid PID    Attach to an existing process (PID)\n" );
+    printf( "  -n, --name NAME  Attach to an existing process by name; the name is the\n" );
+    printf( "                   /proc/<pid>/comm value, truncated to 15 characters. If\n" );
+    printf( "                   several processes match, their PIDs are listed; use -p.\n" );
+    printf( "  --hz N           Sampling frequency in Hz (default 10000, range 1..1000000)\n" );
+    printf( "  --port N         Listen port for Tracy servers (default 8086)\n" );
+    printf( "  -h, --help       Show this help message\n" );
+    printf( "\n" );
+    printf( "Exit codes: 0 on success; 1 when the target cannot be profiled\n" );
+    printf( "(bad option, no matching process, permission or kernel refusal);\n" );
+    printf( "2 when the monitor itself fails to start the target (fork/exec/ptrace).\n" );
+    printf( "\n" );
+    printf( "Permission requirements (perf_event_paranoid / capabilities):\n" );
+    printf( "  sampling + symbolication               ptrace READ access to the target:\n" );
+    printf( "                                         same user (uid and gid) and dumpable,\n" );
+    printf( "                                         or CAP_SYS_PTRACE (yama ptrace_scope\n" );
+    printf( "                                         does not apply; launch mode's\n" );
+    printf( "                                         PTRACE_TRACEME needs CAP_SYS_PTRACE at\n" );
+    printf( "                                         scope 2 and is blocked at scope 3)\n" );
+    printf( "  kernel frames in callchains            paranoid <= 1 or CAP_PERFMON\n" );
+    printf( "  IPC / cache / branch statistics        hardware PMU counters must be\n" );
+    printf( "                                         available (often restricted in VMs\n" );
+    printf( "                                         and containers)\n" );
+    printf( "  context switches / wait stacks         tracefs readable (root on most\n" );
+    printf( "                                         systems) AND paranoid <= -1 or\n" );
+    printf( "                                         CAP_PERFMON for the event open\n" );
+    printf( "  power (RAPL) plot                      read access to\n" );
+    printf( "                                         /sys/devices/virtual/powercap/intel-rapl\n" );
+    printf( "\n" );
+    printf( "Examples:\n" );
+    printf( "  %s ./my_program arg1 arg2\n", progName );
+    printf( "  %s -n my_program\n", progName );
+    printf( "\n" );
+    printf( "In launch mode the target is started under ptrace control so profiling\n" );
+    printf( "begins before its first instruction; quitting the monitor terminates the\n" );
+    printf( "target. In attach mode (-p/-n) the target must already be running and is\n" );
+    printf( "left running when the monitor quits.\n" );
+}
 // Reserve the first free port in the client's 8086..8105 scan range and hand the
 // probe socket to the client (SetReservedListenSocket) so the reservation is atomic.
 // The probe must mirror the client's bind exactly (ListenSocket::Listen): IPv6

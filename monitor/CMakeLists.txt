@@ -22,7 +22,6 @@ endif()
 find_package(Threads REQUIRED)
 
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/config.cmake)
-include(${CMAKE_CURRENT_LIST_DIR}/../cmake/vendor.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/GitRef.cmake)
 
 set(PROGRAM_FILES

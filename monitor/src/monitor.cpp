@@ -167,7 +167,7 @@ static int RunAttached( pid_t pid )
 
     if( !PreflightPerfEventOpen( pid ) ) return 1;
 
-    tracy::InitExternalImageCache( pid );
+    if( !tracy::InitExternalTarget( pid ) ) return 1;
     tracy::___tracy_magic_pid_override = (uint32_t)pid;
     tracy::StartupProfiler();
 
@@ -272,7 +272,12 @@ static int RunForked( int argc, char** argv )
     }
 
     // Initialize the external image cache (target's /proc/pid/maps)
-    tracy::InitExternalImageCache( childPid );
+    if( !tracy::InitExternalTarget( childPid ) )
+    {
+        kill( childPid, SIGKILL );
+        waitpid( childPid, nullptr, 0 );
+        return 1;
+    }
 
     // Set up the profiler to target the child
     tracy::___tracy_magic_pid_override = (uint32_t)childPid;

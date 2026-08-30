@@ -347,6 +347,12 @@ void DestroyImageCaches()
 
 
 #ifdef __linux__
+#  include <errno.h>
+#  include <fcntl.h>
+#  include <signal.h>
+#  include <sys/stat.h>
+#  include <unistd.h>
+
 
 static constexpr uint32_t ExtPT_LOAD = 1;
 
@@ -361,7 +367,9 @@ struct ExternalImageEntry
 };
 
 static FastVector<ExternalImageEntry>* s_extImages = nullptr;
-static pid_t s_externalPid = 0;
+static pid_t s_externalTargetPid = 0;
+static char s_externalTargetName[64] = {};
+static uint64_t s_externalTargetExeMtime = 0;
 static bool s_extImagesSorted = true;
 // Wall-clock second of the last /proc/<pid>/maps re-parse. Used to rate-limit
 // refreshes so addresses that never resolve (JIT, vDSO, stack) do not trigger
@@ -495,13 +503,13 @@ static const ExternalImageEntry* FindExternalImageRefresh( uint64_t address )
     auto entry = FindExternalImage( address );
     if( entry ) return entry;
 
-    if( s_externalPid != 0 )
+    if( s_externalTargetPid != 0 )
     {
         const int64_t now = (int64_t)time( nullptr );
         if( now != s_lastMapsRefresh )
         {
             s_lastMapsRefresh = now;
-            ParseExternalProcMaps( s_externalPid );
+            ParseExternalProcMaps( s_externalTargetPid );
             return FindExternalImage( address );
         }
     }
@@ -567,15 +575,72 @@ static void ExternalSymInfoCb( void* data, uintptr_t pc, const char* symname, ui
     sd.symsize = symsize;
 }
 
-void InitExternalImageCache( pid_t pid )
+bool InitExternalTarget( pid_t targetPid )
 {
-    s_externalPid = pid;
+    if( kill( targetPid, 0 ) != 0 )
+    {
+        fprintf( stderr, "Tracy: cannot profile pid %d: %s\n", (int)targetPid, strerror( errno ) );
+        return false;
+    }
+
+    char path[64];
+    snprintf( path, sizeof( path ), "/proc/%d/comm", (int)targetPid );
+    FILE* f = fopen( path, "r" );
+    if( !f )
+    {
+        fprintf( stderr, "Tracy: cannot read %s: %s\n", path, strerror( errno ) );
+        return false;
+    }
+    char comm[64] = {};
+    if( !fgets( comm, sizeof( comm ), f ) )
+    {
+        fclose( f );
+        fprintf( stderr, "Tracy: cannot read %s: %s\n", path, strerror( errno ) );
+        return false;
+    }
+    fclose( f );
+    size_t len = strlen( comm );
+    while( len > 0 && ( comm[len-1] == '\n' || comm[len-1] == '\r' ) ) len--;
+    if( len >= sizeof( s_externalTargetName ) ) len = sizeof( s_externalTargetName ) - 1;
+    memcpy( s_externalTargetName, comm, len );
+    s_externalTargetName[len] = '\0';
+
+    snprintf( path, sizeof( path ), "/proc/%d/exe", (int)targetPid );
+    {
+        const int exeFd = open( path, O_RDONLY );
+        if( exeFd < 0 )
+        {
+            fprintf( stderr, "Tracy: cannot read %s: %s\n", path, strerror( errno ) );
+            return false;
+        }
+        struct stat exeSt;
+        if( fstat( exeFd, &exeSt ) == 0 ) s_externalTargetExeMtime = (uint64_t)exeSt.st_mtime;
+        close( exeFd );
+    }
+
+    s_externalTargetPid = targetPid;
     if( !s_extImages )
     {
         s_extImages = (FastVector<ExternalImageEntry>*)tracy_malloc( sizeof( FastVector<ExternalImageEntry> ) );
         new (s_extImages) FastVector<ExternalImageEntry>( 64 );
     }
-    ParseExternalProcMaps( pid );
+    ParseExternalProcMaps( targetPid );
+    return true;
+}
+
+uint32_t GetExternalTargetPid()
+{
+    return (uint32_t)s_externalTargetPid;
+}
+
+const char* GetExternalTargetName()
+{
+    return s_externalTargetName;
+}
+
+uint64_t GetExternalTargetExeTime()
+{
+    return s_externalTargetExeMtime;
 }
 
 #endif // __linux__
@@ -1485,7 +1550,7 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
     static char ret[1024];
 
 #ifdef __linux__
-    if( s_externalPid != 0 && s_extImages ) return DecodeCallstackPtrFastExternal( ptr );
+    if( s_externalTargetPid != 0 && s_extImages ) return DecodeCallstackPtrFastExternal( ptr );
 #endif
 
     auto vptr = (void*)ptr;
@@ -1560,7 +1625,7 @@ CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
     CallstackSymbolData sym;
 
 #ifdef __linux__
-    if( s_externalPid != 0 && s_extImages ) return DecodeSymbolAddressExternal( ptr );
+    if( s_externalTargetPid != 0 && s_extImages ) return DecodeSymbolAddressExternal( ptr );
 #endif
 
     if( cb_bts )
@@ -1801,7 +1866,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     if( !IsKernelAddress( ptr ) )
     {
 #ifdef __linux__
-        if( s_externalPid != 0 && s_extImages ) return DecodeCallstackPtrExternal( ptr );
+        if( s_externalTargetPid != 0 && s_extImages ) return DecodeCallstackPtrExternal( ptr );
 #endif
 
         const char* imageName = nullptr;

@@ -89,7 +89,10 @@ void EndCallstack();
 const char* GetKernelModulePath( uint64_t addr );
 
 #ifdef __linux__
-void InitExternalImageCache( pid_t pid );
+bool InitExternalTarget( pid_t targetPid );
+uint32_t GetExternalTargetPid();
+const char* GetExternalTargetName();
+uint64_t GetExternalTargetExeTime();
 #endif
 
 #ifdef TRACY_DEBUGINFOD

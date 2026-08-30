@@ -54,9 +54,23 @@ static bool CheckPerfPermissions()
     return true;
 }
 
+// kill( pid, 0 ) succeeds even for zombies, so liveness also checks the
+// /proc state: a zombie is dead - nothing left to sample, and in attach
+// mode we are not the parent, so we can neither reap it nor learn its exit.
 static bool ProcessIsAlive( pid_t pid )
 {
-    return kill( pid, 0 ) == 0;
+    if( kill( pid, 0 ) != 0 ) return false;
+    char path[32];
+    snprintf( path, sizeof( path ), "/proc/%d/stat", (int)pid );
+    FILE* f = fopen( path, "r" );
+    if( !f ) return false;
+    char buf[512];
+    const size_t n = fread( buf, 1, sizeof( buf ) - 1, f );
+    fclose( f );
+    buf[n] = 0;
+    // the state char follows the last ')' (comm may contain spaces/parens)
+    const char* state = strrchr( buf, ')' );
+    return state && state[1] == ' ' && state[2] != 'Z' && state[2] != '\0';
 }
 
 // Try opening one perf event against the target so we fail fast with a clear
@@ -122,9 +136,14 @@ static void PrintUsage( const char* progName )
 
 static int RunAttached( pid_t pid )
 {
-    if( !ProcessIsAlive( pid ) )
+    if( kill( pid, 0 ) != 0 )
     {
         fprintf( stderr, "Process %d does not exist or is not accessible.\n", (int)pid );
+        return 1;
+    }
+    if( !ProcessIsAlive( pid ) )
+    {
+        fprintf( stderr, "Process %d is a zombie (it has already exited); nothing to attach to.\n", (int)pid );
         return 1;
     }
 
@@ -156,7 +175,7 @@ static int RunAttached( pid_t pid )
     }
     else
     {
-        printf( "Target process %d exited.\n", (int)pid );
+        printf( "Target exited.\n" );
     }
 
     tracy::ShutdownProfiler();
@@ -265,13 +284,14 @@ static int RunForked( int argc, char** argv )
         pid_t ret = waitpid( childPid, &wstatus, WNOHANG );
         if( ret > 0 )
         {
+            // the monitor's exit code reflects the monitor, not the profiled application
             if( WIFEXITED( wstatus ) )
             {
-                printf( "Target process exited with status %d.\n", WEXITSTATUS( wstatus ) );
+                printf( "Target exited with status %d.\n", WEXITSTATUS( wstatus ) );
             }
             else if( WIFSIGNALED( wstatus ) )
             {
-                printf( "Target process killed by signal %d.\n", WTERMSIG( wstatus ) );
+                printf( "Target exited (signal %d).\n", WTERMSIG( wstatus ) );
             }
             break;
         }
@@ -292,8 +312,13 @@ static int RunForked( int argc, char** argv )
         if( ProcessIsAlive( childPid ) )
         {
             kill( childPid, SIGKILL );
-            waitpid( childPid, nullptr, 0 );
         }
+        waitpid( childPid, nullptr, 0 );
+    }
+    else if( s_shouldQuit )
+    {
+        // Child is a zombie (it died since the last poll): reap it.
+        waitpid( childPid, nullptr, WNOHANG );
     }
 
     tracy::ShutdownProfiler();

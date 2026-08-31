@@ -17,6 +17,7 @@ concurrency:
 
 env:
   CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm-cache
+  PANDOC_CACHE_DIR: ${{ github.workspace }}/pandoc-cache
 
 jobs:
   build-windows:
@@ -29,6 +30,11 @@ jobs:
         path: ${{ env.CPM_SOURCE_CACHE }}
         key: ${{ runner.os }}-cpm-${{ hashFiles('**/vendor.cmake', '**/CMakeLists.txt') }}
         restore-keys: ${{ runner.os }}-cpm-
+    - name: Cache pandoc
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.PANDOC_CACHE_DIR }}
+        key: ${{ runner.os }}-pandoc-${{ hashFiles('cmake/manual.cmake') }}
     - uses: microsoft/setup-msbuild@v2
     - name: Trust git repo
       run: git config --global --add safe.directory '*'

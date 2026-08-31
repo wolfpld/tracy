@@ -51,23 +51,38 @@ else()
         endif()
     endif()
 
-    set(TRACY_PANDOC ${CMAKE_BINARY_DIR}/tools/${_pandoc_exe})
+    # Shared cache: $PANDOC_CACHE_DIR, else the platform user cache directory.
+    if(DEFINED ENV{PANDOC_CACHE_DIR})
+        set(_pandoc_cache $ENV{PANDOC_CACHE_DIR})
+    elseif(WIN32)
+        set(_pandoc_cache $ENV{LOCALAPPDATA}/tracy/pandoc)
+    elseif(APPLE)
+        set(_pandoc_cache $ENV{HOME}/Library/Caches/tracy/pandoc)
+    elseif(DEFINED ENV{XDG_CACHE_HOME})
+        set(_pandoc_cache $ENV{XDG_CACHE_HOME}/tracy/pandoc)
+    else()
+        set(_pandoc_cache $ENV{HOME}/.cache/tracy/pandoc)
+    endif()
+
+    set(TRACY_PANDOC ${_pandoc_cache}/${_pandoc_exe})
     if(NOT EXISTS ${TRACY_PANDOC})
+        # Concurrent configures on a cold cache can collide; worst case the
+        # hash check fails and a rerun succeeds.
         message(STATUS "Downloading pandoc ${PANDOC_VERSION} (${_pandoc_asset})")
-        file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/tools)
+        file(MAKE_DIRECTORY ${_pandoc_cache})
         file(DOWNLOAD
             https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/${_pandoc_asset}
-            ${CMAKE_BINARY_DIR}/tools/pandoc.archive
+            ${_pandoc_cache}/pandoc.archive
             EXPECTED_HASH SHA256=${_pandoc_hash}
             STATUS _pandoc_download)
         list(GET _pandoc_download 0 _pandoc_download_rc)
         if(NOT _pandoc_download_rc STREQUAL "0")
-            file(REMOVE ${CMAKE_BINARY_DIR}/tools/pandoc.archive)
+            file(REMOVE ${_pandoc_cache}/pandoc.archive)
             message(FATAL_ERROR "Failed to download pandoc ${PANDOC_VERSION}: ${_pandoc_download}")
         endif()
         file(ARCHIVE_EXTRACT
-            INPUT ${CMAKE_BINARY_DIR}/tools/pandoc.archive
-            DESTINATION ${CMAKE_BINARY_DIR}/tools)
-        file(REMOVE ${CMAKE_BINARY_DIR}/tools/pandoc.archive)
+            INPUT ${_pandoc_cache}/pandoc.archive
+            DESTINATION ${_pandoc_cache})
+        file(REMOVE ${_pandoc_cache}/pandoc.archive)
     endif()
 endif()

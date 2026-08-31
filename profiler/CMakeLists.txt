@@ -48,18 +48,26 @@ ExternalProject_Add(embed
         -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}
 )
 
+# Embeds a file into the profiler as a compressed C array (data/NAME.cpp/.hpp).
+# FILE is relative to the current source directory; with BUILD, relative to
+# the current build directory. With TEXT, line endings are normalized to unix.
 function(Embed LIST NAME FILE)
-    cmake_parse_arguments(EMBED "TEXT" "" "" ${ARGN})
+    cmake_parse_arguments(EMBED "TEXT;BUILD" "" "" ${ARGN})
     if(EMBED_TEXT)
         set(EMBED_FLAGS -t)
     else()
         set(EMBED_FLAGS)
     endif()
+    if(EMBED_BUILD)
+        set(EMBED_SOURCE ${CMAKE_CURRENT_BINARY_DIR}/${FILE})
+    else()
+        set(EMBED_SOURCE ${CMAKE_CURRENT_LIST_DIR}/${FILE})
+    endif()
     add_custom_command(
         OUTPUT data/${NAME}.cpp data/${NAME}.hpp
         COMMAND ${CMAKE_COMMAND} -E make_directory data
-        COMMAND ${CMAKE_CURRENT_BINARY_DIR}/embed ${EMBED_FLAGS} ${NAME} ${CMAKE_CURRENT_LIST_DIR}/${FILE} data/${NAME}
-        DEPENDS embed ${CMAKE_CURRENT_LIST_DIR}/${FILE}
+        COMMAND ${CMAKE_CURRENT_BINARY_DIR}/embed ${EMBED_FLAGS} ${NAME} ${EMBED_SOURCE} data/${NAME}
+        DEPENDS embed ${EMBED_SOURCE}
     )
     list(APPEND ${LIST} data/${NAME}.cpp)
     return(PROPAGATE ${LIST})

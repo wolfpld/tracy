@@ -72,6 +72,10 @@ jobs:
       run: |
         cmake -B merge/build -S merge -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
         cmake --build merge/build $CMAKE_PARALLEL
+    - name: Monitor utility
+      run: |
+        cmake -B monitor/build -S monitor -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
+        cmake --build monitor/build $CMAKE_PARALLEL
     - name: Library (cmake)
       run: |
         cmake -B build -DCMAKE_BUILD_TYPE=Release -DTRACY_ENABLE=ON
@@ -96,6 +100,7 @@ jobs:
         cp import/build/tracy-import-chrome bin
         cp import/build/tracy-import-fuchsia bin
         cp merge/build/tracy-merge bin
+        cp monitor/build/tracy-monitor bin
         strip bin/tracy-*
     - uses: actions/upload-artifact@v4
       with:

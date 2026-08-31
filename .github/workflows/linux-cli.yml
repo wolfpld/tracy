@@ -57,6 +57,10 @@ jobs:
       run: |
         cmake -B merge/build -S merge -DCMAKE_BUILD_TYPE=Release -DNO_ISA_EXTENSIONS=ON -DGIT_REV=${{ github.sha }}
         cmake --build merge/build --parallel
+    - name: Build monitor
+      run: |
+        cmake -B monitor/build -S monitor -DCMAKE_BUILD_TYPE=Release -DNO_ISA_EXTENSIONS=ON -DGIT_REV=${{ github.sha }}
+        cmake --build monitor/build --parallel
     - name: Stage release files
       run: |
         mkdir -p linux-cli
@@ -67,6 +71,7 @@ jobs:
         cp import/build/tracy-import-chrome linux-cli/
         cp import/build/tracy-import-fuchsia linux-cli/
         cp merge/build/tracy-merge linux-cli/
+        cp monitor/build/tracy-monitor linux-cli/
         strip linux-cli/tracy-*
     - uses: actions/upload-artifact@v4
       with:

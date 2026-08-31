@@ -288,7 +288,8 @@ fs.writeFileSync('/tmp/toolbar-zoom.png', buf);
 | 1012–1036 | 2142681495 | ▶ next frame — focuses the timeline on the next frame (verified: view range 25.82 s → 203.38 ms) |
 | 1052–1072 | 2961929287 | ▼ frame set selection (switch the active frame set) |
 
-Button names and functions: the user manual, *Control menu* (`manual/tracy.md`). The
+Button names and functions: the user manual, *Control menu* (`manual/tracy.md`,
+generated into the profiler build directory by the build, e.g. `build/profiler/manual/tracy.md`). The
 web build omits *Connection* (live capture only) and *Tracy Assist* (desktop only).
 
 ## User scale (DPI zoom)

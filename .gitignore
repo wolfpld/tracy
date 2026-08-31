@@ -17,6 +17,7 @@ manual/t*.bbl
 manual/t*.blg
 manual/t*.fdb_latexmk
 manual/t*.fls
+manual/tracy.md
 profiler/build-appimage
 .deps/
 .dirstamp

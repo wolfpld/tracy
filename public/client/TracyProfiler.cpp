@@ -1552,6 +1552,7 @@ Profiler::Profiler()
     , m_broadcast( nullptr )
     , m_noExit( false )
     , m_userPort( 0 )
+    , m_dataPort( 0 )
     , m_zoneId( 1 )
     , m_sectionId( 1 )
     , m_samplingPeriod( 0 )
@@ -1955,6 +1956,7 @@ void Profiler::Worker()
             std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
         }
     }
+    m_dataPort.store( dataPort, std::memory_order_release );
 
 #ifndef TRACY_NO_BROADCAST
     m_broadcast = (UdpBroadcast*)tracy_malloc( sizeof( UdpBroadcast ) );

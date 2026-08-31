@@ -804,6 +804,8 @@ Suppose for some reason you want to use another port\footnote{For example, other
 
 If a custom port is not specified and the default listening port is already occupied, the profiler will automatically try to listen on a number of other ports.
 
+Since the port in use may differ from the default one, the client application may query the actual data connection port using the \texttt{TracyPort} macro. It returns the port number once the listening socket has been bound, or zero otherwise.
+
 \begin{bclogo}[
 noborder=true,
 couleur=black!5,

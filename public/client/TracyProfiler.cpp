@@ -1940,6 +1940,7 @@ void Profiler::Worker()
             }
         }
     }
+    if( isListening ) dataPort = listen.LocalPort();
 
     s_dataPortListening.store( isListening, std::memory_order_release );
     if( !isListening )

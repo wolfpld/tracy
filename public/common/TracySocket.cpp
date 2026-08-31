@@ -433,6 +433,15 @@ void ListenSocket::Adopt( int fd )
     m_sock = fd;
 }
 
+uint16_t ListenSocket::LocalPort() const
+{
+    struct sockaddr_storage addr;
+    socklen_t len = sizeof( addr );
+    if( getsockname( m_sock, (sockaddr*)&addr, &len ) != 0 ) return 0;
+    if( addr.ss_family == AF_INET6 ) return ntohs( ((struct sockaddr_in6*)&addr)->sin6_port );
+    return ntohs( ((struct sockaddr_in*)&addr)->sin_port );
+}
+
 static int addrinfo_and_socket_for_family( uint16_t port, int ai_family, struct addrinfo** res )
 {
     struct addrinfo hints;

@@ -98,6 +98,7 @@ public:
     Socket* Accept();
     void Close();
     void Adopt( int fd );
+    uint16_t LocalPort() const;
 
     ListenSocket( const ListenSocket& ) = delete;
     ListenSocket( ListenSocket&& ) = delete;

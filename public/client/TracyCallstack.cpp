@@ -346,7 +346,7 @@ void DestroyImageCaches()
 }
 
 
-#ifdef __linux__
+#ifdef TRACY_HAS_EXTERNAL_TARGET
 #  include <errno.h>
 #  include <fcntl.h>
 #  include <signal.h>
@@ -771,7 +771,7 @@ size_t ReadExternalTargetMemory( uint64_t addr, uint32_t size, char* buf )
     return 0;
 }
 
-#endif // __linux__
+#endif // TRACY_HAS_EXTERNAL_TARGET
 
 
 // when "TRACY_SYMBOL_OFFLINE_RESOLVE" is set, instead of fully resolving symbols at runtime,
@@ -1638,7 +1638,7 @@ void EndCallstack()
 #endif
 }
 
-#ifdef __linux__
+#ifdef TRACY_HAS_EXTERNAL_TARGET
 static const char* DecodeCallstackPtrFastExternal( uint64_t ptr )
 {
     static char ret[1024];
@@ -1677,7 +1677,7 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
 {
     static char ret[1024];
 
-#ifdef __linux__
+#ifdef TRACY_HAS_EXTERNAL_TARGET
     if( s_externalTargetPid != 0 && s_extImages ) return DecodeCallstackPtrFastExternal( ptr );
 #endif
 
@@ -1728,7 +1728,7 @@ static void SymbolAddressErrorCb( void* data, const char* /*msg*/, int /*errnum*
     sym.needFree = false;
 }
 
-#ifdef __linux__
+#ifdef TRACY_HAS_EXTERNAL_TARGET
 static CallstackSymbolData DecodeSymbolAddressExternal( uint64_t ptr )
 {
     CallstackSymbolData sym;
@@ -1752,7 +1752,7 @@ CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
 {
     CallstackSymbolData sym;
 
-#ifdef __linux__
+#ifdef TRACY_HAS_EXTERNAL_TARGET
     if( s_externalTargetPid != 0 && s_extImages ) return DecodeSymbolAddressExternal( ptr );
 #endif
 
@@ -1878,7 +1878,7 @@ void GetSymbolForOfflineResolve(void* address, uint64_t imageBaseAddress, Callst
     cbEntry.line = 0;
 }
 
-#ifdef __linux__
+#ifdef TRACY_HAS_EXTERNAL_TARGET
 static int ExternalCallstackDataCb( void* data, uintptr_t /*pc*/, uintptr_t lowaddr, const char* fn, int lineno, const char* function )
 {
     auto* img = (const ExternalImageEntry*)data;
@@ -2015,7 +2015,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     InitAllocator();
     if( !IsKernelAddress( ptr ) )
     {
-#ifdef __linux__
+#ifdef TRACY_HAS_EXTERNAL_TARGET
         if( s_externalTargetPid != 0 && s_extImages ) return DecodeCallstackPtrExternal( ptr );
 #endif
 

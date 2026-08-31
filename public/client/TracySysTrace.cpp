@@ -478,7 +478,7 @@ static bool CurrentProcOwnsThread( uint32_t tid )
     if( hv == -tid ) return false;
 
     char path[256];
-#ifdef TRACY_HAS_CALLSTACK
+#ifdef TRACY_HAS_EXTERNAL_TARGET
     const auto externalPid = GetExternalTargetPid();
     if( externalPid != 0 )
     {
@@ -815,7 +815,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
         }
     }
     samplingPeriod = SamplingFrequencyToPeriodNs( samplingFrequency );
-#ifdef TRACY_HAS_CALLSTACK
+#ifdef TRACY_HAS_EXTERNAL_TARGET
     const auto externalPid = GetExternalTargetPid();
 #else
     const uint32_t externalPid = 0;
@@ -826,7 +826,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
 
     PerfIterTarget* iter;
     int numIter;
-#ifdef TRACY_HAS_CALLSTACK
+#ifdef TRACY_HAS_EXTERNAL_TARGET
     if( externalPid != 0 )
     {
         uint32_t* tids = nullptr;

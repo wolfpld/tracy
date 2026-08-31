@@ -418,7 +418,7 @@ static int64_t SetupHwTimer()
 
 static const char* GetProcessName()
 {
-#if defined __linux__ && defined TRACY_HAS_CALLSTACK
+#ifdef TRACY_HAS_EXTERNAL_TARGET
     if( GetExternalTargetPid() != 0 ) return GetExternalTargetName();
 #endif
 
@@ -749,7 +749,7 @@ static const char* GetHostInfo()
 
 static uint64_t GetPid()
 {
-#if defined __linux__ && defined TRACY_HAS_CALLSTACK
+#ifdef TRACY_HAS_EXTERNAL_TARGET
     const auto externalPid = GetExternalTargetPid();
     if( externalPid != 0 ) return uint64_t( externalPid );
 #endif
@@ -1823,7 +1823,7 @@ void Profiler::Worker()
 #endif
 
     m_exectime = 0;
-#if defined __linux__ && defined TRACY_HAS_CALLSTACK
+#ifdef TRACY_HAS_EXTERNAL_TARGET
     if( GetExternalTargetPid() != 0 )
     {
         m_exectime = GetExternalTargetExeTime();
@@ -4484,7 +4484,7 @@ void Profiler::HandleSymbolCodeQuery( uint64_t symbol, uint32_t size )
         SendLongString( symbol, buf, size, QueueType::SymbolCode );
     };
 
-#if defined __linux__ && defined TRACY_HAS_CALLSTACK
+#ifdef TRACY_HAS_EXTERNAL_TARGET
     if( GetExternalTargetPid() != 0 )
     {
         auto buf = (char*)tracy_malloc_fast( size );

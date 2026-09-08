@@ -372,14 +372,29 @@ void View::DrawTimelineSections()
     }
     if( visible.empty() ) return;
 
-    pdqsort( visible.begin(), visible.end(), []( const SectionEntry& a, const SectionEntry& b ) { return a.len > b.len; } );
+    if( m_vd.groupSectionsByCategory )
+    {
+        pdqsort( visible.begin(), visible.end(), []( const SectionEntry& a, const SectionEntry& b ) { return a.category != b.category ? a.category < b.category : a.len > b.len; } );
+    }
+    else
+    {
+        pdqsort( visible.begin(), visible.end(), []( const SectionEntry& a, const SectionEntry& b ) { return a.len > b.len; } );
+    }
 
     std::vector<SectionRow> rows;
+    size_t rowBase = 0;
+    uint16_t rowCategory = visible[0].category;
     for( auto& e : visible )
     {
-        bool found = false;
-        for( auto& row : rows )
+        if( m_vd.groupSectionsByCategory && e.category != rowCategory )
         {
+            rowCategory = e.category;
+            rowBase = rows.size();
+        }
+        bool found = false;
+        for( size_t r=rowBase; r<rows.size(); r++ )
+        {
+            auto& row = rows[r];
             for( size_t i=0; i<row.available.size(); i++ )
             {
                 const auto gap = row.available[i];

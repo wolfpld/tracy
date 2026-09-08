@@ -169,6 +169,7 @@ bool UserData::Save()
             { "drawCpuUsageGraph", m_viewData.drawCpuUsageGraph },
             { "drawSamples", m_viewData.drawSamples },
             { "drawSections", m_viewData.drawSections },
+            { "groupSectionsByCategory", m_viewData.groupSectionsByCategory },
             { "dynamicColors", m_viewData.dynamicColors },
             { "inheritParentColors", m_viewData.inheritParentColors },
             { "forceColors", m_viewData.forceColors },
@@ -269,6 +270,7 @@ bool UserData::Load()
             LoadValue( options, "drawCpuUsageGraph", m_viewData.drawCpuUsageGraph );
             LoadValue( options, "drawSamples", m_viewData.drawSamples );
             LoadValue( options, "drawSections", m_viewData.drawSections );
+            LoadValue( options, "groupSectionsByCategory", m_viewData.groupSectionsByCategory );
             LoadValue( options, "dynamicColors", m_viewData.dynamicColors );
             LoadValue( options, "inheritParentColors", m_viewData.inheritParentColors );
             LoadValue( options, "forceColors", m_viewData.forceColors );

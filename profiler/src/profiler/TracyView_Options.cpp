@@ -113,6 +113,12 @@ void View::DrawOptions()
         const auto& categories = m_worker.GetSectionDescriptions();
         if( categories.size() > 1 )
         {
+            ImGui::Indent();
+            val = m_vd.groupSectionsByCategory;
+            SmallCheckbox( ICON_FA_LAYER_GROUP " Group by category", &val );
+            m_vd.groupSectionsByCategory = val;
+            ImGui::Unindent();
+
             const auto expand = ImGui::TreeNode( "Sections" );
             ImGui::SameLine();
             size_t visible = 0;

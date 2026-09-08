@@ -8777,26 +8777,15 @@ void Worker::Write( FileWrite& f, bool fiDict )
         }
     }
 
-    // Only save context switches relevant to active threads.
-    std::vector<unordered_flat_map<uint64_t, ContextSwitch*>::const_iterator> ctxValid;
-    ctxValid.reserve( m_data.ctxSwitch.size() );
-    for( auto it = m_data.ctxSwitch.begin(); it != m_data.ctxSwitch.end(); ++it )
-    {
-        auto td = RetrieveThread( it->first, m_data.threadDataLast );
-        if( td && ( td->count > 0 || !td->samples.empty() ) )
-        {
-            ctxValid.emplace_back( it );
-        }
-    }
-    sz = ctxValid.size();
+    sz = m_data.ctxSwitch.size();
     f.Write( &sz, sizeof( sz ) );
-    for( auto& ctx : ctxValid )
+    for( auto& ctx : m_data.ctxSwitch )
     {
-        f.Write( &ctx->first, sizeof( ctx->first ) );
-        sz = ctx->second->v.size();
+        f.Write( &ctx.first, sizeof( ctx.first ) );
+        sz = ctx.second->v.size();
         f.Write( &sz, sizeof( sz ) );
         int64_t refTime = 0;
-        for( auto& cs : ctx->second->v )
+        for( auto& cs : ctx.second->v )
         {
             WriteTimeOffset( f, refTime, cs.WakeupVal() );
             WriteTimeOffset( f, refTime, cs.Start() );

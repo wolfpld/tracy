@@ -672,6 +672,161 @@ static char* GetTraceFsPath()
     return ret;
 }
 
+struct TracepointField
+{
+    uint32_t offset;
+    uint32_t size;
+};
+
+static struct
+{
+    TracepointField prevPid, prevPrio, prevState, nextPid, nextPrio;
+    uint32_t minRecordSize;
+} s_switchLayout;
+
+static struct
+{
+    TracepointField pid;
+    uint32_t minRecordSize;
+} s_wakingLayout;
+
+static struct
+{
+    TracepointField crtc;
+    uint32_t minRecordSize;
+} s_vsyncLayout;
+
+// Reads the whole format file of a tracepoint event. Caller owns the buffer.
+static char* ReadTracepointFormat( const char* base, const char* eventPath )
+{
+    const auto blen = strlen( base );
+    const auto plen = strlen( eventPath );
+    const char* suffix = "/format";
+    const auto slen = strlen( suffix );
+
+    auto path = (char*)tracy_malloc( blen + plen + slen + 1 );
+    memcpy( path, base, blen );
+    memcpy( path + blen, eventPath, plen );
+    memcpy( path + blen + plen, suffix, slen + 1 );
+
+    const int fd = open( path, O_RDONLY );
+    tracy_free( path );
+    if( fd < 0 ) return nullptr;
+
+    size_t cap = 4096;
+    size_t len = 0;
+    auto buf = (char*)tracy_malloc( cap );
+    for(;;)
+    {
+        const auto cnt = read( fd, buf + len, cap - 1 - len );
+        if( cnt <= 0 ) break;
+        len += (size_t)cnt;
+        if( len + 1 == cap )
+        {
+            cap *= 2;
+            buf = (char*)tracy_realloc( buf, cap );
+        }
+    }
+    close( fd );
+    buf[len] = '\0';
+    return buf;
+}
+
+static const char* FindInLine( const char* s, const char* end, const char* needle )
+{
+    const auto nlen = strlen( needle );
+    while( s + nlen <= end )
+    {
+        if( memcmp( s, needle, nlen ) == 0 ) return s;
+        s++;
+    }
+    return nullptr;
+}
+
+static bool ParseTracepointField( const char* format, const char* name, TracepointField& field )
+{
+    const auto nlen = strlen( name );
+
+    auto line = format;
+    while( *line )
+    {
+        const auto eol = strchr( line, '\n' );
+        const auto end = eol ? eol : line + strlen( line );
+
+        auto s = line;
+        while( s < end && ( *s == ' ' || *s == '\t' ) ) s++;
+        if( strncmp( s, "field:", 6 ) == 0 )
+        {
+            s += 6;
+            const auto semi = (const char*)memchr( s, ';', end - s );
+            if( semi )
+            {
+                auto tok = semi;
+                while( tok > s && tok[-1] != ' ' && tok[-1] != '\t' ) tok--;
+                auto tlen = (size_t)( semi - tok );
+                const auto bracket = (const char*)memchr( tok, '[', tlen );
+                if( bracket ) tlen = (size_t)( bracket - tok );
+                if( tlen == nlen && memcmp( tok, name, tlen ) == 0 )
+                {
+                    const auto offsetTag = FindInLine( semi + 1, end, "offset:" );
+                    const auto sizeTag = FindInLine( semi + 1, end, "size:" );
+                    if( !offsetTag || !sizeTag ) return false;
+                    const int off = atoi( offsetTag + 7 );
+                    const int sz = atoi( sizeTag + 5 );
+                    if( off < 0 || sz <= 0 ) return false;
+                    field.offset = (uint32_t)off;
+                    field.size = (uint32_t)sz;
+                    return true;
+                }
+            }
+        }
+
+        line = eol ? eol + 1 : end;
+    }
+    return false;
+}
+
+static uint32_t MaxLayoutEnd( uint32_t cur, const TracepointField& field )
+{
+    const auto e = field.offset + field.size;
+    return e > cur ? e : cur;
+}
+
+static bool ParseSchedSwitchFormat( const char* format )
+{
+    auto& f = s_switchLayout;
+    if( !ParseTracepointField( format, "prev_pid", f.prevPid ) || f.prevPid.size != 4 ) return false;
+    if( !ParseTracepointField( format, "prev_prio", f.prevPrio ) || f.prevPrio.size != 4 ) return false;
+    if( !ParseTracepointField( format, "prev_state", f.prevState ) || ( f.prevState.size != 4 && f.prevState.size != 8 ) ) return false;
+    if( !ParseTracepointField( format, "next_pid", f.nextPid ) || f.nextPid.size != 4 ) return false;
+    if( !ParseTracepointField( format, "next_prio", f.nextPrio ) || f.nextPrio.size != 4 ) return false;
+
+    uint32_t min = 0;
+    min = MaxLayoutEnd( min, f.prevPid );
+    min = MaxLayoutEnd( min, f.prevPrio );
+    min = MaxLayoutEnd( min, f.prevState );
+    min = MaxLayoutEnd( min, f.nextPid );
+    min = MaxLayoutEnd( min, f.nextPrio );
+    f.minRecordSize = min;
+    return true;
+}
+
+static bool ParseSchedWakingFormat( const char* format )
+{
+    auto& f = s_wakingLayout;
+    if( !ParseTracepointField( format, "pid", f.pid ) || f.pid.size != 4 ) return false;
+    f.minRecordSize = MaxLayoutEnd( 0, f.pid );
+    return true;
+}
+
+static bool ParseDrmVblankFormat( const char* format )
+{
+    auto& f = s_vsyncLayout;
+    if( !ParseTracepointField( format, "crtc", f.crtc ) || f.crtc.size != 4 ) return false;
+    f.minRecordSize = MaxLayoutEnd( 0, f.crtc );
+    return true;
+}
+
 // Categories of the running kernel's perf_event_open() ABI, defined by the
 // perf_event_attr fields Tracy uses. use_clockid/clockid exist since Linux
 // 4.1 (commit 34f439278c), sample_max_stack since Linux 4.8 (commit
@@ -726,6 +881,38 @@ bool SysTraceStart( int64_t& samplingPeriod )
     if( wakingIdStr ) wakingId = atoi( wakingIdStr );
     const auto vsyncIdStr = ReadFile( traceFsPath, "/events/drm/drm_vblank_event/id" );
     if( vsyncIdStr ) vsyncId = atoi( vsyncIdStr );
+
+    bool switchLayout = false, wakingLayout = false, vsyncLayout = false;
+    if( switchId != -1 )
+    {
+        const auto switchFormat = ReadTracepointFormat( traceFsPath, "/events/sched/sched_switch" );
+        if( switchFormat )
+        {
+            switchLayout = ParseSchedSwitchFormat( switchFormat );
+            tracy_free( switchFormat );
+        }
+        if( !switchLayout ) TracyDebug( "Failed to parse sched_switch format, context switch capture disabled." );
+    }
+    if( wakingId != -1 )
+    {
+        const auto wakingFormat = ReadTracepointFormat( traceFsPath, "/events/sched/sched_waking" );
+        if( wakingFormat )
+        {
+            wakingLayout = ParseSchedWakingFormat( wakingFormat );
+            tracy_free( wakingFormat );
+        }
+        if( !wakingLayout ) TracyDebug( "Failed to parse sched_waking format, waking capture disabled." );
+    }
+    if( vsyncId != -1 )
+    {
+        const auto vsyncFormat = ReadTracepointFormat( traceFsPath, "/events/drm/drm_vblank_event" );
+        if( vsyncFormat )
+        {
+            vsyncLayout = ParseDrmVblankFormat( vsyncFormat );
+            tracy_free( vsyncFormat );
+        }
+        if( !vsyncLayout ) TracyDebug( "Failed to parse drm_vblank_event format, vsync capture disabled." );
+    }
 
     tracy_free( traceFsPath );
 
@@ -981,7 +1168,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
     s_ctxBufferIdx = s_numBuffers;
 
     // vsync
-    if( !noVsync && vsyncId != -1 )
+    if( !noVsync && vsyncId != -1 && vsyncLayout )
     {
         pe = {};
         pe.type = PERF_TYPE_TRACEPOINT;
@@ -1013,7 +1200,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
     }
 
     // context switches
-    if( !noCtxSwitch && switchId != -1 )
+    if( !noCtxSwitch && switchId != -1 && switchLayout )
     {
         s_ctxSwitchCallchain = !noWaitStacks;
 
@@ -1053,7 +1240,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
             }
         }
 
-        if( wakingId != -1 )
+        if( wakingId != -1 && wakingLayout )
         {
             pe = {};
             pe.type = PERF_TYPE_TRACEPOINT;
@@ -1398,15 +1585,7 @@ void SysTraceWorker( void* ptr )
                             //   u64 ip[cnt] // PERF_SAMPLE_CALLCHAIN, if enabled
                             //   u32 size
                             //   u8  data[size]
-                            // Data (not ABI stable, but has not changed since it was added, in 2009):
-                            //   u8  hdr[8]
-                            //   u8  prev_comm[16]
-                            //   u32 prev_pid
-                            //   u32 prev_prio
-                            //   lng prev_state
-                            //   u8  next_comm[16]
-                            //   u32 next_pid
-                            //   u32 next_prio
+                            // Field offsets within the record come from the format file, parsed in SysTraceStart.
 
                             offset += sizeof( perf_event_header ) + sizeof( uint64_t );
 
@@ -1419,72 +1598,69 @@ void SysTraceWorker( void* ptr )
                                 traceOffset = offset;
                                 offset += sizeof( uint64_t ) * cnt;
                             }
-                            offset += sizeof( uint32_t ) + 8 + 16;
+                            offset += sizeof( uint32_t );
 
-                            struct
-                            {
-                                uint32_t prev_pid, prev_prio;
-                                long prev_state;
-                                char next_comm[16];
-                                uint32_t next_pid, next_prio;
-                            } buf;
+                            TRACY_ASSERT( offset + s_switchLayout.minRecordSize <= rbPos + hdr.size );
 
-                            ring.Read( &buf, offset, sizeof( buf ) );
+                            const auto& f = s_switchLayout;
+                            uint32_t prev_pid, prev_prio, next_pid, next_prio;
+                            uint64_t prev_state = 0;
+                            ring.Read( &prev_pid, offset + f.prevPid.offset, sizeof( prev_pid ) );
+                            ring.Read( &prev_prio, offset + f.prevPrio.offset, sizeof( prev_prio ) );
+                            ring.Read( &prev_state, offset + f.prevState.offset, f.prevState.size );
+                            ring.Read( &next_pid, offset + f.nextPid.offset, sizeof( next_pid ) );
+                            ring.Read( &next_prio, offset + f.nextPrio.offset, sizeof( next_prio ) );
 
                             uint8_t oldThreadWaitReason = 100;
                             uint8_t oldThreadState;
 
-                            if(      buf.prev_state & 0x0001 ) oldThreadState = 104;
-                            else if( buf.prev_state & 0x0002 ) oldThreadState = 101;
-                            else if( buf.prev_state & 0x0004 ) oldThreadState = 105;
-                            else if( buf.prev_state & 0x0008 ) oldThreadState = 106;
-                            else if( buf.prev_state & 0x0010 ) oldThreadState = 108;
-                            else if( buf.prev_state & 0x0020 ) oldThreadState = 109;
-                            else if( buf.prev_state & 0x0040 ) oldThreadState = 110;
-                            else if( buf.prev_state & 0x0080 ) oldThreadState = 102;
+                            if(      prev_state & 0x0001 ) oldThreadState = 104;
+                            else if( prev_state & 0x0002 ) oldThreadState = 101;
+                            else if( prev_state & 0x0004 ) oldThreadState = 105;
+                            else if( prev_state & 0x0008 ) oldThreadState = 106;
+                            else if( prev_state & 0x0010 ) oldThreadState = 108;
+                            else if( prev_state & 0x0020 ) oldThreadState = 109;
+                            else if( prev_state & 0x0040 ) oldThreadState = 110;
+                            else if( prev_state & 0x0080 ) oldThreadState = 102;
                             else                           oldThreadState = 103;
 
                             TracyLfqPrepare( QueueType::ContextSwitch );
                             MemWrite( &item->contextSwitch.time, t0 );
-                            MemWrite( &item->contextSwitch.oldThread, buf.prev_pid );
-                            MemWrite( &item->contextSwitch.newThread, buf.next_pid );
+                            MemWrite( &item->contextSwitch.oldThread, prev_pid );
+                            MemWrite( &item->contextSwitch.newThread, next_pid );
                             MemWrite( &item->contextSwitch.cpu, uint8_t( ring.GetCpu() ) );
                             MemWrite( &item->contextSwitch.oldThreadWaitReason, oldThreadWaitReason );
                             MemWrite( &item->contextSwitch.oldThreadState, oldThreadState );
                             MemWrite( &item->contextSwitch.previousCState, uint8_t( 0 ) );
-                            MemWrite( &item->contextSwitch.newThreadPriority, int8_t( buf.next_prio ) );
-                            MemWrite( &item->contextSwitch.oldThreadPriority, int8_t( buf.prev_prio ) );
+                            MemWrite( &item->contextSwitch.newThreadPriority, int8_t( next_prio ) );
+                            MemWrite( &item->contextSwitch.oldThreadPriority, int8_t( prev_prio ) );
                             TracyLfqCommit;
 
-                            if( cnt > 0 && buf.prev_pid != 0 && CurrentProcOwnsThread( buf.prev_pid ) )
+                            if( cnt > 0 && prev_pid != 0 && CurrentProcOwnsThread( prev_pid ) )
                             {
                                 auto trace = GetCallstackBlock( cnt, ring, traceOffset );
 
                                 TracyLfqPrepare( QueueType::CallstackSampleContextSwitch );
                                 MemWrite( &item->callstackSampleFat.time, t0 );
-                                MemWrite( &item->callstackSampleFat.thread, buf.prev_pid );
+                                MemWrite( &item->callstackSampleFat.thread, prev_pid );
                                 MemWrite( &item->callstackSampleFat.ptr, (uint64_t)trace );
                                 TracyLfqCommit;
                             }
                         }
-                        else if( rid == EventWaking)
+                        else if( rid == EventWaking )
                         {
                             // See /sys/kernel/debug/tracing/events/sched/sched_waking/format
-                            // Layout:
                             //   u64 time // PERF_SAMPLE_TIME
                             //   u32 size
                             //   u8  data[size]
-                            // Data:
-                            //   u8  hdr[8]
-                            //   u8  comm[16]
-                            //   u32 pid
-                            //   i32 prio
-                            //   i32 target_cpu
-                            const uint32_t dataOffset = sizeof( perf_event_header ) + sizeof( uint64_t ) + sizeof( uint32_t ); 
-                            offset += dataOffset + 8 + 16;
+                            // Field offsets within the record come from the format file, parsed in SysTraceStart.
+
+                            const uint64_t dataOffset = offset + sizeof( perf_event_header ) + sizeof( uint64_t ) + sizeof( uint32_t );
+                            TRACY_ASSERT( dataOffset + s_wakingLayout.minRecordSize <= rbPos + hdr.size );
+
                             uint32_t pid;
-                            ring.Read( &pid, offset, sizeof( uint32_t ) );
-                            
+                            ring.Read( &pid, dataOffset + s_wakingLayout.pid.offset, sizeof( uint32_t ) );
+
                             TracyLfqPrepare( QueueType::ThreadWakeup );
                             MemWrite( &item->threadWakeup.time, t0 );
                             MemWrite( &item->threadWakeup.thread, pid );
@@ -1503,17 +1679,13 @@ void SysTraceWorker( void* ptr )
                             //   u64 time
                             //   u32 size
                             //   u8  data[size]
-                            // Data (not ABI stable):
-                            //   u8  hdr[8]
-                            //   i32 crtc
-                            //   u32 seq
-                            //   i64 ktime
-                            //   u8  high precision
+                            // Field offsets within the record come from the format file, parsed in SysTraceStart.
 
-                            offset += sizeof( perf_event_header ) + sizeof( uint64_t ) + sizeof( uint32_t ) + 8;
+                            const uint64_t dataOffset = offset + sizeof( perf_event_header ) + sizeof( uint64_t ) + sizeof( uint32_t );
+                            TRACY_ASSERT( dataOffset + s_vsyncLayout.minRecordSize <= rbPos + hdr.size );
 
                             int32_t crtc;
-                            ring.Read( &crtc, offset, sizeof( int32_t ) );
+                            ring.Read( &crtc, dataOffset + s_vsyncLayout.crtc.offset, sizeof( int32_t ) );
 
                             // Note: The timestamp value t0 might be off by a number of microseconds from the
                             // true hardware vblank event. The ktime value should be used instead, but it is

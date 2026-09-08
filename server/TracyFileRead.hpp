@@ -458,6 +458,12 @@ private:
             throw NotTracyDump();
         }
 
+        if( streams == 0 )
+        {
+            fclose( f );
+            throw FileReadError();
+        }
+
         struct stat64 buf;
         if( stat64( fn, &buf ) == 0 )
         {
@@ -467,6 +473,26 @@ private:
         {
             fclose( f );
             throw FileReadError();
+        }
+
+        // Block framing is `u32 size + payload`; a truncated file must be rejected
+        // before the decompression threads are started, since their size fields
+        // would authorize out-of-bounds reads.
+        {
+            const auto dataLen = m_dataSize - m_dataOffset;
+            uint64_t consumed = 0;
+            while( consumed != dataLen )
+            {
+                uint32_t sz;
+                if( fread( &sz, 1, sizeof( sz ), f ) != sizeof( sz ) ||
+                    sz > dataLen - consumed - sizeof( sz ) ||
+                    ( consumed + sizeof( sz ) + sz != dataLen && fseek( f, sz, SEEK_CUR ) != 0 ) )
+                {
+                    fclose( f );
+                    throw FileReadError();
+                }
+                consumed += sizeof( sz ) + sz;
+            }
         }
 
         m_data = (char*)mmap( nullptr, m_dataSize, PROT_READ, MAP_SHARED, fileno( f ), 0 );
@@ -488,6 +514,12 @@ private:
             uptr->thread = std::thread( [ptr = uptr.get()] { Worker( ptr ); } );
             m_streams.emplace_back( std::move( uptr ) );
             m_dataOffset += sz;
+        }
+
+        if( m_streams.empty() )
+        {
+            munmap( m_data, m_dataSize );
+            throw FileReadError();
         }
 
         GetNextDataBlock();

@@ -269,6 +269,11 @@ int main( int argc, char** argv )
             fprintf( stderr, "The file you are trying to open is from a legacy version.\n" );
             exit( 1 );
         }
+        catch( const tracy::FileReadError& e )
+        {
+            fprintf( stderr, "Cannot read trace file: %s\n", argv[1] );
+            exit( 1 );
+        }
         if( !initFileOpen )
         {
             fprintf( stderr, "Cannot open trace file: %s\n", argv[1] );

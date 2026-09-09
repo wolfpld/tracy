@@ -23,13 +23,18 @@ void View::FindZones()
     m_findZone.match = m_worker.GetMatchingSourceLocation( m_findZone.pattern, m_findZone.ignoreCase );
     if( m_findZone.match.empty() ) return;
 
+    const bool gpuReady = m_worker.AreGpuSourceLocationZonesReady();
     const auto& gpuMap = m_worker.GetGpuSourceLocationZones();
     auto it = m_findZone.match.begin();
     while( it != m_findZone.match.end() )
     {
         const bool hasCpu = !m_worker.GetZonesForSourceLocation( *it ).zones.empty();
-        const auto gpu_it = gpuMap.find( *it );
-        const bool hasGpu = gpu_it != gpuMap.end() && !gpu_it->second.zones.empty();
+        bool hasGpu = false;
+        if( gpuReady )
+        {
+            const auto gpu_it = gpuMap.find( *it );
+            hasGpu = gpu_it != gpuMap.end() && !gpu_it->second.zones.empty();
+        }
         if( !hasCpu && !hasGpu )
         {
             it = m_findZone.match.erase( it );
@@ -44,6 +49,7 @@ void View::FindZones()
 bool View::IsGpuSourceLocation( int16_t srcloc ) const
 {
     if( !m_worker.GetZonesForSourceLocation( srcloc ).zones.empty() ) return false;
+    if( !m_worker.AreGpuSourceLocationZonesReady() ) return false;
     const auto& gpuMap = m_worker.GetGpuSourceLocationZones();
     const auto it = gpuMap.find( srcloc );
     return it != gpuMap.end() && !it->second.zones.empty();

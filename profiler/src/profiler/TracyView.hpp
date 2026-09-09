@@ -440,6 +440,7 @@ private:
 
     void FindZones();
     void FindZonesCompare();
+    bool IsGpuSourceLocation( int16_t srcloc ) const;
 
     std::vector<MemoryPage> GetMemoryPages() const;
 

@@ -224,6 +224,9 @@ private:
         int64_t max = std::numeric_limits<int64_t>::min();
         int64_t total = 0;
         double sumSq = 0;
+        int64_t selfMin = std::numeric_limits<int64_t>::max();
+        int64_t selfMax = std::numeric_limits<int64_t>::min();
+        int64_t selfTotal = 0;
     };
 
     struct CallstackFrameIdHash
@@ -645,6 +648,8 @@ public:
 #ifndef TRACY_NO_STATISTICS
     SourceLocationZones& GetZonesForSourceLocation( int16_t srcloc );
     const SourceLocationZones& GetZonesForSourceLocation( int16_t srcloc ) const;
+    GpuSourceLocationZones& GetGpuZonesForSourceLocation( int16_t srcloc );
+    const GpuSourceLocationZones& GetGpuZonesForSourceLocation( int16_t srcloc ) const;
     const unordered_flat_map<int16_t, SourceLocationZones>& GetSourceLocationZones() const { return m_data.sourceLocationZones; }
     const unordered_flat_map<int16_t, GpuSourceLocationZones>& GetGpuSourceLocationZones() const { return m_data.gpuSourceLocationZones; }
     bool AreSourceLocationZonesReady() const { return m_data.sourceLocationZonesReady; }
@@ -933,6 +938,8 @@ private:
         return GetGpuSourceLocationZonesReal( srcloc );
     }
     GpuSourceLocationZones* GetGpuSourceLocationZonesReal( uint16_t srcloc );
+
+    int64_t GetGpuChildTime( const GpuEvent& zone );
 #else
     uint64_t* GetSourceLocationZonesCnt( uint16_t srcloc )
     {

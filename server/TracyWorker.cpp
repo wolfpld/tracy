@@ -2718,6 +2718,22 @@ const Worker::SourceLocationZones& Worker::GetZonesForSourceLocation( int16_t sr
     return it != m_data.sourceLocationZones.end() ? it->second : empty;
 }
 
+Worker::GpuSourceLocationZones& Worker::GetGpuZonesForSourceLocation( int16_t srcloc )
+{
+    assert( AreGpuSourceLocationZonesReady() );
+    static GpuSourceLocationZones empty;
+    auto it = m_data.gpuSourceLocationZones.find( srcloc );
+    return it != m_data.gpuSourceLocationZones.end() ? it->second : empty;
+}
+
+const Worker::GpuSourceLocationZones& Worker::GetGpuZonesForSourceLocation( int16_t srcloc ) const
+{
+    assert( AreGpuSourceLocationZonesReady() );
+    static const GpuSourceLocationZones empty;
+    auto it = m_data.gpuSourceLocationZones.find( srcloc );
+    return it != m_data.gpuSourceLocationZones.end() ? it->second : empty;
+}
+
 const SymbolStats* Worker::GetSymbolStats( uint64_t symAddr ) const
 {
     assert( AreCallstackSamplesReady() );
@@ -3602,6 +3618,31 @@ Worker::GpuSourceLocationZones* Worker::GetGpuSourceLocationZonesReal( uint16_t 
     m_data.gpuZonesLast.first = srcloc;
     m_data.gpuZonesLast.second = &it->second;
     return &it->second;
+}
+
+int64_t Worker::GetGpuChildTime( const GpuEvent& zone )
+{
+    int64_t time = 0;
+    if( zone.Child() >= 0 )
+    {
+        auto& children = GetGpuChildren( zone.Child() );
+        if( children.is_magic() )
+        {
+            auto& vec = *(Vector<GpuEvent>*)&children;
+            for( auto& v : vec )
+            {
+                time += std::max( int64_t( 0 ), v.GpuEnd() - v.GpuStart() );
+            }
+        }
+        else
+        {
+            for( auto& v : children )
+            {
+                time += std::max( int64_t( 0 ), v->GpuEnd() - v->GpuStart() );
+            }
+        }
+    }
+    return time;
 }
 #else
 uint64_t* Worker::GetSourceLocationZonesCntReal( uint16_t srcloc )
@@ -6200,6 +6241,10 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
             if( slz->max < timeSpan ) slz->max = timeSpan;
             slz->total += timeSpan;
             slz->sumSq += double( timeSpan ) * timeSpan;
+            const auto selfSpan = timeSpan - GetGpuChildTime( *zone );
+            if( slz->selfMin > selfSpan ) slz->selfMin = selfSpan;
+            if( slz->selfMax < selfSpan ) slz->selfMax = selfSpan;
+            slz->selfTotal += selfSpan;
         }
 #else
         CountZoneStatistics( zone );
@@ -8118,6 +8163,10 @@ void Worker::ReconstructZoneStatistics( GpuEvent& zone, uint16_t thread )
         if( slz.max < timeSpan ) slz.max = timeSpan;
         slz.total += timeSpan;
         slz.sumSq += double( timeSpan ) * timeSpan;
+        const auto selfSpan = timeSpan - GetGpuChildTime( zone );
+        if( slz.selfMin > selfSpan ) slz.selfMin = selfSpan;
+        if( slz.selfMax < selfSpan ) slz.selfMax = selfSpan;
+        slz.selfTotal += selfSpan;
     }
 }
 #else

@@ -721,7 +721,7 @@ void View::DrawStatistics()
                     auto name = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
                     SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
                     ImGui::SameLine();
-                    if( m_statMode == 0 )
+                    if( m_statMode == 0 || m_statMode == 2 )
                     {
                         if( ImGui::Selectable( name, m_findZone.show && !m_findZone.match.empty() && m_findZone.match[m_findZone.selMatch] == v.srcloc, ImGuiSelectableFlags_SpanAllColumns ) )
                         {

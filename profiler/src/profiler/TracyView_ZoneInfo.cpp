@@ -1489,6 +1489,19 @@ void View::DrawGpuInfoWindow()
                 ShowZoneInfo( *parent, m_gpuInfoWindowThread );
             }
         }
+        if( m_worker.AreGpuSourceLocationZonesReady() )
+        {
+            const auto sl = ev.SrcLoc();
+            const auto& slz = m_worker.GetGpuZonesForSourceLocation( sl );
+            if( !slz.zones.empty() )
+            {
+                ImGui::SameLine();
+                if( ImGui::Button( ICON_FA_CHART_BAR " Statistics" ) )
+                {
+                    m_findZone.ShowZone( sl, m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ) );
+                }
+            }
+        }
         if( ev.callstack.Val() != 0 )
         {
             ImGui::SameLine();

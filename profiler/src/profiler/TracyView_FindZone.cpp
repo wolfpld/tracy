@@ -23,10 +23,14 @@ void View::FindZones()
     m_findZone.match = m_worker.GetMatchingSourceLocation( m_findZone.pattern, m_findZone.ignoreCase );
     if( m_findZone.match.empty() ) return;
 
+    const auto& gpuMap = m_worker.GetGpuSourceLocationZones();
     auto it = m_findZone.match.begin();
     while( it != m_findZone.match.end() )
     {
-        if( m_worker.GetZonesForSourceLocation( *it ).zones.empty() )
+        const bool hasCpu = !m_worker.GetZonesForSourceLocation( *it ).zones.empty();
+        const auto gpu_it = gpuMap.find( *it );
+        const bool hasGpu = gpu_it != gpuMap.end() && !gpu_it->second.zones.empty();
+        if( !hasCpu && !hasGpu )
         {
             it = m_findZone.match.erase( it );
         }
@@ -35,6 +39,14 @@ void View::FindZones()
             ++it;
         }
     }
+}
+
+bool View::IsGpuSourceLocation( int16_t srcloc ) const
+{
+    if( !m_worker.GetZonesForSourceLocation( srcloc ).zones.empty() ) return false;
+    const auto& gpuMap = m_worker.GetGpuSourceLocationZones();
+    const auto it = gpuMap.find( srcloc );
+    return it != gpuMap.end() && !it->second.zones.empty();
 }
 
 uint64_t View::GetSelectionTarget( const Worker::ZoneThreadData& ev, FindZone::GroupBy groupBy ) const
@@ -372,7 +384,17 @@ void View::DrawFindZone()
             for( auto& v : m_findZone.match )
             {
                 auto& srcloc = m_worker.GetSourceLocation( v );
-                auto& zones = m_worker.GetZonesForSourceLocation( v ).zones;
+                const auto isGpuLoc = IsGpuSourceLocation( v );
+                size_t zoneCnt;
+                if( isGpuLoc )
+                {
+                    const auto& gpuMap = m_worker.GetGpuSourceLocationZones();
+                    zoneCnt = gpuMap.find( v )->second.zones.size();
+                }
+                else
+                {
+                    zoneCnt = m_worker.GetZonesForSourceLocation( v ).zones.size();
+                }
                 SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
                 ImGui::SameLine();
                 ImGui::PushID( idx );
@@ -390,7 +412,7 @@ void View::DrawFindZone()
                     ImGui::SameLine();
                 }
                 const auto fileName = m_worker.GetString( srcloc.file );
-                ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s", RealToString( zones.size() ), LocationToString( fileName, srcloc.line ) );
+                ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s%s", RealToString( zoneCnt ), isGpuLoc ? "[GPU] " : "", LocationToString( fileName, srcloc.line ) );
                 if( ImGui::IsItemHovered() )
                 {
                     DrawSourceTooltip( fileName, srcloc.line, srcloc.line );
@@ -423,9 +445,27 @@ void View::DrawFindZone()
 
         ImGui::Separator();
 
-        auto& zoneData = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] );
-        auto& zones = zoneData.zones;
-        zones.ensure_sorted();
+        const auto matchSrcloc = m_findZone.match[m_findZone.selMatch];
+        const bool isGpu = IsGpuSourceLocation( matchSrcloc );
+
+        size_t zsz;
+        int64_t rawTotal, selfTotal;
+        if( !isGpu )
+        {
+            auto& zoneData = m_worker.GetZonesForSourceLocation( matchSrcloc );
+            zoneData.zones.ensure_sorted();
+            zsz = zoneData.zones.size();
+            rawTotal = zoneData.total;
+            selfTotal = zoneData.selfTotal;
+        }
+        else
+        {
+            auto& zoneData = m_worker.GetGpuZonesForSourceLocation( matchSrcloc );
+            zoneData.zones.ensure_sorted();
+            zsz = zoneData.zones.size();
+            rawTotal = zoneData.total;
+            selfTotal = zoneData.selfTotal;
+        }
         if( ImGui::TreeNodeEx( "Histogram", ImGuiTreeNodeFlags_DefaultOpen ) )
         {
             const auto ty = ImGui::GetTextLineHeight();
@@ -434,109 +474,180 @@ void View::DrawFindZone()
             int64_t tmax = m_findZone.tmax;
             int64_t total = m_findZone.total;
             double sumSq = m_findZone.sumSq;
-            const auto zsz = zones.size();
             if( m_findZone.sortedNum != zsz )
             {
                 auto& vec = m_findZone.sorted;
                 const auto vszorig = vec.size();
                 vec.reserve( zsz );
                 size_t i;
-                if( m_findZone.runningTime )
+                if( !isGpu )
                 {
-                    if( m_findZone.range.active )
+                    auto& zoneData = m_worker.GetZonesForSourceLocation( matchSrcloc );
+                    auto& zones = zoneData.zones;
+                    if( m_findZone.runningTime )
                     {
-                        for( i=m_findZone.sortedNum; i<zsz; i++ )
+                        if( m_findZone.range.active )
                         {
-                            auto& zone = *zones[i].Zone();
-                            const auto end = zone.End();
-                            if( end > rangeMax || zone.Start() < rangeMin ) continue;
-                            const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( zones[i].Thread() ) );
-                            if( !ctx ) break;
-                            int64_t t;
-                            if( !GetZoneRunningTime( ctx, zone, t ) ) break;
-                            vec.push_back_no_space_check( t );
-                            total += t;
-                            sumSq += double( t ) * t;
-                            if( t < tmin ) tmin = t;
-                            else if( t > tmax ) tmax = t;
+                            for( i=m_findZone.sortedNum; i<zsz; i++ )
+                            {
+                                auto& zone = *zones[i].Zone();
+                                const auto end = zone.End();
+                                if( end > rangeMax || zone.Start() < rangeMin ) continue;
+                                const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( zones[i].Thread() ) );
+                                if( !ctx ) break;
+                                int64_t t;
+                                if( !GetZoneRunningTime( ctx, zone, t ) ) break;
+                                vec.push_back_no_space_check( t );
+                                total += t;
+                                sumSq += double( t ) * t;
+                                if( t < tmin ) tmin = t;
+                                else if( t > tmax ) tmax = t;
+                            }
+                        }
+                        else
+                        {
+                            for( i=m_findZone.sortedNum; i<zsz; i++ )
+                            {
+                                auto& zone = *zones[i].Zone();
+                                const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( zones[i].Thread() ) );
+                                if( !ctx ) break;
+                                int64_t t;
+                                if( !GetZoneRunningTime( ctx, zone, t ) ) break;
+                                vec.push_back_no_space_check( t );
+                                total += t;
+                                sumSq += double( t ) * t;
+                                if( t < tmin ) tmin = t;
+                                else if( t > tmax ) tmax = t;
+                            }
+                        }
+                    }
+                    else if( m_findZone.selfTime )
+                    {
+                        tmin = zoneData.selfMin;
+                        tmax = zoneData.selfMax;
+                        if( m_findZone.range.active )
+                        {
+                            for( i=m_findZone.sortedNum; i<zsz; i++ )
+                            {
+                                auto& zone = *zones[i].Zone();
+                                const auto end = zone.End();
+                                const auto start = zone.Start();
+                                if( end > rangeMax || start < rangeMin ) continue;
+                                const auto t = end - start - GetZoneChildTimeFast( zone );
+                                vec.push_back_no_space_check( t );
+                                total += t;
+                                sumSq += double( t ) * t;
+                            }
+                        }
+                        else
+                        {
+                            for( i=m_findZone.sortedNum; i<zsz; i++ )
+                            {
+                                auto& zone = *zones[i].Zone();
+                                const auto end = zone.End();
+                                const auto t = end - zone.Start() - GetZoneChildTimeFast( zone );
+                                vec.push_back_no_space_check( t );
+                                total += t;
+                                sumSq += double( t ) * t;
+                            }
                         }
                     }
                     else
                     {
-                        for( i=m_findZone.sortedNum; i<zsz; i++ )
+                        tmin = zoneData.min;
+                        tmax = zoneData.max;
+                        if( m_findZone.range.active )
                         {
-                            auto& zone = *zones[i].Zone();
-                            const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( zones[i].Thread() ) );
-                            if( !ctx ) break;
-                            int64_t t;
-                            if( !GetZoneRunningTime( ctx, zone, t ) ) break;
-                            vec.push_back_no_space_check( t );
-                            total += t;
-                            sumSq += double( t ) * t;
-                            if( t < tmin ) tmin = t;
-                            else if( t > tmax ) tmax = t;
+                            for( i=m_findZone.sortedNum; i<zsz; i++ )
+                            {
+                                auto& zone = *zones[i].Zone();
+                                const auto end = zone.End();
+                                const auto start = zone.Start();
+                                if( end > rangeMax || start < rangeMin ) continue;
+                                const auto t = end - start;
+                                vec.push_back_no_space_check( t );
+                                total += t;
+                                sumSq += double( t ) * t;
+                            }
                         }
-                    }
-                }
-                else if( m_findZone.selfTime )
-                {
-                    tmin = zoneData.selfMin;
-                    tmax = zoneData.selfMax;
-                    if( m_findZone.range.active )
-                    {
-                        for( i=m_findZone.sortedNum; i<zsz; i++ )
+                        else
                         {
-                            auto& zone = *zones[i].Zone();
-                            const auto end = zone.End();
-                            const auto start = zone.Start();
-                            if( end > rangeMax || start < rangeMin ) continue;
-                            const auto t = end - start - GetZoneChildTimeFast( zone );
-                            vec.push_back_no_space_check( t );
-                            total += t;
-                            sumSq += double( t ) * t;
-                        }
-                    }
-                    else
-                    {
-                        for( i=m_findZone.sortedNum; i<zsz; i++ )
-                        {
-                            auto& zone = *zones[i].Zone();
-                            const auto end = zone.End();
-                            const auto t = end - zone.Start() - GetZoneChildTimeFast( zone );
-                            vec.push_back_no_space_check( t );
-                            total += t;
-                            sumSq += double( t ) * t;
+                            for( i=m_findZone.sortedNum; i<zsz; i++ )
+                            {
+                                auto& zone = *zones[i].Zone();
+                                const auto end = zone.End();
+                                const auto t = end - zone.Start();
+                                vec.push_back_no_space_check( t );
+                                total += t;
+                                sumSq += double( t ) * t;
+                            }
                         }
                     }
                 }
                 else
                 {
-                    tmin = zoneData.min;
-                    tmax = zoneData.max;
-                    if( m_findZone.range.active )
+                    auto& zoneData = m_worker.GetGpuZonesForSourceLocation( matchSrcloc );
+                    auto& zones = zoneData.zones;
+                    if( m_findZone.selfTime )
                     {
-                        for( i=m_findZone.sortedNum; i<zsz; i++ )
+                        tmin = zoneData.selfMin;
+                        tmax = zoneData.selfMax;
+                        if( m_findZone.range.active )
                         {
-                            auto& zone = *zones[i].Zone();
-                            const auto end = zone.End();
-                            const auto start = zone.Start();
-                            if( end > rangeMax || start < rangeMin ) continue;
-                            const auto t = end - start;
-                            vec.push_back_no_space_check( t );
-                            total += t;
-                            sumSq += double( t ) * t;
+                            for( i=m_findZone.sortedNum; i<zsz; i++ )
+                            {
+                                auto& zone = *zones[i].Zone();
+                                const auto end = zone.GpuEnd();
+                                const auto start = zone.GpuStart();
+                                if( end > rangeMax || start < rangeMin ) continue;
+                                const auto t = end - start - GetZoneChildTime( zone );
+                                vec.push_back_no_space_check( t );
+                                total += t;
+                                sumSq += double( t ) * t;
+                            }
+                        }
+                        else
+                        {
+                            for( i=m_findZone.sortedNum; i<zsz; i++ )
+                            {
+                                auto& zone = *zones[i].Zone();
+                                const auto end = zone.GpuEnd();
+                                const auto t = end - zone.GpuStart() - GetZoneChildTime( zone );
+                                vec.push_back_no_space_check( t );
+                                total += t;
+                                sumSq += double( t ) * t;
+                            }
                         }
                     }
                     else
                     {
-                        for( i=m_findZone.sortedNum; i<zsz; i++ )
+                        tmin = zoneData.min;
+                        tmax = zoneData.max;
+                        if( m_findZone.range.active )
                         {
-                            auto& zone = *zones[i].Zone();
-                            const auto end = zone.End();
-                            const auto t = end - zone.Start();
-                            vec.push_back_no_space_check( t );
-                            total += t;
-                            sumSq += double( t ) * t;
+                            for( i=m_findZone.sortedNum; i<zsz; i++ )
+                            {
+                                auto& zone = *zones[i].Zone();
+                                const auto end = zone.GpuEnd();
+                                const auto start = zone.GpuStart();
+                                if( end > rangeMax || start < rangeMin ) continue;
+                                const auto t = end - start;
+                                vec.push_back_no_space_check( t );
+                                total += t;
+                                sumSq += double( t ) * t;
+                            }
+                        }
+                        else
+                        {
+                            for( i=m_findZone.sortedNum; i<zsz; i++ )
+                            {
+                                auto& zone = *zones[i].Zone();
+                                const auto end = zone.GpuEnd();
+                                const auto t = end - zone.GpuStart();
+                                vec.push_back_no_space_check( t );
+                                total += t;
+                                sumSq += double( t ) * t;
+                            }
                         }
                     }
                 }
@@ -566,10 +677,12 @@ void View::DrawFindZone()
                 }
             }
 
-            if( m_findZone.selGroup != m_findZone.Unselected )
+            if( !isGpu && m_findZone.selGroup != m_findZone.Unselected )
             {
                 if( m_findZone.selSortNum != m_findZone.sortedNum )
                 {
+                    auto& zoneData = m_worker.GetZonesForSourceLocation( matchSrcloc );
+                    auto& zones = zoneData.zones;
                     const auto selGroup = m_findZone.selGroup;
                     const auto groupBy = m_findZone.groupBy;
 
@@ -710,7 +823,7 @@ void View::DrawFindZone()
                 if( ImGui::Button( "Reset" ) ) m_findZone.minBinVal = 1;
                 ImGui::PopStyleVar();
 
-                if( s_config.llm )
+                if( !isGpu && s_config.llm )
                 {
                     constexpr int LlmBins = 32;
 
@@ -718,7 +831,7 @@ void View::DrawFindZone()
                         auto& srcloc = m_worker.GetSourceLocation( m_findZone.match[m_findZone.selMatch] );
                         nlohmann::json json = {
                             { "type", "zone_histogram" },
-                            { "count", zones.size() },
+                            { "count", zsz },
                             { "source_location", {
                                 { "file", m_worker.GetString( srcloc.file ) },
                                 { "line", srcloc.line },
@@ -856,9 +969,9 @@ void View::DrawFindZone()
                 }
                 ImGui::SameLine();
                 char buf[64];
-                PrintStringPercent( buf, 100.f * zoneData.selfTotal / zoneData.total );
+                PrintStringPercent( buf, 100.f * selfTotal / rawTotal );
                 TextDisabledUnformatted( buf );
-                if( m_worker.HasContextSwitches() )
+                if( !isGpu && m_worker.HasContextSwitches() )
                 {
                     ImGui::SameLine();
                     if( SmallCheckbox( "Running time", &m_findZone.runningTime ) )
@@ -1550,6 +1663,15 @@ void View::DrawFindZone()
             ImGui::TreePop();
         }
 
+        if( isGpu )
+        {
+            ImGui::Separator();
+            TextDisabledUnformatted( "Zone grouping, the found-zones list, and callstack samples are not yet available for GPU zones." );
+        }
+        else
+        {
+        auto& zoneData = m_worker.GetZonesForSourceLocation( matchSrcloc );
+        auto& zones = zoneData.zones;
         ImGui::Separator();
         SmallCheckbox( "Show zone time in frames", &m_findZone.showZoneInFrames );
         ImGui::Separator();
@@ -2170,6 +2292,7 @@ void View::DrawFindZone()
         {
             auto& srcloc = m_worker.GetSourceLocation( changeZone );
             m_findZone.ShowZone( changeZone, m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ) );
+        }
         }
     }
     ImGui::EndChild();

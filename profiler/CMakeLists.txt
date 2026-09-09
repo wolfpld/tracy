@@ -230,43 +230,39 @@ if(USE_WAYLAND)
 
     include(${CMAKE_CURRENT_LIST_DIR}/../cmake/FindWaylandScanner.cmake)
 
-    CPMAddPackage(
-        NAME wayland-protocols
-        GIT_REPOSITORY https://gitlab.freedesktop.org/wayland/wayland-protocols.git
-        GIT_TAG 1.47
-        DOWNLOAD_ONLY YES
-    )
+    pkg_check_modules(WAYLAND_PROTOCOLS REQUIRED wayland-protocols)
+    pkg_get_variable(WAYLAND_PROTOCOLS_PKGDATADIR wayland-protocols pkgdatadir)
 
     ecm_add_wayland_client_protocol(PROFILER_FILES
-        PROTOCOL ${wayland-protocols_SOURCE_DIR}/stable/xdg-shell/xdg-shell.xml
+        PROTOCOL ${WAYLAND_PROTOCOLS_PKGDATADIR}/stable/xdg-shell/xdg-shell.xml
         BASENAME xdg-shell
     )
     ecm_add_wayland_client_protocol(PROFILER_FILES
-        PROTOCOL ${wayland-protocols_SOURCE_DIR}/staging/xdg-activation/xdg-activation-v1.xml
+        PROTOCOL ${WAYLAND_PROTOCOLS_PKGDATADIR}/staging/xdg-activation/xdg-activation-v1.xml
         BASENAME xdg-activation
     )
     ecm_add_wayland_client_protocol(PROFILER_FILES
-        PROTOCOL ${wayland-protocols_SOURCE_DIR}/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml
+        PROTOCOL ${WAYLAND_PROTOCOLS_PKGDATADIR}/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml
         BASENAME xdg-decoration
     )
     ecm_add_wayland_client_protocol(PROFILER_FILES
-        PROTOCOL ${wayland-protocols_SOURCE_DIR}/staging/fractional-scale/fractional-scale-v1.xml
+        PROTOCOL ${WAYLAND_PROTOCOLS_PKGDATADIR}/staging/fractional-scale/fractional-scale-v1.xml
         BASENAME fractional-scale
     )
     ecm_add_wayland_client_protocol(PROFILER_FILES
-        PROTOCOL ${wayland-protocols_SOURCE_DIR}/stable/viewporter/viewporter.xml
+        PROTOCOL ${WAYLAND_PROTOCOLS_PKGDATADIR}/stable/viewporter/viewporter.xml
         BASENAME viewporter
     )
     ecm_add_wayland_client_protocol(PROFILER_FILES
-        PROTOCOL ${wayland-protocols_SOURCE_DIR}/staging/cursor-shape/cursor-shape-v1.xml
+        PROTOCOL ${WAYLAND_PROTOCOLS_PKGDATADIR}/staging/cursor-shape/cursor-shape-v1.xml
         BASENAME cursor-shape
     )
     ecm_add_wayland_client_protocol(PROFILER_FILES
-        PROTOCOL ${wayland-protocols_SOURCE_DIR}/unstable/tablet/tablet-unstable-v2.xml
+        PROTOCOL ${WAYLAND_PROTOCOLS_PKGDATADIR}/unstable/tablet/tablet-unstable-v2.xml
         BASENAME tablet
     )
     ecm_add_wayland_client_protocol(PROFILER_FILES
-        PROTOCOL ${wayland-protocols_SOURCE_DIR}/staging/xdg-toplevel-icon/xdg-toplevel-icon-v1.xml
+        PROTOCOL ${WAYLAND_PROTOCOLS_PKGDATADIR}/staging/xdg-toplevel-icon/xdg-toplevel-icon-v1.xml
         BASENAME xdg-toplevel-icon
     )
 elseif(EMSCRIPTEN)

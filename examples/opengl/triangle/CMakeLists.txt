@@ -35,7 +35,7 @@ if(NOT APPLE)
     set(ONLY_LIBS               ON  CACHE BOOL "" FORCE)
     FetchContent_Declare(glew
         GIT_REPOSITORY https://github.com/Perlmint/glew-cmake.git
-        GIT_TAG        master   # pin to a specific commit for reproducible builds
+        GIT_TAG        glew-cmake-2.3.1
         GIT_SHALLOW    TRUE
     )
     FetchContent_MakeAvailable(glew)

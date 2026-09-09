@@ -577,29 +577,7 @@ int64_t View::GetZoneChildTime( const ZoneEvent& zone )
 
 int64_t View::GetZoneChildTime( const GpuEvent& zone )
 {
-    int64_t time = 0;
-    if( zone.Child() >= 0 )
-    {
-        auto& children = m_worker.GetGpuChildren( zone.Child() );
-        if( children.is_magic() )
-        {
-            auto& vec = *(Vector<GpuEvent>*)&children;
-            for( auto& v : vec )
-            {
-                const auto childSpan = std::max( int64_t( 0 ), v.GpuEnd() - v.GpuStart() );
-                time += childSpan;
-            }
-        }
-        else
-        {
-            for( auto& v : children )
-            {
-                const auto childSpan = std::max( int64_t( 0 ), v->GpuEnd() - v->GpuStart() );
-                time += childSpan;
-            }
-        }
-    }
-    return time;
+    return m_worker.GetGpuChildTime( zone );
 }
 
 int64_t View::GetZoneChildTimeFast( const ZoneEvent& zone )

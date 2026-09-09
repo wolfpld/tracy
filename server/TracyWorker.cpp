@@ -3598,29 +3598,7 @@ ThreadData* Worker::GetCurrentThreadData()
     return td;
 }
 
-#ifndef TRACY_NO_STATISTICS
-Worker::SourceLocationZones* Worker::GetSourceLocationZonesReal( uint16_t srcloc )
-{
-    auto it = m_data.sourceLocationZones.find( srcloc );
-    assert( it != m_data.sourceLocationZones.end() );
-    m_data.srclocZonesLast.first = srcloc;
-    m_data.srclocZonesLast.second = &it->second;
-    return &it->second;
-}
-
-Worker::GpuSourceLocationZones* Worker::GetGpuSourceLocationZonesReal( uint16_t srcloc )
-{
-    auto it = m_data.gpuSourceLocationZones.find( srcloc );
-    if( it == m_data.gpuSourceLocationZones.end() )
-    {
-        it = m_data.gpuSourceLocationZones.emplace( srcloc, GpuSourceLocationZones() ).first;
-    }
-    m_data.gpuZonesLast.first = srcloc;
-    m_data.gpuZonesLast.second = &it->second;
-    return &it->second;
-}
-
-int64_t Worker::GetGpuChildTime( const GpuEvent& zone )
+int64_t Worker::GetGpuChildTime( const GpuEvent& zone ) const
 {
     int64_t time = 0;
     if( zone.Child() >= 0 )
@@ -3644,6 +3622,29 @@ int64_t Worker::GetGpuChildTime( const GpuEvent& zone )
     }
     return time;
 }
+
+#ifndef TRACY_NO_STATISTICS
+Worker::SourceLocationZones* Worker::GetSourceLocationZonesReal( uint16_t srcloc )
+{
+    auto it = m_data.sourceLocationZones.find( srcloc );
+    assert( it != m_data.sourceLocationZones.end() );
+    m_data.srclocZonesLast.first = srcloc;
+    m_data.srclocZonesLast.second = &it->second;
+    return &it->second;
+}
+
+Worker::GpuSourceLocationZones* Worker::GetGpuSourceLocationZonesReal( uint16_t srcloc )
+{
+    auto it = m_data.gpuSourceLocationZones.find( srcloc );
+    if( it == m_data.gpuSourceLocationZones.end() )
+    {
+        it = m_data.gpuSourceLocationZones.emplace( srcloc, GpuSourceLocationZones() ).first;
+    }
+    m_data.gpuZonesLast.first = srcloc;
+    m_data.gpuZonesLast.second = &it->second;
+    return &it->second;
+}
+
 #else
 uint64_t* Worker::GetSourceLocationZonesCntReal( uint16_t srcloc )
 {

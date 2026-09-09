@@ -633,6 +633,7 @@ public:
 
     tracy_force_inline const Vector<short_ptr<ZoneEvent>>& GetZoneChildren( int32_t idx ) const { return m_data.zoneChildren[idx]; }
     tracy_force_inline const Vector<short_ptr<GpuEvent>>& GetGpuChildren( int32_t idx ) const { return m_data.gpuChildren[idx]; }
+    int64_t GetGpuChildTime( const GpuEvent& zone ) const;
 #ifndef TRACY_NO_STATISTICS
     tracy_force_inline const Vector<GhostZone>& GetGhostChildren( int32_t idx ) const { return m_data.ghostChildren[idx]; }
     tracy_force_inline const GhostKey& GetGhostFrame( const Int24& frame ) const { return m_data.ghostFrames[frame.Val()]; }
@@ -938,8 +939,6 @@ private:
         return GetGpuSourceLocationZonesReal( srcloc );
     }
     GpuSourceLocationZones* GetGpuSourceLocationZonesReal( uint16_t srcloc );
-
-    int64_t GetGpuChildTime( const GpuEvent& zone );
 #else
     uint64_t* GetSourceLocationZonesCnt( uint16_t srcloc )
     {

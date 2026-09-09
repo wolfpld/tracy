@@ -418,7 +418,7 @@ void View::DrawFindZone()
                     ImGui::SameLine();
                 }
                 const auto fileName = m_worker.GetString( srcloc.file );
-                ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s%s", RealToString( zoneCnt ), isGpuLoc ? "[GPU] " : "", LocationToString( fileName, srcloc.line ) );
+                ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s", RealToString( zoneCnt ), LocationToString( fileName, srcloc.line ) );
                 if( ImGui::IsItemHovered() )
                 {
                     DrawSourceTooltip( fileName, srcloc.line, srcloc.line );

@@ -318,7 +318,7 @@ if(VENDOR_GUI)
             CPMAddPackage(
                 NAME libcurl
                 GITHUB_REPOSITORY curl/curl
-                GIT_TAG curl-8_21_0
+                GIT_TAG curl-8_22_0
                 OPTIONS
                     "BUILD_STATIC_LIBS ON"
                     "BUILD_SHARED_LIBS OFF"

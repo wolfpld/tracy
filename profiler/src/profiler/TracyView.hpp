@@ -331,6 +331,7 @@ private:
     void DrawMessages();
     void DrawMessageLine( const MessageData& msg, bool hasCallstack, int& idx );
     void DrawFindZone();
+    void DrawFindZoneCpuDetails( int16_t matchSrcloc );
     void AccumulationModeComboBox();
     void DrawStatistics();
     void DrawSamplesStatistics(Vector<SymList>& data, int64_t timeRange, uint64_t totalSamples, AccumulationMode accumulationMode);

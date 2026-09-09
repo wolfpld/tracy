@@ -453,6 +453,11 @@ void View::DrawFindZone()
 
         const auto matchSrcloc = m_findZone.match[m_findZone.selMatch];
         const bool isGpu = IsGpuSourceLocation( matchSrcloc );
+        if( isGpu && m_findZone.runningTime )
+        {
+            m_findZone.runningTime = false;
+            m_findZone.scheduleResetMatch = true;
+        }
 
         size_t zsz;
         int64_t rawTotal, selfTotal;
@@ -1676,633 +1681,641 @@ void View::DrawFindZone()
         }
         else
         {
-        auto& zoneData = m_worker.GetZonesForSourceLocation( matchSrcloc );
-        auto& zones = zoneData.zones;
-        ImGui::Separator();
-        SmallCheckbox( "Show zone time in frames", &m_findZone.showZoneInFrames );
-        ImGui::Separator();
-
-        ImGui::AlignTextToFramePadding();
-        TextDisabledUnformatted( "Filter user text:" );
-        ImGui::SameLine();
-        bool filterChanged = m_userTextFilter.Draw( ICON_FA_FILTER "###resultFilter", 200 );
-
-        ImGui::SameLine();
-        if( ImGui::Button( ICON_FA_DELETE_LEFT " Clear###userText" ) )
-        {
-            m_userTextFilter.Clear();
-            filterChanged = true;
+            DrawFindZoneCpuDetails( matchSrcloc );
         }
-        ImGui::Separator();
-        if( filterChanged )
+    }
+    ImGui::EndChild();
+    ImGui::End();
+}
+
+void View::DrawFindZoneCpuDetails( int16_t matchSrcloc )
+{
+    const auto scale = GetScale();
+    const auto rangeMin = m_findZone.range.min;
+    const auto rangeMax = m_findZone.range.max;
+    auto& zoneData = m_worker.GetZonesForSourceLocation( matchSrcloc );
+    auto& zones = zoneData.zones;
+    ImGui::Separator();
+    SmallCheckbox( "Show zone time in frames", &m_findZone.showZoneInFrames );
+    ImGui::Separator();
+
+    ImGui::AlignTextToFramePadding();
+    TextDisabledUnformatted( "Filter user text:" );
+    ImGui::SameLine();
+    bool filterChanged = m_userTextFilter.Draw( ICON_FA_FILTER "###resultFilter", 200 );
+
+    ImGui::SameLine();
+    if( ImGui::Button( ICON_FA_DELETE_LEFT " Clear###userText" ) )
+    {
+        m_userTextFilter.Clear();
+        filterChanged = true;
+    }
+    ImGui::Separator();
+    if( filterChanged )
+    {
+        m_filteredZones.clear();
+        m_findZone.ResetGroups();
+    }
+
+    ImGui::TextUnformatted( "Found zones:" );
+    ImGui::SameLine();
+    DrawHelpMarker( "Left click to highlight entry." );
+    if( m_findZone.selGroup != m_findZone.Unselected )
+    {
+        ImGui::SameLine();
+        if( ImGui::SmallButton( ICON_FA_DELETE_LEFT " Clear" ) )
         {
-            m_filteredZones.clear();
-            m_findZone.ResetGroups();
+            m_findZone.selGroup = m_findZone.Unselected;
+            m_findZone.ResetSelection();
+        }
+    }
+
+    bool groupChanged = false;
+    ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+    ImGui::TextUnformatted( "Group by:" );
+    ImGui::SameLine();
+    groupChanged |= ImGui::RadioButton( "Thread", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::Thread );
+    ImGui::SameLine();
+    groupChanged |= ImGui::RadioButton( "User text", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::UserText );
+    ImGui::SameLine();
+    groupChanged |= ImGui::RadioButton( "Zone name", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::ZoneName );
+    ImGui::SameLine();
+    groupChanged |= ImGui::RadioButton( "Call stacks", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::Callstack );
+    ImGui::SameLine();
+    groupChanged |= ImGui::RadioButton( "Parent", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::Parent );
+    ImGui::SameLine();
+    groupChanged |= ImGui::RadioButton( "No grouping", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::NoGrouping );
+    if( groupChanged )
+    {
+        m_findZone.selGroup = m_findZone.Unselected;
+        m_findZone.ResetGroups();
+    }
+    m_findZoneConstraint.MarkMinWidth();
+
+    ImGui::TextUnformatted( "Sort by:" );
+    ImGui::SameLine();
+    ImGui::RadioButton( "Order", (int*)( &m_findZone.sortBy ), (int)FindZone::SortBy::Order );
+    ImGui::SameLine();
+    ImGui::RadioButton( "Count", (int*)( &m_findZone.sortBy ), (int)FindZone::SortBy::Count );
+    ImGui::SameLine();
+    ImGui::RadioButton( "Time", (int*)( &m_findZone.sortBy ), (int)FindZone::SortBy::Time );
+    ImGui::SameLine();
+    ImGui::RadioButton( "MTPC", (int*)( &m_findZone.sortBy ), (int)FindZone::SortBy::Mtpc );
+    ImGui::PopStyleVar();
+    ImGui::SameLine();
+    DrawHelpMarker( "Mean time per call" );
+
+    const auto hmin = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
+    const auto hmax = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
+    const auto groupBy = m_findZone.groupBy;
+    const auto highlightActive = m_findZone.highlight.active;
+    const auto limitRange = m_findZone.range.active;
+    FindZone::Group* group = nullptr;
+    constexpr uint64_t invalidGid = std::numeric_limits<uint64_t>::max() - 1;
+    uint64_t lastGid = invalidGid;
+    auto zptr = zones.data() + m_findZone.processed;
+    const auto zend = zones.data() + zones.size();
+    while( zptr < zend )
+    {
+        auto& ev = *zptr;
+        const auto end = ev.Zone()->End();
+        const auto start = ev.Zone()->Start();
+        if( limitRange && ( start < rangeMin || end > rangeMax ) )
+        {
+            zptr++;
+            continue;
         }
 
-        ImGui::TextUnformatted( "Found zones:" );
-        ImGui::SameLine();
-        DrawHelpMarker( "Left click to highlight entry." );
-        if( m_findZone.selGroup != m_findZone.Unselected )
+        if( m_userTextFilter.IsActive() )
         {
-            ImGui::SameLine();
-            if( ImGui::SmallButton( ICON_FA_DELETE_LEFT " Clear" ) )
+            bool keep = false;
+            if ( m_worker.HasZoneExtra( *ev.Zone() ) && m_worker.GetZoneExtra( *ev.Zone() ).text.Active() )
             {
-                m_findZone.selGroup = m_findZone.Unselected;
-                m_findZone.ResetSelection();
+                auto text = m_worker.GetString( m_worker.GetZoneExtra( *ev.Zone() ).text );
+                if( m_userTextFilter.PassFilter( text ) )
+                {
+                    keep = true;
+                }
+            }
+            if( !keep )
+            {
+                m_filteredZones.insert( &ev );
+                zptr++;
+                continue;
             }
         }
 
-        bool groupChanged = false;
-        ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-        ImGui::TextUnformatted( "Group by:" );
-        ImGui::SameLine();
-        groupChanged |= ImGui::RadioButton( "Thread", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::Thread );
-        ImGui::SameLine();
-        groupChanged |= ImGui::RadioButton( "User text", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::UserText );
-        ImGui::SameLine();
-        groupChanged |= ImGui::RadioButton( "Zone name", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::ZoneName );
-        ImGui::SameLine();
-        groupChanged |= ImGui::RadioButton( "Call stacks", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::Callstack );
-        ImGui::SameLine();
-        groupChanged |= ImGui::RadioButton( "Parent", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::Parent );
-        ImGui::SameLine();
-        groupChanged |= ImGui::RadioButton( "No grouping", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::NoGrouping );
-        if( groupChanged )
+        auto timespan = end - start;
+        assert( timespan != 0 );
+        if( m_findZone.selfTime )
         {
-            m_findZone.selGroup = m_findZone.Unselected;
-            m_findZone.ResetGroups();
+            timespan -= GetZoneChildTimeFast( *ev.Zone() );
         }
-        m_findZoneConstraint.MarkMinWidth();
-
-        ImGui::TextUnformatted( "Sort by:" );
-        ImGui::SameLine();
-        ImGui::RadioButton( "Order", (int*)( &m_findZone.sortBy ), (int)FindZone::SortBy::Order );
-        ImGui::SameLine();
-        ImGui::RadioButton( "Count", (int*)( &m_findZone.sortBy ), (int)FindZone::SortBy::Count );
-        ImGui::SameLine();
-        ImGui::RadioButton( "Time", (int*)( &m_findZone.sortBy ), (int)FindZone::SortBy::Time );
-        ImGui::SameLine();
-        ImGui::RadioButton( "MTPC", (int*)( &m_findZone.sortBy ), (int)FindZone::SortBy::Mtpc );
-        ImGui::PopStyleVar();
-        ImGui::SameLine();
-        DrawHelpMarker( "Mean time per call" );
-
-        const auto hmin = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
-        const auto hmax = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
-        const auto groupBy = m_findZone.groupBy;
-        const auto highlightActive = m_findZone.highlight.active;
-        const auto limitRange = m_findZone.range.active;
-        FindZone::Group* group = nullptr;
-        constexpr uint64_t invalidGid = std::numeric_limits<uint64_t>::max() - 1;
-        uint64_t lastGid = invalidGid;
-        auto zptr = zones.data() + m_findZone.processed;
-        const auto zend = zones.data() + zones.size();
-        while( zptr < zend )
+        else if( m_findZone.runningTime )
         {
-            auto& ev = *zptr;
-            const auto end = ev.Zone()->End();
-            const auto start = ev.Zone()->Start();
-            if( limitRange && ( start < rangeMin || end > rangeMax ) )
+            const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( ev.Thread() ) );
+            if( !ctx ) break;
+            int64_t t;
+            if( !GetZoneRunningTime( ctx, *ev.Zone(), t ) ) break;
+            timespan = t;
+        }
+
+        if( highlightActive )
+        {
+            if( timespan < hmin || timespan > hmax )
             {
                 zptr++;
                 continue;
             }
-
-            if( m_userTextFilter.IsActive() )
-            {
-                bool keep = false;
-                if ( m_worker.HasZoneExtra( *ev.Zone() ) && m_worker.GetZoneExtra( *ev.Zone() ).text.Active() )
-                {
-                    auto text = m_worker.GetString( m_worker.GetZoneExtra( *ev.Zone() ).text );
-                    if( m_userTextFilter.PassFilter( text ) )
-                    {
-                        keep = true;
-                    }
-                }
-                if( !keep )
-                {
-                    m_filteredZones.insert( &ev );
-                    zptr++;
-                    continue;
-                }
-            }
-
-            auto timespan = end - start;
-            assert( timespan != 0 );
-            if( m_findZone.selfTime )
-            {
-                timespan -= GetZoneChildTimeFast( *ev.Zone() );
-            }
-            else if( m_findZone.runningTime )
-            {
-                const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( ev.Thread() ) );
-                if( !ctx ) break;
-                int64_t t;
-                if( !GetZoneRunningTime( ctx, *ev.Zone(), t ) ) break;
-                timespan = t;
-            }
-
-            if( highlightActive )
-            {
-                if( timespan < hmin || timespan > hmax )
-                {
-                    zptr++;
-                    continue;
-                }
-            }
-
-            zptr++;
-            uint64_t gid = 0;
-            switch( groupBy )
-            {
-            case FindZone::GroupBy::Thread:
-                gid = ev.Thread();
-                break;
-            case FindZone::GroupBy::UserText:
-            {
-                const auto& zone = *ev.Zone();
-                if( !m_worker.HasZoneExtra( zone ) )
-                {
-                    gid = std::numeric_limits<uint64_t>::max();
-                }
-                else
-                {
-                    const auto& extra = m_worker.GetZoneExtra( zone );
-                    gid = extra.text.Active() ? extra.text.Idx() : std::numeric_limits<uint64_t>::max();
-                }
-                break;
-            }
-            case FindZone::GroupBy::ZoneName:
-            {
-                const auto& zone = *ev.Zone();
-                if( !m_worker.HasZoneExtra( zone ) )
-                {
-                    gid = std::numeric_limits<uint64_t>::max();
-                }
-                else
-                {
-                    const auto& extra = m_worker.GetZoneExtra( zone );
-                    gid = extra.name.Active() ? extra.name.Idx() : std::numeric_limits<uint64_t>::max();
-                }
-                break;
-            }
-            case FindZone::GroupBy::Callstack:
-                gid = m_worker.GetZoneExtra( *ev.Zone() ).callstack.Val();
-                break;
-            case FindZone::GroupBy::Parent:
-            {
-                const auto parent = GetZoneParent( *ev.Zone(), m_worker.DecompressThread( ev.Thread() ) );
-                if( parent ) gid = uint64_t( uint16_t( parent->SrcLoc() ) );
-                break;
-            }
-            case FindZone::GroupBy::NoGrouping:
-                break;
-            default:
-                assert( false );
-                break;
-            }
-            if( lastGid != gid )
-            {
-                lastGid = gid;
-                auto it = m_findZone.groups.find( gid );
-                if( it == m_findZone.groups.end() )
-                {
-                    it = m_findZone.groups.emplace( gid, FindZone::Group { m_findZone.groupId++ } ).first;
-                    it->second.zones.reserve( 1024 );
-                    if( m_findZone.samples.enabled )
-                        it->second.zonesTids.reserve( 1024 );
-                }
-                group = &it->second;
-            }
-            group->time += timespan;
-            group->zones.push_back_non_empty( ev.Zone() );
-            if( m_findZone.samples.enabled )
-                group->zonesTids.push_back_non_empty( ev.Thread() );
-        }
-        m_findZone.processed = zptr - zones.data();
-
-        const bool groupsUpdated = lastGid != invalidGid;
-        if( m_findZone.samples.enabled && groupsUpdated )
-        {
-            m_findZone.samples.scheduleUpdate = true;
         }
 
-
-        Vector<decltype( m_findZone.groups )::iterator> groups;
-        groups.reserve_and_use( m_findZone.groups.size() );
-        int idx = 0;
-        for( auto it = m_findZone.groups.begin(); it != m_findZone.groups.end(); ++it )
+        zptr++;
+        uint64_t gid = 0;
+        switch( groupBy )
         {
-            groups[idx++] = it;
+        case FindZone::GroupBy::Thread:
+            gid = ev.Thread();
+            break;
+        case FindZone::GroupBy::UserText:
+        {
+            const auto& zone = *ev.Zone();
+            if( !m_worker.HasZoneExtra( zone ) )
+            {
+                gid = std::numeric_limits<uint64_t>::max();
+            }
+            else
+            {
+                const auto& extra = m_worker.GetZoneExtra( zone );
+                gid = extra.text.Active() ? extra.text.Idx() : std::numeric_limits<uint64_t>::max();
+            }
+            break;
         }
-
-        switch( m_findZone.sortBy )
+        case FindZone::GroupBy::ZoneName:
         {
-        case FindZone::SortBy::Order:
-            pdqsort_branchless( groups.begin(), groups.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.id < rhs->second.id; } );
+            const auto& zone = *ev.Zone();
+            if( !m_worker.HasZoneExtra( zone ) )
+            {
+                gid = std::numeric_limits<uint64_t>::max();
+            }
+            else
+            {
+                const auto& extra = m_worker.GetZoneExtra( zone );
+                gid = extra.name.Active() ? extra.name.Idx() : std::numeric_limits<uint64_t>::max();
+            }
             break;
-        case FindZone::SortBy::Count:
-            pdqsort_branchless( groups.begin(), groups.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.zones.size() > rhs->second.zones.size(); } );
+        }
+        case FindZone::GroupBy::Callstack:
+            gid = m_worker.GetZoneExtra( *ev.Zone() ).callstack.Val();
             break;
-        case FindZone::SortBy::Time:
-            pdqsort_branchless( groups.begin(), groups.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.time > rhs->second.time; } );
+        case FindZone::GroupBy::Parent:
+        {
+            const auto parent = GetZoneParent( *ev.Zone(), m_worker.DecompressThread( ev.Thread() ) );
+            if( parent ) gid = uint64_t( uint16_t( parent->SrcLoc() ) );
             break;
-        case FindZone::SortBy::Mtpc:
-            pdqsort_branchless( groups.begin(), groups.end(), []( const auto& lhs, const auto& rhs ) { return double( lhs->second.time ) / lhs->second.zones.size() > double( rhs->second.time ) / rhs->second.zones.size(); } );
+        }
+        case FindZone::GroupBy::NoGrouping:
             break;
         default:
             assert( false );
             break;
         }
-
-        int16_t changeZone = 0;
-
-        if( groupBy == FindZone::GroupBy::Callstack )
+        if( lastGid != gid )
         {
-            const auto gsz = (int)groups.size();
-            if( gsz > 0 )
+            lastGid = gid;
+            auto it = m_findZone.groups.find( gid );
+            if( it == m_findZone.groups.end() )
             {
-                if( m_findZone.selCs > gsz ) m_findZone.selCs = gsz;
-                const auto group = groups[m_findZone.selCs];
+                it = m_findZone.groups.emplace( gid, FindZone::Group { m_findZone.groupId++ } ).first;
+                it->second.zones.reserve( 1024 );
+                if( m_findZone.samples.enabled )
+                    it->second.zonesTids.reserve( 1024 );
+            }
+            group = &it->second;
+        }
+        group->time += timespan;
+        group->zones.push_back_non_empty( ev.Zone() );
+        if( m_findZone.samples.enabled )
+            group->zonesTids.push_back_non_empty( ev.Thread() );
+    }
+    m_findZone.processed = zptr - zones.data();
 
-                const bool selHilite = m_findZone.selGroup == group->first;
-                if( selHilite ) SetButtonHighlightColor();
-                if( ImGui::SmallButton( " " ICON_FA_CHECK " " ) )
-                {
-                    m_findZone.selGroup = group->first;
-                    m_findZone.ResetSelection();
-                }
-                if( selHilite ) ImGui::PopStyleColor( 3 );
-                ImGui::SameLine();
-                if( ImGui::SmallButton( " " ICON_FA_CARET_LEFT " " ) )
-                {
-                    m_findZone.selCs = std::max( m_findZone.selCs - 1, 0 );
-                }
-                ImGui::SameLine();
-                ImGui::Text( "%s / %s", RealToString( m_findZone.selCs + 1 ), RealToString( gsz ) );
-                if( ImGui::IsItemClicked() ) ImGui::OpenPopup( "FindZoneCallstackPopup" );
-                ImGui::SameLine();
-                if( ImGui::SmallButton( " " ICON_FA_CARET_RIGHT " " ) )
-                {
-                    m_findZone.selCs = std::min<int>( m_findZone.selCs + 1, gsz - 1 );
-                }
-                if( ImGui::BeginPopup( "FindZoneCallstackPopup" ) )
-                {
-                    int sel = m_findZone.selCs + 1;
-                    ImGui::SetNextItemWidth( 120 * scale );
-                    const bool clicked = ImGui::InputInt( "##findZoneCallstack", &sel, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue );
-                    if( clicked ) m_findZone.selCs = std::min( std::max( sel, 1 ), int( gsz ) ) - 1;
-                    ImGui::EndPopup();
-                }
+    const bool groupsUpdated = lastGid != invalidGid;
+    if( m_findZone.samples.enabled && groupsUpdated )
+    {
+        m_findZone.samples.scheduleUpdate = true;
+    }
 
-                ImGui::SameLine();
-                TextFocused( "Count:", RealToString( group->second.zones.size() ) );
-                ImGui::SameLine();
-                TextFocused( "Time:", TimeToString( group->second.time ) );
-                ImGui::SameLine();
-                char buf[64];
-                PrintStringPercent( buf, group->second.time * 100.f / zoneData.total );
-                TextDisabledUnformatted( buf );
 
-                if( group->first != 0 )
+    Vector<decltype( m_findZone.groups )::iterator> groups;
+    groups.reserve_and_use( m_findZone.groups.size() );
+    int idx = 0;
+    for( auto it = m_findZone.groups.begin(); it != m_findZone.groups.end(); ++it )
+    {
+        groups[idx++] = it;
+    }
+
+    switch( m_findZone.sortBy )
+    {
+    case FindZone::SortBy::Order:
+        pdqsort_branchless( groups.begin(), groups.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.id < rhs->second.id; } );
+        break;
+    case FindZone::SortBy::Count:
+        pdqsort_branchless( groups.begin(), groups.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.zones.size() > rhs->second.zones.size(); } );
+        break;
+    case FindZone::SortBy::Time:
+        pdqsort_branchless( groups.begin(), groups.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.time > rhs->second.time; } );
+        break;
+    case FindZone::SortBy::Mtpc:
+        pdqsort_branchless( groups.begin(), groups.end(), []( const auto& lhs, const auto& rhs ) { return double( lhs->second.time ) / lhs->second.zones.size() > double( rhs->second.time ) / rhs->second.zones.size(); } );
+        break;
+    default:
+        assert( false );
+        break;
+    }
+
+    int16_t changeZone = 0;
+
+    if( groupBy == FindZone::GroupBy::Callstack )
+    {
+        const auto gsz = (int)groups.size();
+        if( gsz > 0 )
+        {
+            if( m_findZone.selCs > gsz ) m_findZone.selCs = gsz;
+            const auto group = groups[m_findZone.selCs];
+
+            const bool selHilite = m_findZone.selGroup == group->first;
+            if( selHilite ) SetButtonHighlightColor();
+            if( ImGui::SmallButton( " " ICON_FA_CHECK " " ) )
+            {
+                m_findZone.selGroup = group->first;
+                m_findZone.ResetSelection();
+            }
+            if( selHilite ) ImGui::PopStyleColor( 3 );
+            ImGui::SameLine();
+            if( ImGui::SmallButton( " " ICON_FA_CARET_LEFT " " ) )
+            {
+                m_findZone.selCs = std::max( m_findZone.selCs - 1, 0 );
+            }
+            ImGui::SameLine();
+            ImGui::Text( "%s / %s", RealToString( m_findZone.selCs + 1 ), RealToString( gsz ) );
+            if( ImGui::IsItemClicked() ) ImGui::OpenPopup( "FindZoneCallstackPopup" );
+            ImGui::SameLine();
+            if( ImGui::SmallButton( " " ICON_FA_CARET_RIGHT " " ) )
+            {
+                m_findZone.selCs = std::min<int>( m_findZone.selCs + 1, gsz - 1 );
+            }
+            if( ImGui::BeginPopup( "FindZoneCallstackPopup" ) )
+            {
+                int sel = m_findZone.selCs + 1;
+                ImGui::SetNextItemWidth( 120 * scale );
+                const bool clicked = ImGui::InputInt( "##findZoneCallstack", &sel, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue );
+                if( clicked ) m_findZone.selCs = std::min( std::max( sel, 1 ), int( gsz ) ) - 1;
+                ImGui::EndPopup();
+            }
+
+            ImGui::SameLine();
+            TextFocused( "Count:", RealToString( group->second.zones.size() ) );
+            ImGui::SameLine();
+            TextFocused( "Time:", TimeToString( group->second.time ) );
+            ImGui::SameLine();
+            char buf[64];
+            PrintStringPercent( buf, group->second.time * 100.f / zoneData.total );
+            TextDisabledUnformatted( buf );
+
+            if( group->first != 0 )
+            {
+                ImGui::SameLine();
+                int idx = 0;
+                SmallCallstackButton( " " ICON_FA_ALIGN_JUSTIFY " ", group->first, idx, 0, false );
+
+                int fidx = 0;
+                ImGui::Spacing();
+                ImGui::Indent();
+                auto& csdata = m_worker.GetCallstack( group->first );
+                for( auto& entry : csdata )
                 {
-                    ImGui::SameLine();
-                    int idx = 0;
-                    SmallCallstackButton( " " ICON_FA_ALIGN_JUSTIFY " ", group->first, idx, 0, false );
-
-                    int fidx = 0;
-                    ImGui::Spacing();
-                    ImGui::Indent();
-                    auto& csdata = m_worker.GetCallstack( group->first );
-                    for( auto& entry : csdata )
+                    auto frameData = m_worker.GetCallstackFrame( entry );
+                    if( !frameData )
                     {
-                        auto frameData = m_worker.GetCallstackFrame( entry );
-                        if( !frameData )
+                        ImGui::TextDisabled( "%i.", fidx++ );
+                        ImGui::SameLine();
+                        ImGui::Text( "%p", (void*)m_worker.GetCanonicalPointer( entry ) );
+                    }
+                    else
+                    {
+                        const auto fsz = frameData->size;
+                        for( uint8_t f=0; f<fsz; f++ )
                         {
-                            ImGui::TextDisabled( "%i.", fidx++ );
-                            ImGui::SameLine();
-                            ImGui::Text( "%p", (void*)m_worker.GetCanonicalPointer( entry ) );
-                        }
-                        else
-                        {
-                            const auto fsz = frameData->size;
-                            for( uint8_t f=0; f<fsz; f++ )
-                            {
-                                const auto& frame = frameData->data[f];
-                                auto txt = m_worker.GetString( frame.name );
+                            const auto& frame = frameData->data[f];
+                            auto txt = m_worker.GetString( frame.name );
 
-                                if( fidx == 0 && f != fsz-1 )
+                            if( fidx == 0 && f != fsz-1 )
+                            {
+                                auto test = s_tracyStackFrames;
+                                bool match = false;
+                                do
                                 {
-                                    auto test = s_tracyStackFrames;
-                                    bool match = false;
-                                    do
+                                    if( strcmp( txt, *test ) == 0 )
                                     {
-                                        if( strcmp( txt, *test ) == 0 )
-                                        {
-                                            match = true;
-                                            break;
-                                        }
+                                        match = true;
+                                        break;
                                     }
-                                    while( *++test );
-                                    if( match ) continue;
                                 }
-                                if( f == fsz-1 )
-                                {
-                                    ImGui::TextDisabled( "%i.", fidx++ );
-                                }
-                                else
-                                {
-                                    TextDisabledUnformatted( ICON_FA_CARET_RIGHT );
-                                }
-                                ImGui::SameLine();
-                                if( m_vd.shortenName == ShortenName::Never )
-                                {
-                                    ImGui::TextUnformatted( txt );
-                                }
-                                else
-                                {
-                                    const auto normalized = ShortenZoneName( ShortenName::OnlyNormalize, txt );
-                                    ImGui::TextUnformatted( normalized );
-                                    TooltipNormalizedName( txt, normalized );
-                                }
+                                while( *++test );
+                                if( match ) continue;
+                            }
+                            if( f == fsz-1 )
+                            {
+                                ImGui::TextDisabled( "%i.", fidx++ );
+                            }
+                            else
+                            {
+                                TextDisabledUnformatted( ICON_FA_CARET_RIGHT );
+                            }
+                            ImGui::SameLine();
+                            if( m_vd.shortenName == ShortenName::Never )
+                            {
+                                ImGui::TextUnformatted( txt );
+                            }
+                            else
+                            {
+                                const auto normalized = ShortenZoneName( ShortenName::OnlyNormalize, txt );
+                                ImGui::TextUnformatted( normalized );
+                                TooltipNormalizedName( txt, normalized );
                             }
                         }
                     }
-                    ImGui::Unindent();
+                }
+                ImGui::Unindent();
+            }
+            else
+            {
+                ImGui::Text( "No call stack" );
+            }
+
+            ImGui::Spacing();
+            if( ImGui::TreeNodeEx( "Zone list" ) )
+            {
+                DrawZoneList( group->second.id, group->second.zones );
+            }
+        }
+    }
+    else
+    {
+        TextFocused( "Number of groups:", RealToString( groups.size() ) );
+        for( auto& v : groups )
+        {
+            bool isFiber = false;
+            const char* hdrString;
+            switch( groupBy )
+            {
+            case FindZone::GroupBy::Thread:
+            {
+                const auto tid = m_worker.DecompressThread( v->first );
+                const auto threadColor = GetThreadColor( tid, 0 );
+                SmallColorBox( threadColor );
+                ImGui::SameLine();
+                hdrString = m_worker.GetThreadName( tid );
+                isFiber = m_worker.IsThreadFiber( tid );
+                break;
+            }
+            case FindZone::GroupBy::UserText:
+                hdrString = v->first == std::numeric_limits<uint64_t>::max() ? "No user text" : m_worker.GetString( StringIdx( v->first ) );
+                break;
+            case FindZone::GroupBy::ZoneName:
+                if( v->first == std::numeric_limits<uint64_t>::max() )
+                {
+                    auto& srcloc = m_worker.GetSourceLocation( m_findZone.match[m_findZone.selMatch] );
+                    hdrString = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
                 }
                 else
                 {
-                    ImGui::Text( "No call stack" );
+                    hdrString = m_worker.GetString( StringIdx( v->first ) );
                 }
-
-                ImGui::Spacing();
-                if( ImGui::TreeNodeEx( "Zone list" ) )
+                break;
+            case FindZone::GroupBy::Callstack:
+                if( v->first == 0 )
                 {
-                    DrawZoneList( group->second.id, group->second.zones );
+                    hdrString = "No callstack";
                 }
+                else
+                {
+                    auto& callstack = m_worker.GetCallstack( v->first );
+                    auto& frameData = *m_worker.GetCallstackFrame( *callstack.begin() );
+                    hdrString = m_worker.GetString( frameData.data[frameData.size-1].name );
+                }
+                break;
+            case FindZone::GroupBy::Parent:
+                if( v->first == 0 )
+                {
+                    hdrString = "<no parent>";
+                    SmallColorBox( 0 );
+                }
+                else
+                {
+                    auto& srcloc = m_worker.GetSourceLocation( int16_t( v->first ) );
+                    hdrString = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
+                    SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
+                }
+                ImGui::SameLine();
+                break;
+            case FindZone::GroupBy::NoGrouping:
+                hdrString = "Zone list";
+                break;
+            default:
+                hdrString = nullptr;
+                assert( false );
+                break;
             }
-        }
-        else
-        {
-            TextFocused( "Number of groups:", RealToString( groups.size() ) );
-            for( auto& v : groups )
+            ImGui::PushID( v->first );
+            const bool expand = ImGui::TreeNodeEx( hdrString, ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ( v->first == m_findZone.selGroup ? ImGuiTreeNodeFlags_Selected : 0 ) );
+            if( ImGui::IsItemClicked() )
             {
-                bool isFiber = false;
-                const char* hdrString;
-                switch( groupBy )
-                {
-                case FindZone::GroupBy::Thread:
-                {
-                    const auto tid = m_worker.DecompressThread( v->first );
-                    const auto threadColor = GetThreadColor( tid, 0 );
-                    SmallColorBox( threadColor );
-                    ImGui::SameLine();
-                    hdrString = m_worker.GetThreadName( tid );
-                    isFiber = m_worker.IsThreadFiber( tid );
-                    break;
-                }
-                case FindZone::GroupBy::UserText:
-                    hdrString = v->first == std::numeric_limits<uint64_t>::max() ? "No user text" : m_worker.GetString( StringIdx( v->first ) );
-                    break;
-                case FindZone::GroupBy::ZoneName:
-                    if( v->first == std::numeric_limits<uint64_t>::max() )
-                    {
-                        auto& srcloc = m_worker.GetSourceLocation( m_findZone.match[m_findZone.selMatch] );
-                        hdrString = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
-                    }
-                    else
-                    {
-                        hdrString = m_worker.GetString( StringIdx( v->first ) );
-                    }
-                    break;
-                case FindZone::GroupBy::Callstack:
-                    if( v->first == 0 )
-                    {
-                        hdrString = "No callstack";
-                    }
-                    else
-                    {
-                        auto& callstack = m_worker.GetCallstack( v->first );
-                        auto& frameData = *m_worker.GetCallstackFrame( *callstack.begin() );
-                        hdrString = m_worker.GetString( frameData.data[frameData.size-1].name );
-                    }
-                    break;
-                case FindZone::GroupBy::Parent:
-                    if( v->first == 0 )
-                    {
-                        hdrString = "<no parent>";
-                        SmallColorBox( 0 );
-                    }
-                    else
-                    {
-                        auto& srcloc = m_worker.GetSourceLocation( int16_t( v->first ) );
-                        hdrString = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
-                        SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
-                    }
-                    ImGui::SameLine();
-                    break;
-                case FindZone::GroupBy::NoGrouping:
-                    hdrString = "Zone list";
-                    break;
-                default:
-                    hdrString = nullptr;
-                    assert( false );
-                    break;
-                }
-                ImGui::PushID( v->first );
-                const bool expand = ImGui::TreeNodeEx( hdrString, ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ( v->first == m_findZone.selGroup ? ImGuiTreeNodeFlags_Selected : 0 ) );
-                if( ImGui::IsItemClicked() )
-                {
-                    m_findZone.selGroup = v->first;
-                    m_findZone.ResetSelection();
-                }
-                if( m_findZone.groupBy == FindZone::GroupBy::Parent && ImGui::IsItemClicked( 2 ) )
-                {
-                    changeZone = int16_t( v->first );
-                }
-                ImGui::PopID();
-                if( isFiber )
-                {
-                    ImGui::SameLine();
-                    TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
-                }
-                ImGui::SameLine();
-                ImGui::TextColored( ImVec4( 0.5f, 0.5f, 0.5f, 1.0f ), "(%s) %s", RealToString( v->second.zones.size() ), TimeToString( v->second.time ) );
-                if( expand )
-                {
-                    DrawZoneList( v->second.id, v->second.zones );
-                }
+                m_findZone.selGroup = v->first;
+                m_findZone.ResetSelection();
             }
-        }
-
-        if( m_findZone.samples.enabled && m_findZone.samples.scheduleUpdate && !m_findZone.scheduleResetMatch && m_worker.AreSymbolSamplesReady() )
-        {
-            m_findZone.samples.scheduleUpdate = false;
-
-            const auto& symMap = m_worker.GetSymbolMap();
-            m_findZone.samples.counts.clear();
-            m_findZone.samples.counts.reserve( symMap.size() );
-
-            struct GroupRange {
-                const FindZone::Group* group;
-                Vector<short_ptr<ZoneEvent>>::const_iterator begin;
-                Vector<short_ptr<ZoneEvent>>::const_iterator end;
-            };
-            Vector<GroupRange> selectedGroups;
-            selectedGroups.reserve( m_findZone.groups.size() );
-            for( auto it = m_findZone.groups.begin(); it != m_findZone.groups.end(); ++it )
+            if( m_findZone.groupBy == FindZone::GroupBy::Parent && ImGui::IsItemClicked( 2 ) )
             {
-                assert( it->second.zones.size() == it->second.zonesTids.size() );
-                if( ( m_findZone.selGroup == m_findZone.Unselected || it->first == m_findZone.selGroup )
-                    && !it->second.zones.empty() )
-                {
-                    selectedGroups.push_back_no_space_check( GroupRange{&it->second} );
-                }
+                changeZone = int16_t( v->first );
             }
-
-            for( auto& v : symMap )
+            ImGui::PopID();
+            if( isFiber )
             {
-                bool pass = ( m_statShowKernel || ( v.first >> 63 ) == 0 );
-                if( !pass && v.second.size.Val() == 0 )
-                {
-                    const auto parentAddr = m_worker.GetSymbolForAddress( v.first );
-                    if( parentAddr != 0 )
-                    {
-                        auto pit = symMap.find( parentAddr );
-                        if( pit != symMap.end() )
-                        {
-                            pass = ( m_statShowKernel || ( parentAddr >> 63 ) == 0 );
-                        }
-                    }
-                }
-                if( !pass ) continue;
-
-                auto samples = m_worker.GetSamplesForSymbol( v.first );
-                if( !samples )  continue;
-
-                auto samplesBegin = samples->begin();
-                auto samplesEnd = samples->end();
-                if( m_findZone.range.active )
-                {
-                    const auto rangeMin = m_findZone.range.min;
-                    const auto rangeMax = m_findZone.range.max;
-                    samplesBegin = std::lower_bound( samplesBegin, samplesEnd, rangeMin, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
-                    samplesEnd = std::lower_bound( samplesBegin, samplesEnd, rangeMax, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
-                }
-                if( samplesBegin == samplesEnd )  continue;
-
-                bool empty = true;
-                const auto firstTime = samplesBegin->time.Val();
-                const auto lastTime = samplesEnd == samples->end() ? m_worker.GetLastTime() : samplesEnd->time.Val();
-                for( auto& g: selectedGroups )
-                {
-                    const auto& zones = g.group->zones;
-                    auto begin = std::lower_bound( zones.begin(), zones.end(), firstTime, [] ( const auto& l, const auto& r ) { return l->Start() < r; } );
-                    auto end = std::upper_bound( begin, zones.end(), lastTime, [] ( const auto& l, const auto& r ) { return l <= r->Start(); } );
-                    g.begin = begin;
-                    g.end = end;
-                    empty = empty && (begin == end);
-                }
-                if (empty) continue;
-
-                uint32_t count = 0;
-                for( auto it = samplesBegin; it != samplesEnd; ++it )
-                {
-                    const auto time = it->time.Val();
-                    bool pass = false;
-                    for( auto& g: selectedGroups )
-                    {
-                        while( g.begin != g.end && time > (*g.begin)->End() ) ++g.begin;
-                        if( g.begin == g.end ) continue;
-                        if( time < (*g.begin)->Start() ) continue;
-
-                        const auto& tids = g.group->zonesTids;
-                        const auto firstZone = g.group->zones.begin();
-                        for (auto z = g.begin; z != g.end && (*z)->Start() <= time; ++z)
-                        {
-                            auto zoneIndex = z - firstZone;
-                            if( (*z)->End() > time && it->thread == tids[zoneIndex] )
-                            {
-                                pass = true;
-                                break;
-                            }
-                        }
-                    }
-                    if( pass ) count ++;
-                }
-                if( count > 0 )  m_findZone.samples.counts.push_back_no_space_check( SymList { v.first, 0, count } );
+                ImGui::SameLine();
+                TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
             }
-        }
-
-        ImGui::Separator();
-        const bool hasSamples = m_worker.AreCallstackSamplesReady() && m_worker.GetCallstackSampleCount() > 0;
-        if( hasSamples && ImGui::TreeNodeEx( ICON_FA_EYE_DROPPER " Samples", ImGuiTreeNodeFlags_None ) )
-        {
+            ImGui::SameLine();
+            ImGui::TextColored( ImVec4( 0.5f, 0.5f, 0.5f, 1.0f ), "(%s) %s", RealToString( v->second.zones.size() ), TimeToString( v->second.time ) );
+            if( expand )
             {
-                ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );
-                ImGui::SameLine();
-                ImGui::Spacing();
-                ImGui::SameLine();
-                ImGui::Checkbox( ICON_FA_EYE_SLASH " Hide unknown", &m_statHideUnknown );
-                ImGui::SameLine();
-                ImGui::Spacing();
-                ImGui::SameLine();
-                ImGui::Checkbox( ICON_FA_SITEMAP " Inlines", &m_statSeparateInlines );
-                ImGui::SameLine();
-                ImGui::Spacing();
-                ImGui::SameLine();
-                ImGui::Checkbox( ICON_FA_AT " Address", &m_statShowAddress );
-                ImGui::SameLine();
-                ImGui::Spacing();
-                ImGui::SameLine();
-                if( ImGui::Checkbox( ICON_FA_HAT_WIZARD " Kernel", &m_statShowKernel ))
-                {
-                    m_findZone.samples.scheduleUpdate = true;
-                }
-                m_findZoneConstraint.MarkMinWidth();
+                DrawZoneList( v->second.id, v->second.zones );
             }
-
-            if( !m_findZone.samples.enabled )
-            {
-                m_findZone.samples.enabled = true;
-                m_findZone.samples.scheduleUpdate = true;
-                m_findZone.scheduleResetMatch = true;
-            }
-
-            Vector<SymList> data;
-            data.reserve( m_findZone.samples.counts.size() );
-            uint64_t totalSamples = 0;
-            for( auto it: m_findZone.samples.counts )
-            {
-                data.push_back_no_space_check( it );
-                totalSamples += it.excl;
-            }
-            int64_t timeRange = ( m_findZone.selGroup != m_findZone.Unselected ) ? m_findZone.selTotal : m_findZone.total;
-            DrawSamplesStatistics( data, timeRange, totalSamples, AccumulationMode::SelfOnly );
-
-            ImGui::TreePop();
-        }
-        else
-        {
-            if( m_findZone.samples.enabled )
-            {
-                m_findZone.samples.enabled = false;
-                m_findZone.samples.scheduleUpdate = false;
-                m_findZone.samples.counts = Vector<SymList>();
-                for( auto& it: m_findZone.groups ) it.second.zonesTids.clear();
-            }
-        }
-
-        if( changeZone != 0 )
-        {
-            auto& srcloc = m_worker.GetSourceLocation( changeZone );
-            m_findZone.ShowZone( changeZone, m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ) );
-        }
         }
     }
-    ImGui::EndChild();
-    ImGui::End();
+
+    if( m_findZone.samples.enabled && m_findZone.samples.scheduleUpdate && !m_findZone.scheduleResetMatch && m_worker.AreSymbolSamplesReady() )
+    {
+        m_findZone.samples.scheduleUpdate = false;
+
+        const auto& symMap = m_worker.GetSymbolMap();
+        m_findZone.samples.counts.clear();
+        m_findZone.samples.counts.reserve( symMap.size() );
+
+        struct GroupRange {
+            const FindZone::Group* group;
+            Vector<short_ptr<ZoneEvent>>::const_iterator begin;
+            Vector<short_ptr<ZoneEvent>>::const_iterator end;
+        };
+        Vector<GroupRange> selectedGroups;
+        selectedGroups.reserve( m_findZone.groups.size() );
+        for( auto it = m_findZone.groups.begin(); it != m_findZone.groups.end(); ++it )
+        {
+            assert( it->second.zones.size() == it->second.zonesTids.size() );
+            if( ( m_findZone.selGroup == m_findZone.Unselected || it->first == m_findZone.selGroup )
+                && !it->second.zones.empty() )
+            {
+                selectedGroups.push_back_no_space_check( GroupRange{&it->second} );
+            }
+        }
+
+        for( auto& v : symMap )
+        {
+            bool pass = ( m_statShowKernel || ( v.first >> 63 ) == 0 );
+            if( !pass && v.second.size.Val() == 0 )
+            {
+                const auto parentAddr = m_worker.GetSymbolForAddress( v.first );
+                if( parentAddr != 0 )
+                {
+                    auto pit = symMap.find( parentAddr );
+                    if( pit != symMap.end() )
+                    {
+                        pass = ( m_statShowKernel || ( parentAddr >> 63 ) == 0 );
+                    }
+                }
+            }
+            if( !pass ) continue;
+
+            auto samples = m_worker.GetSamplesForSymbol( v.first );
+            if( !samples )  continue;
+
+            auto samplesBegin = samples->begin();
+            auto samplesEnd = samples->end();
+            if( m_findZone.range.active )
+            {
+                const auto rangeMin = m_findZone.range.min;
+                const auto rangeMax = m_findZone.range.max;
+                samplesBegin = std::lower_bound( samplesBegin, samplesEnd, rangeMin, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+                samplesEnd = std::lower_bound( samplesBegin, samplesEnd, rangeMax, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+            }
+            if( samplesBegin == samplesEnd )  continue;
+
+            bool empty = true;
+            const auto firstTime = samplesBegin->time.Val();
+            const auto lastTime = samplesEnd == samples->end() ? m_worker.GetLastTime() : samplesEnd->time.Val();
+            for( auto& g: selectedGroups )
+            {
+                const auto& zones = g.group->zones;
+                auto begin = std::lower_bound( zones.begin(), zones.end(), firstTime, [] ( const auto& l, const auto& r ) { return l->Start() < r; } );
+                auto end = std::upper_bound( begin, zones.end(), lastTime, [] ( const auto& l, const auto& r ) { return l <= r->Start(); } );
+                g.begin = begin;
+                g.end = end;
+                empty = empty && (begin == end);
+            }
+            if (empty) continue;
+
+            uint32_t count = 0;
+            for( auto it = samplesBegin; it != samplesEnd; ++it )
+            {
+                const auto time = it->time.Val();
+                bool pass = false;
+                for( auto& g: selectedGroups )
+                {
+                    while( g.begin != g.end && time > (*g.begin)->End() ) ++g.begin;
+                    if( g.begin == g.end ) continue;
+                    if( time < (*g.begin)->Start() ) continue;
+
+                    const auto& tids = g.group->zonesTids;
+                    const auto firstZone = g.group->zones.begin();
+                    for (auto z = g.begin; z != g.end && (*z)->Start() <= time; ++z)
+                    {
+                        auto zoneIndex = z - firstZone;
+                        if( (*z)->End() > time && it->thread == tids[zoneIndex] )
+                        {
+                            pass = true;
+                            break;
+                        }
+                    }
+                }
+                if( pass ) count ++;
+            }
+            if( count > 0 )  m_findZone.samples.counts.push_back_no_space_check( SymList { v.first, 0, count } );
+        }
+    }
+
+    ImGui::Separator();
+    const bool hasSamples = m_worker.AreCallstackSamplesReady() && m_worker.GetCallstackSampleCount() > 0;
+    if( hasSamples && ImGui::TreeNodeEx( ICON_FA_EYE_DROPPER " Samples", ImGuiTreeNodeFlags_None ) )
+    {
+        {
+            ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
+            ImGui::Checkbox( ICON_FA_EYE_SLASH " Hide unknown", &m_statHideUnknown );
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
+            ImGui::Checkbox( ICON_FA_SITEMAP " Inlines", &m_statSeparateInlines );
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
+            ImGui::Checkbox( ICON_FA_AT " Address", &m_statShowAddress );
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
+            if( ImGui::Checkbox( ICON_FA_HAT_WIZARD " Kernel", &m_statShowKernel ))
+            {
+                m_findZone.samples.scheduleUpdate = true;
+            }
+            m_findZoneConstraint.MarkMinWidth();
+        }
+
+        if( !m_findZone.samples.enabled )
+        {
+            m_findZone.samples.enabled = true;
+            m_findZone.samples.scheduleUpdate = true;
+            m_findZone.scheduleResetMatch = true;
+        }
+
+        Vector<SymList> data;
+        data.reserve( m_findZone.samples.counts.size() );
+        uint64_t totalSamples = 0;
+        for( auto it: m_findZone.samples.counts )
+        {
+            data.push_back_no_space_check( it );
+            totalSamples += it.excl;
+        }
+        int64_t timeRange = ( m_findZone.selGroup != m_findZone.Unselected ) ? m_findZone.selTotal : m_findZone.total;
+        DrawSamplesStatistics( data, timeRange, totalSamples, AccumulationMode::SelfOnly );
+
+        ImGui::TreePop();
+    }
+    else
+    {
+        if( m_findZone.samples.enabled )
+        {
+            m_findZone.samples.enabled = false;
+            m_findZone.samples.scheduleUpdate = false;
+            m_findZone.samples.counts = Vector<SymList>();
+            for( auto& it: m_findZone.groups ) it.second.zonesTids.clear();
+        }
+    }
+
+    if( changeZone != 0 )
+    {
+        auto& srcloc = m_worker.GetSourceLocation( changeZone );
+        m_findZone.ShowZone( changeZone, m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ) );
+    }
 }
 
 }

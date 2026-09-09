@@ -433,6 +433,7 @@ void View::DrawFindZone()
             int64_t tmin = m_findZone.tmin;
             int64_t tmax = m_findZone.tmax;
             int64_t total = m_findZone.total;
+            double sumSq = m_findZone.sumSq;
             const auto zsz = zones.size();
             if( m_findZone.sortedNum != zsz )
             {
@@ -455,6 +456,7 @@ void View::DrawFindZone()
                             if( !GetZoneRunningTime( ctx, zone, t ) ) break;
                             vec.push_back_no_space_check( t );
                             total += t;
+                            sumSq += double( t ) * t;
                             if( t < tmin ) tmin = t;
                             else if( t > tmax ) tmax = t;
                         }
@@ -470,6 +472,7 @@ void View::DrawFindZone()
                             if( !GetZoneRunningTime( ctx, zone, t ) ) break;
                             vec.push_back_no_space_check( t );
                             total += t;
+                            sumSq += double( t ) * t;
                             if( t < tmin ) tmin = t;
                             else if( t > tmax ) tmax = t;
                         }
@@ -490,6 +493,7 @@ void View::DrawFindZone()
                             const auto t = end - start - GetZoneChildTimeFast( zone );
                             vec.push_back_no_space_check( t );
                             total += t;
+                            sumSq += double( t ) * t;
                         }
                     }
                     else
@@ -501,6 +505,7 @@ void View::DrawFindZone()
                             const auto t = end - zone.Start() - GetZoneChildTimeFast( zone );
                             vec.push_back_no_space_check( t );
                             total += t;
+                            sumSq += double( t ) * t;
                         }
                     }
                 }
@@ -519,6 +524,7 @@ void View::DrawFindZone()
                             const auto t = end - start;
                             vec.push_back_no_space_check( t );
                             total += t;
+                            sumSq += double( t ) * t;
                         }
                     }
                     else
@@ -530,6 +536,7 @@ void View::DrawFindZone()
                             const auto t = end - zone.Start();
                             vec.push_back_no_space_check( t );
                             total += t;
+                            sumSq += double( t ) * t;
                         }
                     }
                 }
@@ -552,6 +559,7 @@ void View::DrawFindZone()
                     m_findZone.p99    = Percentile( 0.99 );
                     m_findZone.p99_9  = Percentile( 0.999 );
                     m_findZone.total = total;
+                    m_findZone.sumSq = sumSq;
                     m_findZone.sortedNum = i;
                     m_findZone.tmin = tmin;
                     m_findZone.tmax = tmax;
@@ -734,7 +742,7 @@ void View::DrawFindZone()
                         {
                             const auto sz = m_findZone.sorted.size();
                             const auto avg = m_findZone.average;
-                            const auto ss = zoneData.sumSq - 2. * zoneData.total * avg + avg * avg * sz;
+                            const auto ss = m_findZone.sumSq - 2. * m_findZone.total * avg + double( avg ) * avg * sz;
                             const auto sd = sqrt( ss / ( sz - 1 ) );
                             json["statistics"]["std_dev"] = TimeToString( sd );
                         }
@@ -1118,7 +1126,7 @@ void View::DrawFindZone()
                         {
                             const auto sz = m_findZone.sorted.size();
                             const auto avg = m_findZone.average;
-                            const auto ss = zoneData.sumSq - 2. * zoneData.total * avg + double( avg ) * avg * sz;
+                            const auto ss = m_findZone.sumSq - 2. * m_findZone.total * avg + double( avg ) * avg * sz;
                             const auto sd = sqrt( ss / ( sz - 1 ) );
 
                             ImGui::SameLine();

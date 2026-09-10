@@ -25,6 +25,10 @@ project(
     VERSION ${TRACY_VERSION_STRING}
 )
 
+if(APPLE)
+    enable_language(OBJC)
+endif()
+
 if(SELF_PROFILE)
     add_definitions(-DTRACY_ENABLE)
     add_compile_options(-g -O3 -fno-omit-frame-pointer)

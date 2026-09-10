@@ -2,6 +2,11 @@ Note: There is no guarantee that version mismatched client and server will
 be able to talk with each other. Network protocol breakages won't be listed
 here.
 
+vx.xx.x (2026-xx-xx)
+--------------------
+
+- Find zone window now works with GPU zones (histogram, statistics, self time).
+
 v0.14.1 (2026-08-22)
 --------------------
 

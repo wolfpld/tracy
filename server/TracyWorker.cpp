@@ -3600,6 +3600,7 @@ ThreadData* Worker::GetCurrentThreadData()
 
 int64_t Worker::GetGpuChildTime( const GpuEvent& zone ) const
 {
+    // Unresolved children (GpuEnd == -1, e.g. aborted trace) clamp to 0, overstating parent self-time.
     int64_t time = 0;
     if( zone.Child() >= 0 )
     {

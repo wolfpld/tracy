@@ -405,7 +405,15 @@ void View::DrawFindZone()
                 ImGui::SameLine();
                 ImGui::PushID( idx );
                 ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-                ImGui::RadioButton( m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ), &m_findZone.selMatch, idx++ );
+                auto name = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
+                std::string gpuLabel;
+                if( isGpuLoc )
+                {
+                    gpuLabel = ICON_FA_DISPLAY " ";
+                    gpuLabel += name;
+                    name = gpuLabel.c_str();
+                }
+                ImGui::RadioButton( name, &m_findZone.selMatch, idx++ );
                 ImGui::PopStyleVar();
                 if( m_findZoneBuzzAnim.Match( idx ) )
                 {

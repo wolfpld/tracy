@@ -4474,6 +4474,8 @@ Tracy gives you the ability to display an execution time histogram of all occurr
 
 You start by entering a search query, which will be matched against known zone names (see section~\ref{markingzones} for information on the grouping of zone names). If the search found some results, you will be presented with a list of zones in the \emph{matched source locations} drop-down. The selected zone's graph is displayed on the \emph{histogram} drop-down, and also the matching zones are highlighted on the timeline view.
 
+GPU zones are supported as well, using their GPU execution time. Zone grouping, the found-zones list, and call stack samples are available only for CPU zones.
+
 Clicking the \RMB{}~right mouse button on the source file location will open the source file view window (if applicable, see section~\ref{sourceview}). If symbol data is available Tracy will try to match the instrumented zone name to a captured symbol. If this succeeds and there are no duplicate matches, the source file view will be accompanied by the disassembly of the code. Since this matching is not exact, in rare cases you may get the wrong data here. To just display the source code, press and hold the \keys{\ctrl} key while clicking the \RMB{}~right mouse button.
 
 An example histogram is presented in figure~\ref{findzonehistogram}. Here you can see that the majority of zone calls (by count) are clustered in the 300~\si{\nano\second} group, closely followed by the 10~\si{\micro\second} cluster. There are some outliers at the 1~and~10~\si{\milli\second} marks, which can be ignored on most occasions, as these are single occurrences.

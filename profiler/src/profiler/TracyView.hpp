@@ -331,6 +331,7 @@ private:
     void DrawMessages();
     void DrawMessageLine( const MessageData& msg, bool hasCallstack, int& idx );
     void DrawFindZone();
+    void DrawFindZoneCpuDetails( int16_t matchSrcloc );
     void AccumulationModeComboBox();
     void DrawStatistics();
     void DrawSamplesStatistics(Vector<SymList>& data, int64_t timeRange, uint64_t totalSamples, AccumulationMode accumulationMode);
@@ -440,6 +441,7 @@ private:
 
     void FindZones();
     void FindZonesCompare();
+    bool IsGpuSourceLocation( int16_t srcloc ) const;
 
     std::vector<MemoryPage> GetMemoryPages() const;
 

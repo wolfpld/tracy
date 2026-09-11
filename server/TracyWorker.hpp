@@ -224,6 +224,9 @@ private:
         int64_t max = std::numeric_limits<int64_t>::min();
         int64_t total = 0;
         double sumSq = 0;
+        int64_t selfMin = std::numeric_limits<int64_t>::max();
+        int64_t selfMax = std::numeric_limits<int64_t>::min();
+        int64_t selfTotal = 0;
     };
 
     struct CallstackFrameIdHash
@@ -630,6 +633,7 @@ public:
 
     tracy_force_inline const Vector<short_ptr<ZoneEvent>>& GetZoneChildren( int32_t idx ) const { return m_data.zoneChildren[idx]; }
     tracy_force_inline const Vector<short_ptr<GpuEvent>>& GetGpuChildren( int32_t idx ) const { return m_data.gpuChildren[idx]; }
+    int64_t GetGpuChildTime( const GpuEvent& zone ) const;
 #ifndef TRACY_NO_STATISTICS
     tracy_force_inline const Vector<GhostZone>& GetGhostChildren( int32_t idx ) const { return m_data.ghostChildren[idx]; }
     tracy_force_inline const GhostKey& GetGhostFrame( const Int24& frame ) const { return m_data.ghostFrames[frame.Val()]; }
@@ -645,6 +649,8 @@ public:
 #ifndef TRACY_NO_STATISTICS
     SourceLocationZones& GetZonesForSourceLocation( int16_t srcloc );
     const SourceLocationZones& GetZonesForSourceLocation( int16_t srcloc ) const;
+    GpuSourceLocationZones& GetGpuZonesForSourceLocation( int16_t srcloc );
+    const GpuSourceLocationZones& GetGpuZonesForSourceLocation( int16_t srcloc ) const;
     const unordered_flat_map<int16_t, SourceLocationZones>& GetSourceLocationZones() const { return m_data.sourceLocationZones; }
     const unordered_flat_map<int16_t, GpuSourceLocationZones>& GetGpuSourceLocationZones() const { return m_data.gpuSourceLocationZones; }
     bool AreSourceLocationZonesReady() const { return m_data.sourceLocationZonesReady; }

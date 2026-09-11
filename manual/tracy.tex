@@ -3829,7 +3829,7 @@ If the drawing of timeline elements was disabled in the options menu (section~\r
 \item \faExpand{} -- Display of empty labels is enabled.
 \item \faPersonHiking{} -- Context switches are hidden.
 \item \faSliders{} -- CPU data is hidden.
-\item \faEye{} -- GPU zones are hidden.
+\item \faDisplay{} -- GPU zones are hidden.
 \item \faMicrochip{} -- CPU zones are hidden.
 \item \faLock{} -- Locks are hidden.
 \item \faSignature{} -- Plots are hidden.
@@ -4346,7 +4346,7 @@ In this window, you can set various trace-related options. For example, the time
 \end{itemize}
 \item \emph{\faEyeDropper{}~Draw stack samples} -- Controls if stack samples for each thread are displayed on the timeline.
 \item \emph{\faArrowsLeftRightToLine{}~Draw sections} -- Allows disabling display of sections (see chapter~\ref{sections}). If there are multiple section categories, there's also an expandable list of categories that can be disabled or enabled. The \emph{\faLayerGroup{}~Group by category} option lays out each category in its own set of rows, ordered by category identifier, instead of packing all sections together by length.
-\item \emph{\faEye{} Draw GPU zones} -- Allows disabling display of OpenGL / Vulkan / Metal / Direct3D / OpenCL / CUDA / WebGPU zones. The \emph{GPU zones} drop-down allows disabling individual GPU contexts and setting CPU/GPU drift offsets of uncalibrated contexts (see section~\ref{gpuprofiling} for more information). The \emph{\faRobot~Auto} button automatically measures the GPU drift value\footnote{There is an assumption that drift is linear. Automated measurement calculates and removes change over time in delay-to-execution of GPU zones. Resulting value may still be incorrect.}.
+\item \emph{\faDisplay{} Draw GPU zones} -- Allows disabling display of OpenGL / Vulkan / Metal / Direct3D / OpenCL / CUDA / WebGPU zones. The \emph{GPU zones} drop-down allows disabling individual GPU contexts and setting CPU/GPU drift offsets of uncalibrated contexts (see section~\ref{gpuprofiling} for more information). The \emph{\faRobot~Auto} button automatically measures the GPU drift value\footnote{There is an assumption that drift is linear. Automated measurement calculates and removes change over time in delay-to-execution of GPU zones. Resulting value may still be incorrect.}.
 \item \emph{\faMicrochip{} Draw CPU zones} -- Determines whether CPU zones are displayed.
 \begin{itemize}
 \item \emph{\faGhost{} Draw ghost zones} -- Controls if ghost zones should be displayed in threads which don't have any instrumented zones available.
@@ -4408,7 +4408,7 @@ Looking at the timeline view gives you a very localized outlook on things. Howev
 
 If the trace capture was performed with call stack sampling enabled (as described in chapter~\ref{sampling}), you will be presented with an option to switch between \emph{\faSyringe{}~Instrumentation} and \emph{\faEyeDropper{}~Sampling} modes. If the profiler collected no sampling data, but it retrieved symbols, the second mode will be displayed as \emph{\faPuzzlePiece{}~Symbols}, enabling you to list available symbols.
 
-If GPU zones were captured, you would also have the \emph{\faEye{}~GPU} option to view the GPU zones statistics.
+If GPU zones were captured, you would also have the \emph{\faDisplay{}~GPU} option to view the GPU zones statistics.
 
 \subsubsection{Instrumentation mode}
 
@@ -4474,7 +4474,7 @@ Tracy gives you the ability to display an execution time histogram of all occurr
 
 You start by entering a search query, which will be matched against known zone names (see section~\ref{markingzones} for information on the grouping of zone names). If the search found some results, you will be presented with a list of zones in the \emph{matched source locations} drop-down. The selected zone's graph is displayed on the \emph{histogram} drop-down, and also the matching zones are highlighted on the timeline view.
 
-GPU zones are supported as well, using their GPU execution time. Zone grouping, the found-zones list, and call stack samples are available only for CPU zones.
+GPU zones are supported as well, using their GPU execution time. GPU zones are prefixed with the~\faDisplay~icon. Zone grouping, the found-zones list, and call stack samples are available only for CPU zones.
 
 Clicking the \RMB{}~right mouse button on the source file location will open the source file view window (if applicable, see section~\ref{sourceview}). If symbol data is available Tracy will try to match the instrumented zone name to a captured symbol. If this succeeds and there are no duplicate matches, the source file view will be accompanied by the disassembly of the code. Since this matching is not exact, in rare cases you may get the wrong data here. To just display the source code, press and hold the \keys{\ctrl} key while clicking the \RMB{}~right mouse button.
 

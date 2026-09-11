@@ -80,7 +80,7 @@ void View::DrawStatistics()
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        ImGui::RadioButton( ICON_FA_EYE " GPU", &m_statMode, 2 );
+        ImGui::RadioButton( ICON_FA_DISPLAY " GPU", &m_statMode, 2 );
     }
     ImGui::SameLine();
     ImGui::Spacing();

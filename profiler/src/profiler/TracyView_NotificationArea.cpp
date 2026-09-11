@@ -151,7 +151,7 @@ void View::DrawNotificationArea()
     if( !m_vd.drawGpuZones )
     {
         ImGui::SameLine();
-        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_EYE );
+        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_DISPLAY );
         if( ImGui::IsItemHovered() )
         {
             ImGui::BeginTooltip();

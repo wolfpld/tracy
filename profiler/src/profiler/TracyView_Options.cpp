@@ -172,7 +172,7 @@ void View::DrawOptions()
     {
         ImGui::Separator();
         val = m_vd.drawGpuZones;
-        ImGui::Checkbox( ICON_FA_EYE " Draw GPU zones", &val );
+        ImGui::Checkbox( ICON_FA_DISPLAY " Draw GPU zones", &val );
         m_vd.drawGpuZones = val;
         const auto expand = ImGui::TreeNode( "GPU zones" );
         ImGui::SameLine();

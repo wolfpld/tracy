@@ -20,7 +20,8 @@
 
 ## Commits
 
-- Match the repository's established commit style; observe recent history first.
+- Subject: one line, imperative, capitalized, ends with a period — like `Bump LZ4 to 1.10.0.`, `Use the system wayland-protocols package.`.
+- Body: only genuine rationale, mechanism, or constraints; skip it when the change is self-evident from the diff. Never recap decision processes or alternatives considered.
 - One logical change per commit. Never bundle unrelated edits.
 - The rationale, mechanism, non-obvious constraints — belong in the commit message, not in code comments.
 - Explain a pattern once, at its first occurrence; repeat occurrences at other sites state only what they do.

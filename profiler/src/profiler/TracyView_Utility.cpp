@@ -896,6 +896,7 @@ void View::UpdateTitle()
         snprintf( buf, 1024, "%s (%s)", captureName, desc.c_str() );
         m_stcb( buf );
     }
+#ifndef __EMSCRIPTEN__
     else if( !m_filename.empty() )
     {
         auto fptr = m_filename.c_str() + m_filename.size() - 1;
@@ -906,6 +907,7 @@ void View::UpdateTitle()
         snprintf( buf, 1024, "%s (%s)", captureName, fptr );
         m_stcb( buf );
     }
+#endif
     else
     {
         m_stcb( captureName );

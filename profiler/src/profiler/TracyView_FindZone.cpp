@@ -1686,6 +1686,7 @@ void View::DrawFindZone()
         {
             ImGui::Separator();
             TextDisabledUnformatted( "Zone grouping, the found-zones list, and callstack samples are not yet available for GPU zones." );
+            m_findZoneConstraint.MarkMinWidth();
         }
         else
         {

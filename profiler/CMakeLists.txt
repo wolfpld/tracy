@@ -369,6 +369,7 @@ if(EMSCRIPTEN)
         -sEXPORTED_FUNCTIONS=_main,_nativeOpenFile,_tracy_paste_clipboard
         -sEXPORTED_RUNTIME_METHODS=ccall
         -sENVIRONMENT=web,worker
+        "--pre-js;${CMAKE_CURRENT_LIST_DIR}/wasm/url_trace_pre.js"
         --preload-file embed.tracy
     )
 

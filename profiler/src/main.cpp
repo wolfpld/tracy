@@ -20,6 +20,10 @@
 #  include <windows.h>
 #endif
 
+#ifdef __EMSCRIPTEN__
+#  include <emscripten.h>
+#endif
+
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_PNG
 #include "stb_image.h"
@@ -236,7 +240,31 @@ int main( int argc, char** argv )
 
     std::unique_ptr<tracy::FileRead> initFileOpen;
 #ifdef __EMSCRIPTEN__
-    initFileOpen = std::unique_ptr<tracy::FileRead>( tracy::FileRead::Open( "embed.tracy" ) );
+    const auto FileExists = []( const char* fn ) -> bool
+    {
+        auto f = fopen( fn, "rb" );
+        if( f ) fclose( f );
+        return f != nullptr;
+    };
+    const bool hasUrl = FileExists( "/url.tracy" ) || FileExists( "/url.tracy.failed" );
+    if( hasUrl )
+    {
+        try
+        {
+            if( FileExists( "/url.tracy" ) )
+            {
+                initFileOpen.reset( tracy::FileRead::Open( "/url.tracy" ) );
+            }
+        }
+        catch( const tracy::NotTracyDump& ) { EM_ASM( alert( "The provided URL did not contain a valid Tracy trace." ) ); }
+        catch( const tracy::FileReadError& ) { EM_ASM( alert( "The trace from the provided URL could not be read." ) ); }
+        catch( const tracy::UnsupportedVersion& ) { EM_ASM( alert( "The trace from the provided URL requires a newer version of Tracy." ) ); }
+        catch( const tracy::LegacyVersion& ) { EM_ASM( alert( "The trace from the provided URL is in a legacy format." ) ); }
+    }
+    else
+    {
+        initFileOpen = std::unique_ptr<tracy::FileRead>( tracy::FileRead::Open( "embed.tracy" ) );
+    }
 #endif
     if( argc == 2 )
     {
@@ -364,7 +392,23 @@ int main( int argc, char** argv )
 
     if( initFileOpen )
     {
+#ifdef __EMSCRIPTEN__
+        try
+        {
+            view.store( std::make_shared<tracy::View>( RunOnMainThread, *initFileOpen, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements ), std::memory_order_release );
+        }
+        catch( const tracy::UnsupportedVersion& )
+        {
+            EM_ASM( alert( "The trace from the provided URL requires a newer version of Tracy." ) );
+        }
+        catch( const std::exception& e )
+        {
+            const std::string msg = std::string( "Failed to load the trace: " ) + e.what();
+            EM_ASM( alert( UTF8ToString( $0 ) ), msg.c_str() );
+        }
+#else
         view.store( std::make_shared<tracy::View>( RunOnMainThread, *initFileOpen, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements ), std::memory_order_release );
+#endif
         initFileOpen.reset();
     }
     else if( connectTo )

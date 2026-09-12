@@ -248,14 +248,21 @@ int main( int argc, char** argv )
     };
     if( FileExists( "/url.tracy" ) )
     {
-        try
-        {
-            initFileOpen.reset( tracy::FileRead::Open( "/url.tracy" ) );
-        }
-        catch( const tracy::NotTracyDump& ) { EM_ASM( alert( "The provided URL did not contain a valid Tracy trace." ) ); }
-        catch( const tracy::FileReadError& ) { EM_ASM( alert( "The trace from the provided URL could not be read." ) ); }
-        catch( const tracy::UnsupportedVersion& ) { EM_ASM( alert( "The trace from the provided URL requires a newer version of Tracy." ) ); }
-        catch( const tracy::LegacyVersion& ) { EM_ASM( alert( "The trace from the provided URL is in a legacy format." ) ); }
+        loadThread = std::thread( [] {
+            try
+            {
+                auto f = std::shared_ptr<tracy::FileRead>( tracy::FileRead::Open( "/url.tracy" ) );
+                if( f )
+                {
+                    view.store( std::make_shared<tracy::View>( RunOnMainThread, *f, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements ), std::memory_order_release );
+                }
+            }
+            catch( const tracy::NotTracyDump& ) { badVer.state = tracy::BadVersionState::BadFile; }
+            catch( const tracy::FileReadError& ) { badVer.state = tracy::BadVersionState::ReadError; }
+            catch( const tracy::UnsupportedVersion& e ) { badVer.state = tracy::BadVersionState::UnsupportedVersion; badVer.version = e.version; }
+            catch( const tracy::LegacyVersion& e ) { badVer.state = tracy::BadVersionState::LegacyVersion; badVer.version = e.version; }
+            catch( const tracy::LoadFailure& e ) { badVer.state = tracy::BadVersionState::LoadFailure; badVer.msg = e.msg; }
+        } );
     }
 #endif
     if( argc == 2 )
@@ -384,17 +391,6 @@ int main( int argc, char** argv )
 
     if( initFileOpen )
     {
-#ifdef __EMSCRIPTEN__
-        try
-        {
-            view.store( std::make_shared<tracy::View>( RunOnMainThread, *initFileOpen, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements ), std::memory_order_release );
-        }
-        catch( const std::exception& e )
-        {
-            const std::string msg = std::string( "Failed to load the trace: " ) + e.what();
-            EM_ASM( alert( UTF8ToString( $0 ) ), msg.c_str() );
-        }
-#else
         try
         {
             view.store( std::make_shared<tracy::View>( RunOnMainThread, *initFileOpen, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements ), std::memory_order_release );
@@ -405,7 +401,6 @@ int main( int argc, char** argv )
             initFileOpen.reset();
             _Exit( 1 );
         }
-#endif
         initFileOpen.reset();
     }
     else if( connectTo )

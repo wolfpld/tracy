@@ -245,6 +245,20 @@ void View::DrawCompare()
                                 m_compare.badVer.state = BadVersionState::UnsupportedVersion;
                                 m_compare.badVer.version = e.version;
                             }
+                            catch( const tracy::LegacyVersion& e )
+                            {
+                                m_compare.badVer.state = BadVersionState::LegacyVersion;
+                                m_compare.badVer.version = e.version;
+                            }
+                            catch( const tracy::LoadFailure& e )
+                            {
+                                m_compare.badVer.state = BadVersionState::LoadFailure;
+                                m_compare.badVer.msg = e.msg;
+                            }
+                            catch( const tracy::FileReadError& )
+                            {
+                                m_compare.badVer.state = BadVersionState::ReadError;
+                            }
                         } );
                     }
                 }

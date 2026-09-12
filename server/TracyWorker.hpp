@@ -54,19 +54,30 @@ namespace EventType
 
 struct UnsupportedVersion : public std::exception
 {
-    UnsupportedVersion( int version ) : version( version ) {}
+    UnsupportedVersion( int version ) : version( version )
+    {
+        msg = "Trace file requires Tracy " + std::to_string( version >> 16 ) + "." + std::to_string( ( version >> 8 ) & 0xFF ) + "." + std::to_string( version & 0xFF ) + " or newer.";
+    }
+    const char* what() const noexcept override { return msg.c_str(); }
     int version;
+    std::string msg;
 };
 
 struct LegacyVersion : public std::exception
 {
-    LegacyVersion( int version ) : version ( version ) {}
+    LegacyVersion( int version ) : version ( version )
+    {
+        msg = "Trace file was created by legacy Tracy " + std::to_string( version >> 16 ) + "." + std::to_string( ( version >> 8 ) & 0xFF ) + "." + std::to_string( version & 0xFF ) + ". Use the update utility from an older version to convert it.";
+    }
+    const char* what() const noexcept override { return msg.c_str(); }
     int version;
+    std::string msg;
 };
 
 struct LoadFailure : public std::exception
 {
     LoadFailure( const char* msg ) : msg( msg ) {}
+    const char* what() const noexcept override { return msg.c_str(); }
     std::string msg;
 };
 

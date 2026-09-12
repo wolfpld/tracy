@@ -6,26 +6,28 @@ vx.xx.x (2026-xx-xx)
 --------------------
 
 - Added the monitor utility. This Linux-specific tool can launch or attach
-  to a program that has no Tracy instrumentation and perform profiling run
+  to a program that has no Tracy instrumentation and perform a profiling run
   based on sampling call stacks.
+- It is now possible to load traces available on the web in the web demo
+  of the profiler. See the manual for details.
 - Pandoc is now required to build the graphical profiler. The build system
   will automatically download the tool. The pandoc binary will be stored
   in the user cache directory.
-- The profiler listening port can be now retrieved during runtime via the
+- The profiler listening port can now be retrieved during runtime via the
   TracyPort macro.
 - The capture daemon will now lock the directory it writes to, so that two
   simultaneously running daemons will not stomp on each other's data.
-- Section rows on the timeline can be now grouped by their category.
+- Section rows on the timeline can now be grouped by their category.
 - System tracing on Linux now properly parses rare non-default kernel data
-  structure format.
+  structure formats.
 - Removed filtering of context switch data when saving a trace to disk, as
   it was losing the thread wake graph data.
-- Fixed standard deviation in find zone window when self or running time
+- Fixed standard deviation in find zone window when the self or running time
   option was enabled.
 - Find zone window now works with GPU zones (histogram, statistics, self
   time).
 - Changed the GPU zones icon from an eye to a display monitor.
-- Various correctness hardenings across the code base.
+- Various hardening improvements for correctness across the code base.
 
 v0.14.1 (2026-08-22)
 --------------------

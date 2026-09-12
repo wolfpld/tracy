@@ -372,7 +372,6 @@ if(EMSCRIPTEN)
         -sENVIRONMENT=web,worker
         -sDISABLE_EXCEPTION_CATCHING=0
         "--pre-js;${CMAKE_CURRENT_LIST_DIR}/wasm/url_trace_pre.js"
-        --preload-file embed.tracy
     )
 
     file(DOWNLOAD https://share.nereid.pl/i/embed.tracy ${CMAKE_CURRENT_BINARY_DIR}/embed.tracy EXPECTED_MD5 f018919fcd34de2fb349be8be354048b)

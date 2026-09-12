@@ -246,24 +246,16 @@ int main( int argc, char** argv )
         if( f ) fclose( f );
         return f != nullptr;
     };
-    const bool hasUrl = FileExists( "/url.tracy" ) || FileExists( "/url.tracy.failed" );
-    if( hasUrl )
+    if( FileExists( "/url.tracy" ) )
     {
         try
         {
-            if( FileExists( "/url.tracy" ) )
-            {
-                initFileOpen.reset( tracy::FileRead::Open( "/url.tracy" ) );
-            }
+            initFileOpen.reset( tracy::FileRead::Open( "/url.tracy" ) );
         }
         catch( const tracy::NotTracyDump& ) { EM_ASM( alert( "The provided URL did not contain a valid Tracy trace." ) ); }
         catch( const tracy::FileReadError& ) { EM_ASM( alert( "The trace from the provided URL could not be read." ) ); }
         catch( const tracy::UnsupportedVersion& ) { EM_ASM( alert( "The trace from the provided URL requires a newer version of Tracy." ) ); }
         catch( const tracy::LegacyVersion& ) { EM_ASM( alert( "The trace from the provided URL is in a legacy format." ) ); }
-    }
-    else
-    {
-        initFileOpen = std::unique_ptr<tracy::FileRead>( tracy::FileRead::Open( "embed.tracy" ) );
     }
 #endif
     if( argc == 2 )
@@ -396,10 +388,6 @@ int main( int argc, char** argv )
         try
         {
             view.store( std::make_shared<tracy::View>( RunOnMainThread, *initFileOpen, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements ), std::memory_order_release );
-        }
-        catch( const tracy::UnsupportedVersion& )
-        {
-            EM_ASM( alert( "The trace from the provided URL requires a newer version of Tracy." ) );
         }
         catch( const std::exception& e )
         {

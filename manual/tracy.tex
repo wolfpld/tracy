@@ -3511,6 +3511,14 @@ Suppose the profiled application opted to provide trace parameters (see section~
 
 You can pass the trace file name as an argument to the profiler application to open the capture, skipping the welcome dialog. You can also use the \texttt{-a address} argument to connect to the given address automatically. Finally, to specify the network port, pass the \texttt{-p port} parameter. The profiler will use it for client connections (overridable in the UI) and for listening to client discovery broadcasts.
 
+\subsubsection{Loading a trace from a URL}
+
+The web version can load a trace directly from a URL passed in the \texttt{t} query parameter. The URL should point to the trace file, as shown below. URLs containing special characters such as \enquote{\texttt{\#}} or \enquote{\texttt{\&}} may need to be manually percent-encoded.
+
+\texttt{https://tracy.nereid.pl/?t=https://example.com/capture.tracy}
+
+The web server where the trace is stored must allow requests from the profiler's origin by sending the \texttt{Access-Control-Allow-Origin} header (e.g.,~\enquote{\texttt{*}}). Traces on the public internet must be served over HTTPS, while traces on the local network can be loaded by the public instance over plain HTTP as well. The first time this is attempted, the browser may ask for permission to access the local network.
+
 \subsection{Connection speed}
 
 Tracy network bandwidth requirements depend on the amount of data collection the profiled application performs. You may expect anything between 1~Mbps and 100~Mbps data transfer rate in typical use case scenarios.

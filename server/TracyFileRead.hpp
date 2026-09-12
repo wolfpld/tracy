@@ -98,6 +98,12 @@ private:
 
 class FileRead
 {
+#ifdef __EMSCRIPTEN__
+    static constexpr int ThreadedStreams = 4;
+#else
+    static constexpr int ThreadedStreams = 256;
+#endif
+
     struct StreamHandle
     {
         StreamHandle( uint8_t type ) : stream( type ), outputReady( false ) {}
@@ -114,6 +120,7 @@ class FileRead
         std::condition_variable signal;
 
         std::thread thread;
+        bool threaded = true;
     };
 
 public:
@@ -131,7 +138,7 @@ public:
             v->exit = true;
             v->signal.notify_one();
         }
-        for( auto& v : m_streams ) v->thread.join();
+        for( auto& v : m_streams ) if( v->threaded ) v->thread.join();
         m_streams.clear();
         if( m_data ) munmap( m_data, m_dataSize );
     }
@@ -511,7 +518,11 @@ private:
             uptr->src = m_data + m_dataOffset;
             uptr->size = sz;
             uptr->inputReady = true;
-            uptr->thread = std::thread( [ptr = uptr.get()] { Worker( ptr ); } );
+            uptr->threaded = i < ThreadedStreams;
+            if( uptr->threaded )
+            {
+                uptr->thread = std::thread( [ptr = uptr.get()] { Worker( ptr ); } );
+            }
             m_streams.emplace_back( std::move( uptr ) );
             m_dataOffset += sz;
         }
@@ -595,8 +606,16 @@ private:
     void GetNextDataBlock()
     {
         auto& hnd = *m_streams[m_streamId];
-        while( hnd.outputReady.load( std::memory_order_acquire ) == false ) { YieldThread(); }
-        hnd.outputReady.store( false, std::memory_order_relaxed );
+        if( hnd.threaded )
+        {
+            while( hnd.outputReady.load( std::memory_order_acquire ) == false ) { YieldThread(); }
+            hnd.outputReady.store( false, std::memory_order_relaxed );
+        }
+        else if( hnd.inputReady )
+        {
+            hnd.stream.Decompress( hnd.src, hnd.size );
+            hnd.inputReady = false;
+        }
         m_buf = hnd.stream.GetBuffer();
         m_offset = 0;
 
@@ -607,7 +626,7 @@ private:
             hnd.src = m_data + m_dataOffset;
             hnd.size = sz;
             hnd.inputReady = true;
-            hnd.signal.notify_one();
+            if( hnd.threaded ) hnd.signal.notify_one();
             lock.unlock();
             m_dataOffset += sz;
         }

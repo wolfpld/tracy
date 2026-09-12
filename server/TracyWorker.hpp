@@ -231,7 +231,7 @@ private:
 
     struct CallstackFrameIdHash
     {
-        size_t operator()( const CallstackFrameId& id ) const { return id.data; }
+        uint64_t operator()( const CallstackFrameId& id ) const { return id.data; }
     };
 
     struct CallstackFrameIdCompare

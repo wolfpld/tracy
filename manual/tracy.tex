@@ -3519,6 +3519,14 @@ The web version can load a trace directly from a URL passed in the \texttt{t} qu
 
 The web server where the trace is stored must allow requests from the profiler's origin by sending the \texttt{Access-Control-Allow-Origin} header (e.g.,~\enquote{\texttt{*}}). Traces on the public internet must be served over HTTPS, while traces on the local network can be loaded by the public instance over plain HTTP as well. The first time this is attempted, the browser may ask for permission to access the local network.
 
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcattention
+]{Browser limits}
+Note that attempting to load large traces in the browser will likely fail, as the web environment has limited resources.
+\end{bclogo}
+
 \subsection{Connection speed}
 
 Tracy network bandwidth requirements depend on the amount of data collection the profiled application performs. You may expect anything between 1~Mbps and 100~Mbps data transfer rate in typical use case scenarios.

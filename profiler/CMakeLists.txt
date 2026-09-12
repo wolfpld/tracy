@@ -358,6 +358,7 @@ if(NOT EMSCRIPTEN)
 endif()
 
 if(EMSCRIPTEN)
+    target_compile_options(${PROJECT_NAME} PRIVATE -sDISABLE_EXCEPTION_CATCHING=0)
     target_link_options(${PROJECT_NAME} PRIVATE
         -pthread
         -sASSERTIONS=0
@@ -369,6 +370,7 @@ if(EMSCRIPTEN)
         -sEXPORTED_FUNCTIONS=_main,_nativeOpenFile,_tracy_paste_clipboard
         -sEXPORTED_RUNTIME_METHODS=ccall
         -sENVIRONMENT=web,worker
+        -sDISABLE_EXCEPTION_CATCHING=0
         "--pre-js;${CMAKE_CURRENT_LIST_DIR}/wasm/url_trace_pre.js"
         --preload-file embed.tracy
     )

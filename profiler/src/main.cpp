@@ -407,7 +407,16 @@ int main( int argc, char** argv )
             EM_ASM( alert( UTF8ToString( $0 ) ), msg.c_str() );
         }
 #else
-        view.store( std::make_shared<tracy::View>( RunOnMainThread, *initFileOpen, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements ), std::memory_order_release );
+        try
+        {
+            view.store( std::make_shared<tracy::View>( RunOnMainThread, *initFileOpen, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements ), std::memory_order_release );
+        }
+        catch( const std::exception& e )
+        {
+            fprintf( stderr, "Cannot load trace file: %s\n", e.what() );
+            initFileOpen.reset();
+            _Exit( 1 );
+        }
 #endif
         initFileOpen.reset();
     }

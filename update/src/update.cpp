@@ -256,7 +256,7 @@ int main( int argc, char** argv )
     }
     catch( const tracy::FileReadError& e )
     {
-        fprintf( stderr, "The file you are trying to open cannot be mapped to memory.\n" );
+        fprintf( stderr, "The file could not be read or is corrupted.\n" );
         exit( 1 );
     }
     catch( const tracy::LegacyVersion& e )

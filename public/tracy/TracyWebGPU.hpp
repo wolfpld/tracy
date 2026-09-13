@@ -43,13 +43,13 @@ using TracyWebGPUCtx = void*;
 #include "Tracy.hpp"
 #include "../client/TracyProfiler.hpp"
 #include "../client/TracyCallstack.hpp"
+#include "../client/TracyFastVector.hpp"
 #include "../common/TracyAlign.hpp"
 #include "../common/TracyAlloc.hpp"
 #include "../common/TracyAssert.hpp"
 
 #include <atomic>
 #include <mutex>
-#include <vector>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -222,7 +222,7 @@ namespace tracy
         };
         static_assert(std::atomic<WGPUMapAsyncStatus>::is_always_lock_free, "WGPUMapAsyncStatus must be lock-free atomic");
 
-        static constexpr uint32_t m_queryLimit = 64 * 1024;  // max 64K queries in-flight
+        static constexpr uint32_t QueryLimit = 64 * 1024;  // max 64K queries in-flight
         uint32_t m_queriesPerSet = 0;  // per-set size (power of two), negotiated at init
         FastVector<WGPUQuerySet> m_querySets { 16 };
         WGPUBuffer    m_resolveBuffer = nullptr;
@@ -233,7 +233,7 @@ namespace tracy
         atomic_counter m_queryCounter = 0;
         atomic_counter m_previousCheckpoint = 0;
 
-        FastVector<uint64_t> m_shadowBuffer {m_queryLimit};
+        FastVector<uint64_t> m_shadowBuffer {QueryLimit};
 
         using WallTime = std::chrono::steady_clock::time_point;
         static tracy_force_inline auto GetWallTime() { return WallTime::clock::now(); }
@@ -605,7 +605,7 @@ namespace tracy
             }
             m_queriesPerSet = qsDesc.count;
             *m_querySets.push_next() = initialQuerySet;
-            for (uint32_t total = qsDesc.count; total < m_queryLimit; total += qsDesc.count)
+            for (uint32_t total = qsDesc.count; total < QueryLimit; total += qsDesc.count)
             {
                 WGPUQuerySet querySet = wgpuDeviceCreateQuerySet(m_device, &qsDesc);
                 if (querySet == nullptr)
@@ -615,14 +615,14 @@ namespace tracy
 
             WGPUBufferDescriptor resolveDesc = {};
             resolveDesc.usage = WGPUBufferUsage_QueryResolve | WGPUBufferUsage_CopySrc;
-            resolveDesc.size  = static_cast<uint64_t>(m_queryLimit) * sizeof(uint64_t);
+            resolveDesc.size  = static_cast<uint64_t>(QueryLimit) * sizeof(uint64_t);
             m_resolveBuffer = wgpuDeviceCreateBuffer(m_device, &resolveDesc);
             if (!m_resolveBuffer)
                 TracyWebGPUPanic("Failed to create timestamp resolve buffer.", return);
 
             WGPUBufferDescriptor readbackDesc = {};
             readbackDesc.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
-            readbackDesc.size  = static_cast<uint64_t>(m_queryLimit) * sizeof(uint64_t);
+            readbackDesc.size  = static_cast<uint64_t>(QueryLimit) * sizeof(uint64_t);
             for (auto& stage : m_readbackReel)
             {
                 stage.buffer = wgpuDeviceCreateBuffer(m_device, &readbackDesc);
@@ -637,8 +637,7 @@ namespace tracy
                 TracyWebGPUPanic("Failed to calibrate CPU/GPU clocks.", return);
 
             TracyWebGPUDebug( fprintf(stdout, "[WebGPUQueueCtx] cpuTimestamp: %llu | gpuTimestamp: %llu | period: %f\n", cpuTimestamp, gpuTimestamp, period) );
-            for (size_t i = 0; i < m_queryLimit; ++i)
-                *m_shadowBuffer.push_next() = gpuTimestamp;
+            for (size_t i = 0; i < QueryLimit; ++i) *m_shadowBuffer.push_next() = gpuTimestamp;
 
             // All setup completed: register the context.
             m_contextId = TracyEmitter::EmitGpuNewContext(cpuTimestamp, gpuTimestamp, period);
@@ -708,7 +707,7 @@ namespace tracy
             {
                 const uint64_t* ts = static_cast<const uint64_t*>(
                     wgpuBufferGetConstMappedRange(collectStage.buffer, 0,
-                        static_cast<uint64_t>(m_queryLimit) * sizeof(uint64_t)));
+                        static_cast<uint64_t>(QueryLimit) * sizeof(uint64_t)));
                 if (ts)
                 {
                     uint64_t ticket = m_previousCheckpoint;
@@ -766,7 +765,7 @@ namespace tracy
             cbInfo.userdata1 = &nextToCollect;
             nextToCollect.pendingFuture = wgpuBufferMapAsync(
                 nextToCollect.buffer, WGPUMapMode_Read, 0,
-                static_cast<uint64_t>(m_queryLimit) * sizeof(uint64_t), cbInfo);
+                static_cast<uint64_t>(QueryLimit) * sizeof(uint64_t), cbInfo);
         }
 
     private:
@@ -776,7 +775,7 @@ namespace tracy
             m_shadowBuffer[queryId] = gpuTimestamp;
         }
 
-        tracy_force_inline uint32_t RingCapacity() const { return m_queryLimit; }
+        tracy_force_inline uint32_t RingCapacity() const { return QueryLimit; }
 
         tracy_force_inline uint32_t RingIndex(uint64_t t) const
         {

@@ -169,10 +169,10 @@ static void ScaleWindow(ImGuiWindow* window, float scale)
 
 static void SetupDPIScale()
 {
-    auto scale = dpiScale * tracy::s_config.userScale;
+    auto scale = dpiScale * tracy::s_zoomPresets[tracy::s_config.zoomLevel];
 
 #ifdef __APPLE__
-    scale = tracy::s_config.userScale;
+    scale = tracy::s_zoomPresets[tracy::s_config.zoomLevel];
 #endif
 
     if( !dpiFirstSetup && prevScale == scale ) return;
@@ -218,9 +218,10 @@ static int IsBusy()
     return 0;
 }
 
-static void SetupScaleCallback( float scale )
+static void SetupScaleCallback( int preset )
 {
-    tracy::s_config.userScale = scale;
+    assert( preset >= 0 && preset < tracy::s_zoomPresetCount );
+    tracy::s_config.zoomLevel = preset;
     if ( tracy::s_config.saveUserScale ) tracy::SaveConfig();
     RunOnMainThread( []{ SetupDPIScale(); }, true );
 }

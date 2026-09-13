@@ -163,6 +163,12 @@ void View::SaveUserData()
     m_userData.Save();
 }
 
+void View::SetZoomPreset( int idx )
+{
+    assert( idx >= 0 && idx < s_zoomPresetCount );
+    if( m_sscb ) m_sscb( idx );
+}
+
 void View::ViewSource( const char* fileName, int line )
 {
     assert( fileName );
@@ -995,19 +1001,12 @@ bool View::DrawImpl()
         if( ImGui::Button( ICON_FA_MAGNIFYING_GLASS_PLUS ) ) ImGui::OpenPopup( "ZoomPopup" );
         if( ImGui::BeginPopup( "ZoomPopup" ) )
         {
-            if( ImGui::Button( "50%" ) )  m_sscb( 1.f/2 );
-            if( ImGui::Button( "57%" ) )  m_sscb( 1.f/1.75f );
-            if( ImGui::Button( "66%" ) )  m_sscb( 1.f/1.5f );
-            if( ImGui::Button( "80%" ) )  m_sscb( 1.f/1.25f );
-            if( ImGui::Button( "100%" ) ) m_sscb( 1.f );
-            if( ImGui::Button( "125%" ) ) m_sscb( 1.25f );
-            if( ImGui::Button( "150%" ) ) m_sscb( 1.5f );
-            if( ImGui::Button( "175%" ) ) m_sscb( 1.75f );
-            if( ImGui::Button( "200%" ) ) m_sscb( 2.f );
-            if( ImGui::Button( "225%" ) ) m_sscb( 2.25f );
-            if( ImGui::Button( "250%" ) ) m_sscb( 2.5f );
-            if( ImGui::Button( "275%" ) ) m_sscb( 2.75f );
-            if( ImGui::Button( "300%" ) ) m_sscb( 3.f );
+            for( int i=0; i<s_zoomPresetCount; i++ )
+            {
+                char label[32];
+                sprintf( label, "%i%%", int( s_zoomPresets[i] * 100.f + 0.001f ) );
+                if( ImGui::RadioButton( label, i == s_config.zoomLevel ) ) SetZoomPreset( i );
+            }
             ImGui::EndPopup();
         }
     }

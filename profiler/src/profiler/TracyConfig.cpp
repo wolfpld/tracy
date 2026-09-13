@@ -38,7 +38,7 @@ void LoadConfig()
     if( ini_sget( ini, "achievements", "enabled", "%d", &v ) ) s_config.achievements = v;
     if( ini_sget( ini, "achievements", "asked", "%d", &v ) ) s_config.achievementsAsked = v;
     if( ini_sget( ini, "ui", "saveUserScale", "%d", &v ) ) s_config.saveUserScale = v;
-    if( ini_sget( ini, "ui", "userScale", "%lf", &v1 ) && v1 > 0.0 && s_config.saveUserScale ) s_config.userScale = v1;
+    if( ini_sget( ini, "ui", "zoomLevel", "%d", &v ) && v >= 0 && v < s_zoomPresetCount ) s_config.zoomLevel = v;
     if( ini_sget( ini, "llm", "enabled", "%d", &v ) ) s_config.llm = v;
     if( v2 = ini_get( ini, "llm", "address" ); v2 ) s_config.llmAddress = v2;
     if( v2 = ini_get( ini, "llm", "model" ); v2 ) s_config.llmModel = v2;
@@ -92,7 +92,7 @@ bool SaveConfig()
 
     fprintf( f, "\n[ui]\n" );
     fprintf( f, "saveUserScale = %i\n", (int)s_config.saveUserScale );
-    fprintf( f, "userScale = %lf\n", s_config.userScale );
+    fprintf( f, "zoomLevel = %i\n", s_config.zoomLevel );
 
     fprintf( f, "\n[llm]\n" );
     fprintf( f, "enabled = %i\n", (int)s_config.llm );

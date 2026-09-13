@@ -145,7 +145,7 @@ public:
     };
 
     using SetTitleCallback = void(*)( const char* );
-    using SetScaleCallback = void(*)( float );
+    using SetScaleCallback = void(*)( int );
     using AttentionCallback = void(*)();
 
     View( void(*cbMainThread)(const std::function<void()>&, bool), const char* addr, uint16_t port, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, AchievementsMgr* amgr );
@@ -304,6 +304,7 @@ private:
     void SetupRanges();
     void Achieve( const char* id );
     void SaveUserData();
+    void SetZoomPreset( int idx );
 
     bool DrawImpl();
     void DrawFrameImage( FrameImageCache& cache, const FrameImage& fi, float scale = GetScale() );

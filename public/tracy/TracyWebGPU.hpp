@@ -222,7 +222,9 @@ namespace tracy
         };
         static_assert(std::atomic<WGPUMapAsyncStatus>::is_always_lock_free, "WGPUMapAsyncStatus must be lock-free atomic");
 
-        WGPUQuerySet  m_querySet = nullptr;
+        static constexpr uint32_t m_queryLimit = 64 * 1024;  // max 64K queries in-flight
+        uint32_t m_queriesPerSet = 0;  // per-set size (power of two), negotiated at init
+        FastVector<WGPUQuerySet> m_querySets { 16 };
         WGPUBuffer    m_resolveBuffer = nullptr;
         ReadbackStage m_readbackReel [3];
         std::atomic<int> m_writeIdx {0};
@@ -230,8 +232,6 @@ namespace tracy
         using atomic_counter = std::atomic<uint64_t>;
         atomic_counter m_queryCounter = 0;
         atomic_counter m_previousCheckpoint = 0;
-
-        uint32_t m_queryLimit = 0;
 
         std::vector<uint64_t> m_shadowBuffer;
 
@@ -397,9 +397,10 @@ namespace tracy
             WGPURenderPipeline calibPipeline = wgpuDeviceCreateRenderPipeline(m_device, &pipeDesc);
             if (!calibPipeline) { wgpuTextureViewRelease(texView); wgpuTextureRelease(tex); wgpuShaderModuleRelease(calibShader); TracyWebGPUPanic("Failed to create calibration pipeline.", return false); }
 
+            // borrow query set 0 for calibration (no ticket needed)
             uint32_t queryId = 0;
             WGPUPassTimestampWrites anchorTs = {};
-            anchorTs.querySet                  = m_querySet;
+            anchorTs.querySet                  = m_querySets[0];
             anchorTs.beginningOfPassWriteIndex = queryId;
             anchorTs.endOfPassWriteIndex       = queryId+1;
 
@@ -434,7 +435,7 @@ namespace tracy
                 WGPUBuffer readBackBuffer = m_readbackReel[0].buffer;
                 uint32_t byteOffset = queryId * sizeof(uint64_t);
                 uint32_t sizeInBytes = 2 * sizeof(uint64_t);
-                wgpuCommandEncoderResolveQuerySet(enc, m_querySet, queryId, 2, m_resolveBuffer, byteOffset);
+                wgpuCommandEncoderResolveQuerySet(enc, m_querySets[0], queryId, 2, m_resolveBuffer, byteOffset);
                 wgpuCommandEncoderCopyBufferToBuffer(enc, m_resolveBuffer, byteOffset, readBackBuffer, byteOffset, sizeInBytes);
 
                 WGPUCommandBuffer cmd = wgpuCommandEncoderFinish(enc, nullptr);
@@ -586,21 +587,31 @@ namespace tracy
             TracyWebGPUAssert(device);   wgpuDeviceAddRef(device);     m_device   = device;
             TracyWebGPUAssert(queue);    wgpuQueueAddRef(queue);       m_queue    = queue;
 
-            // Setup Query Set: must have even size since queries are issued in pairs.
-            // (The WebGPU spec mandates 4096, with no way to query the device limit.)
+            // The WebGPU spec mandates a query set ceiling of 4096 queries,
+            // with no way to query the actual device limit.
+            // https://www.w3.org/TR/webgpu/#dom-gpudevice-createqueryset
+            //   "descriptor.count must be <= 4096."
+            // For robustness, we attempt to negotiate it down from 4096 to 1024.
             WGPUQuerySetDescriptor qsDesc = {};
             qsDesc.type = WGPUQueryType_Timestamp;
             qsDesc.count = 4096;
-            for (;;)
+            WGPUQuerySet initialQuerySet = nullptr;
+            for (;; qsDesc.count /= 2)
             {
-                m_querySet = wgpuDeviceCreateQuerySet(m_device, &qsDesc);
-                if (m_querySet) break;
-                qsDesc.count /= 2;
-                if (qsDesc.count < 128) break;
+                if (qsDesc.count < 1024)
+                    TracyWebGPUPanic("Failed to negotiate timestamp query set size.", return);
+                initialQuerySet = wgpuDeviceCreateQuerySet(m_device, &qsDesc);
+                if (initialQuerySet != nullptr) break;
             }
-            if (m_querySet == nullptr)
-                TracyWebGPUPanic("Failed to create timestamp query set.", return);
-            m_queryLimit = qsDesc.count;
+            m_queriesPerSet = qsDesc.count;
+            *m_querySets.push_next() = initialQuerySet;
+            for (uint32_t total = qsDesc.count; total < m_queryLimit; total += qsDesc.count)
+            {
+                WGPUQuerySet querySet = wgpuDeviceCreateQuerySet(m_device, &qsDesc);
+                if (querySet == nullptr)
+                    TracyWebGPUPanic("Failed to create timestamp query set buffer.", return);
+                *m_querySets.push_next() = querySet;
+            }
 
             WGPUBufferDescriptor resolveDesc = {};
             resolveDesc.usage = WGPUBufferUsage_QueryResolve | WGPUBufferUsage_CopySrc;
@@ -643,7 +654,8 @@ namespace tracy
             for (auto& stage : m_readbackReel)
                 if (stage.buffer) { wgpuBufferRelease(stage.buffer);     stage.buffer     = nullptr; }
             if (m_resolveBuffer)  { wgpuBufferRelease(m_resolveBuffer);  m_resolveBuffer  = nullptr; }
-            if (m_querySet)       { wgpuQuerySetRelease(m_querySet);     m_querySet       = nullptr; }
+            for (auto& qs : m_querySets)
+                if (qs) { wgpuQuerySetRelease(qs); qs = nullptr; }
             if (m_queue)          { wgpuQueueRelease(m_queue);           m_queue          = nullptr; }
             if (m_device)         { wgpuDeviceRelease(m_device);         m_device         = nullptr; }
             if (m_instance)       { wgpuInstanceRelease(m_instance);     m_instance       = nullptr; }
@@ -770,6 +782,15 @@ namespace tracy
             return static_cast<uint32_t>(t % RingCapacity());
         }
 
+        tracy_force_inline WGPUQuerySet QuerySetForSlot(uint32_t slot) const
+        {
+            return m_querySets[slot / m_queriesPerSet];
+        }
+        tracy_force_inline uint32_t LocalSlot(uint32_t slot) const
+        {
+            return slot & (m_queriesPerSet - 1);
+        }
+
         tracy_force_inline static int64_t Distance(uint64_t begin, uint64_t end)
         {
             return static_cast<int64_t>(end - begin);
@@ -809,13 +830,13 @@ namespace tracy
 
             // 32 queries = 32 * 8 bytes = 256 bytes
             TracyWebGPUAssert(queryBatchStartId % 32 == 0, return);
-            queryBatchStartId = m_ctx->RingIndex(queryBatchStartId);
+            const uint32_t globalSlot = m_ctx->RingIndex(queryBatchStartId);
 
-            const uint64_t blockOffset = static_cast<uint64_t>(queryBatchStartId) * sizeof(uint64_t);
+            const uint64_t blockOffset = static_cast<uint64_t>(globalSlot) * sizeof(uint64_t);
             wgpuCommandEncoderResolveQuerySet(
                 m_encoder,
-                m_ctx->m_querySet,
-                queryBatchStartId, 32,
+                m_ctx->QuerySetForSlot(globalSlot),
+                m_ctx->LocalSlot(globalSlot), 32,
                 m_ctx->m_resolveBuffer,
                 blockOffset // MUST be a multiple of (aligned to) 256...
             );
@@ -838,7 +859,7 @@ namespace tracy
             uint64_t prev = stage.copiedUpto;
             while ((WebGPUQueueCtx::Distance(prev, blockEnd) > 0) &&
                    !stage.copiedUpto.compare_exchange_weak(prev, blockEnd)) {}
-            TracyWebGPUDebug( fprintf(stdout, "[TWG] WebGPUZoneScope [%d] (%d,%d)\n", (int)m_ctx->m_writeIdx, queryBatchStartId, queryBatchStartId+32) );
+            TracyWebGPUDebug( fprintf(stdout, "[TWG] WebGPUZoneScope [%d] (%u,%u)\n", (int)m_ctx->m_writeIdx, globalSlot, globalSlot+32) );
         }
 
         // Fills in m_timestampWrites and assigns its address to passDesc.timestampWrites.
@@ -852,9 +873,10 @@ namespace tracy
             m_rawTicket = m_ctx->NextQueryId();
             m_queryId   = m_ctx->RingIndex(m_rawTicket);
 
-            m_timestampWrites.querySet                  = m_ctx->m_querySet;
-            m_timestampWrites.beginningOfPassWriteIndex = m_queryId;
-            m_timestampWrites.endOfPassWriteIndex       = m_queryId + 1;
+            const uint32_t localSlot = m_ctx->LocalSlot(m_queryId);
+            m_timestampWrites.querySet                  = m_ctx->QuerySetForSlot(m_queryId);
+            m_timestampWrites.beginningOfPassWriteIndex = localSlot;
+            m_timestampWrites.endOfPassWriteIndex       = localSlot + 1;
             passDesc.timestampWrites                    = &m_timestampWrites;
         }
 

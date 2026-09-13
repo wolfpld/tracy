@@ -233,7 +233,7 @@ namespace tracy
         atomic_counter m_queryCounter = 0;
         atomic_counter m_previousCheckpoint = 0;
 
-        std::vector<uint64_t> m_shadowBuffer;
+        FastVector<uint64_t> m_shadowBuffer {m_queryLimit};
 
         using WallTime = std::chrono::steady_clock::time_point;
         static tracy_force_inline auto GetWallTime() { return WallTime::clock::now(); }
@@ -637,7 +637,8 @@ namespace tracy
                 TracyWebGPUPanic("Failed to calibrate CPU/GPU clocks.", return);
 
             TracyWebGPUDebug( fprintf(stdout, "[WebGPUQueueCtx] cpuTimestamp: %llu | gpuTimestamp: %llu | period: %f\n", cpuTimestamp, gpuTimestamp, period) );
-            m_shadowBuffer.resize(m_queryLimit, gpuTimestamp);
+            for (size_t i = 0; i < m_queryLimit; ++i)
+                *m_shadowBuffer.push_next() = gpuTimestamp;
 
             // All setup completed: register the context.
             m_contextId = TracyEmitter::EmitGpuNewContext(cpuTimestamp, gpuTimestamp, period);

@@ -27,6 +27,8 @@ vx.xx.x (2026-xx-xx)
 - Find zone window now works with GPU zones (histogram, statistics, self
   time).
 - Changed the GPU zones icon from an eye to a display monitor.
+- User GUI scale in the profiler can be now controlled with Ctrl + plus/minus
+  and reset with Ctrl + zero.
 - Various hardening improvements for correctness across the code base.
 
 v0.14.1 (2026-08-22)

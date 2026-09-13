@@ -305,6 +305,7 @@ private:
     void Achieve( const char* id );
     void SaveUserData();
     void SetZoomPreset( int idx );
+    void ZoomUserScale( int dir );
 
     bool DrawImpl();
     void DrawFrameImage( FrameImageCache& cache, const FrameImage& fi, float scale = GetScale() );

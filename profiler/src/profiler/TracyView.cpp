@@ -169,6 +169,12 @@ void View::SetZoomPreset( int idx )
     if( m_sscb ) m_sscb( idx );
 }
 
+void View::ZoomUserScale( int dir )
+{
+    const int idx = dir == 0 ? s_zoomPreset100 : s_config.zoomLevel + dir;
+    if( idx >= 0 && idx < s_zoomPresetCount ) SetZoomPreset( idx );
+}
+
 void View::ViewSource( const char* fileName, int line )
 {
     assert( fileName );
@@ -792,6 +798,21 @@ bool View::DrawImpl()
         {
             m_findZone.show = true;
             m_shortcut = ShortcutAction::OpenFind;
+        }
+        if( m_sscb )
+        {
+            if( ImGui::IsKeyPressed( ImGuiKey_Equal, false ) || ImGui::IsKeyPressed( ImGuiKey_KeypadAdd, false ) )
+            {
+                ZoomUserScale( 1 );
+            }
+            else if( ImGui::IsKeyPressed( ImGuiKey_Minus, false ) || ImGui::IsKeyPressed( ImGuiKey_KeypadSubtract, false ) )
+            {
+                ZoomUserScale( -1 );
+            }
+            else if( ImGui::IsKeyPressed( ImGuiKey_0, false ) || ImGui::IsKeyPressed( ImGuiKey_Keypad0, false ) )
+            {
+                ZoomUserScale( 0 );
+            }
         }
     }
 

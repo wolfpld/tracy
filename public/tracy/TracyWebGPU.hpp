@@ -91,6 +91,115 @@ extern "C" int32_t IsDebuggerPresent(void);
 
 namespace tracy
 {
+    struct TracyEmitter
+    {
+        static tracy_force_inline void SubmitQueueItem(tracy::QueueItem* item)
+        {
+#ifdef TRACY_ON_DEMAND
+            GetProfiler().DeferItem(*item);
+#endif
+            Profiler::QueueSerialFinish();
+        }
+
+        static int32_t EmitGpuNewContext(uint64_t cpuTimestamp, uint64_t gpuTimestamp, double period)
+        {
+            ZoneScoped;
+            int32_t ctxId = NextGpuContextId();
+            ZoneValue(ctxId);
+
+            auto* item = Profiler::QueueSerial();
+            MemWrite(&item->hdr.type, QueueType::GpuNewContext);
+            MemWrite(&item->gpuNewContext.cpuTime, static_cast<int64_t>(cpuTimestamp));
+            MemWrite(&item->gpuNewContext.gpuTime, static_cast<int64_t>(gpuTimestamp));
+            MemWrite(&item->gpuNewContext.thread, static_cast<uint32_t>(0));
+            MemWrite(&item->gpuNewContext.period, static_cast<float>(period));
+            MemWrite(&item->gpuNewContext.context, static_cast<uint8_t>(ctxId));
+            MemWrite(&item->gpuNewContext.flags, GpuContextFlags(0));  // no calibration available
+            MemWrite(&item->gpuNewContext.type, GpuContextType::WebGPU);
+            SubmitQueueItem(item);
+
+            return ctxId;
+        }
+
+        static void EmitGpuContextName(uint32_t ctxId, const char* name, uint16_t len)
+        {
+            auto ptr = (char*)tracy_malloc(len);
+            memcpy(ptr, name, len);
+
+            auto item = Profiler::QueueSerial();
+            MemWrite(&item->hdr.type, QueueType::GpuContextName);
+            MemWrite(&item->gpuContextNameFat.context, static_cast<uint8_t>(ctxId));
+            MemWrite(&item->gpuContextNameFat.ptr, (uint64_t)ptr);
+            MemWrite(&item->gpuContextNameFat.size, len);
+            SubmitQueueItem(item);
+        }
+
+        static tracy_force_inline void EmitGpuTime(uint32_t ctxId, uint64_t gpuTimestamp, uint32_t queryId)
+        {
+            auto* item = Profiler::QueueSerial();
+            MemWrite(&item->hdr.type, QueueType::GpuTime);
+            MemWrite(&item->gpuTime.gpuTime, static_cast<int64_t>(gpuTimestamp));
+            MemWrite(&item->gpuTime.queryId, static_cast<uint16_t>(queryId));
+            MemWrite(&item->gpuTime.context, static_cast<uint8_t>(ctxId));
+            Profiler::QueueSerialFinish();
+        }
+
+        static tracy_force_inline void EmitGpuZoneBegin(uint32_t ctxId, uint32_t queryId, const SourceLocationData* srcLocation, int32_t callstackDepth, uint32_t sourceLine, const char* sourceFile, size_t sourceFileLen, const char* functionName, size_t functionNameLen, const char* zoneName, size_t zoneNameLen)
+        {
+            const bool captureCallstack = callstackDepth > 0 && has_callstack();
+            const bool transientZone = srcLocation == nullptr;
+            uint64_t srcLocationAddr = reinterpret_cast<uint64_t>(srcLocation);
+
+            QueueItem* item = nullptr;
+            QueueType itemType;
+            if (transientZone)
+            {
+                srcLocationAddr = Profiler::AllocSourceLocation(sourceLine, sourceFile, sourceFileLen, functionName, functionNameLen, zoneName, zoneNameLen);
+                if (captureCallstack)
+                {
+                    item = Profiler::QueueSerialCallstack(Callstack(callstackDepth));
+                    itemType = QueueType::GpuZoneBeginAllocSrcLocCallstackSerial;
+                }
+                else
+                {
+                    item = Profiler::QueueSerial();
+                    itemType = QueueType::GpuZoneBeginAllocSrcLocSerial;
+                }
+            }
+            else
+            {
+                if (captureCallstack)
+                {
+                    item = Profiler::QueueSerialCallstack(Callstack(callstackDepth));
+                    itemType = QueueType::GpuZoneBeginCallstackSerial;
+                }
+                else
+                {
+                    item = Profiler::QueueSerial();
+                    itemType = QueueType::GpuZoneBeginSerial;
+                }
+            }
+
+            MemWrite(&item->hdr.type, itemType);
+            MemWrite(&item->gpuZoneBegin.cpuTime, Profiler::GetTime());
+            MemWrite(&item->gpuZoneBegin.srcloc, srcLocationAddr);
+            MemWrite(&item->gpuZoneBegin.thread, GetThreadHandle());
+            MemWrite(&item->gpuZoneBegin.queryId, static_cast<uint16_t>(queryId));
+            MemWrite(&item->gpuZoneBegin.context, static_cast<uint8_t>(ctxId));
+            Profiler::QueueSerialFinish();
+        }
+
+        static tracy_force_inline void EmitGpuZoneEnd(uint32_t ctxId, uint32_t queryId)
+        {
+            auto* item = Profiler::QueueSerial();
+            MemWrite(&item->hdr.type, QueueType::GpuZoneEndSerial);
+            MemWrite(&item->gpuZoneEnd.cpuTime, Profiler::GetTime());
+            MemWrite(&item->gpuZoneEnd.thread, GetThreadHandle());
+            MemWrite(&item->gpuZoneEnd.queryId, static_cast<uint16_t>(queryId));
+            MemWrite(&item->gpuZoneEnd.context, static_cast<uint8_t>(ctxId));
+            Profiler::QueueSerialFinish();
+        }
+    };
 
     class WebGPUQueueCtx
     {
@@ -231,14 +340,6 @@ namespace tracy
                 return true;
             }
         } m_calibration;
-
-        tracy_force_inline void SubmitQueueItem(tracy::QueueItem* item)
-        {
-#ifdef TRACY_ON_DEMAND
-            GetProfiler().DeferItem(*item);
-#endif
-            Profiler::QueueSerialFinish();
-        }
 
         bool CalibrateClocks(uint64_t& outCpuTime, uint64_t& outGpuTime, double& period)
         {
@@ -528,19 +629,7 @@ namespace tracy
             m_shadowBuffer.resize(m_queryLimit, gpuTimestamp);
 
             // All setup completed: register the context.
-            m_contextId = NextGpuContextId();
-            ZoneValue(m_contextId);
-
-            auto* item = Profiler::QueueSerial();
-            MemWrite(&item->hdr.type, QueueType::GpuNewContext);
-            MemWrite(&item->gpuNewContext.cpuTime, static_cast<int64_t>(cpuTimestamp));
-            MemWrite(&item->gpuNewContext.gpuTime, static_cast<int64_t>(gpuTimestamp));
-            MemWrite(&item->gpuNewContext.thread, static_cast<uint32_t>(0));
-            MemWrite(&item->gpuNewContext.period, static_cast<float>(period));
-            MemWrite(&item->gpuNewContext.context, static_cast<uint8_t>(GetId()));
-            MemWrite(&item->gpuNewContext.flags, GpuContextFlags(0));  // no calibration available
-            MemWrite(&item->gpuNewContext.type, GpuContextType::WebGPU);
-            SubmitQueueItem(item);
+            m_contextId = TracyEmitter::EmitGpuNewContext(cpuTimestamp, gpuTimestamp, period);
         }
 
         ~WebGPUQueueCtx()
@@ -567,15 +656,7 @@ namespace tracy
 
         void Name(const char* name, uint16_t len)
         {
-            auto ptr = (char*)tracy_malloc(len);
-            memcpy(ptr, name, len);
-
-            auto item = Profiler::QueueSerial();
-            MemWrite(&item->hdr.type, QueueType::GpuContextName);
-            MemWrite(&item->gpuContextNameFat.context, static_cast<uint8_t>(GetId()));
-            MemWrite(&item->gpuContextNameFat.ptr, (uint64_t)ptr);
-            MemWrite(&item->gpuContextNameFat.size, len);
-            SubmitQueueItem(item);
+            TracyEmitter::EmitGpuContextName(GetId(), name, len);
         }
 
         void Collect(bool webgpuProcessEvents=false)
@@ -678,12 +759,7 @@ namespace tracy
     private:
         void EmitGpuTime(uint64_t gpuTimestamp, uint32_t queryId)
         {
-            auto* item = Profiler::QueueSerial();
-            MemWrite(&item->hdr.type, QueueType::GpuTime);
-            MemWrite(&item->gpuTime.gpuTime, static_cast<int64_t>(gpuTimestamp));
-            MemWrite(&item->gpuTime.queryId, static_cast<uint16_t>(queryId));
-            MemWrite(&item->gpuTime.context, static_cast<uint8_t>(GetId()));
-            Profiler::QueueSerialFinish();
+            TracyEmitter::EmitGpuTime(GetId(), gpuTimestamp, queryId);
             m_shadowBuffer[queryId] = gpuTimestamp;
         }
 
@@ -765,53 +841,6 @@ namespace tracy
             TracyWebGPUDebug( fprintf(stdout, "[TWG] WebGPUZoneScope [%d] (%d,%d)\n", (int)m_ctx->m_writeIdx, queryBatchStartId, queryBatchStartId+32) );
         }
 
-        tracy_force_inline void WriteQueueItem(const SourceLocationData* srcLocation, int32_t callstackDepth, uint32_t sourceLine, const char* sourceFile, size_t sourceFileLen, const char* functionName, size_t functionNameLen, const char* zoneName, size_t zoneNameLen)
-        {
-            if (!m_active) return;
-
-            const bool captureCallstack = callstackDepth > 0 && has_callstack();
-            const bool transientZone = srcLocation == nullptr;
-            uint64_t srcLocationAddr = reinterpret_cast<uint64_t>(srcLocation);
-
-            QueueItem* item = nullptr;
-            QueueType itemType;
-            if (transientZone)
-            {
-                srcLocationAddr = Profiler::AllocSourceLocation(sourceLine, sourceFile, sourceFileLen, functionName, functionNameLen, zoneName, zoneNameLen);
-                if (captureCallstack)
-                {
-                    item = Profiler::QueueSerialCallstack(Callstack(callstackDepth));
-                    itemType = QueueType::GpuZoneBeginAllocSrcLocCallstackSerial;
-                }
-                else
-                {
-                    item = Profiler::QueueSerial();
-                    itemType = QueueType::GpuZoneBeginAllocSrcLocSerial;
-                }
-            }
-            else
-            {
-                if (captureCallstack)
-                {
-                    item = Profiler::QueueSerialCallstack(Callstack(callstackDepth));
-                    itemType = QueueType::GpuZoneBeginCallstackSerial;
-                }
-                else
-                {
-                    item = Profiler::QueueSerial();
-                    itemType = QueueType::GpuZoneBeginSerial;
-                }
-            }
-
-            MemWrite(&item->hdr.type, itemType);
-            MemWrite(&item->gpuZoneBegin.cpuTime, Profiler::GetTime());
-            MemWrite(&item->gpuZoneBegin.srcloc, srcLocationAddr);
-            MemWrite(&item->gpuZoneBegin.thread, GetThreadHandle());
-            MemWrite(&item->gpuZoneBegin.queryId, static_cast<uint16_t>(m_queryId));
-            MemWrite(&item->gpuZoneBegin.context, static_cast<uint8_t>(m_ctx->GetId()));
-            Profiler::QueueSerialFinish();
-        }
-
         // Fills in m_timestampWrites and assigns its address to passDesc.timestampWrites.
         // Works with both WGPURenderPassDescriptor and WGPUComputePassDescriptor.
         template<typename PassDescriptor>
@@ -841,7 +870,7 @@ namespace tracy
         {
             if (!m_active || !ctx) return;
             InitBase(ctx, encoder, passDesc);
-            WriteQueueItem(srcLocation, 0, 0, nullptr, 0, nullptr, 0, nullptr, 0);
+            TracyEmitter::EmitGpuZoneBegin(m_ctx->GetId(), m_queryId, srcLocation, 0, 0, nullptr, 0, nullptr, 0, nullptr, 0);
         }
 
         template<typename PassDescriptor>
@@ -855,7 +884,7 @@ namespace tracy
         {
             if (!m_active || !ctx) return;
             InitBase(ctx, encoder, passDesc);
-            WriteQueueItem(srcLocation, depth, 0, nullptr, 0, nullptr, 0, nullptr, 0);
+            TracyEmitter::EmitGpuZoneBegin(m_ctx->GetId(), m_queryId, srcLocation, depth, 0, nullptr, 0, nullptr, 0, nullptr, 0);
         }
 
         template<typename PassDescriptor>
@@ -869,7 +898,7 @@ namespace tracy
         {
             if (!m_active || !ctx) return;
             InitBase(ctx, encoder, passDesc);
-            WriteQueueItem(nullptr, 0, line, source, sourceSz, function, functionSz, name, nameSz);
+            TracyEmitter::EmitGpuZoneBegin(m_ctx->GetId(), m_queryId, nullptr, 0, line, source, sourceSz, function, functionSz, name, nameSz);
         }
 
         template<typename PassDescriptor>
@@ -883,7 +912,7 @@ namespace tracy
         {
             if (!m_active || !ctx) return;
             InitBase(ctx, encoder, passDesc);
-            WriteQueueItem(nullptr, depth, line, source, sourceSz, function, functionSz, name, nameSz);
+            TracyEmitter::EmitGpuZoneBegin(m_ctx->GetId(), m_queryId, nullptr, depth, line, source, sourceSz, function, functionSz, name, nameSz);
         }
 
         tracy_force_inline ~WebGPUZoneScope()
@@ -894,18 +923,8 @@ namespace tracy
 
 #ifdef TRACY_ON_DEMAND
             if (GetProfiler().ConnectionId() == m_connectionId)
-            {
 #endif
-                auto* item = Profiler::QueueSerial();
-                MemWrite(&item->hdr.type, QueueType::GpuZoneEndSerial);
-                MemWrite(&item->gpuZoneEnd.cpuTime, Profiler::GetTime());
-                MemWrite(&item->gpuZoneEnd.thread, GetThreadHandle());
-                MemWrite(&item->gpuZoneEnd.queryId, static_cast<uint16_t>(queryId));
-                MemWrite(&item->gpuZoneEnd.context, static_cast<uint8_t>(m_ctx->GetId()));
-                Profiler::QueueSerialFinish();
-#ifdef TRACY_ON_DEMAND
-            }
-#endif
+            TracyEmitter::EmitGpuZoneEnd(m_ctx->GetId(), queryId);
 
             if (m_queryId % 32 == 0)
                 ResolveQueryBatch(m_queryId-32);

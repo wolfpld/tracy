@@ -108,6 +108,15 @@ struct LockDraw
     std::vector<LockDrawItem> data;
 };
 
+struct LockHighlight
+{
+    int64_t id;
+    int64_t begin;
+    int64_t end;
+    uint8_t thread;
+    bool blocked;
+};
+
 }
 
 #endif

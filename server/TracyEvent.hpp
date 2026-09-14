@@ -372,15 +372,6 @@ struct LockMap
     TimeRange range[64];
 };
 
-struct LockHighlight
-{
-    int64_t id;
-    int64_t begin;
-    int64_t end;
-    uint8_t thread;
-    bool blocked;
-};
-
 
 struct GpuEvent
 {

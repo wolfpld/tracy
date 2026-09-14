@@ -22,6 +22,7 @@
 #include "TracyMarkdown.hpp"
 #include "TracySourceContents.hpp"
 #include "TracyTimelineController.hpp"
+#include "TracyTimelineDraw.hpp"
 #include "TracyUserData.hpp"
 #include "TracyUtility.hpp"
 #include "TracyViewData.hpp"

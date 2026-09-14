@@ -4263,6 +4263,8 @@ Hovering the \faArrowPointer{}~mouse pointer over a lock timeline will highlight
 
 The numerical data values (figure~\ref{plotdisplay}) are plotted right below the zones and locks. Note that the minimum and maximum values currently displayed on the plot are visible on the screen, along with the y range of the plot and the number of drawn data points. The discrete data points are indicated with little rectangles. A filled rectangle indicates multiple data points.
 
+When there are more visible data points than there are pixel columns available to draw them, the plot is instead displayed as a spectrogram. Each pixel column then holds a histogram of the values that fall within it, and the lightness of each cell indicates how many values are contained in it. Hovering the \faArrowPointer{}~mouse pointer over a column shows the number of values in the column, their range, and the number of values in the cell under the cursor.
+
 \begin{figure}[h]
 \centering\begin{tikzpicture}
 [dot/.style={rectangle,draw,scale=0.5}];

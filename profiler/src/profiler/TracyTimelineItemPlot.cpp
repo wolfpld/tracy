@@ -1,3 +1,6 @@
+#include <algorithm>
+#include <math.h>
+
 #include "TracyImGui.hpp"
 #include "TracyPrint.hpp"
 #include "TracyTimelineContext.hpp"
@@ -12,6 +15,14 @@ namespace tracy
 
 constexpr int PlotHeightPx = 100;
 constexpr int MinVisSize = 3;
+
+// Switch to the spectrogram view when there are more visible data points
+// than there are pixel columns to show them in. Very small data sets are
+// always drawn as individual points.
+constexpr int MinSpectrogramPoints = 32;
+// Upper bound on the number of data points inspected when building the
+// spectrogram histogram. Larger data sets are sampled with a stride.
+constexpr int64_t MaxSpectrogramSamples = 1 << 20;
 
 
 TimelineItemPlot::TimelineItemPlot( View& view, Worker& worker, PlotData* plot )
@@ -112,17 +123,19 @@ int64_t TimelineItemPlot::RangeEnd() const
 
 bool TimelineItemPlot::DrawContents( const TimelineContext& ctx, int& offset )
 {
-    return m_view.DrawPlot( ctx, *m_plot, m_draw, offset, m_rightEnd );
+    return m_view.DrawPlot( ctx, *m_plot, m_draw, m_spectrogramActive ? &m_spectrogram : nullptr, offset, m_rightEnd );
 }
 
 void TimelineItemPlot::DrawFinished()
 {
     m_draw.clear();
+    m_spectrogramActive = false;
 }
 
 void TimelineItemPlot::Preprocess( const TimelineContext& ctx, TaskDispatch& td, bool visible, int yPos )
 {
     assert( m_draw.empty() );
+    assert( !m_spectrogramActive );
 
     if( !visible ) return;
     if( yPos > ctx.yMax ) return;
@@ -162,6 +175,10 @@ void TimelineItemPlot::Preprocess( const TimelineContext& ctx, TaskDispatch& td,
 
         m_rightEnd = end == vec.end() && vec.back().time.Val() < m_worker.GetLastTime();
 
+        // Data points strictly inside the visible time range.
+        const auto inBegin = it;
+        const auto inEnd = end;
+
         if( end != vec.end() ) end++;
         if( it != vec.begin() ) it--;
 
@@ -191,6 +208,17 @@ void TimelineItemPlot::Preprocess( const TimelineContext& ctx, TaskDispatch& td,
         m_plot->rMin = min;
         m_plot->rMax = max;
         m_plot->num = num;
+
+        const auto numInside = inEnd - inBegin;
+        if( numInside > MinSpectrogramPoints )
+        {
+            const auto spanPx = ( ( inEnd - 1 )->time.Val() - inBegin->time.Val() ) * ctx.pxns;
+            if( numInside > spanPx )
+            {
+                BuildSpectrogram( ctx, inBegin, inEnd, min, max );
+                return;
+            }
+        }
 
         m_draw.emplace_back( 0 );
         m_draw.emplace_back( it - vec.begin() );
@@ -247,6 +275,39 @@ void TimelineItemPlot::Preprocess( const TimelineContext& ctx, TaskDispatch& td,
             }
         }
     } );
+}
+
+void TimelineItemPlot::BuildSpectrogram( const TimelineContext& ctx, const PlotItem* begin, const PlotItem* end, double min, double max )
+{
+    const auto w = std::max( 1, int( ceil( ctx.w ) ) );
+    const auto h = std::max( 1, int( round( m_view.GetViewData().plotHeight * ctx.scale ) ) );
+
+    auto& sp = m_spectrogram;
+    sp.w = w;
+    sp.h = h;
+    sp.bins.assign( size_t( w ) * h, 0 );
+
+    const auto num = end - begin;
+    const auto skip = num > MaxSpectrogramSamples ? uint32_t( ( num + MaxSpectrogramSamples - 1 ) / MaxSpectrogramSamples ) : 1;
+    sp.skip = skip;
+
+    const auto vStart = ctx.vStart;
+    const auto pxns = ctx.pxns;
+    const auto revrange = 1.0 / ( max - min );
+
+    uint32_t maxCnt = 0;
+    for( auto it = begin; it < end; it += skip )
+    {
+        const auto x = int( ( it->time.Val() - vStart ) * pxns );
+        if( x < 0 || x >= w ) continue;
+        auto y = int( ( it->val - min ) * revrange * h );
+        y = std::clamp( y, 0, h-1 );
+        const auto cnt = ++sp.bins[size_t( x ) * h + y];
+        if( cnt > maxCnt ) maxCnt = cnt;
+    }
+    sp.max = maxCnt;
+
+    m_spectrogramActive = true;
 }
 
 }

@@ -108,6 +108,18 @@ struct LockDraw
     std::vector<LockDrawItem> data;
 };
 
+
+struct PlotSpectrogram
+{
+    // Column-major histogram of plot values: bins[x * h + y], where x is
+    // the pixel column and y is the value bin (0 is the lowest value).
+    std::vector<uint32_t> bins;
+    int w;
+    int h;
+    uint32_t max;
+    uint32_t skip;
+};
+
 }
 
 #endif

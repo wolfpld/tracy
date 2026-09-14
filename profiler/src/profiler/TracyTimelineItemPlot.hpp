@@ -33,9 +33,13 @@ protected:
     void Preprocess( const TimelineContext& ctx, TaskDispatch& td, bool visible, int yPos ) override;
 
 private:
+    void BuildSpectrogram( const TimelineContext& ctx, const PlotItem* begin, const PlotItem* end, double min, double max );
+
     PlotData* m_plot;
 
     std::vector<uint32_t> m_draw;
+    PlotSpectrogram m_spectrogram;
+    bool m_spectrogramActive = false;
     bool m_rightEnd;
 };
 

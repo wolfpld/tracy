@@ -1,17 +1,19 @@
 #include <inttypes.h>
+#include <math.h>
 
 #include "TracyColor.hpp"
 #include "TracyImGui.hpp"
 #include "TracyMouse.hpp"
 #include "TracyPrint.hpp"
 #include "TracyTimelineContext.hpp"
+#include "TracyTimelineDraw.hpp"
 #include "TracyUtility.hpp"
 #include "TracyView.hpp"
 
 namespace tracy
 {
 
-bool View::DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vector<uint32_t>& plotDraw, int& offset, bool rightEnd )
+bool View::DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vector<uint32_t>& plotDraw, const PlotSpectrogram* spectrogram, int& offset, bool rightEnd )
 {
     auto draw = ImGui::GetWindowDrawList();
     const auto& wpos = ctx.wpos;
@@ -61,6 +63,11 @@ bool View::DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vect
         draw->AddRectFilled( ImVec2( 0, yPos ), ImVec2( w, yPos + PlotHeight ), bg );
 
         const auto revrange = 1.0 / ( max - min );
+
+        if( spectrogram )
+        {
+            DrawPlotSpectrogram( ctx, plot, *spectrogram, offset, PlotHeight, min, max, color );
+        }
 
         auto it = plotDraw.begin();
         auto end = plotDraw.end();
@@ -182,7 +189,7 @@ bool View::DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vect
                 double x0 = 0;
                 const auto x1 = std::min<double>( ( lastTime - m_vd.zvStart ) * pxns, w );
 
-                if( plotDraw.empty() )
+                if( plotDraw.empty() && !spectrogram )
                 {
                     y = PlotHeight * 0.5;
                     DrawLine( draw, dpos + ImVec2( 0, offset + y ), dpos + ImVec2( x1, offset + y ), color );
@@ -194,7 +201,7 @@ bool View::DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vect
                     DrawLine( draw, dpos + ImVec2( x0, offset + y ), dpos + ImVec2( x1, offset + y ), color );
                 }
 
-                if( plot.fill )
+                if( plot.fill && !spectrogram )
                 {
                     draw->AddRectFilled( dpos + ImVec2( x0, offset + PlotHeight ), dpos + ImVec2( x1, offset + y ), fill );
                 }
@@ -254,6 +261,157 @@ bool View::DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vect
         offset += PlotHeight;
     }
     return true;
+}
+
+// Round a value to one decimal digit finer than the given step, so that bin
+// bounds derived from floating point arithmetic print without noise.
+static double RoundToStep( double v, double step )
+{
+    const auto k = int( 1 - floor( log10( step ) ) );
+    if( k > 0 )
+    {
+        const auto m = pow( 10.0, k );
+        return round( v * m ) / m;
+    }
+    else
+    {
+        const auto m = pow( 10.0, -k );
+        return round( v / m ) * m;
+    }
+}
+
+static uint32_t LerpColor( uint32_t c0, uint32_t c1, float t )
+{
+    const auto r = int( ( ( c0       ) & 0xFF ) + ( int( ( c1       ) & 0xFF ) - int( ( c0       ) & 0xFF ) ) * t );
+    const auto g = int( ( ( c0 >> 8  ) & 0xFF ) + ( int( ( c1 >> 8  ) & 0xFF ) - int( ( c0 >> 8  ) & 0xFF ) ) * t );
+    const auto b = int( ( ( c0 >> 16 ) & 0xFF ) + ( int( ( c1 >> 16 ) & 0xFF ) - int( ( c0 >> 16 ) & 0xFF ) ) * t );
+    return 0xFF000000 | ( b << 16 ) | ( g << 8 ) | r;
+}
+
+void View::DrawPlotSpectrogram( const TimelineContext& ctx, const PlotData& plot, const PlotSpectrogram& sp, int offset, float PlotHeight, double min, double max, uint32_t color )
+{
+    if( sp.max == 0 ) return;
+
+    auto draw = ImGui::GetWindowDrawList();
+    const auto& wpos = ctx.wpos;
+    const auto w = sp.w;
+    const auto h = sp.h;
+
+    // Lightness ramp: dark plot color -> plot color -> almost white.
+    constexpr int NumLevels = 64;
+    uint32_t palette[NumLevels];
+    const auto dark = DarkenColorHalf( color );
+    const auto light = LerpColor( color, 0xFFFFFFFF, 0.8f );
+    for( int i=0; i<NumLevels; i++ )
+    {
+        const auto t = float( i ) / ( NumLevels - 1 );
+        palette[i] = t < 0.5f ? LerpColor( dark, color, t * 2 ) : LerpColor( color, light, ( t - 0.5f ) * 2 );
+    }
+
+    // Bin counts are mapped to lightness on a logarithmic scale. A floor
+    // keeps single hits visible against the background.
+    constexpr double LevelFloor = 0.2;
+    const auto invLogMax = 1.0 / log1p( double( sp.max ) );
+    auto CountToLevel = [&] ( uint32_t cnt ) {
+        const auto t = LevelFloor + ( 1 - LevelFloor ) * log1p( double( cnt ) ) * invLogMax;
+        return std::min( NumLevels - 1, int( t * ( NumLevels - 1 ) + 0.5 ) );
+    };
+    constexpr uint32_t LutSize = 1024;
+    uint8_t levelLut[LutSize];
+    const auto lutSize = std::min( LutSize, sp.max + 1 );
+    for( uint32_t i=1; i<lutSize; i++ )
+    {
+        levelLut[i] = uint8_t( CountToLevel( i ) );
+    }
+    auto Level = [&] ( uint32_t cnt ) -> int {
+        if( cnt == 0 ) return -1;
+        if( cnt < lutSize ) return levelLut[cnt];
+        return CountToLevel( cnt );
+    };
+
+    // Bins are laid out in the target value range, but displayed in the
+    // (possibly animating) current range, so map through values.
+    const auto step = ( plot.rMax - plot.rMin ) / h;
+    const auto revrange = 1.0 / ( max - min );
+    const auto yTop = wpos.y + offset;
+    const auto yBottom = yTop + PlotHeight;
+    auto RowToY = [&] ( int row ) {
+        const auto v = plot.rMin + row * step;
+        const auto y = yBottom - ( v - min ) * revrange * PlotHeight;
+        return float( std::clamp<double>( y, yTop, yBottom ) );
+    };
+
+    const auto bins = sp.bins.data();
+    for( int x=0; x<w; x++ )
+    {
+        const auto col = bins + size_t( x ) * h;
+        const auto x0 = wpos.x + x;
+        const auto x1 = x0 + 1;
+        int y = 0;
+        while( y < h )
+        {
+            const auto level = Level( col[y] );
+            if( level < 0 )
+            {
+                y++;
+                continue;
+            }
+            auto y1 = y + 1;
+            while( y1 < h && Level( col[y1] ) == level ) y1++;
+            draw->AddRectFilled( ImVec2( x0, RowToY( y1 ) ), ImVec2( x1, RowToY( y ) ), palette[level] );
+            y = y1;
+        }
+    }
+
+    if( ctx.hover && ImGui::IsMouseHoveringRect( ImVec2( wpos.x, yTop ), ImVec2( wpos.x + w, yBottom ) ) )
+    {
+        const auto mouse = ImGui::GetMousePos();
+        const auto x = std::clamp( int( mouse.x - wpos.x ), 0, w-1 );
+        const auto col = bins + size_t( x ) * h;
+
+        uint64_t total = 0;
+        int rowMin = -1;
+        int rowMax = -1;
+        for( int y=0; y<h; y++ )
+        {
+            if( col[y] == 0 ) continue;
+            total += col[y];
+            if( rowMin < 0 ) rowMin = y;
+            rowMax = y;
+        }
+        if( total > 0 )
+        {
+            const auto mv = min + ( yBottom - mouse.y ) / PlotHeight * ( max - min );
+            const auto row = std::clamp( int( floor( ( mv - plot.rMin ) / step ) ), 0, h-1 );
+
+            ImGui::BeginTooltip();
+            if( sp.skip > 1 )
+            {
+                TextFocused( "Estimated number of values:", RealToString( total * sp.skip ) );
+            }
+            else
+            {
+                TextFocused( "Number of values:", RealToString( total ) );
+            }
+            TextDisabledUnformatted( "Range:" );
+            ImGui::SameLine();
+            const auto vmin = RoundToStep( plot.rMin + rowMin * step, step );
+            const auto vmax = RoundToStep( plot.rMin + ( rowMax + 1 ) * step, step );
+            ImGui::Text( "%s - %s", FormatPlotValue( vmin, plot.format ), FormatPlotValue( vmax, plot.format ) );
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%s)", FormatPlotValue( RoundToStep( vmax - vmin, step ), plot.format ) );
+            ImGui::Separator();
+            TextFocused( "Values at cursor:", RealToString( uint64_t( col[row] ) * sp.skip ) );
+            TextDisabledUnformatted( "Cursor bin:" );
+            ImGui::SameLine();
+            const auto bmin = RoundToStep( plot.rMin + row * step, step );
+            const auto bmax = RoundToStep( plot.rMin + ( row + 1 ) * step, step );
+            ImGui::Text( "%s - %s", FormatPlotValue( bmin, plot.format ), FormatPlotValue( bmax, plot.format ) );
+            ImGui::EndTooltip();
+
+            draw->AddRect( ImVec2( wpos.x + x - 1, yTop ), ImVec2( wpos.x + x + 2, yBottom ), 0x88FFFFFF );
+        }
+    }
 }
 
 void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, double val, PlotValueFormatting format, float PlotHeight )

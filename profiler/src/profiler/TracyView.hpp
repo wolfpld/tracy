@@ -66,6 +66,7 @@ struct SamplesDraw;
 struct MessagesDraw;
 struct CpuUsageDraw;
 struct CpuCtxDraw;
+struct PlotSpectrogram;
 struct LockDraw;
 struct PlotDraw;
 struct FlameGraphContext;
@@ -206,7 +207,8 @@ public:
     void SelectThread( uint64_t thread );
     uint64_t GetSelectThread() const { return m_selectedThread; }
     void ZoomToRange( int64_t start, int64_t end, bool pause = true );
-    bool DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vector<uint32_t>& plotDraw, int& offset, bool rightEnd );
+    bool DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vector<uint32_t>& plotDraw, const PlotSpectrogram* spectrogram, int& offset, bool rightEnd );
+    void DrawPlotSpectrogram( const TimelineContext& ctx, const PlotData& plot, const PlotSpectrogram& sp, int offset, float PlotHeight, double min, double max, uint32_t color );
     void DrawThread( const TimelineContext& ctx, const ThreadData& thread, const std::vector<TimelineDraw>& draw, const std::vector<ContextSwitchDraw>& ctxDraw, const std::vector<SamplesDraw>& samplesDraw, const std::vector<std::unique_ptr<LockDraw>>& lockDraw, int& offset, int depth, bool hasCtxSwitches, bool hasSamples );
     void DrawThreadMessagesList( const TimelineContext& ctx, const std::vector<MessagesDraw>& drawList, int offset, uint64_t tid );
     void DrawThreadOverlays( const ThreadData& thread, const ImVec2& ul, const ImVec2& dr );

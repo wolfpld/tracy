@@ -164,6 +164,86 @@ tracy_force_inline LockHolderInfo HolderAt( const LockMap& map, uint32_t at )
     return { it->holder, it->count };
 }
 
+tracy_force_inline uint32_t FirstLockSegmentAtOrAfter( const Vector<uint32_t>& v, uint32_t pos )
+{
+    auto it = std::lower_bound( v.begin(), v.end(), pos );
+    return it != v.end() ? *it : ~uint32_t( 0 );
+}
+
+// segments overlapping [vStart, vEnd); an open segment ends at lastTime
+struct LockSegmentRange
+{
+    uint32_t begin, end;
+};
+inline LockSegmentRange GetLockSegmentRange( const LockMap& map, const LockThreadInfo& ti, int64_t vStart, int64_t vEnd, int64_t lastTime )
+{
+    const auto& segs = ti.segments;
+    const auto startsBefore = [&map] ( const LockSegment& s, int64_t t ) { return map.timeline[s.evStart].Time() < t; };
+    auto end = std::lower_bound( segs.begin(), segs.end(), vEnd, startsBefore );
+    auto begin = std::lower_bound( segs.begin(), end, vStart, startsBefore );
+    if( begin != segs.begin() )
+    {
+        const auto& prev = *( begin - 1 );
+        const auto prevEnd = prev.nextEv == LockEvent::NoEvent ? lastTime : map.timeline[prev.nextEv].Time();
+        if( prevEnd >= vStart ) begin--;
+    }
+    return { uint32_t( begin - segs.begin() ), uint32_t( end - segs.begin() ) };
+}
+
+inline bool HasLockDrawItems( const LockMap& map, const LockThreadInfo& ti, int64_t vStart, int64_t vEnd, uint8_t mask, int64_t lastTime )
+{
+    const auto range = GetLockSegmentRange( map, ti, vStart, vEnd, lastTime );
+    if( range.begin == range.end ) return false;
+    if( ( mask & LockEventState::HasLock ) == 0 ) return true;
+    return std::min( FirstLockSegmentAtOrAfter( ti.yellowSegs, range.begin ), FirstLockSegmentAtOrAfter( ti.redSegs, range.begin ) ) < range.end;
+}
+
+// emit( first, num, t1, state ) for each drawn item: num segments from first, ending at t1, worst state.
+// Sub-pixel segments fold like zones do (next end within MinVisNs of the previous end), and a
+// different severity starts a new item once the fold is visible.
+template<typename F>
+inline void ForEachLockDrawItem( const LockMap& map, const LockThreadInfo& ti, int64_t vStart, int64_t vEnd, int64_t MinVisNs, uint8_t mask, int64_t lastTime, F&& emit )
+{
+    const auto& segs = ti.segments;
+    const auto GetT0 = [&map] ( const LockSegment& s ) { return map.timeline[s.evStart].Time(); };
+    const auto GetT1 = [&map, lastTime] ( const LockSegment& s ) { return s.nextEv == LockEvent::NoEvent ? lastTime : map.timeline[s.nextEv].Time(); };
+
+    const auto range = GetLockSegmentRange( map, ti, vStart, vEnd, lastTime );
+    uint32_t i = range.begin;
+    while( i < range.end )
+    {
+        if( ( segs[i].state & mask ) != 0 )
+        {
+            i = std::min( FirstLockSegmentAtOrAfter( ti.yellowSegs, i ), FirstLockSegmentAtOrAfter( ti.redSegs, i ) );
+            if( i >= range.end ) break;
+        }
+        const int64_t t0 = GetT0( segs[i] );
+        int64_t t1 = GetT1( segs[i] );
+        uint8_t state = segs[i].state;
+        uint32_t next = i + 1;
+        uint32_t last = next;
+        if( t1 - t0 < MinVisNs )
+        {
+            while( next < range.end )
+            {
+                const auto& ns = segs[next];
+                const int64_t nt1 = GetT1( ns );
+                if( nt1 - t1 >= MinVisNs ) break;
+                if( ( ns.state & mask ) == 0 )
+                {
+                    if( ns.state != state && t1 - t0 >= MinVisNs ) break;
+                    state = std::max( state, ns.state );
+                    t1 = nt1;
+                    last = next + 1;
+                }
+                next++;
+            }
+        }
+        emit( i, last - i, t1, state );
+        i = next;
+    }
+}
+
 }
 
 #endif

@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "TracyEvent.hpp"
+#include "TracyLocks.hpp"
 #include "TracyShortPtr.hpp"
 
 namespace tracy
@@ -81,30 +82,19 @@ struct CpuCtxDraw
 
 
 
-struct LockState
-{
-    enum Type : uint8_t
-    {
-        Nothing         = 1 << 0,
-        HasLock         = 1 << 1,   // green
-        HasBlockingLock = 1 << 2,   // yellow
-        WaitLock        = 1 << 3    // red
-    };
-};
-
 struct LockDrawItem
 {
-    Int48 t1;
-    LockState::Type state;
-    uint32_t condensed;
-    short_ptr<LockEventPtr> ptr, next;
+    int64_t t1;
+    uint8_t state;
+    uint32_t num;
+    const LockSegment* seg;
 };
 
 struct LockDraw
 {
     uint32_t id;
     bool forceDraw;
-    uint8_t thread;
+    uint16_t thread;
     std::vector<LockDrawItem> data;
 };
 
@@ -113,7 +103,7 @@ struct LockHighlight
     int64_t id;
     int64_t begin;
     int64_t end;
-    uint8_t thread;
+    uint16_t thread;
     bool blocked;
 };
 

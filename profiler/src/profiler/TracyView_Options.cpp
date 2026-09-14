@@ -349,7 +349,7 @@ void View::DrawOptions()
             if( l.second->valid && !l.second->timeline.empty() )
             {
                 lockCnt++;
-                if( l.second->threadList.size() == 1 )
+                if( l.second->threads.size() == 1 )
                 {
                     singleCnt++;
                 }
@@ -409,7 +409,7 @@ void View::DrawOptions()
             const bool multiExpand = ImGui::TreeNodeEx( "Contended locks present in multiple threads", ImGuiTreeNodeFlags_DefaultOpen );
             ImGui::SameLine();
             size_t visibleMultiCntCont = 0;
-            for( const auto& l : m_worker.GetLockMap() ) if( l.second->threadList.size() != 1 && l.second->isContended && Vis( l.second ) ) visibleMultiCntCont++;
+            for( const auto& l : m_worker.GetLockMap() ) if( l.second->threads.size() != 1 && l.second->isContended && Vis( l.second ) ) visibleMultiCntCont++;
             if( visibleMultiCntCont == multiCntCont )
             {
                 ImGui::TextDisabled( "(%zu)", multiCntCont );
@@ -425,7 +425,7 @@ void View::DrawOptions()
                 {
                     for( const auto& l : m_worker.GetLockMap() )
                     {
-                        if( l.second->threadList.size() != 1 && l.second->isContended ) Vis( l.second ) = true;
+                        if( l.second->threads.size() != 1 && l.second->isContended ) Vis( l.second ) = true;
                     }
                 }
                 ImGui::SameLine();
@@ -433,13 +433,13 @@ void View::DrawOptions()
                 {
                     for( const auto& l : m_worker.GetLockMap() )
                     {
-                        if( l.second->threadList.size() != 1 && l.second->isContended ) Vis( l.second ) = false;
+                        if( l.second->threads.size() != 1 && l.second->isContended ) Vis( l.second ) = false;
                     }
                 }
 
                 for( const auto& l : m_worker.GetLockMap() )
                 {
-                    if( l.second->valid && !l.second->timeline.empty() && l.second->threadList.size() != 1 && l.second->isContended )
+                    if( l.second->valid && !l.second->timeline.empty() && l.second->threads.size() != 1 && l.second->isContended )
                     {
                         auto& sl = m_worker.GetSourceLocation( l.second->srcloc );
                         auto fileName = m_worker.GetString( sl.file );
@@ -496,7 +496,7 @@ void View::DrawOptions()
             const bool multiUncontExpand = ImGui::TreeNodeEx( "Uncontended locks present in multiple threads", 0 );
             ImGui::SameLine();
             uint64_t visibleMultiCntUncont = 0;
-            for( const auto& l : m_worker.GetLockMap() ) if( l.second->threadList.size() != 1 && !l.second->isContended && Vis( l.second ) ) visibleMultiCntUncont++;
+            for( const auto& l : m_worker.GetLockMap() ) if( l.second->threads.size() != 1 && !l.second->isContended && Vis( l.second ) ) visibleMultiCntUncont++;
             if( visibleMultiCntUncont == multiCntUncont )
             {
                 ImGui::TextDisabled( "(%zu)", multiCntUncont );
@@ -512,7 +512,7 @@ void View::DrawOptions()
                 {
                     for( const auto& l : m_worker.GetLockMap() )
                     {
-                        if( l.second->threadList.size() != 1 && !l.second->isContended ) Vis( l.second ) = true;
+                        if( l.second->threads.size() != 1 && !l.second->isContended ) Vis( l.second ) = true;
                     }
                 }
                 ImGui::SameLine();
@@ -520,13 +520,13 @@ void View::DrawOptions()
                 {
                     for( const auto& l : m_worker.GetLockMap() )
                     {
-                        if( l.second->threadList.size() != 1 && !l.second->isContended ) Vis( l.second ) = false;
+                        if( l.second->threads.size() != 1 && !l.second->isContended ) Vis( l.second ) = false;
                     }
                 }
 
                 for( const auto& l : m_worker.GetLockMap() )
                 {
-                    if( l.second->valid && !l.second->timeline.empty() && l.second->threadList.size() != 1 && !l.second->isContended )
+                    if( l.second->valid && !l.second->timeline.empty() && l.second->threads.size() != 1 && !l.second->isContended )
                     {
                         auto& sl = m_worker.GetSourceLocation( l.second->srcloc );
                         auto fileName = m_worker.GetString( sl.file );
@@ -583,7 +583,7 @@ void View::DrawOptions()
             const auto singleExpand = ImGui::TreeNodeEx( "Locks present in a single thread", 0 );
             ImGui::SameLine();
             uint64_t visibleSingleCnt = 0;
-            for( const auto& l : m_worker.GetLockMap() ) if( l.second->threadList.size() == 1 && Vis( l.second ) ) visibleSingleCnt++;
+            for( const auto& l : m_worker.GetLockMap() ) if( l.second->threads.size() == 1 && Vis( l.second ) ) visibleSingleCnt++;
             if( visibleSingleCnt == singleCnt )
             {
                 ImGui::TextDisabled( "(%zu)", singleCnt );
@@ -599,7 +599,7 @@ void View::DrawOptions()
                 {
                     for( const auto& l : m_worker.GetLockMap() )
                     {
-                        if( l.second->threadList.size() == 1 ) Vis( l.second ) = true;
+                        if( l.second->threads.size() == 1 ) Vis( l.second ) = true;
                     }
                 }
                 ImGui::SameLine();
@@ -607,13 +607,13 @@ void View::DrawOptions()
                 {
                     for( const auto& l : m_worker.GetLockMap() )
                     {
-                        if( l.second->threadList.size() == 1 ) Vis( l.second ) = false;
+                        if( l.second->threads.size() == 1 ) Vis( l.second ) = false;
                     }
                 }
 
                 for( const auto& l : m_worker.GetLockMap() )
                 {
-                    if( l.second->valid && !l.second->timeline.empty() && l.second->threadList.size() == 1 )
+                    if( l.second->valid && !l.second->timeline.empty() && l.second->threads.size() == 1 )
                     {
                         auto& sl = m_worker.GetSourceLocation( l.second->srcloc );
                         auto fileName = m_worker.GetString( sl.file );

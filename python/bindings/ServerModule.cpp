@@ -754,25 +754,10 @@ PYBIND11_MODULE( TracyServerBindings, m )
                 name = w.GetZoneName( w.GetSourceLocation( lm->srcloc ) );
             int64_t totalWaitNs = 0;
             uint64_t contentionCount = 0;
-            std::unordered_map<uint8_t, int64_t> pendingWait;
-            for( const auto& evPtr : lm->timeline )
+            for( const auto& ti : lm->threads )
             {
-                const auto* ev = evPtr.ptr.get();
-                if( !ev ) continue;
-                if( ev->type == LockEvent::Type::Wait || ev->type == LockEvent::Type::WaitShared )
-                {
-                    pendingWait[ev->thread] = ev->Time();
-                }
-                else if( ev->type == LockEvent::Type::Obtain || ev->type == LockEvent::Type::ObtainShared )
-                {
-                    auto it = pendingWait.find( ev->thread );
-                    if( it != pendingWait.end() )
-                    {
-                        totalWaitNs += ev->Time() - it->second;
-                        contentionCount++;
-                        pendingWait.erase( it );
-                    }
-                }
+                totalWaitNs += ti.waitTotal;
+                contentionCount += ti.waitCount;
             }
             if( contentionCount == 0 ) continue;
             py::dict d;
@@ -780,7 +765,10 @@ PYBIND11_MODULE( TracyServerBindings, m )
             d["total_wait_ns"] = totalWaitNs;
             d["avg_wait_ns"] = (double)totalWaitNs / (double)contentionCount;
             d["contention_count"] = contentionCount;
-            d["threads"] = lm->threadList;
+            std::vector<uint64_t> threads;
+            threads.reserve( lm->threads.size() );
+            for( const auto& ti : lm->threads ) threads.push_back( ti.thread );
+            d["threads"] = threads;
             result.append( d );
         }
         return result;
@@ -1054,13 +1042,16 @@ PYBIND11_MODULE( TracyServerBindings, m )
             else
                 name = w.GetZoneName( w.GetSourceLocation( lm->srcloc ) );
             const char* typeStr = lm->type == LockType::Lockable ? "Lockable" : "SharedLockable";
+            std::vector<uint64_t> threads;
+            threads.reserve( lm->threads.size() );
+            for( const auto& ti : lm->threads ) threads.push_back( ti.thread );
             result.push_back( LockSummary{
                 name,
                 lm->isContended,
                 std::string( typeStr ),
                 lm->timeAnnounce,
                 lm->timeTerminate,
-                lm->threadList } );
+                std::move( threads ) } );
         }
         return result;
     } ) )

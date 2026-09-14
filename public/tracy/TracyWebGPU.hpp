@@ -654,8 +654,8 @@ namespace tracy
             for (auto& stage : m_readbackReel)
                 if (stage.buffer) { wgpuBufferRelease(stage.buffer);     stage.buffer     = nullptr; }
             if (m_resolveBuffer)  { wgpuBufferRelease(m_resolveBuffer);  m_resolveBuffer  = nullptr; }
-            for (auto& qs : m_querySets)
-                if (qs) { wgpuQuerySetRelease(qs); qs = nullptr; }
+            for (auto& querySet : m_querySets)
+                if (querySet)     { wgpuQuerySetRelease(querySet);       querySet         = nullptr; }
             if (m_queue)          { wgpuQueueRelease(m_queue);           m_queue          = nullptr; }
             if (m_device)         { wgpuDeviceRelease(m_device);         m_device         = nullptr; }
             if (m_instance)       { wgpuInstanceRelease(m_instance);     m_instance       = nullptr; }

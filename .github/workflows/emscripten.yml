@@ -69,7 +69,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build-emscripten
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' && github.repository == 'wolfpld/tracy'
     steps:
     - uses: actions/download-artifact@v4
     - uses: wlixcc/SFTP-Deploy-Action@v1.2.4

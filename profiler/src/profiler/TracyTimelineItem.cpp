@@ -122,9 +122,9 @@ void TimelineItem::Draw( bool firstFrame, const TimelineContext& ctx, int yOffse
             SetVisible( false );
             ImGui::CloseCurrentPopup();
         }
-        if( ImGui::MenuItem( m_pinned ? ICON_FA_THUMBTACK_SLASH " Unpin" : ICON_FA_THUMBTACK " Pin" ) )
+        if( ImGui::MenuItem( IsPinned() ? ICON_FA_THUMBTACK_SLASH " Unpin" : ICON_FA_THUMBTACK " Pin" ) )
         {
-            m_pinned = !m_pinned;
+            SetPinned( !IsPinned() );
             ImGui::CloseCurrentPopup();
         }
         DrawExtraPopupItems();

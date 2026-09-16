@@ -16,7 +16,6 @@ TimelineController::TimelineController( View& view, Worker& worker, bool threadi
     , m_scroll( 0 )
     , m_centerItemkey( nullptr )
     , m_centerItemOffsetY( 0 )
-    , m_pinnedTop( 0 )
     , m_firstFrame( true )
     , m_view( view )
     , m_worker( worker )
@@ -42,7 +41,7 @@ void TimelineController::Begin()
     m_items.clear();
 }
 
-void TimelineController::UpdateCenterItem()
+void TimelineController::UpdateCenterItem( int pinnedTop )
 {
     ImVec2 mousePos = ImGui::GetMousePos();
 
@@ -66,7 +65,7 @@ void TimelineController::UpdateCenterItem()
     }
 
     int yBegin = 0;
-    int yEnd = m_pinnedTop;
+    int yEnd = pinnedTop;
     for( auto& item : m_items )
     {
         if( item->IsPinned() ) continue;
@@ -85,7 +84,7 @@ void TimelineController::UpdateCenterItem()
     }
 }
 
-std::optional<int> TimelineController::CalculateScrollPosition() const
+std::optional<int> TimelineController::CalculateScrollPosition( int pinnedTop ) const
 {
     if( !m_centerItemkey ) return std::nullopt;
 
@@ -96,7 +95,7 @@ std::optional<int> TimelineController::CalculateScrollPosition() const
     const auto timelineMousePosY = mousePos.y - ImGui::GetWindowPos().y;
 
     int yBegin = 0;
-    int yEnd = m_pinnedTop;
+    int yEnd = pinnedTop;
     for( auto& item : m_items )
     {
         if( item->IsPinned() ) continue;
@@ -110,14 +109,16 @@ std::optional<int> TimelineController::CalculateScrollPosition() const
         return scrollY;
     }
 
+    // A "just-pinned" center item is gone from the normal run but will be
+    // "re-picked" on next mouse move.
     return std::nullopt;
 }
 
 void TimelineController::End( double pxns, const ImVec2& wpos, bool hover, bool vcenter, float yMin, float yMax )
 {
-    // Pinned tracks are lifted out of the scrolling flow and drawn fixed to the
-    // top (queues/threads) or bottom (plots) of the viewport. Heights are the
-    // previous frame's values (zero on the first frame); items still animate.
+    // GetHeight() is 0 on the first frame, so the scroll extent would be shorter
+    // if a track was pinned at load, but would "self-correct" in the next frame.
+    // (Also, nothing is pinned at load anyway.)
     int pinnedTop = 0;
     int pinnedBottom = 0;
     for( auto& item : m_items )
@@ -126,7 +127,6 @@ void TimelineController::End( double pxns, const ImVec2& wpos, bool hover, bool 
         if( item->PinToBottom() ) pinnedBottom += item->GetHeight();
         else pinnedTop += item->GetHeight();
     }
-    m_pinnedTop = pinnedTop;
 
     auto shouldUpdateCenterItem = [&] () {
         const auto imguiChangedScroll = m_scroll != ImGui::GetScrollY();
@@ -144,7 +144,7 @@ void TimelineController::End( double pxns, const ImVec2& wpos, bool hover, bool 
     }
     else if( shouldUpdateCenterItem() )
     {
-        UpdateCenterItem();
+        UpdateCenterItem( pinnedTop );
     }
 
     const auto& viewData = m_view.GetViewData();
@@ -167,11 +167,11 @@ void TimelineController::End( double pxns, const ImVec2& wpos, bool hover, bool 
 
     const int curScrollY = (int)ImGui::GetScrollY();
     const int windowHeight = (int)ImGui::GetWindowHeight();
-    const int bottomStart = curScrollY + windowHeight - pinnedBottom;
+    // Keep the pinned bands from overlapping (top wins), otherwise bottom items
+    // would cover top ones while leaving them clickable underneath.
+    const int bottomStart = std::max( curScrollY + pinnedTop, curScrollY + windowHeight - pinnedBottom );
 
-    // Content-space Y offset an item is drawn at. Pinned items compensate for the
-    // scroll position so they stay fixed in the viewport; normal items flow in the
-    // middle band, below the pinned-top band.
+    // Pinned items add the scroll offset so they stay fixed as content scrolls.
     auto itemYOffset = [&] ( TimelineItem* item, int topRun, int normalRun, int bottomRun ) -> int {
         if( !item->IsPinned() ) return pinnedTop + normalRun;
         return item->PinToBottom() ? bottomStart + bottomRun : curScrollY + topRun;
@@ -197,9 +197,8 @@ void TimelineController::End( double pxns, const ImVec2& wpos, bool hover, bool 
     auto draw = ImGui::GetWindowDrawList();
     const auto bgColor = ImGui::GetColorU32( ImGuiCol_WindowBg );
 
-    // Normal (middle) items. Cull headers to the band between the pinned regions,
-    // and suppress interaction whenever the mouse is over a pinned band, so tracks
-    // scrolling underneath a pinned band stay inert.
+    // Keep tracks scrolling under a pinned band inert (cull their headers to the
+    // middle region and drop hover while the mouse is over a band).
     TimelineContext ctxNormal = ctx;
     if( pinnedTop > 0 ) ctxNormal.yMin = std::max<float>( ctx.yMin, wpos.y + curScrollY + pinnedTop );
     if( pinnedBottom > 0 ) ctxNormal.yMax = std::min<float>( ctx.yMax, wpos.y + bottomStart );
@@ -217,7 +216,6 @@ void TimelineController::End( double pxns, const ImVec2& wpos, bool hover, bool 
         normalRunning += h;
     }
 
-    // Pinned-top band (queues/threads), fixed at the viewport top.
     if( pinnedTop > 0 ) draw->AddRectFilled( ImVec2( wpos.x, wpos.y + curScrollY ), ImVec2( wpos.x + ctx.w, wpos.y + curScrollY + pinnedTop ), bgColor );
     int topRunning = 0;
     for( auto& item : m_items )
@@ -229,7 +227,6 @@ void TimelineController::End( double pxns, const ImVec2& wpos, bool hover, bool 
         topRunning += h;
     }
 
-    // Pinned-bottom band (plots), fixed at the viewport bottom.
     if( pinnedBottom > 0 ) draw->AddRectFilled( ImVec2( wpos.x, wpos.y + bottomStart ), ImVec2( wpos.x + ctx.w, wpos.y + curScrollY + windowHeight ), bgColor );
     int bottomRunning = 0;
     for( auto& item : m_items )
@@ -243,7 +240,7 @@ void TimelineController::End( double pxns, const ImVec2& wpos, bool hover, bool 
 
     int yOffset = pinnedTop + normalRunning + pinnedBottom;
 
-    if( const auto scrollY = CalculateScrollPosition() )
+    if( const auto scrollY = CalculateScrollPosition( pinnedTop ) )
     {
         int clampedScrollY = std::min<int>( *scrollY, std::max<int>( yOffset - ImGui::GetWindowHeight(), 0 ) );
         ImGui::SetScrollY( clampedScrollY );

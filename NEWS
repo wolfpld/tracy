@@ -5,6 +5,7 @@ here.
 vx.xx.x (2026-xx-xx)
 --------------------
 
+- Ability to pin/anchor threads and plots to the viewport.
 - API break: various lock-related "AfterUnlock" instrumentation methods were
   renamed to "BeforeUnlock". Call sites need to be adjusted with regard to
   the placement around the lock unlock calls, to match the name.

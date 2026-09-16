@@ -58,6 +58,8 @@ private:
     const void* m_centerItemkey;
     int m_centerItemOffsetY;
 
+    int m_pinnedTop;
+
     bool m_firstFrame;
 
     View& m_view;

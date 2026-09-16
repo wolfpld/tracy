@@ -46,8 +46,8 @@ public:
     }
 
 private:
-    void UpdateCenterItem();
-    std::optional<int> CalculateScrollPosition() const;
+    void UpdateCenterItem( int pinnedTop );
+    std::optional<int> CalculateScrollPosition( int pinnedTop ) const;
 
     std::vector<TimelineItem*> m_items;
     unordered_flat_map<const void*, std::unique_ptr<TimelineItem>> m_itemMap;
@@ -57,8 +57,6 @@ private:
 
     const void* m_centerItemkey;
     int m_centerItemOffsetY;
-
-    int m_pinnedTop;
 
     bool m_firstFrame;
 

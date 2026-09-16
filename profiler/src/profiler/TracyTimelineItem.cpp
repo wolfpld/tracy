@@ -12,6 +12,7 @@ namespace tracy
 TimelineItem::TimelineItem( View& view, Worker& worker, const void* key, bool wantPreprocess )
     : m_visible( true )
     , m_showFull( true )
+    , m_pinned( false )
     , m_height( 0 )
     , m_wantPreprocess( wantPreprocess )
     , m_key( key )
@@ -119,6 +120,11 @@ void TimelineItem::Draw( bool firstFrame, const TimelineContext& ctx, int yOffse
         if( ImGui::MenuItem( ICON_FA_EYE_SLASH " Hide" ) )
         {
             SetVisible( false );
+            ImGui::CloseCurrentPopup();
+        }
+        if( ImGui::MenuItem( m_pinned ? ICON_FA_THUMBTACK_SLASH " Unpin" : ICON_FA_THUMBTACK " Pin" ) )
+        {
+            m_pinned = !m_pinned;
             ImGui::CloseCurrentPopup();
         }
         DrawExtraPopupItems();

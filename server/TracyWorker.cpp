@@ -3784,7 +3784,11 @@ void Worker::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread,
     auto it = lockmap.threadMap.find( thread );
     if( it == lockmap.threadMap.end() )
     {
-        assert( lockmap.threadList.size() < MaxLockThreads );
+        if( lockmap.threadList.size() >= MaxLockThreads )
+        {
+            LockThreadOverflowFailure();
+            return;
+        }
         it = lockmap.threadMap.emplace( thread, lockmap.threadList.size() ).first;
         lockmap.threadList.emplace_back( thread );
     }
@@ -5350,6 +5354,11 @@ void Worker::FiberLeaveFailure()
 void Worker::SourceLocationOverflowFailure()
 {
     m_failure = Failure::SourceLocationOverflow;
+}
+
+void Worker::LockThreadOverflowFailure()
+{
+    m_failure = Failure::LockThreadOverflow;
 }
 
 void Worker::ProcessZoneValidation( const QueueZoneValidation& ev )
@@ -9060,6 +9069,7 @@ static const char* s_failureReasons[] = {
     "Multiple frame images were sent for a single frame.",
     "Fiber execution stopped on a thread which is not executing a fiber.",
     "Too many source locations. You cannot have more than 32K static or dynamic source locations.",
+    "Too many threads. You cannot have more than 64 distinct threads waiting on a single lock.",
 };
 
 static_assert( sizeof( s_failureReasons ) / sizeof( *s_failureReasons ) == (int)Worker::Failure::NUM_FAILURES, "Missing failure reason description." );

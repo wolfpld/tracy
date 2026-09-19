@@ -19,6 +19,7 @@
 #include "../public/common/TracySocket.hpp"
 #include "tracy_robin_hood.h"
 #include "TracyEvent.hpp"
+#include "TracyLocks.hpp"
 #include "TracyShortPtr.hpp"
 #include "TracySlab.hpp"
 #include "TracyStringDiscovery.hpp"
@@ -970,7 +971,8 @@ private:
 
     tracy_force_inline void NewZone( ZoneEvent* zone );
 
-    void InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread, int64_t time );
+    void AppendLock( LockMap& lock, int64_t time, uint16_t slot, LockEvent::Type type );
+    void ProcessLockThreadEvent( uint64_t id, int64_t time, uint64_t thread, LockEvent::Type type );
 
     bool CheckString( uint64_t ptr );
     void CheckThreadString( uint64_t id );

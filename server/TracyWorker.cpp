@@ -10,6 +10,7 @@
 #  include <alloca.h>
 #endif
 
+#include <algorithm>
 #include <cctype>
 #include <chrono>
 #include <math.h>
@@ -59,154 +60,6 @@ static const int CurrentVersion = FileVersion( Version::Major, Version::Minor, V
 static const int MinSupportedVersion = FileVersion( 0, 11, 0 );
 
 
-static void UpdateLockCountLockable( LockMap& lockmap, size_t pos )
-{
-    auto& timeline = lockmap.timeline;
-    bool isContended = lockmap.isContended;
-    uint8_t lockingThread;
-    uint8_t lockCount;
-    uint64_t waitList;
-
-    if( pos == 0 )
-    {
-        lockingThread = 0;
-        lockCount = 0;
-        waitList = 0;
-    }
-    else
-    {
-        const auto& tl = timeline[pos-1];
-        lockingThread = tl.lockingThread;
-        lockCount = tl.lockCount;
-        waitList = tl.waitList;
-    }
-    const auto end = timeline.size();
-
-    while( pos != end )
-    {
-        auto& tl = timeline[pos];
-        const auto tbit = uint64_t( 1 ) << tl.ptr->thread;
-        switch( (LockEvent::Type)tl.ptr->type )
-        {
-        case LockEvent::Type::Wait:
-            waitList |= tbit;
-            break;
-        case LockEvent::Type::Obtain:
-            assert( lockCount < std::numeric_limits<uint8_t>::max() );
-            assert( ( waitList & tbit ) != 0 );
-            waitList &= ~tbit;
-            lockingThread = tl.ptr->thread;
-            lockCount++;
-            break;
-        case LockEvent::Type::Release:
-            assert( lockCount > 0 );
-            lockCount--;
-            break;
-        default:
-            break;
-        }
-        tl.lockingThread = lockingThread;
-        tl.waitList = waitList;
-        tl.lockCount = lockCount;
-        if( !isContended ) isContended = lockCount != 0 && waitList != 0;
-        pos++;
-    }
-
-    lockmap.isContended = isContended;
-}
-
-static void UpdateLockCountSharedLockable( LockMap& lockmap, size_t pos )
-{
-    auto& timeline = lockmap.timeline;
-    bool isContended = lockmap.isContended;
-    uint8_t lockingThread;
-    uint8_t lockCount;
-    uint64_t waitShared;
-    uint64_t waitList;
-    uint64_t sharedList;
-
-    if( pos == 0 )
-    {
-        lockingThread = 0;
-        lockCount = 0;
-        waitShared = 0;
-        waitList = 0;
-        sharedList = 0;
-    }
-    else
-    {
-        const auto& tl = timeline[pos-1];
-        const auto tlp = (const LockEventShared*)(const LockEvent*)tl.ptr;
-        lockingThread = tl.lockingThread;
-        lockCount = tl.lockCount;
-        waitShared = tlp->waitShared;
-        waitList = tl.waitList;
-        sharedList = tlp->sharedList;
-    }
-    const auto end = timeline.size();
-
-    // ObtainShared and ReleaseShared should assert on lockCount == 0, but
-    // due to the async retrieval of data from threads that's not possible.
-    while( pos != end )
-    {
-        auto& tl = timeline[pos];
-        const auto tlp = (LockEventShared*)(LockEvent*)tl.ptr;
-        const auto tbit = uint64_t( 1 ) << tlp->thread;
-        switch( (LockEvent::Type)tlp->type )
-        {
-        case LockEvent::Type::Wait:
-            waitList |= tbit;
-            break;
-        case LockEvent::Type::WaitShared:
-            waitShared |= tbit;
-            break;
-        case LockEvent::Type::Obtain:
-            assert( lockCount < std::numeric_limits<uint8_t>::max() );
-            assert( ( waitList & tbit ) != 0 );
-            waitList &= ~tbit;
-            lockingThread = tlp->thread;
-            lockCount++;
-            break;
-        case LockEvent::Type::Release:
-            assert( lockCount > 0 );
-            lockCount--;
-            break;
-        case LockEvent::Type::ObtainShared:
-            assert( ( waitShared & tbit ) != 0 );
-            assert( ( sharedList & tbit ) == 0 );
-            waitShared &= ~tbit;
-            sharedList |= tbit;
-            break;
-        case LockEvent::Type::ReleaseShared:
-            assert( ( sharedList & tbit ) != 0 );
-            sharedList &= ~tbit;
-            break;
-        default:
-            break;
-        }
-        tl.lockingThread = lockingThread;
-        tlp->waitShared = waitShared;
-        tl.waitList = waitList;
-        tlp->sharedList = sharedList;
-        tl.lockCount = lockCount;
-        if( !isContended ) isContended = ( lockCount != 0 && ( waitList != 0 || waitShared != 0 ) ) || ( sharedList != 0 && waitList != 0 );
-        pos++;
-    }
-
-    lockmap.isContended = isContended;
-}
-
-static inline void UpdateLockCount( LockMap& lockmap, size_t pos )
-{
-    if( lockmap.type == LockType::Lockable )
-    {
-        UpdateLockCountLockable( lockmap, pos );
-    }
-    else
-    {
-        UpdateLockCountSharedLockable( lockmap, pos );
-    }
-}
 
 static tracy_force_inline void WriteTimeOffset( FileWrite& f, int64_t& refTime, int64_t time )
 {
@@ -223,12 +76,6 @@ static tracy_force_inline int64_t ReadTimeOffset( FileRead& f, int64_t& refTime 
     return refTime;
 }
 
-static tracy_force_inline void UpdateLockRange( LockMap& lockmap, const LockEvent& ev, int64_t lt )
-{
-    auto& range = lockmap.range[ev.thread];
-    if( range.start > lt ) range.start = lt;
-    if( range.end < lt ) range.end = lt;
-}
 
 template<size_t U>
 static uint64_t ReadHwSampleVec( FileRead& f, SortedVector<Int48, Int48Sort>& vec, Slab<U>& slab )
@@ -923,24 +770,33 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
             uint64_t tsz;
             f.Read8( id, lockmap.customName, lockmap.srcloc, lockmap.type, lockmap.valid, lockmap.timeAnnounce, lockmap.timeTerminate, tsz );
             lockmap.isContended = false;
-            lockmap.threadMap.reserve( tsz );
-            lockmap.threadList.reserve( tsz );
-            for( uint64_t i=0; i<tsz; i++ )
+            if( fileVer >= FileVersion( 0, 14, 2 ) )
             {
-                uint64_t t;
-                f.Read( t );
-                lockmap.threadMap.emplace( t, i );
-                lockmap.threadList.emplace_back( t );
+                uint8_t inversionFlag;
+                f.Read( inversionFlag );
+                lockmap.legacyInversions = inversionFlag;
+            }
+            else
+            {
+                lockmap.legacyInversions = true;
+            }
+            uint64_t threadCnt = tsz;
+            if( threadCnt > 0xFFFF ) throw FileReadError();
+            uint64_t threadIds[ 256 ];
+            while( threadCnt != 0 )
+            {
+                const size_t chunk = threadCnt > 256 ? 256 : ( size_t )threadCnt;
+                f.Read( threadIds, sizeof( uint64_t ) * chunk );
+                ReserveLockSlots( lockmap, threadIds, chunk );
+                threadCnt -= chunk;
             }
             f.Read( tsz );
-            lockmap.timeline.reserve_exact( tsz, m_slab );
-            auto ptr = lockmap.timeline.data();
+            lockmap.timeline.reserve( ( size_t )tsz );
             int64_t refTime = lockmap.timeAnnounce;
             if( fileVer >= FileVersion( 0, 14, 2 ) )
             {
                 for( uint64_t i=0; i<tsz; i++ )
                 {
-                    auto lev = lockmap.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
                     const int64_t lt = ReadTimeOffset( f, refTime );
                     int16_t srcloc;
                     f.Read( srcloc );
@@ -948,38 +804,41 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
                     f.Read( thread );
                     uint8_t type;
                     f.Read( type );
-                    assert( thread < MaxLockThreads );
-                    lev->SetTime( lt );
-                    lev->SetSrcLoc( srcloc );
-                    lev->thread = ( uint8_t )thread;
-                    lev->type = ( LockEvent::Type )type;
-                    *ptr++ = { lev };
-                    UpdateLockRange( lockmap, *lev, lt );
+                    if( thread >= lockmap.threads.size() ) throw FileReadError();
+                    AppendLockEvent( lockmap, lt, thread, ( LockEvent::Type )type, srcloc );
                 }
             }
             else
             {
+                struct LegacyEvent
+                {
+                    int64_t time;
+                    int16_t srcloc;
+                    uint16_t thread;
+                    uint8_t type;
+                };
+                // pre-0.14.2 files can hold events out of time order and the views
+                // binary-search the timeline, so restore order before replay
+                Vector<LegacyEvent> legacy;
+                legacy.reserve( ( size_t )tsz );
                 for( uint64_t i=0; i<tsz; i++ )
                 {
-                    auto lev = lockmap.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
-                    const int64_t lt = ReadTimeOffset( f, refTime );
-                    int16_t srcloc;
-                    f.Read( srcloc );
+                    LegacyEvent ev;
+                    ev.time = ReadTimeOffset( f, refTime );
+                    f.Read( ev.srcloc );
                     uint8_t t8;
                     f.Read( t8 );
-                    const uint16_t thread = t8;
-                    uint8_t type;
-                    f.Read( type );
-                    assert( thread < MaxLockThreads );
-                    lev->SetTime( lt );
-                    lev->SetSrcLoc( srcloc );
-                    lev->thread = ( uint8_t )thread;
-                    lev->type = ( LockEvent::Type )type;
-                    *ptr++ = { lev };
-                    UpdateLockRange( lockmap, *lev, lt );
+                    ev.thread = t8;
+                    f.Read( ev.type );
+                    legacy.push_back( ev );
+                }
+                std::stable_sort( legacy.begin(), legacy.end(), [] ( const LegacyEvent& lhs, const LegacyEvent& rhs ) { return lhs.time < rhs.time; } );
+                for( const auto& ev : legacy )
+                {
+                    if( ev.thread >= lockmap.threads.size() ) throw FileReadError();
+                    AppendLockEvent( lockmap, ev.time, ev.thread, ( LockEvent::Type )ev.type, ev.srcloc );
                 }
             }
-            UpdateLockCount( lockmap, 0 );
             m_data.lockMap.emplace( id, lockmapPtr );
         }
     }
@@ -993,6 +852,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
             f.Read( type );
             f.Skip( sizeof( LockMap::valid ) + sizeof( LockMap::timeAnnounce ) + sizeof( LockMap::timeTerminate ) );
             f.Read( tsz );
+            if( fileVer >= FileVersion( 0, 14, 2 ) ) f.Skip( sizeof( uint8_t ) );
             f.Skip( tsz * sizeof( uint64_t ) );
             f.Read( tsz );
             if( fileVer >= FileVersion( 0, 14, 2 ) )
@@ -1001,7 +861,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
             }
             else
             {
-                f.Skip( tsz * ( sizeof( int64_t ) + sizeof( int16_t ) + sizeof( LockEvent::thread ) + sizeof( LockEvent::type ) ) );
+                f.Skip( tsz * ( sizeof( int64_t ) + sizeof( int16_t ) + sizeof( uint8_t ) + sizeof( uint8_t ) ) );
             }
         }
     }
@@ -3775,41 +3635,10 @@ void Worker::NewZone( ZoneEvent* zone )
 #endif
 }
 
-void Worker::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread, int64_t time )
+void Worker::AppendLock( LockMap& lock, int64_t time, uint16_t slot, LockEvent::Type type )
 {
     if( m_data.lastTime < time ) m_data.lastTime = time;
-
-    NoticeThread( thread );
-
-    auto it = lockmap.threadMap.find( thread );
-    if( it == lockmap.threadMap.end() )
-    {
-        if( lockmap.threadList.size() >= MaxLockThreads )
-        {
-            LockThreadOverflowFailure();
-            return;
-        }
-        it = lockmap.threadMap.emplace( thread, lockmap.threadList.size() ).first;
-        lockmap.threadList.emplace_back( thread );
-    }
-    lev->thread = it->second;
-    assert( lev->thread == it->second );
-    auto& timeline = lockmap.timeline;
-    if( timeline.empty() )
-    {
-        timeline.push_back( { lev } );
-        UpdateLockCount( lockmap, timeline.size() - 1 );
-    }
-    else
-    {
-        assert( timeline.back().ptr->Time() <= time );
-        timeline.push_back_non_empty( { lev } );
-        UpdateLockCount( lockmap, timeline.size() - 1 );
-    }
-
-    auto& range = lockmap.range[it->second];
-    if( range.start > time ) range.start = time;
-    if( range.end < time ) range.end = time;
+    AppendLockEvent( lock, time, slot, type );
 }
 
 bool Worker::CheckString( uint64_t ptr )
@@ -5684,13 +5513,7 @@ void Worker::ProcessLockAnnounce( const QueueLockAnnounce& ev )
     auto it = m_data.lockMap.find( ev.id );
     assert( it == m_data.lockMap.end() );
     auto lm = m_slab.AllocInit<LockMap>();
-    lm->srcloc = ShrinkSourceLocation( ev.lckloc );
-    lm->type = ev.type;
-    lm->timeAnnounce = TscTime( ev.time );
-    lm->timeTerminate = 0;
-    lm->valid = true;
-    lm->isContended = false;
-    lm->lockingThread = 0;
+    InitLockMap( *lm, ShrinkSourceLocation( ev.lckloc ), ev.type, TscTime( ev.time ) );
     m_data.lockMap.emplace( ev.id, lm );
     CheckSourceLocation( ev.lckloc );
 }
@@ -5702,35 +5525,32 @@ void Worker::ProcessLockTerminate( const QueueLockTerminate& ev )
     it->second->timeTerminate = TscTime( ev.time );
 }
 
-void Worker::ProcessLockWait( const QueueLockWait& ev )
+void Worker::ProcessLockThreadEvent( uint64_t id, int64_t time, uint64_t thread, LockEvent::Type type )
 {
-    auto it = m_data.lockMap.find( ev.id );
+    auto it = m_data.lockMap.find( id );
     assert( it != m_data.lockMap.end() );
     auto& lock = *it->second;
+    assert( type < LockEvent::Type::WaitShared || lock.type == LockType::SharedLockable );
 
-    auto lev = lock.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
-    const auto time = TscTime( RefTime( m_refTimeSerial, ev.time ) );
-    lev->SetTime( time );
-    lev->SetSrcLoc( 0 );
-    lev->type = LockEvent::Type::Wait;
+    const auto lt = TscTime( RefTime( m_refTimeSerial, time ) );
+    NoticeThread( thread );
+    const auto slot = GetLockSlot( lock, thread );
+    if( slot == LockEvent::NoThread )
+    {
+        LockThreadOverflowFailure();
+        return;
+    }
+    AppendLock( lock, lt, slot, type );
+}
 
-    InsertLockEvent( lock, lev, ev.thread, time );
+void Worker::ProcessLockWait( const QueueLockWait& ev )
+{
+    ProcessLockThreadEvent( ev.id, ev.time, ev.thread, LockEvent::Type::Wait );
 }
 
 void Worker::ProcessLockObtain( const QueueLockObtain& ev )
 {
-    auto it = m_data.lockMap.find( ev.id );
-    assert( it != m_data.lockMap.end() );
-    auto& lock = *it->second;
-
-    auto lev = lock.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
-    const auto time = TscTime( RefTime( m_refTimeSerial, ev.time ) );
-    lev->SetTime( time );
-    lev->SetSrcLoc( 0 );
-    lev->type = LockEvent::Type::Obtain;
-
-    InsertLockEvent( lock, lev, ev.thread, time );
-    lock.lockingThread = ev.thread;
+    ProcessLockThreadEvent( ev.id, ev.time, ev.thread, LockEvent::Type::Obtain );
 }
 
 void Worker::ProcessLockRelease( const QueueLockRelease& ev )
@@ -5739,61 +5559,24 @@ void Worker::ProcessLockRelease( const QueueLockRelease& ev )
     assert( it != m_data.lockMap.end() );
     auto& lock = *it->second;
 
-    auto lev = lock.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
     const auto time = TscTime( RefTime( m_refTimeSerial, ev.time ) );
-    lev->SetTime( time );
-    lev->SetSrcLoc( 0 );
-    lev->type = LockEvent::Type::Release;
-
-    InsertLockEvent( lock, lev, lock.lockingThread, time );
+    if( lock.curLockCount == 0 ) return;
+    AppendLock( lock, time, lock.curLockingThread, LockEvent::Type::Release );
 }
 
 void Worker::ProcessLockSharedWait( const QueueLockWait& ev )
 {
-    auto it = m_data.lockMap.find( ev.id );
-    assert( it != m_data.lockMap.end() );
-    auto& lock = *it->second;
-
-    assert( lock.type == LockType::SharedLockable );
-    auto lev = m_slab.Alloc<LockEventShared>();
-    const auto time = TscTime( RefTime( m_refTimeSerial, ev.time ) );
-    lev->SetTime( time );
-    lev->SetSrcLoc( 0 );
-    lev->type = LockEvent::Type::WaitShared;
-
-    InsertLockEvent( lock, lev, ev.thread, time );
+    ProcessLockThreadEvent( ev.id, ev.time, ev.thread, LockEvent::Type::WaitShared );
 }
 
 void Worker::ProcessLockSharedObtain( const QueueLockObtain& ev )
 {
-    auto it = m_data.lockMap.find( ev.id );
-    assert( it != m_data.lockMap.end() );
-    auto& lock = *it->second;
-
-    assert( lock.type == LockType::SharedLockable );
-    auto lev = m_slab.Alloc<LockEventShared>();
-    const auto time = TscTime( RefTime( m_refTimeSerial, ev.time ) );
-    lev->SetTime( time );
-    lev->SetSrcLoc( 0 );
-    lev->type = LockEvent::Type::ObtainShared;
-
-    InsertLockEvent( lock, lev, ev.thread, time );
+    ProcessLockThreadEvent( ev.id, ev.time, ev.thread, LockEvent::Type::ObtainShared );
 }
 
 void Worker::ProcessLockSharedRelease( const QueueLockReleaseShared& ev )
 {
-    auto it = m_data.lockMap.find( ev.id );
-    assert( it != m_data.lockMap.end() );
-    auto& lock = *it->second;
-
-    assert( lock.type == LockType::SharedLockable );
-    auto lev = m_slab.Alloc<LockEventShared>();
-    const auto time = TscTime( RefTime( m_refTimeSerial, ev.time ) );
-    lev->SetTime( time );
-    lev->SetSrcLoc( 0 );
-    lev->type = LockEvent::Type::ReleaseShared;
-
-    InsertLockEvent( lock, lev, ev.thread, time );
+    ProcessLockThreadEvent( ev.id, ev.time, ev.thread, LockEvent::Type::ReleaseShared );
 }
 
 void Worker::ProcessLockMark( const QueueLockMark& ev )
@@ -5803,27 +5586,8 @@ void Worker::ProcessLockMark( const QueueLockMark& ev )
     assert( lit != m_data.lockMap.end() );
     auto& lockmap = *lit->second;
     auto tid = lockmap.threadMap.find( ev.thread );
-    assert( tid != lockmap.threadMap.end() );
-    const auto thread = tid->second;
-    auto it = lockmap.timeline.end();
-    for(;;)
-    {
-        --it;
-        if( it->ptr->thread == thread )
-        {
-            switch( it->ptr->type )
-            {
-            case LockEvent::Type::Obtain:
-            case LockEvent::Type::ObtainShared:
-            case LockEvent::Type::Wait:
-            case LockEvent::Type::WaitShared:
-                it->ptr->SetSrcLoc( ShrinkSourceLocation( ev.srcloc ) );
-                return;
-            default:
-                break;
-            }
-        }
-    }
+    if( tid == lockmap.threadMap.end() ) return;
+    ApplyLockMark( lockmap, tid->second, ShrinkSourceLocation( ev.srcloc ) );
 }
 
 void Worker::ProcessLockName( const QueueLockName& ev )
@@ -8542,23 +8306,24 @@ void Worker::Write( FileWrite& f, bool fiDict )
         f.Write( &v.second->valid, sizeof( v.second->valid ) );
         f.Write( &v.second->timeAnnounce, sizeof( v.second->timeAnnounce ) );
         f.Write( &v.second->timeTerminate, sizeof( v.second->timeTerminate ) );
-        sz = v.second->threadList.size();
+        sz = v.second->threads.size();
         f.Write( &sz, sizeof( sz ) );
-        for( auto& t : v.second->threadList )
+        const uint8_t inversionFlag = v.second->legacyInversions;
+        f.Write( &inversionFlag, sizeof( inversionFlag ) );
+        for( auto& t : v.second->threads )
         {
-            f.Write( &t, sizeof( t ) );
+            f.Write( &t.thread, sizeof( t.thread ) );
         }
         int64_t refTime = v.second->timeAnnounce;
         sz = v.second->timeline.size();
         f.Write( &sz, sizeof( sz ) );
         for( auto& lev : v.second->timeline )
         {
-            WriteTimeOffset( f, refTime, lev.ptr->Time() );
-            const int16_t srcloc = lev.ptr->SrcLoc();
+            WriteTimeOffset( f, refTime, lev.Time() );
+            const int16_t srcloc = lev.SrcLoc();
             f.Write( &srcloc, sizeof( srcloc ) );
-            const uint16_t thread = lev.ptr->thread;
-            f.Write( &thread, sizeof( thread ) );
-            f.Write( &lev.ptr->type, sizeof( lev.ptr->type ) );
+            f.Write( &lev.thread, sizeof( lev.thread ) );
+            f.Write( &lev.type, sizeof( lev.type ) );
         }
     }
 
@@ -9069,7 +8834,7 @@ static const char* s_failureReasons[] = {
     "Multiple frame images were sent for a single frame.",
     "Fiber execution stopped on a thread which is not executing a fiber.",
     "Too many source locations. You cannot have more than 32K static or dynamic source locations.",
-    "Too many threads. You cannot have more than 64 distinct threads waiting on a single lock.",
+    "Too many threads. You cannot have more than 65K distinct threads interacting with a single lock.",
 };
 
 static_assert( sizeof( s_failureReasons ) / sizeof( *s_failureReasons ) == (int)Worker::Failure::NUM_FAILURES, "Missing failure reason description." );

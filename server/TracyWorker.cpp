@@ -932,6 +932,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
             td->groupHint = 0;
         }
         td->id = tid;
+        td->inLocks = 0;
         m_data.zonesCnt += td->count;
         uint32_t tsz;
         f.Read( tsz );
@@ -1007,6 +1008,16 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
         }
         m_data.threads[i] = td;
         m_threadMap.emplace( tid, td );
+    }
+
+    for( auto& lit : m_data.lockMap )
+    {
+        auto& lock = *lit.second;
+        for( auto& ti : lock.threads )
+        {
+            auto it = m_threadMap.find( ti.thread );
+            if( it != m_threadMap.end() ) it->second->inLocks = 1;
+        }
     }
 
     s_loadProgress.progress.store( LoadProgress::GpuZones, std::memory_order_relaxed );
@@ -3575,6 +3586,7 @@ ThreadData* Worker::NewThread( uint64_t thread, bool fiber, int32_t groupHint )
     td->kernelSampleCnt = 0;
     td->pendingSample.time.Clear();
     td->isFiber = fiber;
+    td->inLocks = 0;
     td->fiber = nullptr;
     td->stackCount = (uint8_t*)m_slab.AllocBig( sizeof( uint8_t ) * 64*1024 );
     memset( td->stackCount, 0, sizeof( uint8_t ) * 64*1024 );
@@ -5533,13 +5545,14 @@ void Worker::ProcessLockThreadEvent( uint64_t id, int64_t time, uint64_t thread,
     assert( type < LockEvent::Type::WaitShared || lock.type == LockType::SharedLockable );
 
     const auto lt = TscTime( RefTime( m_refTimeSerial, time ) );
-    NoticeThread( thread );
+    const auto td = NoticeThread( thread );
     const auto slot = GetLockSlot( lock, thread );
     if( slot == LockEvent::NoThread )
     {
         LockThreadOverflowFailure();
         return;
     }
+    td->inLocks = 1;
     AppendLock( lock, lt, slot, type );
 }
 

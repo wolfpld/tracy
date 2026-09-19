@@ -642,6 +642,7 @@ struct ThreadData
     SortedVector<SampleData, SampleDataSort> ctxSwitchSamples;
     uint64_t kernelSampleCnt;
     uint8_t isFiber;
+    uint8_t inLocks;      // has a thread slot in at least one lock map
     ThreadData* fiber;
     uint8_t* stackCount;
     int32_t groupHint;

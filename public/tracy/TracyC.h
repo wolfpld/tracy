@@ -116,7 +116,7 @@ typedef const void* TracyCSharedLockCtx;
 #define TracyCLockCustomName(l,x,y)
 
 #define TracyCSharedLockCtx(l)
-#define TracyCSharedLockAnnonce(l)
+#define TracyCSharedLockAnnounce(l)
 #define TracyCSharedLockTerminate(l)
 #define TracyCSharedLockBeforeLock(l)
 #define TracyCSharedLockAfterLock(l)

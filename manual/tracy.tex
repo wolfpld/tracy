@@ -2377,7 +2377,7 @@ Marking locks in the C API is done with the following macros:
 \item \texttt{TracyCLockTerminate(lock\_ctx)}
 \item \texttt{TracyCLockBeforeLock(lock\_ctx)}
 \item \texttt{TracyCLockAfterLock(lock\_ctx)}
-\item \texttt{TracyCLockAfterUnlock(lock\_ctx)}
+\item \texttt{TracyCLockBeforeUnlock(lock\_ctx)}
 \item \texttt{TracyCLockAfterTryLock(lock\_ctx, acquired)}
 \item \texttt{TracyCLockMark(lock\_ctx)}
 \item \texttt{TracyCLockCustomName(lock\_ctx, name, size)}
@@ -2408,11 +2408,11 @@ int acquired = WaitForSingleObject(lock, 200) == WAIT_OBJECT_0;
 TracyCLockAfterTryLock(tracy_lock_ctx, acquired);
 \end{lstlisting}
 
-After you release the lock use the \texttt{TracyCLockAfterUnlock} macro:
+Before you release the lock use the \texttt{TracyCLockBeforeUnlock} macro:
 
 \begin{lstlisting}
+TracyCLockBeforeUnlock(tracy_lock_ctx);
 ReleaseMutex(lock);
-TracyCLockAfterUnlock(tracy_lock_ctx);
 \end{lstlisting}
 
 You can optionally mark the location of where the lock is held by using the \texttt{TracyCLockMark} macro, this should be done after acquiring the lock.
@@ -2423,11 +2423,11 @@ Similarly, you can use the following macros to mark a shared lock using the C AP
 \item \texttt{TracyCSharedLockTerminate(lock\_ctx)}
 \item \texttt{TracyCSharedLockBeforeLock(lock\_ctx)}
 \item \texttt{TracyCSharedLockAfterLock(lock\_ctx)}
-\item \texttt{TracyCSharedLockAfterUnlock(lock\_ctx)}
+\item \texttt{TracyCSharedLockBeforeUnlock(lock\_ctx)}
 \item \texttt{TracyCSharedLockAfterTryLock(lock\_ctx, acquired)}
 \item \texttt{TracyCSharedLockBeforeSharedLock(lock\_ctx)}
 \item \texttt{TracyCSharedLockAfterSharedLock(lock\_ctx)}
-\item \texttt{TracyCSharedLockAfterSharedUnlock(lock\_ctx)}
+\item \texttt{TracyCSharedLockBeforeSharedUnlock(lock\_ctx)}
 \item \texttt{TracyCSharedLockAfterTrySharedLock(lock\_ctx, acquired)}
 \item \texttt{TracyCSharedLockMark(lock\_ctx)}
 \item \texttt{TracyCSharedLockCustomName(lock\_ctx, name, size)}

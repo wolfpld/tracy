@@ -110,7 +110,7 @@ typedef const void* TracyCSharedLockCtx;
 #define TracyCLockTerminate(l)
 #define TracyCLockBeforeLock(l)
 #define TracyCLockAfterLock(l)
-#define TracyCLockAfterUnlock(l)
+#define TracyCLockBeforeUnlock(l)
 #define TracyCLockAfterTryLock(l,x)
 #define TracyCLockMark(l)
 #define TracyCLockCustomName(l,x,y)
@@ -120,11 +120,11 @@ typedef const void* TracyCSharedLockCtx;
 #define TracyCSharedLockTerminate(l)
 #define TracyCSharedLockBeforeLock(l)
 #define TracyCSharedLockAfterLock(l)
-#define TracyCSharedLockAfterUnlock(l)
+#define TracyCSharedLockBeforeUnlock(l)
 #define TracyCSharedLockAfterTryLock(l,x)
 #define TracyCSharedLockBeforeSharedLock(l)
 #define TracyCSharedLockAfterSharedLock(l)
-#define TracyCSharedLockAfterSharedUnlock(l)
+#define TracyCSharedLockBeforeSharedUnlock(l)
 #define TracyCSharedLockAfterTrySharedLock(l,x)
 #define TracyCSharedLockMark(l)
 #define TracyCSharedLockCustomName(l,x,y)
@@ -369,7 +369,7 @@ TRACY_API struct __tracy_lockable_context_data* ___tracy_announce_lockable_ctx( 
 TRACY_API void ___tracy_terminate_lockable_ctx( struct __tracy_lockable_context_data* lockdata );
 TRACY_API int32_t ___tracy_before_lock_lockable_ctx( struct __tracy_lockable_context_data* lockdata );
 TRACY_API void ___tracy_after_lock_lockable_ctx( struct __tracy_lockable_context_data* lockdata );
-TRACY_API void ___tracy_after_unlock_lockable_ctx( struct __tracy_lockable_context_data* lockdata );
+TRACY_API void ___tracy_before_unlock_lockable_ctx( struct __tracy_lockable_context_data* lockdata );
 TRACY_API void ___tracy_after_try_lock_lockable_ctx( struct __tracy_lockable_context_data* lockdata, int32_t acquired );
 TRACY_API void ___tracy_mark_lockable_ctx( struct __tracy_lockable_context_data* lockdata, const struct ___tracy_source_location_data* srcloc );
 TRACY_API void ___tracy_custom_name_lockable_ctx( struct __tracy_lockable_context_data* lockdata, const char* name, size_t nameSz );
@@ -378,11 +378,11 @@ TRACY_API struct __tracy_shared_lockable_context_data* ___tracy_announce_shared_
 TRACY_API void ___tracy_terminate_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata );
 TRACY_API int32_t ___tracy_before_lock_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata );
 TRACY_API void ___tracy_after_lock_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata );
-TRACY_API void ___tracy_after_unlock_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata );
+TRACY_API void ___tracy_before_unlock_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata );
 TRACY_API void ___tracy_after_try_lock_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata, int32_t acquired );
 TRACY_API int32_t ___tracy_before_lock_shared_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata );
 TRACY_API void ___tracy_after_lock_shared_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata );
-TRACY_API void ___tracy_after_unlock_shared_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata );
+TRACY_API void ___tracy_before_unlock_shared_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata );
 TRACY_API void ___tracy_after_try_lock_shared_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata, int32_t acquired );
 TRACY_API void ___tracy_mark_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata, const struct ___tracy_source_location_data* srcloc );
 TRACY_API void ___tracy_custom_name_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata, const char* name, size_t nameSz );
@@ -392,7 +392,7 @@ TRACY_API void ___tracy_custom_name_shared_lockable_ctx( struct __tracy_shared_l
 #define TracyCLockTerminate( lock ) ___tracy_terminate_lockable_ctx( lock );
 #define TracyCLockBeforeLock( lock ) ___tracy_before_lock_lockable_ctx( lock );
 #define TracyCLockAfterLock( lock ) ___tracy_after_lock_lockable_ctx( lock );
-#define TracyCLockAfterUnlock( lock ) ___tracy_after_unlock_lockable_ctx( lock );
+#define TracyCLockBeforeUnlock( lock ) ___tracy_before_unlock_lockable_ctx( lock );
 #define TracyCLockAfterTryLock( lock, acquired ) ___tracy_after_try_lock_lockable_ctx( lock, acquired );
 #define TracyCLockMark( lock ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,TracyLine) = { NULL, __func__,  TracyFile, (uint32_t)TracyLine, 0 }; ___tracy_mark_lockable_ctx( lock, &TracyConcat(__tracy_source_location,TracyLine) );
 #define TracyCLockCustomName( lock, name, nameSz ) ___tracy_custom_name_lockable_ctx( lock, name, nameSz );
@@ -401,11 +401,11 @@ TRACY_API void ___tracy_custom_name_shared_lockable_ctx( struct __tracy_shared_l
 #define TracyCSharedLockTerminate( lock ) ___tracy_terminate_shared_lockable_ctx( lock );
 #define TracyCSharedLockBeforeLock( lock ) ___tracy_before_lock_shared_lockable_ctx( lock );
 #define TracyCSharedLockAfterLock( lock ) ___tracy_after_lock_shared_lockable_ctx( lock );
-#define TracyCSharedLockAfterUnlock( lock ) ___tracy_after_unlock_shared_lockable_ctx( lock );
+#define TracyCSharedLockBeforeUnlock( lock ) ___tracy_before_unlock_shared_lockable_ctx( lock );
 #define TracyCSharedLockAfterTryLock( lock, acquired ) ___tracy_after_try_lock_shared_lockable_ctx( lock, acquired );
 #define TracyCSharedLockBeforeSharedLock( lock ) ___tracy_before_lock_shared_shared_lockable_ctx( lock );
 #define TracyCSharedLockAfterSharedLock( lock ) ___tracy_after_lock_shared_shared_lockable_ctx( lock );
-#define TracyCSharedLockAfterSharedUnlock( lock ) ___tracy_after_unlock_shared_shared_lockable_ctx( lock );
+#define TracyCSharedLockBeforeSharedUnlock( lock ) ___tracy_before_unlock_shared_shared_lockable_ctx( lock );
 #define TracyCSharedLockAfterTrySharedLock( lock, acquired ) ___tracy_after_try_lock_shared_shared_lockable_ctx( lock, acquired );
 #define TracyCSharedLockMark( lock ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,TracyLine) = { NULL, __func__,  TracyFile, (uint32_t)TracyLine, 0 }; ___tracy_mark_shared_lockable_ctx( lock, &TracyConcat(__tracy_source_location,TracyLine) );
 #define TracyCSharedLockCustomName( lock, name, nameSz ) ___tracy_custom_name_shared_lockable_ctx( lock, name, nameSz );

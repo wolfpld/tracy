@@ -5424,7 +5424,7 @@ TRACY_API void ___tracy_after_lock_lockable_ctx( struct __tracy_lockable_context
     tracy::Profiler::QueueSerialFinish();
 }
 
-TRACY_API void ___tracy_after_unlock_lockable_ctx( struct __tracy_lockable_context_data* lockdata )
+TRACY_API void ___tracy_before_unlock_lockable_ctx( struct __tracy_lockable_context_data* lockdata )
 {
 #ifdef TRACY_ON_DEMAND
     lockdata->m_lockCount.fetch_sub( 1, std::memory_order_relaxed );
@@ -5564,9 +5564,9 @@ TRACY_API void ___tracy_after_lock_shared_lockable_ctx( struct __tracy_shared_lo
     ___tracy_after_lock_lockable_ctx( &lockdata->m_base );
 }
 
-TRACY_API void ___tracy_after_unlock_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata )
+TRACY_API void ___tracy_before_unlock_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata )
 {
-    ___tracy_after_unlock_lockable_ctx( &lockdata->m_base );
+    ___tracy_before_unlock_lockable_ctx( &lockdata->m_base );
 }
 
 TRACY_API void ___tracy_after_try_lock_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata, int32_t acquired )
@@ -5608,7 +5608,7 @@ TRACY_API void ___tracy_after_lock_shared_shared_lockable_ctx( struct __tracy_sh
     tracy::Profiler::QueueSerialFinish();
 }
 
-TRACY_API void ___tracy_after_unlock_shared_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata )
+TRACY_API void ___tracy_before_unlock_shared_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata )
 {
 #ifdef TRACY_ON_DEMAND
     lockdata->m_base.m_lockCount.fetch_sub( 1, std::memory_order_relaxed );

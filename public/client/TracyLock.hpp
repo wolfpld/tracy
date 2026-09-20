@@ -85,7 +85,7 @@ public:
         Profiler::QueueSerialFinish();
     }
 
-    tracy_force_inline void AfterUnlock()
+    tracy_force_inline void BeforeUnlock()
     {
 #ifdef TRACY_ON_DEMAND
         m_lockCount.fetch_sub( 1, std::memory_order_relaxed );
@@ -199,8 +199,8 @@ public:
 
     tracy_force_inline void unlock()
     {
+        m_ctx.BeforeUnlock();
         m_lockable.unlock();
-        m_ctx.AfterUnlock();
     }
 
     tracy_force_inline bool try_lock()
@@ -300,7 +300,7 @@ public:
         Profiler::QueueSerialFinish();
     }
 
-    tracy_force_inline void AfterUnlock()
+    tracy_force_inline void BeforeUnlock()
     {
 #ifdef TRACY_ON_DEMAND
         m_lockCount.fetch_sub( 1, std::memory_order_relaxed );
@@ -381,7 +381,7 @@ public:
         Profiler::QueueSerialFinish();
     }
 
-    tracy_force_inline void AfterUnlockShared()
+    tracy_force_inline void BeforeUnlockShared()
     {
 #ifdef TRACY_ON_DEMAND
         m_lockCount.fetch_sub( 1, std::memory_order_relaxed );
@@ -496,8 +496,8 @@ public:
 
     tracy_force_inline void unlock()
     {
+        m_ctx.BeforeUnlock();
         m_lockable.unlock();
-        m_ctx.AfterUnlock();
     }
 
     tracy_force_inline bool try_lock()
@@ -516,8 +516,8 @@ public:
 
     tracy_force_inline void unlock_shared()
     {
+        m_ctx.BeforeUnlockShared();
         m_lockable.unlock_shared();
-        m_ctx.AfterUnlockShared();
     }
 
     tracy_force_inline bool try_lock_shared()

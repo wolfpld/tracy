@@ -50,6 +50,9 @@ private:
     std::optional<int> CalculateScrollPosition( int pinnedTop ) const;
 
     std::vector<TimelineItem*> m_items;
+    std::vector<TimelineItem*> m_normalItems;
+    std::vector<TimelineItem*> m_pinnedTopItems;
+    std::vector<TimelineItem*> m_pinnedBottomItems;
     unordered_flat_map<const void*, std::unique_ptr<TimelineItem>> m_itemMap;
 
     float m_height;

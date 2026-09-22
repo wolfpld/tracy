@@ -5,6 +5,19 @@ here.
 vx.xx.x (2026-xx-xx)
 --------------------
 
+- API break: various lock-related "AfterUnlock" instrumentation methods were
+  renamed to "BeforeUnlock". Call sites need to be adjusted with regard to
+  the placement around the lock unlock calls, to match the name.
+- Lock event processing on the server side has been rewritten from scratch,
+  fixing many outstanding issues.
+  - The cost of displaying large amounts of lock event data has been greatly
+    decreased.
+  - Interaction with a single lock is no longer constrained to 64 unique
+    threads. The new limit is 65K.
+  - Exceeding the number of allowed interacting threads is now a failure
+    dialog instead of hard crash on assert.
+  - Visible lock events will now inhibit hiding a thread on the timeline.
+  - Deadlocks are now detected and reported.
 - Added the monitor utility. This Linux-specific tool can launch or attach
   to a program that has no Tracy instrumentation and perform a profiling run
   based on sampling call stacks.

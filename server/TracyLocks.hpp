@@ -277,6 +277,14 @@ void DetectLockDeadlocks( const unordered_flat_map<uint32_t, LockMap*>& lockMap,
 void DetectLockDeadlocks( const unordered_flat_map<uint32_t, LockMap*>& lockMap,
                           const unordered_flat_set<uint32_t>& candidates,
                           Vector<DeadlockGroup>& groups, Vector<DeadlockMember>& members );
+
+// Reconcile a detection pass against previously reported groups. A found group equal
+// to a stored one is a repeat of the still-formed cycle and is skipped. A found group
+// containing stored ones absorbs them: cycle members are frozen and can never
+// fragment, so a later pass can only regroup reported threads into larger sets.
+void MergeDetectedDeadlocks( Vector<DeadlockGroup>& groups, Vector<DeadlockMember>& members,
+                             const Vector<DeadlockGroup>& found, const Vector<DeadlockMember>& foundMembers );
+
 }
 
 #endif

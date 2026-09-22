@@ -386,6 +386,10 @@ private:
 
         CrashEvent crashEvent;
 
+        Vector<DeadlockGroup> deadlockGroups;
+        Vector<DeadlockMember> deadlockMembers;
+        unordered_flat_set<uint32_t> waitingLocks;
+
         unordered_flat_map<uint64_t, ContextSwitch*> ctxSwitch;
 
         CpuData cpuData[256];
@@ -520,6 +524,13 @@ public:
     };
     MainThreadDataLockGuard ObtainLockForMainThread() { return { m_data }; }
 
+    void UpdateDeadlocks()
+    {
+        if( !m_detectDeadlocks ) return;
+        m_detectDeadlocks = false;
+        if( !m_data.waitingLocks.empty() ) DetectDeadlocksLive();
+    }
+
     size_t GetFrameCount( const FrameData& fd ) const { return fd.frames.size(); }
     size_t GetFullFrameCount( const FrameData& fd ) const;
     bool AreFramesUsed() const;
@@ -618,6 +629,10 @@ public:
 #endif
 
     const CrashEvent& GetCrashEvent() const { return m_data.crashEvent; }
+    const Vector<DeadlockGroup>& GetDeadlockGroups() const { return m_data.deadlockGroups; }
+    const Vector<DeadlockMember>& GetDeadlockMembers() const { return m_data.deadlockMembers; }
+    bool IsDeadlockedThread( uint64_t thread ) const;
+    bool IsDeadlockedPair( uint64_t thread, uint32_t lock ) const;
 
     // Some zones may have incomplete timing data (only start time is available, end hasn't arrived yet).
     // GetZoneEnd() will try to infer the end time by looking at child zones (parent zone can't end
@@ -973,6 +988,8 @@ private:
 
     void AppendLock( LockMap& lock, int64_t time, uint16_t slot, LockEvent::Type type );
     void ProcessLockThreadEvent( uint64_t id, int64_t time, uint64_t thread, LockEvent::Type type );
+    void DetectDeadlocks();
+    void DetectDeadlocksLive();
 
     bool CheckString( uint64_t ptr );
     void CheckThreadString( uint64_t id );
@@ -1100,6 +1117,8 @@ private:
     bool m_terminate = false;
     bool m_crashed = false;
     bool m_disconnect = false;
+
+    bool m_detectDeadlocks = false;
     void* m_stream;     // LZ4_streamDecode_t*
     char* m_buffer;
     int m_bufferOffset;

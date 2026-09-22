@@ -1623,6 +1623,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
         }
     }
 
+    DetectDeadlocks();
+
     s_loadProgress.total.store( 0, std::memory_order_relaxed );
     m_loadTime = std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now() - loadStart ).count();
 
@@ -3653,6 +3655,40 @@ void Worker::AppendLock( LockMap& lock, int64_t time, uint16_t slot, LockEvent::
     AppendLockEvent( lock, time, slot, type );
 }
 
+bool Worker::IsDeadlockedThread( uint64_t thread ) const
+{
+    for( auto& m : m_data.deadlockMembers )
+    {
+        if( m.thread == thread ) return true;
+    }
+    return false;
+}
+
+bool Worker::IsDeadlockedPair( uint64_t thread, uint32_t lock ) const
+{
+    for( auto& m : m_data.deadlockMembers )
+    {
+        if( m.thread == thread && m.lock == lock ) return true;
+    }
+    return false;
+}
+
+void Worker::DetectDeadlocks()
+{
+    Vector<DeadlockGroup> found;
+    Vector<DeadlockMember> foundMembers;
+    DetectLockDeadlocks( m_data.lockMap, found, foundMembers );
+    MergeDetectedDeadlocks( m_data.deadlockGroups, m_data.deadlockMembers, found, foundMembers );
+}
+
+void Worker::DetectDeadlocksLive()
+{
+    Vector<DeadlockGroup> found;
+    Vector<DeadlockMember> foundMembers;
+    DetectLockDeadlocks( m_data.lockMap, m_data.waitingLocks, found, foundMembers );
+    MergeDetectedDeadlocks( m_data.deadlockGroups, m_data.deadlockMembers, found, foundMembers );
+}
+
 bool Worker::CheckString( uint64_t ptr )
 {
     if( ptr == 0 ) return true;
@@ -5554,6 +5590,13 @@ void Worker::ProcessLockThreadEvent( uint64_t id, int64_t time, uint64_t thread,
     }
     td->inLocks = 1;
     AppendLock( lock, lt, slot, type );
+    if( lock.curWaitCount + lock.curWaitSharedCount != 0 ) m_data.waitingLocks.insert( ( uint32_t )id );
+    else m_data.waitingLocks.erase( ( uint32_t )id );
+    if( type == LockEvent::Type::Wait || type == LockEvent::Type::WaitShared ||
+        type == LockEvent::Type::Obtain || type == LockEvent::Type::ObtainShared )
+    {
+        m_detectDeadlocks = true;
+    }
 }
 
 void Worker::ProcessLockWait( const QueueLockWait& ev )

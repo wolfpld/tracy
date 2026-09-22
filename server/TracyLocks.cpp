@@ -583,4 +583,62 @@ void DetectLockDeadlocks( const unordered_flat_map<uint32_t, LockMap*>& lockMap,
     DetectLockDeadlocksImpl( lockMap, &candidates, groups, members );
 }
 
+static bool ThreadSetSubset( const Vector<DeadlockMember>& sup, uint32_t sf, uint32_t sc,
+                             const Vector<DeadlockMember>& sub, uint32_t bf, uint32_t bc )
+{
+    if( bc > sc ) return false;
+    uint32_t j = 0;
+    for( uint32_t i=0; i<bc; i++ )
+    {
+        const auto t = sub[bf+i].thread;
+        while( j < sc && sup[sf+j].thread < t ) j++;
+        if( j == sc || sup[sf+j].thread != t ) return false;
+        j++;
+    }
+    return true;
+}
+
+void MergeDetectedDeadlocks( Vector<DeadlockGroup>& groups, Vector<DeadlockMember>& members,
+                             const Vector<DeadlockGroup>& found, const Vector<DeadlockMember>& foundMembers )
+{
+    for( const auto& g : found )
+    {
+        Vector<uint32_t> drop;
+        bool duplicate = false;
+        for( uint32_t si=0; si<groups.size(); si++ )
+        {
+            const auto& s = groups[si];
+            if( !ThreadSetSubset( foundMembers, g.first, g.cnt, members, s.first, s.cnt ) ) continue;
+            if( s.cnt == g.cnt )
+            {
+                duplicate = true;
+                break;
+            }
+            drop.push_back( si );
+        }
+        if( duplicate ) continue;
+
+        if( !drop.empty() )
+        {
+            std::sort( drop.begin(), drop.end() );
+            Vector<DeadlockGroup> keptGroups;
+            Vector<DeadlockMember> keptMembers;
+            for( uint32_t si=0; si<groups.size(); si++ )
+            {
+                if( std::binary_search( drop.begin(), drop.end(), si ) ) continue;
+                const auto& s = groups[si];
+                const uint32_t first = (uint32_t)keptMembers.size();
+                for( uint32_t k=0; k<s.cnt; k++ ) keptMembers.push_back( members[s.first+k] );
+                keptGroups.push_back( { s.time, first, s.cnt } );
+            }
+            groups = std::move( keptGroups );
+            members = std::move( keptMembers );
+        }
+
+        const uint32_t first = (uint32_t)members.size();
+        for( uint32_t i=0; i<g.cnt; i++ ) members.push_back( foundMembers[g.first+i] );
+        groups.push_back( { g.time, first, g.cnt } );
+    }
+}
+
 }

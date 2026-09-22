@@ -758,6 +758,8 @@ bool View::DrawImpl()
         return keepOpen;
     }
 
+    m_worker.UpdateDeadlocks();
+
     if( m_achievements )
     {
         if( m_worker.IsConnected() ) Achieve( "connectToClient" );

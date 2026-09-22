@@ -10,6 +10,82 @@ namespace tracy
 
 extern double s_time;
 
+void View::DrawDeadlockMembers( const DeadlockGroup& group, const Vector<DeadlockMember>& members ) const
+{
+    const auto& lockMap = m_worker.GetLockMap();
+    for( uint32_t i=group.first; i<group.first+group.cnt; i++ )
+    {
+        const auto& m = members[i];
+        const auto it = lockMap.find( m.lock );
+        assert( it != lockMap.end() );
+        if( m.holder == m.thread )
+        {
+            ImGui::Text( "\"%s\" waits for %u: %s (upgrade request)", m_worker.GetThreadName( m.thread ), m.lock, GetLockDisplayName( m_worker, *it->second ) );
+        }
+        else
+        {
+            ImGui::Text( "\"%s\" waits for %u: %s, held by \"%s\"", m_worker.GetThreadName( m.thread ), m.lock, GetLockDisplayName( m_worker, *it->second ), m_worker.GetThreadName( m.holder ) );
+        }
+    }
+}
+
+void View::DrawDeadlockDetail( uint64_t thread, uint32_t lock ) const
+{
+    const auto& dgroups = m_worker.GetDeadlockGroups();
+    const auto& dmembers = m_worker.GetDeadlockMembers();
+    for( const auto& g : dgroups )
+    {
+        bool match = false;
+        for( uint32_t i=g.first; i<g.first+g.cnt; i++ )
+        {
+            const auto& m = dmembers[i];
+            if( ( thread == AnyThread || m.thread == thread ) && ( lock == AnyLock || m.lock == lock ) )
+            {
+                match = true;
+                break;
+            }
+        }
+        if( !match ) continue;
+        ImGui::Separator();
+        TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Deadlock detected" );
+        TextFocused( "Cycle closed at:", TimeToString( g.time ) );
+        DrawDeadlockMembers( g, dmembers );
+    }
+}
+
+void View::DeadlockTooltip( const DeadlockGroup& group, const Vector<DeadlockMember>& members ) const
+{
+    ImGui::BeginTooltip();
+    ImGui::TextUnformatted( "Deadlock detected" );
+    TextFocused( "Cycle closed at:", TimeToString( group.time ) );
+    ImGui::Separator();
+    DrawDeadlockMembers( group, members );
+    ImGui::EndTooltip();
+}
+
+void View::DeadlocksTooltip()
+{
+    const auto& groups = m_worker.GetDeadlockGroups();
+    const auto& members = m_worker.GetDeadlockMembers();
+    if( groups.size() == 1 )
+    {
+        DeadlockTooltip( groups[0], members );
+        return;
+    }
+    ImGui::BeginTooltip();
+    ImGui::Text( "%zu deadlocks detected", groups.size() );
+    for( size_t gi=0; gi<groups.size(); gi++ )
+    {
+        const auto& g = groups[gi];
+        ImGui::Separator();
+        ImGui::Text( "Cycle #%zu closed at: %s", gi+1, TimeToString( g.time ) );
+        ImGui::Indent( ImGui::GetTextLineHeight() );
+        DrawDeadlockMembers( g, members );
+        ImGui::Unindent( ImGui::GetTextLineHeight() );
+    }
+    ImGui::EndTooltip();
+}
+
 void View::DrawNotificationArea()
 {
     if( m_sendQueueWarning.enabled )
@@ -87,6 +163,20 @@ void View::DrawNotificationArea()
             if( IsMouseClicked( ImGuiMouseButton_Middle ) )
             {
                 CenterAtTime( crash.time );
+            }
+        }
+    }
+    const auto& deadlocks = m_worker.GetDeadlockGroups();
+    if( !deadlocks.empty() )
+    {
+        ImGui::SameLine();
+        TextColoredUnformatted( ImVec4( 1, 0, 0, 1 ), ICON_FA_ARROWS_SPIN );
+        if( ImGui::IsItemHovered() )
+        {
+            DeadlocksTooltip();
+            if( IsMouseClicked( ImGuiMouseButton_Left ) )
+            {
+                m_showInfo = true;
             }
         }
     }

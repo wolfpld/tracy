@@ -68,6 +68,8 @@ struct MessagesDraw;
 struct CpuUsageDraw;
 struct CpuCtxDraw;
 struct LockDraw;
+struct DeadlockGroup;
+struct DeadlockMember;
 struct PlotDraw;
 struct FlameGraphContext;
 
@@ -211,6 +213,12 @@ public:
     void DrawThread( const TimelineContext& ctx, const ThreadData& thread, const std::vector<TimelineDraw>& draw, const std::vector<ContextSwitchDraw>& ctxDraw, const std::vector<SamplesDraw>& samplesDraw, const std::vector<std::unique_ptr<LockDraw>>& lockDraw, int& offset, int depth, bool hasCtxSwitches, bool hasSamples );
     void DrawThreadMessagesList( const TimelineContext& ctx, const std::vector<MessagesDraw>& drawList, int offset, uint64_t tid );
     void DrawThreadOverlays( const ThreadData& thread, const ImVec2& ul, const ImVec2& dr );
+
+    static constexpr uint64_t AnyThread = ~0ull;
+    static constexpr uint32_t AnyLock = ~0u;
+    void DrawDeadlockMembers( const DeadlockGroup& group, const Vector<DeadlockMember>& members ) const;
+    void DrawDeadlockDetail( uint64_t thread, uint32_t lock ) const;
+
     bool DrawGpu( const TimelineContext& ctx, const GpuCtxData& gpu, int& offset );
     bool DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDraw>& cpuDraw, const std::vector<std::vector<CpuCtxDraw>>& ctxDraw, int& offset, bool hasCpuData );
     void DrawThreadMigrations( const TimelineContext& ctx, const int origOffset, uint64_t thread );
@@ -419,7 +427,8 @@ private:
 
     void ShowZoneInfo( const ZoneEvent& ev );
     void ShowZoneInfo( const GpuEvent& ev, uint64_t thread );
-
+    void DeadlockTooltip( const DeadlockGroup& group, const Vector<DeadlockMember>& members ) const;
+    void DeadlocksTooltip();
     void ZoneTooltip( const ZoneEvent& ev );
     void ZoneTooltip( const GpuEvent& ev );
     void CallstackTooltip( uint32_t idx );

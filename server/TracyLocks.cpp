@@ -1,4 +1,5 @@
 #include <utility>
+#include <vector>
 
 #include "TracyLocks.hpp"
 
@@ -354,6 +355,232 @@ bool ApplyLockMark( LockMap& map, uint16_t slot, int16_t srcloc )
     map.timeline[idx].SetSrcLoc( srcloc );
     if( ti.marks.empty() || ti.marks.back() != idx ) ti.marks.push_back( idx );
     return true;
+}
+
+static void DetectLockDeadlocksImpl( const unordered_flat_map<uint32_t, LockMap*>& lockMap,
+                                     const unordered_flat_set<uint32_t>* candidates,
+                                     Vector<DeadlockGroup>& groups, Vector<DeadlockMember>& members )
+{
+    struct AdjEdge
+    {
+        uint32_t to;
+        uint64_t toThread;
+        uint32_t lock;
+        int64_t waitTime;
+    };
+
+    unordered_flat_map<uint64_t, uint32_t> nodeIdx;
+    Vector<uint64_t> nodeThread;
+    std::vector<std::vector<AdjEdge>> adj;
+    Vector<char> selfLoop;
+    Vector<char> aux;
+
+    auto addNode = [&] ( uint64_t thread ) -> uint32_t {
+        auto it = nodeIdx.find( thread );
+        if( it != nodeIdx.end() ) return it->second;
+        const uint32_t idx = (uint32_t)nodeThread.size();
+        nodeThread.push_back( thread );
+        adj.emplace_back();
+        selfLoop.push_back( 0 );
+        aux.push_back( 0 );
+        nodeIdx.emplace( thread, idx );
+        return idx;
+    };
+
+    auto buildFor = [&] ( uint32_t lockId, const LockMap& map )
+    {
+        if( !map.valid || map.legacyInversions ) return;
+        if( map.curWaitCount == 0 && map.curWaitSharedCount == 0 ) return;
+        uint32_t sharedAux = ~0u;
+
+        for( uint16_t s=0; s<map.threads.size(); s++ )
+        {
+            const auto& ti = map.threads[s];
+            const bool waiting = ( ti.flags & LockEventFlags::Waiting ) != 0;
+            const bool sharedWaiting = ( ti.flags & LockEventFlags::SharedWaiting ) != 0;
+            if( !waiting && !sharedWaiting ) continue;
+
+            const uint32_t from = addNode( ti.thread );
+            auto addEdge = [&] ( uint16_t holder ) {
+                const auto to = addNode( map.threads[holder].thread );
+                adj[from].push_back( { to, map.threads[holder].thread, lockId, ti.openWaitStart } );
+                if( holder == s ) selfLoop[from] = 1;
+            };
+
+            // A shared holder's exclusive wait can never be satisfied while its own
+            // shared hold persists: the engine's upgrade-deadlock case, a self edge.
+            if( map.type == LockType::SharedLockable && waiting && ( ti.flags & LockEventFlags::SharedHolding ) != 0 )
+            {
+                addEdge( s );
+            }
+            if( map.curLockCount != 0 )
+            {
+                if( map.curLockingThread != s ) addEdge( map.curLockingThread );
+            }
+            else if( waiting && map.curSharedCount != 0 )
+            {
+                // Every exclusive waiter is blocked by the whole holder set: one fact
+                // about the lock, stored once as waiter->aux->holders instead of a
+                // waiters x holders fan-out. The aux node only ever relays those pairs,
+                // so closed rings over real threads are unchanged.
+                if( sharedAux == ~0u )
+                {
+                    sharedAux = (uint32_t)nodeThread.size();
+                    nodeThread.push_back( 0 );
+                    adj.emplace_back();
+                    selfLoop.push_back( 0 );
+                    aux.push_back( 1 );
+                    for( uint16_t h=0; h<map.threads.size(); h++ )
+                    {
+                        if( map.threads[h].flags & LockEventFlags::SharedHolding )
+                        {
+                            const auto n = addNode( map.threads[h].thread );
+                            adj[sharedAux].push_back( { n, map.threads[h].thread, 0, 0 } );
+                        }
+                    }
+                }
+                adj[from].push_back( { sharedAux, 0, lockId, ti.openWaitStart } );
+            }
+        }
+    };
+
+    if( candidates != nullptr )
+    {
+        for( const auto id : *candidates )
+        {
+            const auto mit = lockMap.find( id );
+            if( mit != lockMap.end() ) buildFor( id, *mit->second );
+        }
+    }
+    else
+    {
+        for( auto& mit : lockMap ) buildFor( mit.first, *mit.second );
+    }
+
+    const uint32_t n = (uint32_t)nodeThread.size();
+    if( nodeThread.empty() ) return;
+
+    Vector<int32_t> disc;
+    Vector<int32_t> low;
+    Vector<char> onStack;
+    disc.reserve_and_use( n );
+    low.reserve_and_use( n );
+    onStack.reserve_and_use( n );
+    memset( disc.begin(), 0xFF, n * sizeof( int32_t ) );
+    memset( low.begin(), 0, n * sizeof( int32_t ) );
+    memset( onStack.begin(), 0, n );
+    Vector<uint32_t> stack;
+    Vector<uint32_t> comp;
+    Vector<char> inComp;
+    inComp.reserve_and_use( n );
+    memset( inComp.begin(), 0, n );
+    int32_t clk = 0;
+
+    struct Frame
+    {
+        uint32_t v;
+        size_t ei;
+    };
+    Vector<Frame> rstack;
+
+    for( uint32_t root=0; root<n; root++ )
+    {
+        if( disc[root] >= 0 ) continue;
+        disc[root] = low[root] = clk++;
+        stack.push_back( root );
+        onStack[root] = 1;
+        rstack.push_back( { root, 0 } );
+        while( !rstack.empty() )
+        {
+            const uint32_t v = rstack.back().v;
+            if( rstack.back().ei < adj[v].size() )
+            {
+                const auto e = adj[v][rstack.back().ei++];
+                if( disc[e.to] < 0 )
+                {
+                    disc[e.to] = low[e.to] = clk++;
+                    stack.push_back( e.to );
+                    onStack[e.to] = 1;
+                    rstack.push_back( { e.to, 0 } );
+                }
+                else if( onStack[e.to] && disc[e.to] < low[v] )
+                {
+                    low[v] = disc[e.to];
+                }
+            }
+            else
+            {
+                rstack.pop_back();
+                if( !rstack.empty() && low[v] < low[rstack.back().v] ) low[rstack.back().v] = low[v];
+                if( low[v] != disc[v] ) continue;
+
+                comp.clear();
+                uint32_t w;
+                do
+                {
+                    w = stack.back();
+                    stack.pop_back();
+                    onStack[w] = 0;
+                    comp.push_back( w );
+                } while( w != v );
+
+                uint32_t real = 0;
+                bool auxInComp = false;
+                for( auto c : comp )
+                {
+                    if( aux[c] != 0 ) auxInComp = true;
+                    else real++;
+                }
+                // Aux is only a relay: one real thread closing its ring through aux is
+                // waiting on a lock held also by itself - an upgrade self-deadlock.
+                if( real < 2 && !( real == 1 && ( auxInComp || selfLoop[v] ) ) ) continue;
+
+                for( auto c : comp ) inComp[c] = 1;
+
+                const uint32_t first = (uint32_t)members.size();
+                int64_t time = 0;
+                for( auto c : comp )
+                {
+                    if( aux[c] != 0 ) continue;
+                    for( auto& e : adj[c] )
+                    {
+                        if( !inComp[e.to] ) continue;
+                        uint32_t blocker = e.to;
+                        if( aux[e.to] != 0 )
+                        {
+                            bool found = false;
+                            for( auto& he : adj[e.to] )
+                            {
+                                if( inComp[he.to] != 0 ) { blocker = he.to; found = true; break; }
+                            }
+                            if( !found ) continue;
+                        }
+                        members.push_back( { nodeThread[c], nodeThread[blocker], e.lock, e.waitTime } );
+                        if( e.waitTime > time ) time = e.waitTime;
+                        break;
+                    }
+                }
+                const uint32_t cnt = (uint32_t)members.size() - first;
+                std::sort( members.begin()+first, members.begin()+first+cnt, [] ( const DeadlockMember& lhs, const DeadlockMember& rhs ) { return lhs.thread < rhs.thread; } );
+                groups.push_back( { time, first, cnt } );
+
+                for( auto c : comp ) inComp[c] = 0;
+            }
+        }
+    }
+}
+
+void DetectLockDeadlocks( const unordered_flat_map<uint32_t, LockMap*>& lockMap,
+                          Vector<DeadlockGroup>& groups, Vector<DeadlockMember>& members )
+{
+    DetectLockDeadlocksImpl( lockMap, nullptr, groups, members );
+}
+
+void DetectLockDeadlocks( const unordered_flat_map<uint32_t, LockMap*>& lockMap,
+                          const unordered_flat_set<uint32_t>& candidates,
+                          Vector<DeadlockGroup>& groups, Vector<DeadlockMember>& members )
+{
+    DetectLockDeadlocksImpl( lockMap, &candidates, groups, members );
 }
 
 }

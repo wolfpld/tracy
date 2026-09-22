@@ -244,6 +244,39 @@ inline void ForEachLockDrawItem( const LockMap& map, const LockThreadInfo& ti, i
     }
 }
 
+struct DeadlockMember
+{
+    uint64_t thread;
+    uint64_t holder;        // thread blocking `thread`; itself on self-loop (upgrade) edges
+    uint32_t lock;
+    int64_t waitTime;
+};
+
+struct DeadlockGroup
+{
+    int64_t time;           // the wait that closed the cycle
+    uint32_t first;         // range into the members array
+    uint32_t cnt;
+};
+
+// Cycles of the wait-for graph built from the final state of every lock: an edge
+// from each still-waiting thread to a thread currently holding the lock it waits
+// on. Blocking is by current holders only: a shared wait queued behind a pending
+// exclusive waiter gets no edge. A closed cycle means no member can ever proceed
+// - each holder is blocked itself and can never release. Members of a group are
+// sorted by thread id. Invalid and legacy inversion locks are excluded: their
+// holder state is ambiguous.
+void DetectLockDeadlocks( const unordered_flat_map<uint32_t, LockMap*>& lockMap,
+                          Vector<DeadlockGroup>& groups, Vector<DeadlockMember>& members );
+
+// Candidate-restricted form for live sessions: every edge originates at a waiter,
+// so scanning exactly the locks with nonzero wait counts finds the same cycles as
+// the full scan, at cost proportional to the candidate set instead of the
+// announced locks. Where a thread has several in-cycle wait edges, the recorded
+// member edge follows scan order and may differ between the two forms.
+void DetectLockDeadlocks( const unordered_flat_map<uint32_t, LockMap*>& lockMap,
+                          const unordered_flat_set<uint32_t>& candidates,
+                          Vector<DeadlockGroup>& groups, Vector<DeadlockMember>& members );
 }
 
 #endif

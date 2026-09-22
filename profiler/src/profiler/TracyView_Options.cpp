@@ -789,6 +789,36 @@ void View::DrawOptions()
                     }
                 }
             }
+            if( m_worker.IsDeadlockedThread( t->id ) )
+            {
+                ImGui::SameLine();
+                TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_ARROWS_SPIN );
+                if( ImGui::IsItemHovered() )
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::TextUnformatted( "Deadlock" );
+                    ImGui::EndTooltip();
+                    if( IsMouseClicked( ImGuiMouseButton_Middle ) )
+                    {
+                        const auto& dgroups = m_worker.GetDeadlockGroups();
+                        const auto& dmembers = m_worker.GetDeadlockMembers();
+                        bool centered = false;
+                        for( size_t i=0; i<dgroups.size() && !centered; i++ )
+                        {
+                            const auto& g = dgroups[i];
+                            for( uint32_t j=0; j<g.cnt; j++ )
+                            {
+                                if( dmembers[g.first+j].thread == t->id )
+                                {
+                                    CenterAtTime( g.time );
+                                    centered = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             if( t->isFiber )
             {
                 ImGui::SameLine();

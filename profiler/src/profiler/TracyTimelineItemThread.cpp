@@ -179,6 +179,8 @@ void TimelineItemThread::HeaderTooltip( const char* label ) const
         TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
     }
 
+    m_view.DrawDeadlockDetail( m_thread->id, View::AnyLock );
+
     const auto ctx = m_worker.GetContextSwitchData( m_thread->id );
     const auto first = RangeBegin();
     const auto last = RangeEnd();
@@ -258,17 +260,24 @@ void TimelineItemThread::HeaderExtraContents( const TimelineContext& ctx, int of
 {
     m_view.DrawThreadMessagesList( ctx, m_msgDraw, offset, m_thread->id );
 
+    auto draw = ImGui::GetWindowDrawList();
+    const auto ty = ImGui::GetTextLineHeight();
+    auto px = 1.5f * ty + labelWidth;
+
+    if( m_worker.IsDeadlockedThread( m_thread->id ) )
+    {
+        draw->AddText( ctx.wpos + ImVec2( px, offset ), 0xFF2222FF, ICON_FA_ARROWS_SPIN );
+        px += ImGui::GetStyle().ItemSpacing.x + ImGui::CalcTextSize( ICON_FA_ARROWS_SPIN ).x;
+    }
+
     const bool hasGhostZones = m_worker.AreGhostZonesReady() && !m_thread->ghostZones.empty();
     if( hasGhostZones && !m_thread->timeline.empty() )
     {
-        auto draw = ImGui::GetWindowDrawList();
-        const auto ty = ImGui::GetTextLineHeight();
-
         const auto color = m_ghost ? 0xFFAA9999 : 0x88AA7777;
-        draw->AddText( ctx.wpos + ImVec2( 1.5f * ty + labelWidth, offset ), color, ICON_FA_GHOST );
+        draw->AddText( ctx.wpos + ImVec2( px, offset ), color, ICON_FA_GHOST );
         float ghostSz = ImGui::CalcTextSize( ICON_FA_GHOST ).x;
 
-        if( ctx.hover && ImGui::IsMouseHoveringRect( ctx.wpos + ImVec2( 1.5f * ty + labelWidth, offset ), ctx.wpos + ImVec2( 1.5f * ty + labelWidth + ghostSz, offset + ty ) ) )
+        if( ctx.hover && ImGui::IsMouseHoveringRect( ctx.wpos + ImVec2( px, offset ), ctx.wpos + ImVec2( px + ghostSz, offset + ty ) ) )
         {
             if( IsMouseClicked( ImGuiMouseButton_Left ) )
             {
@@ -282,7 +291,7 @@ bool TimelineItemThread::DrawContents( const TimelineContext& ctx, int& offset )
 {
     m_view.DrawThread( ctx, *m_thread, m_draw, m_ctxDraw, m_samplesDraw, m_lockDraw, offset, m_depth, m_hasCtxSwitch, m_hasSamples );
     const bool lockRows = std::any_of( m_lockDraw.begin(), m_lockDraw.end(), [] ( const std::unique_ptr<LockDraw>& ld ) { return ld->forceDraw || !ld->data.empty(); } );
-    if( m_depth == 0 && !m_hasMessages && !lockRows && ( !m_view.GetViewData().drawSamples || !m_hasSamples ) )
+    if( m_depth == 0 && !m_hasMessages && !lockRows && ( !m_view.GetViewData().drawSamples || !m_hasSamples ) && !m_worker.IsDeadlockedThread( m_thread->id ) )
     {
         auto& crash = m_worker.GetCrashEvent();
         return crash.thread == m_thread->id;

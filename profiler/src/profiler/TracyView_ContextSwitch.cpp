@@ -542,6 +542,7 @@ void View::DrawWaitStacks()
             if( t->ctxSwitchSamples.empty() ) continue;
             float w = ImGui::GetFrameHeight() * 2 + ImGui::CalcTextSize( m_worker.GetThreadName( t->id ) ).x + cntWidth + style.ItemSpacing.x * 3;
             if( crash.thread == t->id ) w += style.ItemSpacing.x + ImGui::CalcTextSize( ICON_FA_SKULL " Crashed" ).x;
+            if( m_worker.IsDeadlockedThread( t->id ) ) w += style.ItemSpacing.x + ImGui::CalcTextSize( ICON_FA_ARROWS_SPIN " Deadlock" ).x;
             if( t->isFiber ) w += style.ItemSpacing.x + ImGui::CalcTextSize( "Fiber" ).x;
             probe = std::max( probe, w );
         }
@@ -574,6 +575,11 @@ void View::DrawWaitStacks()
             {
                 ImGui::SameLine();
                 TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Crashed" );
+            }
+            if( m_worker.IsDeadlockedThread( t->id ) )
+            {
+                ImGui::SameLine();
+                TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_ARROWS_SPIN " Deadlock" );
             }
             if( t->isFiber )
             {

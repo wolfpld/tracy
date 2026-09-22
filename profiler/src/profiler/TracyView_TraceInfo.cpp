@@ -498,6 +498,27 @@ void View::DrawInfo()
         }
     }
 
+    const auto& dgroups = m_worker.GetDeadlockGroups();
+    const auto& dmembers = m_worker.GetDeadlockMembers();
+    if( !dgroups.empty() )
+    {
+        ImGui::Separator();
+        TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_ARROWS_SPIN " Deadlock detected " ICON_FA_ARROWS_SPIN );
+        for( size_t gi = 0; gi < dgroups.size(); gi++ )
+        {
+            const auto& dlk = dgroups[gi];
+            ImGui::PushID( gi );
+            ImGui::Separator();
+            TextFocused( "Cycle closed at:", TimeToString( dlk.time ) );
+            DrawDeadlockMembers( dlk, dmembers );
+            if( ImGui::Button( ICON_FA_MICROSCOPE " Focus" ) )
+            {
+                CenterAtTime( dlk.time );
+            }
+            ImGui::PopID();
+        }
+    }
+
     ImGui::EndChild();
     ImGui::End();
 }

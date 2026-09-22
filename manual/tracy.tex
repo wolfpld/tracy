@@ -3839,6 +3839,8 @@ The following three items show the \emph{\faEye{}~view time range}, the \emph{\f
 
 The notification area displays informational notices, for example, how long it took to load a trace from the disk. The three pulsing dots indicator shows that some background tasks are being performed that may need to be completed before full capabilities of the profiler are available. If a crash was captured during profiling (section~\ref{crashhandling}), a \emph{\faSkull{}~crash} icon will be displayed. You can click this icon to see the crash call stack. The red \faSatelliteDish{}~icon indicates that queries are currently being backlogged, while the same yellow icon indicates that some queries are currently in-flight (see chapter~\ref{connectionpopup} for more information).
 
+Deadlock detection (section~\ref{deadlockdetection}) shows a red \faArrowsSpin{}~icon whenever it finds a cycle of threads waiting on one another's locks. Hovering over the icon lists the deadlocked threads and the locks involved.
+
 If the drawing of timeline elements was disabled in the options menu (section~\ref{options}), the profiler will use the following orange icons to remind you about that fact. Click on the icons to enable drawing of the selected elements. Note that collapsed labels (section~\ref{zoneslocksplots}) are not taken into account here.
 
 \begin{itemize}
@@ -5194,6 +5196,15 @@ The call stack paths may be displayed in the following ways:
 \end{itemize}
 
 The \emph{\faLayerGroup{}~Group by function name} option controls how tree nodes are grouped. If it is disabled, the grouping is performed at machine-instruction-level granularity. This may result in very verbose output, but the displayed source locations are precise. To make the tree more readable, you may opt to group at the function-name level, which will result in fewer valid source file locations, as multiple entries are collapsed into one. The number of aggregated entries is displayed next to function names.
+
+\subsection{Deadlock detection}
+\label{deadlockdetection}
+
+Tracy analyzes the recorded lock events for deadlocks. It builds a wait-for graph from the collected events. When the graph forms a closed cycle, all threads in it are reported as deadlocked. A single thread upgrading a shared lock to an exclusive lock is also reported as a self-deadlock.
+
+Deadlocked threads are marked with a \faArrowsSpin~icon in the notification area (section~\ref{mainwindow}) and on the timeline. Hovering over the icon lists all detected cycles, and clicking it opens the trace information window (section~\ref{traceinfo}), which lists each cycle with controls to focus it.
+
+Remember that only instrumented locks are analyzed, so your application can still deadlock without notification if any locks are not instrumented.
 
 \subsection{Lock information window}
 \label{lockwindow}

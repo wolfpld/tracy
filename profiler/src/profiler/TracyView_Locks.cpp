@@ -186,6 +186,7 @@ int View::DrawLocks( const TimelineContext& ctx, const std::vector<std::unique_p
                 // The usual method of collapsing single small zones into zig-zags would be very bad here. Lock wait zones should
                 // be easily visible without having to zoom in first. This sets a minimum width for any lock zone.
                 const auto px1 = std::max( ( t1 - vStart ) * pxns, px0 + MinVisPx );
+                const bool deadlockWait = v.seg->nextEv == LockEvent::NoEvent && ( v.seg->flags & ( LockEventFlags::Waiting | LockEventFlags::SharedWaiting ) ) != 0 && m_worker.IsDeadlockedPair( tid, lock.id );
 
                 bool itemHovered = hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + ostep ) );
                 if( itemHovered )
@@ -338,6 +339,10 @@ int View::DrawLocks( const TimelineContext& ctx, const std::vector<std::unique_p
                                 ImGui::Indent( ty );
                                 ImGui::Text( "\"%s\"", m_worker.GetThreadName( lockmap.threads[hinfo.holder].thread ) );
                                 ImGui::Unindent( ty );
+                                if( deadlockWait )
+                                {
+                                    DrawDeadlockDetail( tid, lock.id );
+                                }
                                 break;
                             }
                             default:
@@ -411,6 +416,10 @@ int View::DrawLocks( const TimelineContext& ctx, const std::vector<std::unique_p
                                     ImGui::Text( "\"%s\"", m_worker.GetThreadName( lockmap.threads[s].thread ) );
                                 } );
                                 ImGui::Unindent( ty );
+                                if( deadlockWait )
+                                {
+                                    DrawDeadlockDetail( tid, lock.id );
+                                }
                                 break;
                             }
                             case LockEventState::WaitLock:
@@ -433,6 +442,10 @@ int View::DrawLocks( const TimelineContext& ctx, const std::vector<std::unique_p
                                     ImGui::Text( "\"%s\"", m_worker.GetThreadName( lockmap.threads[s].thread ) );
                                 } );
                                 ImGui::Unindent( ty );
+                                if( deadlockWait )
+                                {
+                                    DrawDeadlockDetail( tid, lock.id );
+                                }
                                 break;
                             }
                             default:
@@ -444,8 +457,14 @@ int View::DrawLocks( const TimelineContext& ctx, const std::vector<std::unique_p
                     }
                 }
 
-                const auto cfilled  = v.state == LockEventState::HasLock ? 0xFF228A22 : ( v.state == LockEventState::HasBlockingLock ? 0xFF228A8A : 0xFF2222BD );
+                const auto cfilled  = deadlockWait ? 0xFF2222BD : ( v.state == LockEventState::HasLock ? 0xFF228A22 : ( v.state == LockEventState::HasBlockingLock ? 0xFF228A8A : 0xFF2222BD ) );
                 draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ), cfilled );
+                if( deadlockWait )
+                {
+                    ImGui::PushFont( g_fonts.normal, FontSmall );
+                    DrawTextContrast( draw, wpos + ImVec2( std::max( px0, -10.0 ), offset ), 0xFF2222FF, ICON_FA_ARROWS_SPIN );
+                    ImGui::PopFont();
+                }
                 if( m_lockHighlight.thread != lock.thread && ( v.state == LockEventState::HasBlockingLock ) != m_lockHighlight.blocked && v.seg->nextEv != LockEvent::NoEvent && m_lockHighlight.id == int64_t( lock.id ) && m_lockHighlight.begin <= t1 && m_lockHighlight.end >= t0 )
                 {
                     const auto t = uint8_t( ( sin( std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count() * 0.01 ) * 0.5 + 0.5 ) * 255 );
@@ -454,7 +473,7 @@ int View::DrawLocks( const TimelineContext& ctx, const std::vector<std::unique_p
                 }
                 else if( v.num == 1 )
                 {
-                    const auto coutline = v.state == LockEventState::HasLock ? 0xFF3BA33B : ( v.state == LockEventState::HasBlockingLock ? 0xFF3BA3A3 : 0xFF3B3BD6 );
+                    const auto coutline = deadlockWait ? 0xFF3B3BD6 : ( v.state == LockEventState::HasLock ? 0xFF3BA33B : ( v.state == LockEventState::HasBlockingLock ? 0xFF3BA3A3 : 0xFF3B3BD6 ) );
                     draw->AddRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ), coutline );
                 }
                 else
@@ -511,6 +530,7 @@ void View::DrawLockInfoWindow()
         ImGui::PushFont( g_fonts.normal, FontBig );
         ImGui::Text( "Lock #%" PRIu32 ": %s", m_lockInfoWindow, GetLockDisplayName( m_worker, lock ) );
         ImGui::PopFont();
+
         if( lock.customName.Active() )
         {
             TextFocused( "Name:", m_worker.GetString( srcloc.function ) );
@@ -578,8 +598,10 @@ void View::DrawLockInfoWindow()
         ImGui::SameLine();
         ImGui::TextDisabled( "(%.2f%% of lock lifetime)", lock.waitTotalAgg / float( lifetime ) * 100.f );
         TextFocused( "Max waiting threads:", RealToString( lock.maxWaiting ) );
-        ImGui::Separator();
 
+        DrawDeadlockDetail( AnyThread, m_lockInfoWindow );
+
+        ImGui::Separator();
         const auto threadList = ImGui::TreeNode( "Thread list" );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%zu)", lock.threads.size() );

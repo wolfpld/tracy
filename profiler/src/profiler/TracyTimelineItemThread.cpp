@@ -749,7 +749,7 @@ void TimelineItemThread::PreprocessLocks( const TimelineContext& ctx, const unor
         const auto& lockmap = *v.second;
         if( !lockmap.valid ) continue;
         if( !m_view.Vis( &lockmap ) ) continue;
-        if( vd.onlyContendedLocks && lockInfoWindow != v.first && ( lockmap.threads.size() == 1 || !lockmap.isContended ) ) continue;
+        if( vd.onlyContendedLocks && lockInfoWindow != v.first && ( lockmap.threads.size() == 1 || !lockmap.isContended ) && !m_worker.IsDeadlockedPair( tid, v.first ) ) continue;
 
         auto it = lockmap.threadMap.find( tid );
         if( it == lockmap.threadMap.end() ) continue;

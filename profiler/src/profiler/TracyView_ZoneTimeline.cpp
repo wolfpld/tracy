@@ -201,6 +201,40 @@ void View::DrawThreadMessagesList( const TimelineContext& ctx, const std::vector
             }
         }
     }
+
+    {
+        const auto& dgroups = m_worker.GetDeadlockGroups();
+        const auto& dmembers = m_worker.GetDeadlockMembers();
+        for( const auto& dlk : dgroups )
+        {
+            for( uint32_t mi=dlk.first; mi<dlk.first+dlk.cnt; mi++ )
+            {
+                const auto& m = dmembers[mi];
+                if( m.thread != tid || m.waitTime < vStart || m.waitTime > vEnd ) continue;
+                const auto px = ( m.waitTime - vStart ) * pxns;
+
+                draw->AddTriangleFilled( wpos + ImVec2( px - (ty - to) * 0.25f, offset + to + th * 0.5f ), wpos + ImVec2( px + (ty - to) * 0.25f, offset + to + th * 0.5f ), wpos + ImVec2( px, offset + to + th ), 0xFF2222FF );
+                draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.25f, offset + to + th * 0.5f ), wpos + ImVec2( px + (ty - to) * 0.25f, offset + to + th * 0.5f ), wpos + ImVec2( px, offset + to + th ), 0xFF2222FF, 2.0f );
+
+                const auto dlkText = "deadlock";
+                const auto dtw = ImGui::CalcTextSize( dlkText ).x;
+                DrawTextContrast( draw, wpos + ImVec2( px - dtw * 0.5f, offset + to + th * 0.5f - ty ), 0xFF2222FF, dlkText );
+
+                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px - (ty - to) * 0.5 - 1, offset ), wpos + ImVec2( px + (ty - to) * 0.5 + 1, offset + ty ) ) )
+                {
+                    DeadlockTooltip( dlk, dmembers );
+                    if( IsMouseClicked( ImGuiMouseButton_Left ) )
+                    {
+                        m_lockInfoWindow = m.lock;
+                    }
+                    if( IsMouseClicked( ImGuiMouseButton_Middle ) )
+                    {
+                        CenterAtTime( m.waitTime );
+                    }
+                }
+            }
+        }
+    }
 }
 
 void View::DrawThreadOverlays( const ThreadData& thread, const ImVec2& ul, const ImVec2& dr )

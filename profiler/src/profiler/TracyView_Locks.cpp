@@ -45,17 +45,16 @@ static bool SharedHoldEnded( const LockMap& lockmap, uint16_t slot, const LockSe
     return ev.thread == slot && ( LockEvent::Type )ev.type == LockEvent::Type::ReleaseShared;
 }
 
+const char* View::GetLockDisplayName( const Worker& worker, const LockMap& lockmap )
+{
+    if( lockmap.customName.Active() ) return worker.GetString( lockmap.customName );
+    return worker.GetString( worker.GetSourceLocation( lockmap.srcloc ).function );
+}
+
 void View::DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLocation& srcloc, bool hover, ImDrawList* draw, const ImVec2& wpos, float w, float ty, float offset, uint16_t tid )
 {
     char buf[1024];
-    if( lockmap.customName.Active() )
-    {
-        sprintf( buf, "%" PRIu32 ": %s", id, m_worker.GetString( lockmap.customName ) );
-    }
-    else
-    {
-        sprintf( buf, "%" PRIu32 ": %s", id, m_worker.GetString( srcloc.function ) );
-    }
+    sprintf( buf, "%" PRIu32 ": %s", id, GetLockDisplayName( m_worker, lockmap ) );
     ImGui::PushFont( g_fonts.normal, FontSmall );
     DrawTextContrast( draw, wpos + ImVec2( 0, offset ), 0xFF8888FF, buf );
     ImGui::PopFont();
@@ -266,14 +265,7 @@ int View::DrawLocks( const TimelineContext& ctx, const std::vector<std::unique_p
                         }
 
                         ImGui::BeginTooltip();
-                        if( lockmap.customName.Active() )
-                        {
-                            ImGui::Text( "Lock #%" PRIu32 ": %s", lock.id, m_worker.GetString( lockmap.customName ) );
-                        }
-                        else
-                        {
-                            ImGui::Text( "Lock #%" PRIu32 ": %s", lock.id, m_worker.GetString( srcloc.function ) );
-                        }
+                        ImGui::Text( "Lock #%" PRIu32 ": %s", lock.id, GetLockDisplayName( m_worker, lockmap ) );
                         ImGui::Separator();
                         ImGui::TextUnformatted( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
                         TextFocused( "Time:", TimeToString( t1 - t0 ) );
@@ -517,14 +509,7 @@ void View::DrawLockInfoWindow()
         }
 
         ImGui::PushFont( g_fonts.normal, FontBig );
-        if( lock.customName.Active() )
-        {
-            ImGui::Text( "Lock #%" PRIu32 ": %s", m_lockInfoWindow, m_worker.GetString( lock.customName ) );
-        }
-        else
-        {
-            ImGui::Text( "Lock #%" PRIu32 ": %s", m_lockInfoWindow, m_worker.GetString( srcloc.function ) );
-        }
+        ImGui::Text( "Lock #%" PRIu32 ": %s", m_lockInfoWindow, GetLockDisplayName( m_worker, lock ) );
         ImGui::PopFont();
         if( lock.customName.Active() )
         {

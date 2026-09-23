@@ -445,14 +445,7 @@ void View::DrawOptions()
                         auto fileName = m_worker.GetString( sl.file );
 
                         char buf[1024];
-                        if( l.second->customName.Active() )
-                        {
-                            sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( l.second->customName ) );
-                        }
-                        else
-                        {
-                            sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second->srcloc ).function ) );
-                        }
+                        sprintf( buf, "%" PRIu32 ": %s", l.first, GetLockDisplayName( m_worker, *l.second ) );
                         SmallCheckbox( buf, &Vis( l.second ) );
                         if( ImGui::IsItemHovered() )
                         {
@@ -532,14 +525,7 @@ void View::DrawOptions()
                         auto fileName = m_worker.GetString( sl.file );
 
                         char buf[1024];
-                        if( l.second->customName.Active() )
-                        {
-                            sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( l.second->customName ) );
-                        }
-                        else
-                        {
-                            sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second->srcloc ).function ) );
-                        }
+                        sprintf( buf, "%" PRIu32 ": %s", l.first, GetLockDisplayName( m_worker, *l.second ) );
                         SmallCheckbox( buf, &Vis( l.second ) );
                         if( ImGui::IsItemHovered() )
                         {
@@ -619,14 +605,7 @@ void View::DrawOptions()
                         auto fileName = m_worker.GetString( sl.file );
 
                         char buf[1024];
-                        if( l.second->customName.Active() )
-                        {
-                            sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( l.second->customName ) );
-                        }
-                        else
-                        {
-                            sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second->srcloc ).function ) );
-                        }
+                        sprintf( buf, "%" PRIu32 ": %s", l.first, GetLockDisplayName( m_worker, *l.second ) );
                         SmallCheckbox( buf, &Vis( l.second ) );
                         if( ImGui::IsItemHovered() )
                         {

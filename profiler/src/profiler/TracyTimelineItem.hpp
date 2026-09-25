@@ -30,6 +30,12 @@ public:
     virtual void SetVisible( bool visible ) { m_visible = visible; }
     virtual bool IsVisible() const { return m_visible; }
 
+    void SetPinned( bool pinned ) { m_pinned = pinned; }
+    bool IsPinned() const { return m_pinned; }
+    // Pinned items are lifted out of the scrolling flow: false keeps them fixed
+    // at the top of the viewport (queues/threads), true at the bottom (plots).
+    virtual bool PinToBottom() const { return false; }
+
     void SetShowFull( bool showFull ) { m_showFull = showFull; }
 
     // returns 0 instead of the correct value for the first frame
@@ -58,6 +64,7 @@ protected:
 
     bool m_visible;
     bool m_showFull;
+    bool m_pinned;
 
 private:
     void AdjustThreadHeight( bool firstFrame, int yBegin, int yEnd );

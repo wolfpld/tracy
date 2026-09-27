@@ -164,6 +164,62 @@ async def _listen_broadcasts(timeout_s: float = 1.5) -> list[dict]:
     return list(seen.values())
 
 
+async def _watch_broadcasts_during(
+    port: int, deadline_s: float, log_prefix: str
+) -> None:
+    """Log broadcasts heard on `port` for `deadline_s`. activeTime==-1 means
+    the client's Accept() fired for our connection; if it never appears, the
+    client's accept loop itself is dead, not just slow to respond.
+    """
+    start = time.monotonic()
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind(("", _BROADCAST_PORT))
+    except OSError as e:
+        print(f"{log_prefix} broadcast watch: bind failed ({e})", file=sys.stderr, flush=True)
+        return
+    s.setblocking(False)
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + deadline_s
+    last_active: int | None = None
+    try:
+        while loop.time() < deadline:
+            remaining = deadline - loop.time()
+            if remaining <= 0:
+                break
+            try:
+                fut = loop.sock_recvfrom(s, 2048)
+                data, _addr = await asyncio.wait_for(fut, timeout=remaining)
+            except (asyncio.TimeoutError, BlockingIOError):
+                continue
+            parsed = _parse_broadcast(data)
+            if not parsed or parsed.get("listen_port") != port:
+                continue
+            elapsed = time.monotonic() - start
+            active = parsed.get("active_seconds")
+            transition = ""
+            if active == -1 and last_active != -1:
+                transition = "  <-- Accept() fired, entering handshake"
+            elif last_active == -1 and active != -1:
+                transition = "  <-- back in accept-wait loop (handshake attempt ended)"
+            last_active = active
+            print(
+                f"{log_prefix} broadcast @t={elapsed:.2f}s activeTime={active}{transition}",
+                file=sys.stderr,
+                flush=True,
+            )
+    finally:
+        s.close()
+        if last_active is None:
+            print(
+                f"{log_prefix} broadcast watch: no broadcasts heard in {deadline_s:.1f}s "
+                "on this port -- worker thread's accept-wait loop is not ticking at all.",
+                file=sys.stderr,
+                flush=True,
+            )
+
+
 def _http_ping(port: int, timeout_s: float = 2.0) -> bool:
     """Confirms the server answers HTTP, not just that its PID exists — a
     deadlocked process still passes os.kill(pid, 0). Any response, even an
@@ -247,7 +303,15 @@ def _cleanup_pid_files() -> None:
 try:
     import TracyServerBindings as tracy_server
 except ImportError:
-    sys.path.append(os.path.join(os.path.dirname(__file__), "../../build/python"))
+    _bindings_dir = os.path.join(os.path.dirname(__file__), "../../build/python")
+    sys.path.append(_bindings_dir)
+    # Multi-config generators (VS) put the .pyd under a per-config subdir
+    # (Release/, Debug/, ...) instead of directly in build/python.
+    for _config_dir in glob.glob(os.path.join(_bindings_dir, "*")):
+        if os.path.isdir(_config_dir) and glob.glob(
+            os.path.join(_config_dir, "TracyServerBindings*.pyd")
+        ):
+            sys.path.append(_config_dir)
     try:
         import TracyServerBindings as tracy_server
     except ImportError:
@@ -530,6 +594,7 @@ async def live_connect(
 
     limit_mb = _DEFAULT_LIVE_MEMORY_LIMIT_MB if memory_limit_mb is None else memory_limit_mb
     memory_limit = limit_mb * 1024 * 1024 if limit_mb > 0 else -1
+    print(f"[live_connect] connecting to {address}:{port} ...", file=sys.stderr, flush=True)
     try:
         w = tracy_server.Worker(address, port, memory_limit)
     except Exception as e:
@@ -543,11 +608,25 @@ async def live_connect(
     deadline_s = 2.0
     step_s = 0.1
     elapsed = 0.0
+    watch_task = asyncio.create_task(
+        _watch_broadcasts_during(port, deadline_s, "[live_connect]")
+    )
     while elapsed < deadline_s and not w.is_connected():
         await asyncio.sleep(step_s)
         elapsed += step_s
+    if not watch_task.done():
+        watch_task.cancel()
+    try:
+        await watch_task
+    except (asyncio.CancelledError, Exception):
+        pass
 
     if not w.is_connected():
+        print(
+            f"[live_connect] handshake timed out after {elapsed:.1f}s",
+            file=sys.stderr,
+            flush=True,
+        )
         try:
             w.shutdown()
         except Exception:
@@ -565,15 +644,76 @@ async def live_connect(
                 "the target may use TRACY_ON_DEMAND, a non-default broadcast "
                 "port, or isn't running."
             )
+        try:
+            status_code = w.get_handshake_status()
+        except Exception:
+            status_code = None
+        status_names = {0: "none", 1: "Welcome", 2: "ProtocolMismatch", 3: "NotAvailable", 4: "Dropped"}
+        status_hint = ""
+        if status_code is not None:
+            status_name = status_names.get(status_code, str(status_code))
+            print(
+                f"[live_connect] final handshake status: {status_name} ({status_code})",
+                file=sys.stderr,
+                flush=True,
+            )
+            if status_code == 0:
+                status_hint = " Handshake never reached a Welcome/error response at all."
+            elif status_code == 1:
+                status_hint = (
+                    " Handshake reached Welcome; the connection was then lost "
+                    "or is still stuck reading the next protocol message -- "
+                    "check failure_hint below for the actual reason if there is one."
+                )
+            else:
+                status_hint = f" Handshake ended in state {status_name}."
+
+        # A status==1 drop often means the server itself disconnected the
+        # client over a corrupt event stream; get_failure_type() says why.
+        failure_hint = ""
+        try:
+            failure_names = {
+                0: "None", 1: "ZoneStack", 2: "ZoneDoubleEnd", 3: "ZoneText",
+                4: "ZoneValue", 5: "ZoneColor", 6: "ZoneName", 7: "MemFree",
+                8: "MemAllocTwice", 9: "FrameEnd", 10: "FrameImageIndex",
+                11: "FrameImageTwice", 12: "FiberLeave",
+                13: "SourceLocationOverflow", 14: "LockThreadOverflow",
+            }
+            failure_code = w.get_failure_type()
+            if failure_code:
+                failure_name = failure_names.get(failure_code, str(failure_code))
+                fd = w.get_failure_data()
+                loc = f"{fd.get('file', '?')}:{fd.get('line', '?')} ({fd.get('zone_name', fd.get('function', '?'))})" if fd else "?"
+                failure_hint = (
+                    f" The server disconnected the client itself: Failure.{failure_name} "
+                    f"on thread '{fd.get('thread_name', '?')}' at {loc} -- this is a "
+                    f"CORRUPT event stream from the target's own instrumentation "
+                    f"(e.g. an unbalanced Zone macro), not a network stall. Fix the "
+                    f"target's instrumentation at that location."
+                )
+                print(
+                    f"[live_connect] failure: Failure.{failure_name} thread={fd.get('thread_name')} "
+                    f"loc={loc}",
+                    file=sys.stderr,
+                    flush=True,
+                )
+        except Exception:
+            pass
+
         return (
             f"Reached {address}:{port} but the Tracy handshake did not complete "
-            f"within {deadline_s:.1f}s.{hint} Common causes: (1) the Tracy "
-            f"client version embedded in the target program differs from these "
-            f"server bindings; (2) the target was built with TRACY_ON_DEMAND "
-            f"and is awaiting a profiler request; (3) another client is "
-            f"already attached."
+            f"within {deadline_s:.1f}s.{status_hint}{failure_hint}{hint} Common causes: (1) the "
+            f"Tracy client version embedded in the target program differs from "
+            f"these server bindings; (2) the target was built with "
+            f"TRACY_ON_DEMAND and is awaiting a profiler request; (3) another "
+            f"client is already attached."
         )
 
+    print(
+        f"[live_connect] handshake completed after {elapsed:.1f}s",
+        file=sys.stderr,
+        flush=True,
+    )
     name = alias or f"live_{address}_{port}"
     if name in instances:
         _shutdown_worker(instances[name].worker)
@@ -904,6 +1044,25 @@ if __name__ == "__main__":
 
     atexit.register(_cleanup_pid_files)
 
+    # streamable-http/SSE keep-alive connections never close on their own, so
+    # uvicorn's graceful shutdown hangs waiting for them unless a second
+    # interrupt arrives. Arm a watchdog on the first signal instead.
+    import threading
+    import uvicorn as _uvicorn
+
+    _orig_handle_exit = _uvicorn.Server.handle_exit
+
+    def _handle_exit_with_watchdog(self, sig, frame):
+        _orig_handle_exit(self, sig, frame)
+
+        def _force_exit_after_grace() -> None:
+            time.sleep(3)
+            os._exit(0)
+
+        threading.Thread(target=_force_exit_after_grace, daemon=True).start()
+
+    _uvicorn.Server.handle_exit = _handle_exit_with_watchdog
+
     if _TRANSPORT not in ("sse", "streamable-http"):
         print(
             "TRACY_MCP_TRANSPORT must be 'sse' or 'streamable-http'.",
@@ -924,7 +1083,11 @@ if __name__ == "__main__":
     _write_pid_and_port(port)
 
     path = _SSE_PATH if _TRANSPORT == "sse" else _STREAMABLE_HTTP_PATH
-    print(f"Tracy MCP listening on http://127.0.0.1:{port}{path}", file=sys.stderr)
+    proto = "unknown" if _OUR_PROTOCOL_VERSION is None else _OUR_PROTOCOL_VERSION
+    print(
+        f"Tracy MCP listening on http://127.0.0.1:{port}{path} (protocol v{proto})",
+        file=sys.stderr,
+    )
 
     # v2's MCPServer takes transport options on run(), not the constructor
     # or a mutable settings object (SDK v1 -> v2 migration).

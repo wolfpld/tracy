@@ -1100,7 +1100,36 @@ PYBIND11_MODULE( TracyServerBindings, m )
         // Plain relaxed atomic like IsConnected() above — no locked()
         // needed. True once post-load zone/symbol stats have finished
         // building; get_all_zone_stats() et al. can be empty until then.
-        .def( "is_background_done", &Worker::IsBackgroundDone );
+        .def( "is_background_done", &Worker::IsBackgroundDone )
+        // Raw compressed bytes read off the socket post-handshake.
+        .def( "get_data_transferred", &Worker::GetDataTransferred )
+        // Raw HandshakeStatus byte (TracyProtocol.hpp): 0=none, 1=Welcome,
+        // 2=ProtocolMismatch, 3=NotAvailable, 4=Dropped.
+        .def( "get_handshake_status", &Worker::GetHandshakeStatus )
+        // Raw Failure byte (Worker::Failure, TracyWorker.hpp): 0=None,
+        // ZoneStack, ZoneDoubleEnd, ZoneText, ZoneValue, ZoneColor, ZoneName,
+        // MemFree, MemAllocTwice, FrameEnd, FrameImageIndex, FrameImageTwice,
+        // FiberLeave, SourceLocationOverflow, LockThreadOverflow, in order.
+        .def( "get_failure_type", []( const Worker& w ) -> int { return (int)w.GetFailureType(); } )
+        // GetFailureData() as a dict: thread_id, thread_name, zone_name,
+        // function, file, line. Empty if get_failure_type() is zero.
+        .def( "get_failure_data", []( Worker& w ) {
+            py::dict d;
+            if( w.GetFailureType() == Worker::Failure::None ) return d;
+            const auto& fd = w.GetFailureData();
+            d["thread_id"] = fd.thread;
+            d["thread_name"] = w.GetThreadName( fd.thread );
+            if( fd.srcloc != 0 )
+            {
+                const auto& srcloc = w.GetSourceLocation( fd.srcloc );
+                d["zone_name"] = w.GetZoneName( srcloc );
+                d["function"] = w.GetString( srcloc.function );
+                d["file"] = w.GetString( srcloc.file );
+                d["line"] = srcloc.line;
+            }
+            if( !fd.message.empty() ) d["message"] = fd.message;
+            return d;
+        } );
 
     // -------------------------------------------------------------------------
     // FileRead

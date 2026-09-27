@@ -3064,6 +3064,8 @@ Some profiling data can only be retrieved using the kernel facilities, which are
 
 As this system-level tracing functionality is part of the automated collection process, no user intervention is necessary to enable it (assuming that the program was granted the rights needed). However, if, for some reason, you would want to prevent your application from trying to access kernel data, you may recompile your program with the \texttt{TRACY\_NO\_SYSTEM\_TRACING} define. If you want to disable this functionality dynamically at runtime instead, you can set the \texttt{TRACY\_NO\_SYSTEM\_TRACING} environment variable to \enquote{1}.
 
+On Linux, the \texttt{perf\_event} interface consumes one file descriptor per logical CPU for every active category of collected data, which can exhaust the open-file limit on many-core systems. You can work around this by raising the limit before starting the program (\texttt{ulimit -n 65536}), or by disabling the categories that aren't needed.
+
 \begin{bclogo}[
 noborder=true,
 couleur=black!5,

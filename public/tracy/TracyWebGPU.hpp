@@ -982,7 +982,7 @@ using TracyWebGPUCtx = tracy::WebGPUQueueCtx*;
 
 #define TracyWebGPUContext(instance, device, queue) tracy::CreateWebGPUContext(instance, device, queue)
 #define TracyWebGPUDestroy(ctx) tracy::DestroyWebGPUContext(ctx)
-#define TracyWebGPUContextName(ctx, name, size) if (ctx) ctx->Name(name, size)
+#define TracyWebGPUContextName(ctx, name, size) do { if (ctx) ctx->Name(name, size); } while(false)
 
 #define TracyWebGPUUnnamedZone ___tracy_gpu_webgpu_zone
 #define TracyWebGPUSrcLocSymbol TracyConcat(__tracy_webgpu_source_location,TracyLine)
@@ -1016,7 +1016,7 @@ using TracyWebGPUCtx = tracy::WebGPUQueueCtx*;
 #  define TracyWebGPUZoneTransientS(ctx, varname, encoder, passDesc, name, depth, active) TracyWebGPUZoneTransient(ctx, varname, encoder, passDesc, name, active)
 #endif
 
-#define TracyWebGPUCollect(ctx) if (ctx) ctx->Collect()
+#define TracyWebGPUCollect(ctx) do { if (ctx) ctx->Collect(); } while(false)
 
 #endif
 

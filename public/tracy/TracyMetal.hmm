@@ -78,7 +78,7 @@ using TracyMetalCtx = void;
     TracyMessageC(buffer, strlen(buffer), tracy::Color::OrangeRed); \
     fprintf(stderr, "%s\n", buffer); \
     ret; \
-    } while(false);
+    } while(false)
 
 #ifndef TRACY_METAL_TIMESTAMP_COLLECT_TIMEOUT
 #define TRACY_METAL_TIMESTAMP_COLLECT_TIMEOUT 0.200f

@@ -89,7 +89,7 @@ using TracyMetalCtx = void;
 #endif//TRACY_METAL_DEBUG_MASK
 
 #if TRACY_METAL_DEBUG_MASK
-    #define TracyMetalDebugMasked(mask, ...) if constexpr (mask & TRACY_METAL_DEBUG_MASK) { __VA_ARGS__; }
+    #define TracyMetalDebugMasked(mask, ...) do { if constexpr (mask & TRACY_METAL_DEBUG_MASK) { __VA_ARGS__; } } while(false)
 #else
     #define TracyMetalDebugMasked(mask, ...)
 #endif

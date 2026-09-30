@@ -46,18 +46,18 @@ using TracyCLCtx = void*;
 
 #define TRACY_CL_TO_STRING_INDIRECT(T) #T
 #define TRACY_CL_TO_STRING(T) TRACY_CL_TO_STRING_INDIRECT(T)
-#define TRACY_CL_ASSERT(p) if(!(p)) {                                                         \
+#define TRACY_CL_ASSERT(p) do { if(!(p)) {                                                    \
     TracyMessageL( "TRACY_CL_ASSERT failed on " TracyFile ":" TRACY_CL_TO_STRING(TracyLine) );  \
     TRACY_ASSERT(false && "TRACY_CL_ASSERT failed");                                                \
-}
-#define TRACY_CL_CHECK_ERROR(err) if(err != CL_SUCCESS) {                    \
+} } while(false)
+#define TRACY_CL_CHECK_ERROR(err) do { if(err != CL_SUCCESS) {               \
     std::ostringstream oss;                                                  \
     oss << "TRACY_CL_CHECK_ERROR failed on " << TracyFile << ":" << TracyLine  \
         << ": error code " << err;                                           \
     auto msg = oss.str();                                                    \
     TracyMessage(msg.data(), msg.size());                                    \
     TRACY_ASSERT(false && "TRACY_CL_CHECK_ERROR failed");                          \
-}
+} } while(false)
 
 namespace tracy {
 
@@ -88,10 +88,10 @@ namespace tracy {
 
             cl_int err = CL_SUCCESS;
             cl_command_queue queue = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, &err);
-            TRACY_CL_CHECK_ERROR(err)
+            TRACY_CL_CHECK_ERROR(err);
             uint32_t dummyValue = 42;
             cl_mem dummyBuffer = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(uint32_t), nullptr, &err);
-            TRACY_CL_CHECK_ERROR(err)
+            TRACY_CL_CHECK_ERROR(err);
             cl_event writeBufferEvent;
             TRACY_CL_CHECK_ERROR(clEnqueueWriteBuffer(queue, dummyBuffer, CL_FALSE, 0, sizeof(uint32_t), &dummyValue, 0, nullptr, &writeBufferEvent));
             TRACY_CL_CHECK_ERROR(clWaitForEvents(1, &writeBufferEvent));

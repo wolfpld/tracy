@@ -75,11 +75,11 @@ using TracyWebGPUCtx = void*;
 #define TracyWebGPUDebug(...) __VA_ARGS__
 #if defined(_MSC_VER)
 extern "C" int32_t IsDebuggerPresent(void);
-#define TracyWebGPUBreak() if (IsDebuggerPresent()) __debugbreak()
+#define TracyWebGPUBreak() do { if (IsDebuggerPresent()) __debugbreak(); } while(false)
 #else
 #define TracyWebGPUBreak() ((void)0)
 #endif
-#define TracyWebGPUAssert(predicate, ...) if (predicate) {} else { __VA_ARGS__; TracyWebGPUBreak(); }
+#define TracyWebGPUAssert(predicate, ...) do { if (predicate) {} else { __VA_ARGS__; TracyWebGPUBreak(); } } while(false)
 #else
 #define TracyWebGPUDebug(...)
 #define TracyWebGPUBreak()

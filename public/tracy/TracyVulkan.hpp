@@ -491,11 +491,11 @@ private:
     void PopulateSymbolTable( VkInstance instance, PFN_vkGetInstanceProcAddr instanceProcAddr, PFN_vkGetDeviceProcAddr deviceProcAddr )
     {
 #define VK_GET_DEVICE_SYMBOL( name ) \
-        (PFN_##name)deviceProcAddr( m_device, #name );
+        (PFN_##name)deviceProcAddr( m_device, #name )
 #define VK_LOAD_DEVICE_SYMBOL( name ) \
         m_symbols.name = VK_GET_DEVICE_SYMBOL( name );
 #define VK_GET_INSTANCE_SYMBOL( name ) \
-        (PFN_##name)instanceProcAddr( instance, #name );
+        (PFN_##name)instanceProcAddr( instance, #name )
 #define VK_LOAD_INSTANCE_SYMBOL( name ) \
         m_symbols.name = VK_GET_INSTANCE_SYMBOL( name );
 

@@ -54,11 +54,11 @@ using TracyD3D12Ctx = void*;
 #if TRACY_D3D12_DEBUG_LEVEL
 #   define TracyD3D12Debug(...) __VA_ARGS__
 #   ifdef _MSC_VER
-#       define TracyD3D12Break() if (IsDebuggerPresent()) __debugbreak()
+#       define TracyD3D12Break() do { if (IsDebuggerPresent()) __debugbreak(); } while(false)
 #   else
 #       define TracyD3D12Break() /* TODO */
 #   endif
-#   define TracyD3D12Assert(predicate, ...) if (predicate) {} else { __VA_ARGS__; TracyD3D12Break(); }
+#   define TracyD3D12Assert(predicate, ...) do { if (predicate) {} else { __VA_ARGS__; TracyD3D12Break(); } } while(false)
 #else
 #   define TracyD3D12Debug(...)
 #   define TracyD3D12Break()

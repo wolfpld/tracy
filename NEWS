@@ -8,6 +8,8 @@ vx.xx.x (2026-xx-xx)
 - API break: various lock-related "AfterUnlock" instrumentation methods were
   renamed to "BeforeUnlock". Call sites need to be adjusted with regard to
   the placement around the lock unlock calls, to match the name.
+- All Tracy macros need to be semicolon-terminated now (would be API break,
+  but 0.9.0 already stated this is required).
 - Lock event processing on the server side has been rewritten from scratch,
   fixing many outstanding issues.
   - The cost of displaying large amounts of lock event data has been greatly

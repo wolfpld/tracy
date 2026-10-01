@@ -228,28 +228,12 @@ void SysTraceStop()
 
 void SysTraceGetExternalName( uint64_t thread, const char*& threadName, const char*& name )
 {
-    // Resolve pthread handle from the Mach port so we can query the thread name.
-    const mach_port_t mach_tid = (mach_port_t)thread;
-    thread_identifier_info_data_t idInfo;
-    mach_msg_type_number_t idInfoCount = THREAD_IDENTIFIER_INFO_COUNT;
-    if( thread_info( mach_tid, THREAD_IDENTIFIER_INFO, (thread_info_t)&idInfo, &idInfoCount ) == KERN_SUCCESS )
-    {
-        char buf[64] = {};
-        const pthread_t pt = (pthread_t)(uintptr_t)idInfo.thread_handle;
-        if( pt && pthread_getname_np( pt, buf, sizeof( buf ) ) == 0 && buf[0] != '\0' )
-            threadName = CopyString( buf );
-        else
-            threadName = CopyString( "???", 3 );
+    threadName = CopyString( GetThreadName( (uint32_t)thread ) );
 
-        TracyLfqPrepare( QueueType::TidToPid );
-        MemWrite( &item->tidToPid.tid, thread );
-        MemWrite( &item->tidToPid.pid, (uint64_t)getpid() );
-        TracyLfqCommit;
-    }
-    else
-    {
-        threadName = CopyString( "???", 3 );
-    }
+    TracyLfqPrepare( QueueType::TidToPid );
+    MemWrite( &item->tidToPid.tid, thread );
+    MemWrite( &item->tidToPid.pid, (uint64_t)getpid() );
+    TracyLfqCommit;
 
     name = CopyStringFast( getprogname() );
 }

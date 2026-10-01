@@ -40,6 +40,8 @@
 #elif defined __QNX__
 #  include <process.h>
 #  include <sys/neutrino.h>
+#elif defined __APPLE__
+#  include <mach/mach.h>
 #endif
 
 #ifdef __MINGW32__
@@ -307,6 +309,29 @@ TRACY_API const char* GetThreadName( uint32_t id )
     if (pthread_getname_np(static_cast<int>(id), qnxNameBuf, _NTO_THREAD_NAME_MAX) == 0) {
         return qnxNameBuf;
     };
+#elif defined __APPLE__
+    bool found = false;
+    thread_act_array_t threads;
+    mach_msg_type_number_t threadCount;
+    if( task_threads( mach_task_self(), &threads, &threadCount ) == KERN_SUCCESS )
+    {
+        for( mach_msg_type_number_t i = 0; i < threadCount; i++ )
+        {
+            pthread_t pt = pthread_from_mach_thread_np( threads[i] );
+            if( pt )
+            {
+                uint64_t tid;
+                pthread_threadid_np( pt, &tid );
+                if( (uint32_t)tid == id && pthread_getname_np( pt, buf, sizeof( buf ) ) == 0 && buf[0] )
+                {
+                    found = true;
+                }
+            }
+            mach_port_deallocate( mach_task_self(), threads[i] );
+        }
+        vm_deallocate( mach_task_self(), (vm_address_t)threads, sizeof( thread_t ) * threadCount );
+        if( found ) return buf;
+    }
 #endif
 
   sprintf( buf, "%" PRIu32, id );

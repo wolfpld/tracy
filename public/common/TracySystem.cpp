@@ -362,6 +362,16 @@ TRACY_API const char* GetUserLogin()
     const auto user = getlogin();
     if( user ) return user;
     return "(?)";
+#elif defined __APPLE__
+    static char buf[4 * 1024];
+    struct passwd pwd;
+    struct passwd* res;
+    if( getpwuid_r( getuid(), &pwd, buf, sizeof( buf ), &res ) == 0 && res == &pwd && pwd.pw_name )
+    {
+        return pwd.pw_name;
+    }
+    getlogin_r( buf, sizeof( buf ) );
+    return buf;
 #else
     static char user[1024] = {};
     getlogin_r( user, sizeof( user ) );

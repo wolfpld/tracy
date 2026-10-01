@@ -556,10 +556,15 @@ static const char* GetHostInfo()
     ptr += sprintf( ptr, "OS: Linux %s\n", utsName.release );
 #  endif
 #elif defined __APPLE__
+    char osVer[64] = {};
+    size_t osVerSz = sizeof( osVer ) - 1;
+    const bool haveVer = sysctlbyname( "kern.osproductversion", osVer, &osVerSz, nullptr, 0 ) == 0;
 #  if TARGET_OS_IPHONE == 1
-    ptr += sprintf( ptr, "OS: Darwin (iOS)\n" );
+    if( haveVer ) ptr += sprintf( ptr, "OS: iOS %s\n", osVer );
+    else ptr += sprintf( ptr, "OS: iOS\n" );
 #  elif TARGET_OS_MAC == 1
-    ptr += sprintf( ptr, "OS: Darwin (OSX)\n" );
+    if( haveVer ) ptr += sprintf( ptr, "OS: macOS %s\n", osVer );
+    else ptr += sprintf( ptr, "OS: macOS\n" );
 #  else
     ptr += sprintf( ptr, "OS: Darwin (unknown)\n" );
 #  endif
@@ -687,6 +692,15 @@ static const char* GetHostInfo()
         auto str = (char*)tracy_malloc( sz );
         sysctlbyname( "hw.machine", str, &sz, nullptr, 0 );
         ptr += sprintf( ptr, "Device: %s\n", DecodeIosDevice( str ) );
+        tracy_free( str );
+    }
+#elif defined __APPLE__
+    {
+        size_t sz;
+        sysctlbyname( "machdep.cpu.brand_string", nullptr, &sz, nullptr, 0 );
+        auto str = (char*)tracy_malloc( sz );
+        sysctlbyname( "machdep.cpu.brand_string", str, &sz, nullptr, 0 );
+        ptr += sprintf( ptr, "CPU: %s\n", str );
         tracy_free( str );
     }
 #else

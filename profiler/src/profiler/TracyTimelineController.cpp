@@ -41,7 +41,7 @@ void TimelineController::Begin()
     m_items.clear();
 }
 
-void TimelineController::UpdateCenterItem()
+void TimelineController::UpdateCenterItem( int pinnedTop )
 {
     ImVec2 mousePos = ImGui::GetMousePos();
 
@@ -53,16 +53,22 @@ void TimelineController::UpdateCenterItem()
     const auto timelineMousePosY = mousePos.y - ImGui::GetWindowPos().y;
     int centerY = timelineMousePosY + ImGui::GetScrollY();
 
+    // Pinned items are fixed to the viewport and excluded from the scrolling
+    // flow, so centering only considers the normal items in the middle band.
+    if( m_normalItems.empty() ) return;
+    const void* firstNormalKey = m_normalItems.front()->GetKey();
+    const void* lastNormalKey = m_normalItems.back()->GetKey();
+
     int yBegin = 0;
-    int yEnd = 0;
-    for( auto& item : m_items )
+    int yEnd = pinnedTop;
+    for( auto& item : m_normalItems )
     {
         m_centerItemkey = item->GetKey();
         yBegin = yEnd;
         yEnd += item->GetHeight();
 
-        const auto inLowerBounds = m_centerItemkey == m_items.front()->GetKey() || yBegin <= centerY;
-        const auto inUpperBounds = m_centerItemkey == m_items.back()->GetKey() || centerY < yEnd;
+        const auto inLowerBounds = m_centerItemkey == firstNormalKey || yBegin <= centerY;
+        const auto inUpperBounds = m_centerItemkey == lastNormalKey || centerY < yEnd;
 
         if( inLowerBounds && inUpperBounds )
         {
@@ -72,7 +78,7 @@ void TimelineController::UpdateCenterItem()
     }
 }
 
-std::optional<int> TimelineController::CalculateScrollPosition() const
+std::optional<int> TimelineController::CalculateScrollPosition( int pinnedTop ) const
 {
     if( !m_centerItemkey ) return std::nullopt;
 
@@ -83,8 +89,8 @@ std::optional<int> TimelineController::CalculateScrollPosition() const
     const auto timelineMousePosY = mousePos.y - ImGui::GetWindowPos().y;
 
     int yBegin = 0;
-    int yEnd = 0;
-    for( auto& item : m_items )
+    int yEnd = pinnedTop;
+    for( auto& item : m_normalItems )
     {
         yBegin = yEnd;
         yEnd += item->GetHeight();
@@ -96,11 +102,32 @@ std::optional<int> TimelineController::CalculateScrollPosition() const
         return scrollY;
     }
 
+    // A "just-pinned" center item is gone from the normal run but will be
+    // "re-picked" on next mouse move.
     return std::nullopt;
 }
 
 void TimelineController::End( double pxns, const ImVec2& wpos, bool hover, bool vcenter, float yMin, float yMax )
 {
+    // Snapshot the pin classification once per frame before any Draw runs.
+    // Toggling a pin flips its state mid-frame and since re-checking it in
+    // the draw passes would draw the item twice (normal and band passes),
+    // the grouping here defers the change to the next frame.
+    // GetHeight() is 0 on the first frame, so the scroll extent would be shorter
+    // if a track was pinned at load, but self-corrects next frame (and nothing is
+    // pinned at load anyway).
+    m_normalItems.clear();
+    m_pinnedTopItems.clear();
+    m_pinnedBottomItems.clear();
+    int pinnedTop = 0;
+    int pinnedBottom = 0;
+    for( auto& item : m_items )
+    {
+        if( !item->IsPinned() ) m_normalItems.push_back( item );
+        else if( item->PinToBottom() ) { m_pinnedBottomItems.push_back( item ); pinnedBottom += item->GetHeight(); }
+        else { m_pinnedTopItems.push_back( item ); pinnedTop += item->GetHeight(); }
+    }
+
     auto shouldUpdateCenterItem = [&] () {
         const auto imguiChangedScroll = m_scroll != ImGui::GetScrollY();
         const auto& mouseDelta = ImGui::GetIO().MouseDelta;
@@ -117,7 +144,7 @@ void TimelineController::End( double pxns, const ImVec2& wpos, bool hover, bool 
     }
     else if( shouldUpdateCenterItem() )
     {
-        UpdateCenterItem();
+        UpdateCenterItem( pinnedTop );
     }
 
     const auto& viewData = m_view.GetViewData();
@@ -138,29 +165,79 @@ void TimelineController::End( double pxns, const ImVec2& wpos, bool hover, bool 
     ctx.wpos = wpos;
     ctx.hover = hover;
 
-    int yOffset = 0;
+    const int curScrollY = (int)ImGui::GetScrollY();
+    const int windowHeight = (int)ImGui::GetWindowHeight();
+    // Keep the pinned bands from overlapping (top wins), otherwise bottom items
+    // would cover top ones while leaving them clickable underneath.
+    const int bottomStart = std::max( curScrollY + pinnedTop, curScrollY + windowHeight - pinnedBottom );
+
+    // Screen-space band edges, shared by culling, the mouse tests, and the fills.
+    const float topBandBegin = wpos.y + curScrollY;
+    const float topBandEnd = topBandBegin + pinnedTop;
+    const float bottomBandBegin = wpos.y + bottomStart;
+    const float bottomBandEnd = topBandBegin + windowHeight;
+
+    TimelineContext ctxNormal = ctx;
+    if( pinnedTop > 0 ) ctxNormal.yMin = std::max<float>( ctx.yMin, topBandEnd );
+    if( pinnedBottom > 0 ) ctxNormal.yMax = std::min<float>( ctx.yMax, bottomBandBegin );
+    const auto mouseY = ImGui::GetMousePos().y;
+    const bool mouseInTopBand = pinnedTop > 0 && mouseY >= topBandBegin && mouseY < topBandEnd;
+    const bool mouseInBottomBand = pinnedBottom > 0 && mouseY >= bottomBandBegin && mouseY < bottomBandEnd;
+    ctxNormal.hover = ctx.hover && !mouseInTopBand && !mouseInBottomBand;
+
+    // Preprocess runs before any Draw, so live pin state is stable here. Normal
+    // items are culled to the middle band and pinned items are always on screen.
+    int topOffset = 0, normalOffset = 0, bottomOffset = 0;
     for( auto& item : m_items )
     {
+        const bool pinned = item->IsPinned();
+        const bool toBottom = pinned && item->PinToBottom();
+        const int off = !pinned ? pinnedTop + normalOffset : toBottom ? bottomStart + bottomOffset : curScrollY + topOffset;
         if( item->WantPreprocess() && item->IsVisible() )
         {
-            const auto yPos = wpos.y + yOffset;
-            const bool visible = m_firstFrame || ( yPos < yMax && yPos + item->GetHeight() >= yMin );
+            const auto yPos = wpos.y + off;
+            const bool visible = pinned || m_firstFrame || ( yPos < ctxNormal.yMax && yPos + item->GetHeight() >= ctxNormal.yMin );
             item->Preprocess( ctx, m_td, visible, yPos );
         }
-        yOffset += m_firstFrame ? 0 : item->GetHeight();
+        const int h = m_firstFrame ? 0 : item->GetHeight();
+        if( !pinned ) normalOffset += h;
+        else if( toBottom ) bottomOffset += h;
+        else topOffset += h;
     }
     m_td.Sync();
 
-    yOffset = 0;
-    for( auto& item : m_items )
-    {
-        auto currentFrameItemHeight = item->GetHeight();
-        item->Draw( m_firstFrame, ctx, yOffset );
-        if( m_firstFrame ) currentFrameItemHeight = item->GetHeight();
-        yOffset += currentFrameItemHeight;
-    }
+    auto draw = ImGui::GetWindowDrawList();
+    // Matches the timeline background in normal builds: the root-window build
+    // overrides WindowBg per-window, so the fill can be a slightly off shade there.
+    const auto bgColor = ImGui::GetColorU32( ImGuiCol_WindowBg );
 
-    if( const auto scrollY = CalculateScrollPosition() )
+    // Draws a group at (base + accumulated height) with respect to the
+    // first-frame height bootstrap, and returns the total height drawn.
+    auto drawRun = [&]( std::vector<TimelineItem*>& items, const TimelineContext& c, int base ) -> int {
+        int running = 0;
+        for( auto& item : items )
+        {
+            auto h = item->GetHeight();
+            item->Draw( m_firstFrame, c, base + running );
+            if( m_firstFrame ) h = item->GetHeight();
+            running += h;
+        }
+        return running;
+    };
+
+    const int normalRunning = drawRun( m_normalItems, ctxNormal, pinnedTop );
+
+    // Opaque fills so tracks scrolling under a band do not show through. These also
+    // hide parent-list overlays drawn before the child.
+    if( pinnedTop > 0 ) draw->AddRectFilled( ImVec2( wpos.x, topBandBegin ), ImVec2( wpos.x + ctx.w, topBandEnd ), bgColor );
+    drawRun( m_pinnedTopItems, ctx, curScrollY );
+    if( pinnedBottom > 0 ) draw->AddRectFilled( ImVec2( wpos.x, bottomBandBegin ), ImVec2( wpos.x + ctx.w, bottomBandEnd ), bgColor );
+    drawRun( m_pinnedBottomItems, ctx, bottomStart );
+
+    int yOffset = pinnedTop + normalRunning + pinnedBottom;
+
+    // pinnedTop is a pre-Draw height, so vertical-centre compensation lags one frame
+    if( const auto scrollY = CalculateScrollPosition( pinnedTop ) )
     {
         int clampedScrollY = std::min<int>( *scrollY, std::max<int>( yOffset - ImGui::GetWindowHeight(), 0 ) );
         ImGui::SetScrollY( clampedScrollY );

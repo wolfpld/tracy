@@ -105,7 +105,13 @@ static void SysTraceSampleThread( mach_port_t tid )
 
     thread_resume( tid );
 
-    SysTraceEmitCallstackSample( (uint32_t)tid, timestamp, frames, depth );
+    uint64_t pthreadId = tid;
+    if( pthread_t pt = pthread_from_mach_thread_np( tid ) )
+    {
+        pthread_threadid_np( pt, &pthreadId );
+    }
+
+    SysTraceEmitCallstackSample( (uint32_t)pthreadId, timestamp, frames, depth );
 }
 
 static void SysTraceWait( uint64_t deadline )

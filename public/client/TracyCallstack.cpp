@@ -67,8 +67,8 @@
 #  include "TracyProfiler.hpp"
 
 #  define DBGHELP_INIT TracyConcat( TRACY_DBGHELP_LOCK, Init() )
-#  define DBGHELP_LOCK TracyConcat( TRACY_DBGHELP_LOCK, Lock() );
-#  define DBGHELP_UNLOCK TracyConcat( TRACY_DBGHELP_LOCK, Unlock() );
+#  define DBGHELP_LOCK TracyConcat( TRACY_DBGHELP_LOCK, Lock() )
+#  define DBGHELP_UNLOCK TracyConcat( TRACY_DBGHELP_LOCK, Unlock() )
 
 extern "C"
 {

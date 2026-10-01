@@ -72,18 +72,18 @@ using TracyWebGPUCtx = void*;
 #endif//TRACY_WEBGPU_DEBUG_LEVEL
 
 #if TRACY_WEBGPU_DEBUG_LEVEL
-#define TracyWebGPUDebug(...) __VA_ARGS__;
+#define TracyWebGPUDebug(...) __VA_ARGS__
 #if defined(_MSC_VER)
 extern "C" int32_t IsDebuggerPresent(void);
-#define TracyWebGPUBreak() if (IsDebuggerPresent()) __debugbreak()
+#define TracyWebGPUBreak() do { if (IsDebuggerPresent()) __debugbreak(); } while(false)
 #else
 #define TracyWebGPUBreak() ((void)0)
 #endif
-#define TracyWebGPUAssert(predicate, ...) if (predicate) {} else { __VA_ARGS__; TracyWebGPUBreak(); }
+#define TracyWebGPUAssert(predicate, ...) do { if (predicate) {} else { __VA_ARGS__; TracyWebGPUBreak(); } } while(false)
 #else
 #define TracyWebGPUDebug(...)
 #define TracyWebGPUBreak()
-#define TracyWebGPUAssert(predicate, ...) TRACY_ASSERT(predicate);
+#define TracyWebGPUAssert(predicate, ...) TRACY_ASSERT(predicate)
 #endif
 
 #define TracyWebGPULog(severity, msg) do { char buffer [1024]; int len = snprintf(buffer, sizeof(buffer), "TracyWebGPU: %s", msg); tracy::Profiler::LogString( tracy::MessageSourceType::Tracy, tracy::MessageSeverity::severity, tracy::Color::Red4, 0, len, buffer ); } while(false)
@@ -980,34 +980,34 @@ using TracyWebGPUCtx = tracy::WebGPUQueueCtx*;
 
 #define TracyWebGPUSetupDeviceDescriptor(deviceDescriptor) tracy::WebGPUQueueCtx::Requirements TracyConcat(__tracy_wgpu_setup_, TracyLine); TracyConcat(__tracy_wgpu_setup_, TracyLine).ApplyToDeviceDescriptor(deviceDescriptor)
 
-#define TracyWebGPUContext(instance, device, queue) tracy::CreateWebGPUContext(instance, device, queue);
-#define TracyWebGPUDestroy(ctx) tracy::DestroyWebGPUContext(ctx);
-#define TracyWebGPUContextName(ctx, name, size) if (ctx) ctx->Name(name, size);
+#define TracyWebGPUContext(instance, device, queue) tracy::CreateWebGPUContext(instance, device, queue)
+#define TracyWebGPUDestroy(ctx) tracy::DestroyWebGPUContext(ctx)
+#define TracyWebGPUContextName(ctx, name, size) do { if (ctx) ctx->Name(name, size); } while(false)
 
 #define TracyWebGPUUnnamedZone ___tracy_gpu_webgpu_zone
 #define TracyWebGPUSrcLocSymbol TracyConcat(__tracy_webgpu_source_location,TracyLine)
-#define TracyWebGPUSrcLocObject(name, color) static constexpr tracy::SourceLocationData TracyWebGPUSrcLocSymbol { name, TracyFunction, TracyFile, (uint32_t)TracyLine, color };
+#define TracyWebGPUSrcLocObject(name, color) static constexpr tracy::SourceLocationData TracyWebGPUSrcLocSymbol { name, TracyFunction, TracyFile, (uint32_t)TracyLine, color }
 
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
 #  define TracyWebGPUZone(ctx, encoder, passDesc, name) TracyWebGPUNamedZoneS(ctx, TracyWebGPUUnnamedZone, encoder, passDesc, name, TRACY_CALLSTACK, true)
 #  define TracyWebGPUZoneC(ctx, encoder, passDesc, name, color) TracyWebGPUNamedZoneCS(ctx, TracyWebGPUUnnamedZone, encoder, passDesc, name, color, TRACY_CALLSTACK, true)
-#  define TracyWebGPUNamedZone(ctx, varname, encoder, passDesc, name, active) TracyWebGPUSrcLocObject(name, 0); tracy::WebGPUZoneScope varname{ ctx, encoder, passDesc, &TracyWebGPUSrcLocSymbol, TRACY_CALLSTACK, active };
-#  define TracyWebGPUNamedZoneC(ctx, varname, encoder, passDesc, name, color, active) TracyWebGPUSrcLocObject(name, color); tracy::WebGPUZoneScope varname{ ctx, encoder, passDesc, &TracyWebGPUSrcLocSymbol, TRACY_CALLSTACK, active };
+#  define TracyWebGPUNamedZone(ctx, varname, encoder, passDesc, name, active) TracyWebGPUSrcLocObject(name, 0); tracy::WebGPUZoneScope varname{ ctx, encoder, passDesc, &TracyWebGPUSrcLocSymbol, TRACY_CALLSTACK, active }
+#  define TracyWebGPUNamedZoneC(ctx, varname, encoder, passDesc, name, color, active) TracyWebGPUSrcLocObject(name, color); tracy::WebGPUZoneScope varname{ ctx, encoder, passDesc, &TracyWebGPUSrcLocSymbol, TRACY_CALLSTACK, active }
 #  define TracyWebGPUZoneTransient(ctx, varname, encoder, passDesc, name, active) TracyWebGPUZoneTransientS(ctx, varname, encoder, passDesc, name, TRACY_CALLSTACK, active)
 #else
 #  define TracyWebGPUZone(ctx, encoder, passDesc, name) TracyWebGPUNamedZone(ctx, TracyWebGPUUnnamedZone, encoder, passDesc, name, true)
 #  define TracyWebGPUZoneC(ctx, encoder, passDesc, name, color) TracyWebGPUNamedZoneC(ctx, TracyWebGPUUnnamedZone, encoder, passDesc, name, color, true)
-#  define TracyWebGPUNamedZone(ctx, varname, encoder, passDesc, name, active) TracyWebGPUSrcLocObject(name, 0); tracy::WebGPUZoneScope varname{ ctx, encoder, passDesc, &TracyWebGPUSrcLocSymbol, active };
-#  define TracyWebGPUNamedZoneC(ctx, varname, encoder, passDesc, name, color, active) TracyWebGPUSrcLocObject(name, color); tracy::WebGPUZoneScope varname{ ctx, encoder, passDesc, &TracyWebGPUSrcLocSymbol, active };
-#  define TracyWebGPUZoneTransient(ctx, varname, encoder, passDesc, name, active) tracy::WebGPUZoneScope varname{ ctx, TracyLine, TracyFile, strlen(TracyFile), TracyFunction, strlen(TracyFunction), name, strlen(name), encoder, passDesc, active };
+#  define TracyWebGPUNamedZone(ctx, varname, encoder, passDesc, name, active) TracyWebGPUSrcLocObject(name, 0); tracy::WebGPUZoneScope varname{ ctx, encoder, passDesc, &TracyWebGPUSrcLocSymbol, active }
+#  define TracyWebGPUNamedZoneC(ctx, varname, encoder, passDesc, name, color, active) TracyWebGPUSrcLocObject(name, color); tracy::WebGPUZoneScope varname{ ctx, encoder, passDesc, &TracyWebGPUSrcLocSymbol, active }
+#  define TracyWebGPUZoneTransient(ctx, varname, encoder, passDesc, name, active) tracy::WebGPUZoneScope varname{ ctx, TracyLine, TracyFile, strlen(TracyFile), TracyFunction, strlen(TracyFunction), name, strlen(name), encoder, passDesc, active }
 #endif
 
 #ifdef TRACY_HAS_CALLSTACK
 #  define TracyWebGPUZoneS(ctx, encoder, passDesc, name, depth) TracyWebGPUNamedZoneS(ctx, TracyWebGPUUnnamedZone, encoder, passDesc, name, depth, true)
 #  define TracyWebGPUZoneCS(ctx, encoder, passDesc, name, color, depth) TracyWebGPUNamedZoneCS(ctx, TracyWebGPUUnnamedZone, encoder, passDesc, name, color, depth, true)
-#  define TracyWebGPUNamedZoneS(ctx, varname, encoder, passDesc, name, depth, active) TracyWebGPUSrcLocObject(name, 0); tracy::WebGPUZoneScope varname{ ctx, encoder, passDesc, &TracyWebGPUSrcLocSymbol, depth, active };
-#  define TracyWebGPUNamedZoneCS(ctx, varname, encoder, passDesc, name, color, depth, active) TracyWebGPUSrcLocObject(name, color); tracy::WebGPUZoneScope varname{ ctx, encoder, passDesc, &TracyWebGPUSrcLocSymbol, depth, active };
-#  define TracyWebGPUZoneTransientS(ctx, varname, encoder, passDesc, name, depth, active) tracy::WebGPUZoneScope varname{ ctx, TracyLine, TracyFile, strlen(TracyFile), TracyFunction, strlen(TracyFunction), name, strlen(name), encoder, passDesc, depth, active };
+#  define TracyWebGPUNamedZoneS(ctx, varname, encoder, passDesc, name, depth, active) TracyWebGPUSrcLocObject(name, 0); tracy::WebGPUZoneScope varname{ ctx, encoder, passDesc, &TracyWebGPUSrcLocSymbol, depth, active }
+#  define TracyWebGPUNamedZoneCS(ctx, varname, encoder, passDesc, name, color, depth, active) TracyWebGPUSrcLocObject(name, color); tracy::WebGPUZoneScope varname{ ctx, encoder, passDesc, &TracyWebGPUSrcLocSymbol, depth, active }
+#  define TracyWebGPUZoneTransientS(ctx, varname, encoder, passDesc, name, depth, active) tracy::WebGPUZoneScope varname{ ctx, TracyLine, TracyFile, strlen(TracyFile), TracyFunction, strlen(TracyFunction), name, strlen(name), encoder, passDesc, depth, active }
 #else
 #  define TracyWebGPUZoneS(ctx, encoder, passDesc, name, depth) TracyWebGPUZone(ctx, encoder, passDesc, name)
 #  define TracyWebGPUZoneCS(ctx, encoder, passDesc, name, color, depth) TracyWebGPUZoneC(ctx, encoder, passDesc, name, color)
@@ -1016,7 +1016,7 @@ using TracyWebGPUCtx = tracy::WebGPUQueueCtx*;
 #  define TracyWebGPUZoneTransientS(ctx, varname, encoder, passDesc, name, depth, active) TracyWebGPUZoneTransient(ctx, varname, encoder, passDesc, name, active)
 #endif
 
-#define TracyWebGPUCollect(ctx) if (ctx) ctx->Collect();
+#define TracyWebGPUCollect(ctx) do { if (ctx) ctx->Collect(); } while(false)
 
 #endif
 

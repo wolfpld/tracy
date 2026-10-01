@@ -16,6 +16,7 @@
 #include <vector>
 
 #define ROCPROFILER_CALL( result, msg )                                                                                \
+    do                                                                                                                 \
     {                                                                                                                  \
         rocprofiler_status_t CHECKSTATUS = result;                                                                     \
         if( CHECKSTATUS != ROCPROFILER_STATUS_SUCCESS )                                                                \
@@ -28,7 +29,7 @@
                    << ")";                                                                                             \
             throw std::runtime_error( errmsg.str() );                                                                  \
         }                                                                                                              \
-    }
+    } while( false )
 
 namespace
 {

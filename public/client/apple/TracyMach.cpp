@@ -207,6 +207,8 @@ bool SysTraceStart( int64_t& samplingPeriod )
     // (technically, since this is a software-based user-mode sampling, elevated
     // privileges are unnecessary, but doing so keeps the behavior consistent with
     // the system tracing in other platforms)
+    // NOTE/TODO: as is, iOS devices will never be able to run this system tracing
+    // because iOS apps can never have an uid of 0...
     if( geteuid() != 0 ) return false;
 
     auto& systrace = SysTraceApple::Get();

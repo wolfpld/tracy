@@ -240,9 +240,8 @@ void readString(DecodeState &dec, std::string &res, Record const &r,
   } else if ((ref & 0x8000) != 0) {
     // inline string
     size_t size_name = ref & 0x7fff;
-    res.resize(size_name + 1);
+    res.resize(size_name);
     memcpy(res.data(), (uint8_t *)&r.p[offset], size_name);
-    res[size_name] = 0;
     offset += ROUND_TO_WORD(size_name) >> 3;
   } else {
     res = dec.stringRefs[ref];
@@ -449,7 +448,7 @@ int main(int argc, char **argv) {
       assert((str_ref & 0x8000) == 0);
       uint16_t str_len = (r.header >> 32) & 0x7fff;
 
-      name.resize(str_len + 1);
+      name.resize(str_len);
       memcpy(name.data(), (uint8_t *)&r.p[1], str_len);
       dec.stringRefs[str_ref] = name;
       break;

@@ -105,7 +105,13 @@ static void SysTraceSampleThread( mach_port_t tid )
 
     thread_resume( tid );
 
-    SysTraceEmitCallstackSample( (uint32_t)tid, timestamp, frames, depth );
+    uint64_t pthreadId = tid;
+    if( pthread_t pt = pthread_from_mach_thread_np( tid ) )
+    {
+        pthread_threadid_np( pt, &pthreadId );
+    }
+
+    SysTraceEmitCallstackSample( (uint32_t)pthreadId, timestamp, frames, depth );
 }
 
 static void SysTraceWait( uint64_t deadline )
@@ -203,12 +209,6 @@ void SysTraceWorker( void* )
 
 bool SysTraceStart( int64_t& samplingPeriod )
 {
-    // check for elevated privileges
-    // (technically, since this is a software-based user-mode sampling, elevated
-    // privileges are unnecessary, but doing so keeps the behavior consistent with
-    // the system tracing in other platforms)
-    if( geteuid() != 0 ) return false;
-
     auto& systrace = SysTraceApple::Get();
 
     bool expected = false;

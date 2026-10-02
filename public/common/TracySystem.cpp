@@ -325,10 +325,11 @@ TRACY_API const char* GetThreadName( uint32_t id )
                 if( (uint32_t)tid == id && pthread_getname_np( pt, buf, sizeof( buf ) ) == 0 && buf[0] )
                 {
                     found = true;
+                    break;
                 }
             }
-            mach_port_deallocate( mach_task_self(), threads[i] );
         }
+        for( mach_msg_type_number_t i = 0; i < threadCount; i++ ) mach_port_deallocate( mach_task_self(), threads[i] );
         vm_deallocate( mach_task_self(), (vm_address_t)threads, sizeof( thread_t ) * threadCount );
         if( found ) return buf;
     }

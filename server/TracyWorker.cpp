@@ -2711,6 +2711,9 @@ void Worker::Exec()
 
     std::chrono::time_point<std::chrono::high_resolution_clock> t0;
 
+    // memUsage spans every worker in the process; the cap applies to this one's own growth.
+    MemScope memScope( m_memGrowth );
+
     m_sock.Send( HandshakeShibboleth, HandshakeShibbolethSize );
     uint32_t protocolVersion = ProtocolVersion;
     m_sock.Send( &protocolVersion, sizeof( protocolVersion ) );
@@ -2811,7 +2814,7 @@ void Worker::Exec()
 
     for(;;)
     {
-        if( m_shutdown.load( std::memory_order_relaxed ) || ( m_memoryLimit > 0 && memUsage.load( std::memory_order_relaxed ) > m_memoryLimit ) )
+        if( m_shutdown.load( std::memory_order_relaxed ) || ( m_memoryLimit > 0 && m_memGrowth.load( std::memory_order_relaxed ) > m_memoryLimit ) )
         {
             QueryTerminate();
             goto close;

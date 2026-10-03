@@ -3,6 +3,7 @@
 namespace tracy
 {
 
-std::atomic<int64_t> memUsage( 0 );
+MemCounter memUsage;
+thread_local std::atomic<int64_t>* MemCounter::s_scope = nullptr;
 
 }

@@ -1172,6 +1172,7 @@ private:
 
     int m_traceVersion;
     std::atomic<uint8_t> m_handshake { 0 };
+    std::atomic<int64_t> m_memGrowth { 0 };
 
     static LoadProgress s_loadProgress;
     int64_t m_loadTime;

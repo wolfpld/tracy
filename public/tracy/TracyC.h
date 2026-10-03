@@ -129,6 +129,11 @@ typedef const void* TracyCSharedLockCtx;
 #define TracyCSharedLockMark(l)
 #define TracyCSharedLockCustomName(l,x,y)
 
+#define TracyCSectionEnter(x,...)
+#define TracyCSectionEnterCategory(c,x,...)
+#define TracyCSectionLeave(x)
+#define TracyCSectionSetup(c,x,...)
+
 #define TracyCIsConnected 0
 #define TracyCIsStarted 0
 
@@ -387,6 +392,10 @@ TRACY_API void ___tracy_after_try_lock_shared_shared_lockable_ctx( struct __trac
 TRACY_API void ___tracy_mark_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata, const struct ___tracy_source_location_data* srcloc );
 TRACY_API void ___tracy_custom_name_shared_lockable_ctx( struct __tracy_shared_lockable_context_data* lockdata, const char* name, size_t nameSz );
 
+TRACY_API uint32_t __tracy_section_enter( uint16_t category, const char* fmt, ... );
+TRACY_API void __tracy_section_leave( uint32_t id );
+TRACY_API void __tracy_section_setup( uint16_t category, const char* fmt, ... );
+
 
 #define TracyCLockAnnounce( lock ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,TracyLine) = { NULL, __func__,  TracyFile, (uint32_t)TracyLine, 0 }; lock = ___tracy_announce_lockable_ctx( &TracyConcat(__tracy_source_location,TracyLine) )
 #define TracyCLockTerminate( lock ) ___tracy_terminate_lockable_ctx( lock )
@@ -409,6 +418,11 @@ TRACY_API void ___tracy_custom_name_shared_lockable_ctx( struct __tracy_shared_l
 #define TracyCSharedLockAfterTrySharedLock( lock, acquired ) ___tracy_after_try_lock_shared_shared_lockable_ctx( lock, acquired )
 #define TracyCSharedLockMark( lock ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,TracyLine) = { NULL, __func__,  TracyFile, (uint32_t)TracyLine, 0 }; ___tracy_mark_shared_lockable_ctx( lock, &TracyConcat(__tracy_source_location,TracyLine) )
 #define TracyCSharedLockCustomName( lock, name, nameSz ) ___tracy_custom_name_shared_lockable_ctx( lock, name, nameSz )
+
+#define TracyCSectionEnter( fmt, ... ) __tracy_section_enter( 0, fmt, ##__VA_ARGS__ )
+#define TracyCSectionEnterCategory( category, fmt, ... ) __tracy_section_enter( category, fmt, ##__VA_ARGS__ )
+#define TracyCSectionLeave( id ) __tracy_section_leave( id )
+#define TracyCSectionSetup( category, fmt, ... ) __tracy_section_setup( category, fmt, ##__VA_ARGS__ )
 
 #define TracyCIsConnected ___tracy_connected()
 

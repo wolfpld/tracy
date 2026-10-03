@@ -5666,6 +5666,66 @@ TRACY_API void ___tracy_custom_name_shared_lockable_ctx( struct __tracy_shared_l
     ___tracy_custom_name_lockable_ctx( &lockdata->m_base, name, nameSz );
 }
 
+TRACY_API uint32_t __tracy_section_enter( uint16_t category, const char* fmt, ... )
+{
+    auto& profiler = tracy::GetProfiler();
+#ifdef TRACY_ON_DEMAND
+    if( !profiler.IsConnected() ) return 0;
+#endif
+    va_list args;
+    va_start( args, fmt );
+    auto size = vsnprintf( nullptr, 0, fmt, args );
+    va_end( args );
+    if( size < 0 ) return 0;
+    TRACY_ASSERT( size < (std::numeric_limits<uint16_t>::max)() );
+
+    char* ptr = (char*)tracy::tracy_malloc( size_t( size ) + 1 );
+    va_start( args, fmt );
+    vsnprintf( ptr, size_t( size ) + 1, fmt, args );
+    va_end( args );
+
+    const auto id = profiler.GetNextSectionId();
+    TracyLfqPrepare( tracy::QueueType::SectionEnter );
+    tracy::MemWrite( &item->sectionEnterFat.time, tracy::Profiler::GetTime() );
+    tracy::MemWrite( &item->sectionEnterFat.id, id );
+    tracy::MemWrite( &item->sectionEnterFat.category, category );
+    tracy::MemWrite( &item->sectionEnterFat.text, (uint64_t)ptr );
+    tracy::MemWrite( &item->sectionEnterFat.size, (uint16_t)size );
+    TracyLfqCommit;
+    return id;
+}
+
+TRACY_API void __tracy_section_leave( uint32_t id )
+{
+    tracy::Profiler::SectionLeave( id );
+}
+
+TRACY_API void __tracy_section_setup( uint16_t category, const char* fmt, ... )
+{
+    va_list args;
+    va_start( args, fmt );
+    auto size = vsnprintf( nullptr, 0, fmt, args );
+    va_end( args );
+    if( size < 0 ) return;
+    TRACY_ASSERT( size < (std::numeric_limits<uint16_t>::max)() );
+
+    char* ptr = (char*)tracy::tracy_malloc( size_t( size ) + 1 );
+    va_start( args, fmt );
+    vsnprintf( ptr, size_t( size ) + 1, fmt, args );
+    va_end( args );
+
+    TracyLfqPrepare( tracy::QueueType::SectionSetup );
+    tracy::MemWrite( &item->sectionSetupFat.category, category );
+    tracy::MemWrite( &item->sectionSetupFat.text, (uint64_t)ptr );
+    tracy::MemWrite( &item->sectionSetupFat.size, (uint16_t)size );
+
+#ifdef TRACY_ON_DEMAND
+    tracy::GetProfiler().DeferItem( *item );
+#endif
+
+    TracyLfqCommit;
+}
+
 TRACY_API int32_t ___tracy_connected( void )
 {
     return static_cast<int32_t>( tracy::GetProfiler().IsConnected() );

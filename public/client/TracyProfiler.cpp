@@ -5666,6 +5666,28 @@ TRACY_API void ___tracy_custom_name_shared_lockable_ctx( struct __tracy_shared_l
     ___tracy_custom_name_lockable_ctx( &lockdata->m_base, name, nameSz );
 }
 
+TRACY_API uint32_t ___tracy_section_enter( uint16_t category, const char* fmt, ... )
+{
+    va_list args;
+    va_start( args, fmt );
+    uint32_t id = tracy::Profiler::SectionEnterV( category, fmt, args );
+    va_end( args );
+    return id;
+}
+
+TRACY_API void ___tracy_section_leave( uint32_t id )
+{
+    tracy::Profiler::SectionLeave( id );
+}
+
+TRACY_API void ___tracy_section_setup( uint16_t category, const char* fmt, ... )
+{
+    va_list args;
+    va_start( args, fmt );
+    tracy::Profiler::SectionSetupV( category, fmt, args );
+    va_end( args );
+}
+
 TRACY_API int32_t ___tracy_connected( void )
 {
     return static_cast<int32_t>( tracy::GetProfiler().IsConnected() );

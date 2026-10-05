@@ -207,9 +207,6 @@ void TimelineController::End( double pxns, const ImVec2& wpos, bool hover, bool 
     m_td.Sync();
 
     auto draw = ImGui::GetWindowDrawList();
-    // Matches the timeline background in normal builds: the root-window build
-    // overrides WindowBg per-window, so the fill can be a slightly off shade there.
-    const auto bgColor = ImGui::GetColorU32( ImGuiCol_WindowBg );
 
     // Draws a group at (base + accumulated height) with respect to the
     // first-frame height bootstrap, and returns the total height drawn.
@@ -225,13 +222,12 @@ void TimelineController::End( double pxns, const ImVec2& wpos, bool hover, bool 
         return running;
     };
 
+    // Clip (rather than paint over) so parent-window overlays stay visible inside the bands.
+    ImGui::PushClipRect( ImVec2( draw->GetClipRectMin().x, topBandEnd ), ImVec2( draw->GetClipRectMax().x, bottomBandBegin ), true );
     const int normalRunning = drawRun( m_normalItems, ctxNormal, pinnedTop );
+    ImGui::PopClipRect();
 
-    // Opaque fills so tracks scrolling under a band do not show through. These also
-    // hide parent-list overlays drawn before the child.
-    if( pinnedTop > 0 ) draw->AddRectFilled( ImVec2( wpos.x, topBandBegin ), ImVec2( wpos.x + ctx.w, topBandEnd ), bgColor );
     drawRun( m_pinnedTopItems, ctx, curScrollY );
-    if( pinnedBottom > 0 ) draw->AddRectFilled( ImVec2( wpos.x, bottomBandBegin ), ImVec2( wpos.x + ctx.w, bottomBandEnd ), bgColor );
     drawRun( m_pinnedBottomItems, ctx, bottomStart );
 
     int yOffset = pinnedTop + normalRunning + pinnedBottom;

@@ -1,4 +1,4 @@
-# Instrumentating your application
+# Instrumenting your application
 
 Instrumentation is a powerful feature that allows you to see the exact runtime of each call to the selected set of functions. The downside is that it takes a bit of manual work to get it set up.
 

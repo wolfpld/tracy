@@ -65,7 +65,7 @@ AchievementItem* ac_instrumentationIntroItems[] = {
 
 AchievementItem ai_instrumentationIntro = {
     .id = "instrumentationIntro",
-    .name = "Instrumentating your application",
+    .name = "Instrumenting your application",
     .text = Unpack( TextInstrumentationIntro ),
     .items = ac_instrumentationIntroItems
 };

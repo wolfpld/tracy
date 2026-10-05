@@ -1,6 +1,6 @@
 # Save a trace
 
-Now that you have traced your application (or are in the process of doing so), you can save it to disk for future reference. You can do this by clicking on the * Connection* icon in the top left corner of the screen and then clicking on the * Save trace* button.
+Now that you have traced your application (or are in the process of doing so), you can save it to disk for future reference. You can do this by clicking on the * Connection* icon in the top left corner of the screen and then clicking on the * Save trace…* button.
 
 Keeping old traces on hand can be beneficial, as you can compare the performance of your optimizations with what you had before.
 

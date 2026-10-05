@@ -385,7 +385,7 @@ int main( int argc, char** argv )
         }
     }
 
-    s_achievements->Achieve( "achievementsIntro" );
+    if( tracy::s_config.achievements ) s_achievements->Achieve( "achievementsIntro" );
 
     tracy::UpdateTextureRGBAMips( zigzagTex, (void**)zigzagPx, zigzagX, zigzagY, 6 );
     for( auto& v : zigzagPx ) free( v );
@@ -687,7 +687,7 @@ static void DrawContents()
             ImGui::Separator();
             if( ImGui::TreeNode( ICON_FA_TOOLBOX " Global settings" ) )
             {
-                s_achievements->Achieve( "globalSettings" );
+                if( tracy::s_config.achievements ) s_achievements->Achieve( "globalSettings" );
 
                 ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
 
@@ -774,7 +774,11 @@ static void DrawContents()
                 }
 
                 ImGui::Spacing();
-                if( ImGui::Checkbox( "Enable achievements", &tracy::s_config.achievements ) ) tracy::SaveConfig();
+                if( ImGui::Checkbox( "Enable achievements", &tracy::s_config.achievements ) )
+                {
+                    tracy::SaveConfig();
+                    if( tracy::s_config.achievements ) s_achievements->Achieve( "achievementsIntro" );
+                }
                 ImGui::Spacing();
                 if( ImGui::Checkbox( "Save UI scale", &tracy::s_config.saveUserScale) ) tracy::SaveConfig();
 #ifndef __EMSCRIPTEN__
@@ -1370,6 +1374,7 @@ Would you like to enable achievements?
         {
             tracy::s_config.achievements = true;
             tracy::SaveConfig();
+            s_achievements->Achieve( "achievementsIntro" );
             ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine();

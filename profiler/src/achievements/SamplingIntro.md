@@ -7,4 +7,6 @@ While instrumentation requires changes to your code, sampling does not. However,
 Sampling is automatic on Linux. On Windows, you must run the profiled application as an administrator for it to work.
 
 > [!WARNING]
+> **Warning**
+>
 > Depending on your system configuration, some additional steps may be required. Please refer to the user manual for more information.

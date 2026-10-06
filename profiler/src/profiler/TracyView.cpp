@@ -54,13 +54,13 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char*
     , m_achievements( s_config.achievements )
     , m_horizontalScrollMultiplier( s_config.horizontalScrollMultiplier )
     , m_verticalScrollMultiplier( s_config.verticalScrollMultiplier )
-    , m_manualData( std::make_shared<TracyManualData>() )
+    , m_manualData( GetManualData() )
     , m_markdown( this, &m_worker )
 #ifdef __EMSCRIPTEN__
     , m_td( 2, "ViewMt" )
 #else
     , m_td( std::thread::hardware_concurrency(), "ViewMt" )
-    , m_llm( m_worker, *this, *m_manualData )
+    , m_llm( m_worker, *this, m_manualData )
 #endif
 {
     InitTextEditor();
@@ -86,13 +86,13 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f
     , m_achievements( s_config.achievements )
     , m_horizontalScrollMultiplier( s_config.horizontalScrollMultiplier )
     , m_verticalScrollMultiplier( s_config.verticalScrollMultiplier )
-    , m_manualData( std::make_shared<TracyManualData>() )
+    , m_manualData( GetManualData() )
     , m_markdown( this, &m_worker )
 #ifdef __EMSCRIPTEN__
     , m_td( 2, "ViewMt" )
 #else
     , m_td( std::thread::hardware_concurrency(), "ViewMt" )
-    , m_llm( m_worker, *this, *m_manualData )
+    , m_llm( m_worker, *this, m_manualData )
 #endif
 {
     m_notificationTime = 4;

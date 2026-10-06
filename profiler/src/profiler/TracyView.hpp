@@ -1083,7 +1083,7 @@ private:
     double m_horizontalScrollMultiplier = 1.0;
     double m_verticalScrollMultiplier = 1.0;
 
-    std::shared_ptr<TracyManualData> m_manualData;
+    const TracyManualData& m_manualData;
     size_t m_activeManualChunk = 0;
     Markdown m_markdown;
 

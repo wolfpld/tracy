@@ -2,7 +2,7 @@
 
 In addition to instrumenting functions, you can also instrument frames. This allows you to see how much time is spent in each frame of your application.
 
-To instrument frames, you need to add the `FrameMark` macro at the beginning of each frame. This can be done in the main loop of your application, or in a separate function that is called at the beginning of each frame.
+To instrument frames, you need to add the `FrameMark` macro at the end of each frame. This can be done in the main loop of your application, or in a separate function that is called at the end of each frame.
 
 ```c++
 #include "Tracy.hpp"

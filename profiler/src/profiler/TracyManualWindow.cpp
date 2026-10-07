@@ -1,22 +1,28 @@
 #include <assert.h>
+#include <algorithm>
 #include <stdio.h>
+#include <string>
 
 #include "TracyImGui.hpp"
-#include "TracyManualData.hpp"
+#include "TracyManualWindow.hpp"
 #include "TracyMarkdown.hpp"
-#include "TracyView.hpp"
 #include "TracyWeb.hpp"
 #include "../Fonts.hpp"
 
 namespace tracy
 {
 
-void View::DrawManual()
+ManualWindow::ManualWindow( const TracyManualData& manual )
+    : m_manual( manual )
+{
+}
+
+void ManualWindow::Draw( Markdown& md )
 {
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 1200 * scale, 800 * scale ), ImGuiCond_FirstUseEver );
-    if( m_manualPositionReset ) ImGui::SetNextWindowFocus();
-    ImGui::Begin( "User manual", &m_showManual );
+    if( m_positionReset ) ImGui::SetNextWindowFocus();
+    ImGui::Begin( "User manual", &m_show );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
 
     ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 1.f, 0.f, 1.0f ) );
@@ -41,7 +47,7 @@ void View::DrawManual()
 
     ImGui::BeginChild( "##toc", ImVec2( 0, 0 ), ImGuiChildFlags_AlwaysUseWindowPadding );
     int level = 0;
-    auto& chunks = m_manualData.GetChunks();
+    auto& chunks = m_manual.GetChunks();
     assert( !chunks.empty() );
     for( size_t i=0; i<chunks.size(); i++ )
     {
@@ -64,10 +70,10 @@ void View::DrawManual()
             level--;
         }
 
-        if( m_manualPositionReset && i < m_activeManualChunk && chunk.level < chunks[m_activeManualChunk].level )
+        if( m_positionReset && i < m_activeChunk && chunk.level < chunks[m_activeChunk].level )
         {
             bool ancestor = true;
-            for( size_t j = i+1; j < m_activeManualChunk; j++ )
+            for( size_t j = i+1; j < m_activeChunk; j++ )
             {
                 if( chunks[j].level <= chunk.level )
                 {
@@ -81,16 +87,16 @@ void View::DrawManual()
         ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
         const bool isLeaf = i == ( chunks.size() - 1 ) || chunks[i+1].level <= chunk.level;
         if( isLeaf ) flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
-        if( i == m_activeManualChunk ) flags |= ImGuiTreeNodeFlags_Selected;
+        if( i == m_activeChunk ) flags |= ImGuiTreeNodeFlags_Selected;
         if( ImGui::TreeNodeEx( tmp, flags ) )
         {
             if( !isLeaf ) level++;
         }
-        if( m_manualPositionReset && i == m_activeManualChunk ) ImGui::SetScrollHereY();
+        if( m_positionReset && i == m_activeChunk ) ImGui::SetScrollHereY();
         if( ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen() )
         {
-            m_activeManualChunk = i;
-            m_manualPositionReset = true;
+            m_activeChunk = i;
+            m_positionReset = true;
         }
     }
     while( level-- > 0 ) ImGui::TreePop();
@@ -99,15 +105,15 @@ void View::DrawManual()
     ImGui::NextColumn();
     ImGui::BeginChild( "##content", ImVec2( 0, 0 ), ImGuiChildFlags_AlwaysUseWindowPadding );
 
-    if( m_manualPositionReset )
+    if( m_positionReset )
     {
         ImGui::SetScrollY( 0 );
-        m_manualPositionReset = false;
+        m_positionReset = false;
     }
 
-    auto& chunk = chunks[m_activeManualChunk];
+    auto& chunk = chunks[m_activeChunk];
 
-    if( m_activeManualChunk == 0 )
+    if( m_activeChunk == 0 )
     {
         ImageCentered( GetProfilerIconTexture(), ImVec2( 80 * scale, 80 * scale ) );
         ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.5f ) );
@@ -148,7 +154,7 @@ void View::DrawManual()
         const auto separator = chunk.text.find( "\n-----" );
         const auto size = separator == std::string::npos ? chunk.text.size() : ( separator + 1 );
 
-        m_markdown.Print( chunk.text.c_str(), size );
+        md.Print( chunk.text.c_str(), size );
     }
 
     ImGui::EndChild();
@@ -157,24 +163,23 @@ void View::DrawManual()
     ImGui::End();
 }
 
-const TracyManualData::ManualChunk* View::GetManualChunk( const char* anchor ) const
+const TracyManualData::ManualChunk* ManualWindow::GetChunk( const char* anchor ) const
 {
     assert( anchor && *anchor );
 
-    auto& chunks = m_manualData.GetChunks();
+    auto& chunks = m_manual.GetChunks();
     auto it = std::ranges::find_if( chunks, [anchor]( const auto& chunk ) { return chunk.link == anchor; } );
     if( it != chunks.end() ) return &*it;
     return nullptr;
 }
 
-bool View::ViewManualChunk( const char* anchor )
+bool ManualWindow::Navigate( const char* anchor )
 {
-    assert( anchor && *anchor );
-    const auto chunk = GetManualChunk( anchor );
+    const auto chunk = GetChunk( anchor );
     if( !chunk ) return false;
-    m_activeManualChunk = std::distance( m_manualData.GetChunks().data(), chunk );
-    m_showManual = true;
-    m_manualPositionReset = true;
+    m_activeChunk = std::distance( m_manual.GetChunks().data(), chunk );
+    m_show = true;
+    m_positionReset = true;
     return true;
 }
 

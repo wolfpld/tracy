@@ -19,6 +19,7 @@
 #include "TracyConfig.hpp"
 #include "TracyDecayValue.hpp"
 #include "TracyManualData.hpp"
+#include "TracyManualWindow.hpp"
 #include "TracyMarkdown.hpp"
 #include "TracySourceContents.hpp"
 #include "TracyTimelineController.hpp"
@@ -167,8 +168,7 @@ public:
     void ViewSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr );
     bool ViewDispatch( const char* fileName, int line, uint64_t symAddr );
 
-    const TracyManualData::ManualChunk* GetManualChunk( const char* anchor ) const;
-    bool ViewManualChunk( const char* anchor );
+    ManualWindow& GetManualWindow() { return m_manualWindow; }
 
     bool ReconnectRequested() const { return m_reconnectRequested; }
     std::string GetAddress() const { return m_worker.GetAddr(); }
@@ -366,7 +366,6 @@ private:
     void DrawRangeEntry( Range& range, const char* label, const char* tooltip, uint32_t color, int id );
     bool ShouldDrawRange( const RangeId& id ) const;
     void DrawWaitStacks();
-    void DrawManual();
     void DrawFrameStatistics();
     void DrawFlameGraph();
     void DrawFlameGraphHeader( int64_t vStart, int64_t vEnd );
@@ -657,8 +656,6 @@ private:
     bool m_showAnnotationList = false;
     bool m_showWaitStacks = false;
     bool m_showFlameGraph = false;
-    bool m_showManual = false;
-    bool m_manualPositionReset = false;
     bool m_showFrameStatistics = false;
 
     AccumulationMode m_statAccumulationMode = AccumulationMode::SelfOnly;
@@ -1084,7 +1081,7 @@ private:
     double m_verticalScrollMultiplier = 1.0;
 
     const TracyManualData& m_manualData;
-    size_t m_activeManualChunk = 0;
+    ManualWindow m_manualWindow;
     Markdown m_markdown;
 
     TaskDispatch m_td;

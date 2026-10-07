@@ -172,7 +172,7 @@ std::string TracyLlmChat::ToolCallDescription( const nlohmann::json& json ) cons
 
 TracyLlmChat::TracyLlmChat( View& view, Worker& worker, const std::vector<LlmSkill>& skills )
     : m_width( new float[NumRoles] )
-    , m_markdown( &view, &worker )
+    , m_markdown( &view, &worker, &view.GetManualWindow() )
     , m_skills( skills )
     , m_worker( worker )
     , m_view( view )

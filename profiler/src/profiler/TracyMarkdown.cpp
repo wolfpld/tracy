@@ -3,6 +3,7 @@
 #include <string>
 #include <string.h>
 #include <vector>
+#include "TracyManualWindow.hpp"
 
 #include "TracyFilesystem.hpp"
 #include "TracyMarkdown.hpp"
@@ -52,7 +53,7 @@ class MarkdownContext
     };
 
 public:
-    MarkdownContext( View* view, Worker* worker ) : m_view( view ), m_worker( worker ) {}
+    MarkdownContext( View* view, Worker* worker, ManualWindow* manualWindow ) : m_view( view ), m_worker( worker ), m_manualWindow( manualWindow ) {}
 
     int EnterBlock( MD_BLOCKTYPE type, void* detail )
     {
@@ -470,7 +471,7 @@ private:
     void LinkHover()
     {
         const auto isSource = link.starts_with( "source:" ) && m_view && m_worker;
-        const auto isAnchor = link.starts_with( "#" ) && m_view;
+        const auto isAnchor = link.starts_with( "#" ) && m_manualWindow;
         StringIdx idx;
         uint32_t lineStart = 0;
         uint32_t lineEnd = 0;
@@ -520,7 +521,7 @@ private:
         }
         else if( isAnchor )
         {
-            auto chunk = m_view->GetManualChunk( link.c_str() );
+            auto chunk = m_manualWindow->GetChunk( link.c_str() );
             if( chunk )
             {
                 if( chunk->section.empty() )
@@ -557,7 +558,7 @@ private:
             }
             else if( isAnchor )
             {
-                m_view->ViewManualChunk( link.c_str() );
+                m_manualWindow->Navigate( link.c_str() );
             }
             else
             {
@@ -587,13 +588,15 @@ private:
 
     View* m_view;
     Worker* m_worker;
+    ManualWindow* m_manualWindow;
 };
 
 
-Markdown::Markdown( View* view, Worker* worker )
+Markdown::Markdown( View* view, Worker* worker, ManualWindow* manualWindow )
     : m_parser( new MD_PARSER() )
     , m_view( view )
     , m_worker( worker )
+    , m_manualWindow( manualWindow )
 {
     memset( m_parser, 0, sizeof( MD_PARSER ) );
     m_parser->flags = MD_FLAG_COLLAPSEWHITESPACE | MD_FLAG_PERMISSIVEAUTOLINKS | MD_FLAG_NOHTML | MD_FLAG_TABLES | MD_FLAG_TASKLISTS | MD_FLAG_STRIKETHROUGH | MD_FLAG_FOOTNOTES | MD_FLAG_ADMONITIONS;
@@ -613,7 +616,7 @@ void Markdown::Print( const char* str, size_t size )
 {
     ImGui::PushStyleVar( ImGuiStyleVar_ItemSpacing, ImVec2( ImGui::GetStyle().ItemSpacing.x, 0.0f ) );
 
-    MarkdownContext md( m_view, m_worker );
+    MarkdownContext md( m_view, m_worker, m_manualWindow );
     md_parse( str, size, m_parser, &md );
 
     ImGui::PopStyleVar();

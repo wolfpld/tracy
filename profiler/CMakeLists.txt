@@ -91,6 +91,7 @@ set(SERVER_FILES
     TracyFilesystem.cpp
     TracyImGui.cpp
     TracyManualData.cpp
+    TracyManualWindow.cpp
     TracyMarkdown.cpp
     TracyMicroArchitecture.cpp
     TracyMouse.cpp
@@ -124,7 +125,6 @@ set(SERVER_FILES
     TracyView_FrameTree.cpp
     TracyView_GpuTimeline.cpp
     TracyView_Locks.cpp
-    TracyView_Manual.cpp
     TracyView_Memory.cpp
     TracyView_Messages.cpp
     TracyView_Navigation.cpp

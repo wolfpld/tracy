@@ -1,6 +1,6 @@
 # It's over 100 million!
 
-Tracy can handle a lot of data. How about 100 million zones in a single trace? Add a lot of zones to your program and see how it handles it!
+Tracy can handle a lot of data. How about 100 million zones in a single trace? Add a lot of zones to your program and see how well it handles the load!
 
 Capturing a long-running profile trace is easy. Need to profile an hour of your program execution? You can do it.
 

@@ -11,6 +11,7 @@
 #include "data/TextInstrumentationStatistics.hpp"
 #include "data/TextIntro.hpp"
 #include "data/TextLoadTrace.hpp"
+#include "data/TextManual.hpp"
 #include "data/TextSamplingIntro.hpp"
 #include "data/TextSaveTrace.hpp"
 
@@ -130,9 +131,16 @@ AchievementItem ai_globalSettings = {
     .text = Unpack( TextGlobalSettings )
 };
 
+AchievementItem ai_manual = {
+    .id = "manual",
+    .name = "Read the manual",
+    .text = Unpack( TextManual )
+};
+
 AchievementItem* ac_achievementsIntroItems[] = {
     &ai_connectToServer,
     &ai_globalSettings,
+    &ai_manual,
     nullptr
 };
 

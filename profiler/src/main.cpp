@@ -810,6 +810,7 @@ static void DrawContents()
         if( ImGui::Button( ICON_FA_BOOK " Manual" ) )
         {
             s_manualWindow.Show() = true;
+            if( tracy::s_config.achievements ) s_achievements->Achieve( "manual" );
         }
         ImGui::SameLine();
         if( ImGui::Button( ICON_FA_EARTH_AMERICAS " Web" ) )

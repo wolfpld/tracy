@@ -7,4 +7,3 @@ Let's start our adventure by instrumenting your application and connecting it to
 3. Define `TRACY_ENABLE` in your build configuration, for the whole application. Do not do it in a single source file because it won't work.
 4. Start your application, and * Connect* to it with the profiler.
 
-Please refer to the [user manual](https://github.com/wolfpld/tracy/releases) for more details.

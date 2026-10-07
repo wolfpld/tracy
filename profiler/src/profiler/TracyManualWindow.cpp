@@ -11,9 +11,27 @@
 
 namespace tracy
 {
+namespace
+{
+struct ManualState
+{
+    size_t activeChunk = 0;
+    bool positionReset = true;
+    bool show = false;
+};
+
+ManualState& GetManualState()
+{
+    static ManualState state;
+    return state;
+}
+}
 
 ManualWindow::ManualWindow( const TracyManualData& manual )
     : m_manual( manual )
+    , m_activeChunk( GetManualState().activeChunk )
+    , m_positionReset( GetManualState().positionReset )
+    , m_show( GetManualState().show )
 {
 }
 

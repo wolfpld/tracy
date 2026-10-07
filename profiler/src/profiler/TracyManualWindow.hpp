@@ -23,9 +23,9 @@ public:
 
 private:
     const TracyManualData& m_manual;
-    size_t m_activeChunk = 0;
-    bool m_positionReset = true;
-    bool m_show = false;
+    size_t& m_activeChunk;
+    bool& m_positionReset;
+    bool& m_show;
 };
 
 }

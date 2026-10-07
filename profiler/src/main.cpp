@@ -38,6 +38,7 @@
 #include "profiler/TracyConfig.hpp"
 #include "profiler/TracyFileselector.hpp"
 #include "profiler/TracyImGui.hpp"
+#include "profiler/TracyManualWindow.hpp"
 #include "profiler/TracyMarkdown.hpp"
 #include "profiler/TracyMouse.hpp"
 #include "profiler/TracyProtoHistory.hpp"
@@ -571,6 +572,8 @@ static void DrawContents()
     static std::string reconnectAddr;
     static uint16_t reconnectPort;
     static bool showFilter = false;
+    static tracy::ManualWindow s_manualWindow( tracy::GetManualData() );
+    static tracy::Markdown s_manualMarkdown( nullptr, nullptr, &s_manualWindow );
 
 #ifndef __EMSCRIPTEN__
     UpdateBroadcastClients();
@@ -806,7 +809,7 @@ static void DrawContents()
         ImGui::Spacing();
         if( ImGui::Button( ICON_FA_BOOK " Manual" ) )
         {
-            tracy::OpenWebpage( "https://github.com/wolfpld/tracy/releases" );
+            s_manualWindow.Show() = true;
         }
         ImGui::SameLine();
         if( ImGui::Button( ICON_FA_EARTH_AMERICAS " Web" ) )
@@ -1556,6 +1559,11 @@ Would you like to enable achievements?
             ImGui::EndTabBar();
             ImGui::End();
         }
+    }
+
+    if( !viewPtr && s_manualWindow.Show() )
+    {
+        s_manualWindow.Draw( s_manualMarkdown );
     }
 
     bptr->EndFrame();

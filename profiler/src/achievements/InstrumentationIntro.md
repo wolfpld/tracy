@@ -19,6 +19,6 @@ Now, when you profile your application, you will see a new zone appear on the ti
 > [!NOTE]
 > **Note**
 >
-> The `ZoneScoped` macro is just one of the many macros provided by Tracy. See the documentation for more information.
+> The `ZoneScoped` macro is just one of the many macros provided by Tracy. See the manual for more information.
 
 The above description applies to C++ code, but things are done similarly in other programming languages. Refer to the documentation for your language for more information.

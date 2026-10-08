@@ -2,6 +2,7 @@
 #include "TracyEmbed.hpp"
 
 #include "data/Text100Million.hpp"
+#include "data/TextAnnotateZones.hpp"
 #include "data/TextConnectToClient.hpp"
 #include "data/TextFindZone.hpp"
 #include "data/TextFrameImages.hpp"
@@ -57,10 +58,17 @@ AchievementItem ai_findZone = {
     .text = Unpack( TextFindZone )
 };
 
+AchievementItem ai_annotateZones = {
+    .id = "annotateZones",
+    .name = "Annotate zones",
+    .text = Unpack( TextAnnotateZones )
+};
+
 AchievementItem* ac_instrumentationIntroItems[] = {
     &ai_100million,
     &ai_instrumentationStatistics,
     &ai_findZone,
+    &ai_annotateZones,
     nullptr
 };
 

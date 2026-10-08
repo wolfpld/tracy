@@ -206,6 +206,7 @@ add_custom_command(
 Embed(PROFILER_FILES Manual manual/tracy.md TEXT BUILD)
 
 Embed(PROFILER_FILES Text100Million src/achievements/100Million.md TEXT)
+Embed(PROFILER_FILES TextAnnotateZones src/achievements/AnnotateZones.md TEXT)
 Embed(PROFILER_FILES TextConnectToClient src/achievements/ConnectToClient.md TEXT)
 Embed(PROFILER_FILES TextFindZone src/achievements/FindZone.md TEXT)
 Embed(PROFILER_FILES TextFrameImages src/achievements/FrameImages.md TEXT)

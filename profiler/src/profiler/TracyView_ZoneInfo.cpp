@@ -1974,6 +1974,10 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
 
 void View::ShowZoneInfo( const ZoneEvent& ev )
 {
+    if( s_config.achievements && m_worker.HasZoneExtra( ev ) && m_worker.GetZoneExtra( ev ).text.Active() )
+    {
+        Achieve( "annotateZones" );
+    }
     if( m_zoneInfoWindow && m_zoneInfoWindow != &ev )
     {
         m_zoneInfoStack.push_back( m_zoneInfoWindow );

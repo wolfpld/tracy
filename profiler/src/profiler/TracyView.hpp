@@ -213,6 +213,7 @@ public:
     void DrawThread( const TimelineContext& ctx, const ThreadData& thread, const std::vector<TimelineDraw>& draw, const std::vector<ContextSwitchDraw>& ctxDraw, const std::vector<SamplesDraw>& samplesDraw, const std::vector<std::unique_ptr<LockDraw>>& lockDraw, int& offset, int depth, bool hasCtxSwitches, bool hasSamples );
     void DrawThreadMessagesList( const TimelineContext& ctx, const std::vector<MessagesDraw>& drawList, int offset, uint64_t tid );
     void DrawThreadOverlays( const ThreadData& thread, const ImVec2& ul, const ImVec2& dr );
+    void Achieve( const char* id );
 
     static constexpr uint64_t AnyThread = ~0ull;
     static constexpr uint32_t AnyLock = ~0u;
@@ -311,7 +312,6 @@ private:
     void InitTextEditor();
     void SetupConfig();
     void SetupRanges();
-    void Achieve( const char* id );
     void SaveUserData();
     void SetZoomPreset( int idx );
     void ZoomUserScale( int dir );

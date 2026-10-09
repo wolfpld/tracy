@@ -7,6 +7,7 @@
 #include "data/TextConnectToClient.hpp"
 #include "data/TextFindZone.hpp"
 #include "data/TextFrameImages.hpp"
+#include "data/TextGhostZones.hpp"
 #include "data/TextGlobalSettings.hpp"
 #include "data/TextInstrumentFrames.hpp"
 #include "data/TextInstrumentationIntro.hpp"
@@ -31,10 +32,19 @@ static std::string UnpackImpl( size_t size, size_t lz4Size, const uint8_t* data 
 #define Unpack( name ) UnpackImpl( Embed::name##Size, Embed::name##Lz4Size, Embed::name##Data )
 
 
+AchievementItem ai_ghostZones = {
+    .id = "ghostZones",
+    .name = "Ghost zones",
+    .text = Unpack( TextGhostZones )
+};
+
+AchievementItem* ac_samplingIntroItems[] = { &ai_ghostZones, nullptr };
+
 AchievementItem ai_samplingIntro = {
     .id = "samplingIntro",
     .name = "Sampling program execution",
     .text = Unpack( TextSamplingIntro ),
+    .items = ac_samplingIntroItems,
 };
 
 AchievementItem* ac_samplingItems[] = { &ai_samplingIntro, nullptr };

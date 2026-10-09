@@ -281,6 +281,7 @@ void TimelineItemThread::HeaderExtraContents( const TimelineContext& ctx, int of
         {
             if( IsMouseClicked( ImGuiMouseButton_Left ) )
             {
+                if( s_config.achievements ) m_view.Achieve( "ghostZones" );
                 m_ghost = !m_ghost;
             }
         }

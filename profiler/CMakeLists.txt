@@ -186,6 +186,7 @@ Embed(PROFILER_FILES FontBold src/font/Roboto-Bold.ttf)
 Embed(PROFILER_FILES FontItalic src/font/Roboto-Italic.ttf)
 Embed(PROFILER_FILES FontBoldItalic src/font/Roboto-BoldItalic.ttf)
 Embed(PROFILER_FILES FontEmoji src/font/NotoEmoji-Regular.ttf)
+Embed(PROFILER_FILES FontCjk src/font/SourceHanSans-Normal.ttc)
 set(MANUAL_MD ${CMAKE_CURRENT_BINARY_DIR}/manual/tracy.md)
 add_custom_command(
     OUTPUT ${MANUAL_MD}

@@ -637,6 +637,7 @@ private:
     ImGuiTextFilter m_statisticsFilter;
     ImGuiTextFilter m_statisticsImageFilter;
     ImGuiTextFilter m_userTextFilter;
+    ImGuiTextFilter m_plotFilter;
     unordered_flat_set<Worker::ZoneThreadData*> m_filteredZones;
 
     Region m_highlight;

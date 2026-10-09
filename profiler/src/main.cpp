@@ -1472,9 +1472,11 @@ Would you like to enable achievements?
                 }
             }
         }
-        ImGui::PushFont( g_fonts.normal, FontBig );
-        tracy::TextColoredUnformatted( color, ICON_FA_STAR );
-        ImGui::PopFont();
+        auto draw = ImGui::GetWindowDrawList();
+        draw->PushClipRectFullScreen();
+        tracy::DrawGlyphTransformed( draw, g_fonts.normal, FontBig, ICON_FA_STAR, cursorScreen, ImVec2( 0.5f, 0.55f ), 0.f, 1.f, color );
+        draw->PopClipRect();
+        ImGui::Dummy( starSize );
 
         if( aItem )
         {

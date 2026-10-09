@@ -30,6 +30,30 @@ void DrawZigZag( ImDrawList* draw, const ImVec2& wpos, double start, double end,
     draw->AddImage( zigzagTex, wpos + ImVec2( start, -h ), wpos + ImVec2( end, h ), ImVec2( 0, 0 ), ImVec2( v, 1 ), color );
 }
 
+void DrawGlyphTransformed( ImDrawList* draw, ImFont* font, float size, const char* icon, const ImVec2& origin, const ImVec2& pivot, float angle, float scale, uint32_t color )
+{
+    unsigned int codepoint = 0;
+    ImTextCharFromUtf8( &codepoint, icon, nullptr );
+
+    ImFontBaked* baked = font->GetFontBaked( size );
+    const ImFontGlyph* glyph = baked->FindGlyph( ( ImWchar )codepoint );
+
+    const float cx = glyph->X0 + ( glyph->X1 - glyph->X0 ) * pivot.x;
+    const float cy = glyph->Y0 + ( glyph->Y1 - glyph->Y0 ) * pivot.y;
+    const float c = cosf( angle ) * scale;
+    const float s = sinf( angle ) * scale;
+    const auto pt = [origin, cx, cy, c, s]( float x, float y ) {
+        const float dx = x - cx;
+        const float dy = y - cy;
+        return origin + ImVec2( cx + dx * c - dy * s, cy + dx * s + dy * c );
+    };
+
+    draw->AddImageQuad( font->OwnerAtlas->TexRef,
+        pt( glyph->X0, glyph->Y0 ), pt( glyph->X1, glyph->Y0 ), pt( glyph->X1, glyph->Y1 ), pt( glyph->X0, glyph->Y1 ),
+        ImVec2( glyph->U0, glyph->V0 ), ImVec2( glyph->U1, glyph->V0 ), ImVec2( glyph->U1, glyph->V1 ), ImVec2( glyph->U0, glyph->V1 ),
+        color );
+}
+
 void DrawStripedRect( ImDrawList* draw, const ImVec2& wpos, double x0, double y0, double x1, double y1, double sw, uint32_t color, bool fix_stripes_in_screen_space, bool inverted )
 {
     assert( x1 >= x0 );

@@ -36,6 +36,7 @@ void DrawHistogramMinMaxLabel( ImDrawList* draw, int64_t tmin, int64_t tmax, ImV
 void PrintSource( const std::vector<Tokenizer::Line>& lines );
 bool PrintTextWrapped( const char* text, const char* end, bool strikethrough, bool underline );
 bool DragHeightSplitter( const char* id, float& height, float minHeight, float maxHeight, float thickness );
+void DrawGlyphTransformed( ImDrawList* draw, ImFont* font, float size, const char* icon, const ImVec2& origin, const ImVec2& pivot, float angle, float scale, uint32_t color );
 
 
 static constexpr const uint32_t SyntaxColors[] = {

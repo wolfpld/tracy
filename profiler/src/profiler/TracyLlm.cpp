@@ -197,7 +197,7 @@ void TracyLlm::Draw( WindowConstraints& constraints )
         memcpy( m_apiInput, s_config.llmAddress.c_str(), sz );
         m_apiInput[sz] = 0;
         ImGui::SetNextItemWidth( ImGui::GetContentRegionAvail().x - ImGui::GetFrameHeight() - ImGui::GetStyle().ItemSpacing.x );
-        bool changed = ImGui::InputTextWithHint( "##api", "http://localhost:8080", m_apiInput, InputBufferSize );
+        bool changed = ImGui::InputTextWithHint( "##api", "http://localhost:9931", m_apiInput, InputBufferSize );
         bool commit = ImGui::IsItemDeactivatedAfterEdit();
         ImGui::SameLine();
         if( ImGui::BeginCombo( "##presets", nullptr, ImGuiComboFlags_NoPreview ) )
@@ -208,7 +208,7 @@ void TracyLlm::Draw( WindowConstraints& constraints )
                 const char* address;
             };
             constexpr static std::array presets = {
-                Preset { "Llama.cpp", "http://localhost:8080" },
+                Preset { "Llama.cpp", "http://localhost:9931" },
                 Preset { "LM Studio", "http://localhost:1234" },
             };
             for( auto& preset : presets )

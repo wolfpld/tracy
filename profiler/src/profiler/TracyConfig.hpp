@@ -42,7 +42,7 @@ struct Config
 #else
     bool llm = true;
 #endif
-    std::string llmAddress = "http://localhost:8080";
+    std::string llmAddress = "http://localhost:9931";
     std::string llmModel;
     std::string llmFastModel;
     std::string llmEmbeddingsModel;

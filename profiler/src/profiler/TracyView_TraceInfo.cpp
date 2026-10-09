@@ -13,6 +13,8 @@ namespace tracy
 
 void View::DrawInfo()
 {
+    if( s_config.achievements && !m_worker.GetAppInfo().empty() ) Achieve( "appInfo" );
+
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 400 * scale, 650 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Trace information", &m_showInfo, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );

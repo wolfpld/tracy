@@ -3,6 +3,7 @@
 
 #include "data/Text100Million.hpp"
 #include "data/TextAnnotateZones.hpp"
+#include "data/TextAppInfo.hpp"
 #include "data/TextConnectToClient.hpp"
 #include "data/TextFindZone.hpp"
 #include "data/TextFrameImages.hpp"
@@ -113,9 +114,16 @@ AchievementItem ai_saveTrace = {
     .text = Unpack( TextSaveTrace )
 };
 
+AchievementItem ai_appInfo = {
+    .id = "appInfo",
+    .name = "Describe your application",
+    .text = Unpack( TextAppInfo )
+};
+
 AchievementItem* ac_connectToServerItems[] = {
     &ai_saveTrace,
     &ai_loadTrace,
+    &ai_appInfo,
     nullptr
 };
 

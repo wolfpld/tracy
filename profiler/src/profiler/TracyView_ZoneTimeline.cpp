@@ -99,7 +99,7 @@ void View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
     if( displayCropper ) 
     {
         ImGui::PopClipRect();
-        if( depth > 0 ) DrawThreadCropper( depth, thread.id, croppperPosX, yPos, ostep, cropperWidth, hasCtxSwitch );
+        if( depth > 0 ) DrawThreadCropper( depth, thread.id, croppperPosX, yPos, ostep, cropperWidth, hasCtxSwitch, ctx.hover );
     }
 }
 
@@ -640,7 +640,7 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
     }
 }
 
-void View::DrawThreadCropper( const int depth, const uint64_t tid, const float xPos, const float yPos, const float ostep, const float cropperWidth, const bool hasCtxSwitches )
+void View::DrawThreadCropper( const int depth, const uint64_t tid, const float xPos, const float yPos, const float ostep, const float cropperWidth, const bool hasCtxSwitches, const bool hover )
 {
     const ImVec2 mousePos = ImGui::GetMousePos();
     const bool clicked = IsMouseClicked( ImGuiMouseButton_Left );
@@ -677,7 +677,7 @@ void View::DrawThreadCropper( const int depth, const uint64_t tid, const float x
         const float dx = mousePos.x - center.x;
         const float dy = mousePos.y - center.y;
 
-        if( dx * dx + dy * dy <= hradius * hradius )
+        if( hover && dx * dx + dy * dy <= hradius * hradius )
         {
             draw->AddCircle( center, hradius, 0xFFFFFFFF, 0, hoverCircleThickness );
             const float wPosX = ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMin().x;

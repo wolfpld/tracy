@@ -227,8 +227,12 @@ void TimelineController::End( double pxns, const ImVec2& wpos, bool hover, bool 
     const int normalRunning = drawRun( m_normalItems, ctxNormal, pinnedTop );
     ImGui::PopClipRect();
 
-    drawRun( m_pinnedTopItems, ctx, curScrollY );
-    drawRun( m_pinnedBottomItems, ctx, bottomStart );
+    const int topRunning = drawRun( m_pinnedTopItems, ctx, curScrollY );
+    const int bottomRunning = drawRun( m_pinnedBottomItems, ctx, bottomStart );
+
+    const auto pinBorderColor = 0xFF66FFFF;
+    if( topRunning > 0 ) draw->AddRect( ImVec2( wpos.x + 0.5f, topBandBegin + 0.5f ), ImVec2( wpos.x + ctx.w - 0.5f, topBandBegin + topRunning - 0.5f ), pinBorderColor );
+    if( bottomRunning > 0 ) draw->AddRect( ImVec2( wpos.x + 0.5f, bottomBandBegin + 0.5f ), ImVec2( wpos.x + ctx.w - 0.5f, bottomBandBegin + bottomRunning - 0.5f ), pinBorderColor );
 
     int yOffset = pinnedTop + normalRunning + pinnedBottom;
 

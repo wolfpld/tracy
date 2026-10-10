@@ -177,6 +177,7 @@ bool UserData::Save()
             { "frameTarget", m_viewData.frameTarget },
             { "shortenName", (int)m_viewData.shortenName },
             { "plotHeight", m_viewData.plotHeight },
+            { "plotsHierarchy", m_viewData.plotsHierarchy },
         } },
     };
 
@@ -278,6 +279,7 @@ bool UserData::Load()
             LoadValue( options, "frameTarget", m_viewData.frameTarget );
             LoadValueCast( options, "shortenName", m_viewData.shortenName );
             LoadValue( options, "plotHeight", m_viewData.plotHeight );
+            LoadValue( options, "plotsHierarchy", m_viewData.plotsHierarchy );
         }
 
         if( json.contains( "sourceSubstitutions" ) )

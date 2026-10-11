@@ -1572,8 +1572,7 @@ Would you like to enable achievements?
                         ImGui::BeginChild( "##achievementtext", ImVec2( 0, 0 ), ImGuiChildFlags_AlwaysUseWindowPadding );
                         if( s_achievementItem )
                         {
-                            tracy::Markdown md( nullptr, nullptr );
-                            md.Print( s_achievementItem->text.c_str(), s_achievementItem->text.size() );
+                            s_manualMarkdown.Print( s_achievementItem->text.c_str(), s_achievementItem->text.size() );
                         }
                         ImGui::EndChild();
                         ImGui::EndColumns();

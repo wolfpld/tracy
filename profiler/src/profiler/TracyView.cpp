@@ -16,7 +16,6 @@
 #include "TracyFileRead.hpp"
 #include "TracyFilesystem.hpp"
 #include "TracyImGui.hpp"
-#include "TracyManualData.hpp"
 #include "TracyPrint.hpp"
 #include "TracySafeFileWrite.hpp"
 #include "TracySourceView.hpp"
@@ -54,13 +53,12 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char*
     , m_achievements( s_config.achievements )
     , m_horizontalScrollMultiplier( s_config.horizontalScrollMultiplier )
     , m_verticalScrollMultiplier( s_config.verticalScrollMultiplier )
-    , m_manualData( GetManualData() )
     , m_markdown( this, &m_worker, &GetManualWindow() )
 #ifdef __EMSCRIPTEN__
     , m_td( 2, "ViewMt" )
 #else
     , m_td( std::thread::hardware_concurrency(), "ViewMt" )
-    , m_llm( m_worker, *this, m_manualData )
+    , m_llm( m_worker, *this )
 #endif
 {
     InitTextEditor();
@@ -86,13 +84,12 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f
     , m_achievements( s_config.achievements )
     , m_horizontalScrollMultiplier( s_config.horizontalScrollMultiplier )
     , m_verticalScrollMultiplier( s_config.verticalScrollMultiplier )
-    , m_manualData( GetManualData() )
     , m_markdown( this, &m_worker, &GetManualWindow() )
 #ifdef __EMSCRIPTEN__
     , m_td( 2, "ViewMt" )
 #else
     , m_td( std::thread::hardware_concurrency(), "ViewMt" )
-    , m_llm( m_worker, *this, m_manualData )
+    , m_llm( m_worker, *this )
 #endif
 {
     m_notificationTime = 4;

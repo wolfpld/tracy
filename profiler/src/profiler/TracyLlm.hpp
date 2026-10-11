@@ -21,7 +21,6 @@ constexpr int DefaultToolReplyLimit = 48 * 1024;
 class TracyLlmApi;
 class TracyLlmChat;
 class TracyLlmTools;
-class TracyManualData;
 class View;
 class WindowConstraints;
 class Worker;
@@ -54,7 +53,7 @@ class TracyLlm
     };
 
 public:
-    TracyLlm( Worker& worker, View& view, const TracyManualData& manual );
+    TracyLlm( Worker& worker, View& view );
     ~TracyLlm();
 
     [[nodiscard]] bool IsBusy() const { std::lock_guard lock( m_jobsLock ); return m_busy; }

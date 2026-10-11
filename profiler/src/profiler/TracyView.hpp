@@ -18,7 +18,6 @@
 #include "TracyBuzzAnim.hpp"
 #include "TracyConfig.hpp"
 #include "TracyDecayValue.hpp"
-#include "TracyManualData.hpp"
 #include "TracyManualWindow.hpp"
 #include "TracyMarkdown.hpp"
 #include "TracySourceContents.hpp"
@@ -1078,7 +1077,6 @@ private:
     double m_horizontalScrollMultiplier = 1.0;
     double m_verticalScrollMultiplier = 1.0;
 
-    const TracyManualData& m_manualData;
     Markdown m_markdown;
 
     TaskDispatch m_td;

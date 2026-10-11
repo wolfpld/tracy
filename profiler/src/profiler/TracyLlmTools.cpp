@@ -85,14 +85,13 @@ static std::unique_ptr<pugi::xml_document> ParseHtml( const std::string& html )
     return doc;
 }
 
-TracyLlmTools::TracyLlmTools( Worker& worker, const View& view, const TracyManualData& manual, const std::vector<LlmSkill>& skills )
+TracyLlmTools::TracyLlmTools( Worker& worker, const View& view, const std::vector<LlmSkill>& skills )
     : m_worker( worker )
     , m_view( view )
-    , m_manual( manual )
     , m_skills( skills )
 {
     int idx = 0;
-    for( auto& chunk : m_manual.GetChunks() )
+    for( auto& chunk : GetManualData().GetChunks() )
     {
         std::string hdr;
         if( !chunk.section.empty() ) hdr += "Section " + chunk.section;
@@ -245,7 +244,7 @@ void TracyLlmTools::SelectManualEmbeddings( const std::string& model )
 
     try
     {
-        m_manualEmbeddings = std::make_unique<TracyLlmEmbeddings>( cache, m_manual.GetHash() );
+        m_manualEmbeddings = std::make_unique<TracyLlmEmbeddings>( cache, GetManualData().GetHash() );
         m_manualEmbeddingState = { .model = model, .done = true };
     }
     catch( std::exception& ) {}
@@ -346,7 +345,7 @@ void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
         i += bsz;
     }
 
-    m_manualEmbeddings->Save( cache, m_manual.GetHash() );
+    m_manualEmbeddings->Save( cache, GetManualData().GetHash() );
 
     lock.lock();
     m_manualEmbeddingState.inProgress = false;
@@ -838,7 +837,7 @@ std::string TracyLlmTools::SearchManual( const std::string& query, TracyLlmApi& 
     }
     if( chunks.size() > MaxOutputChunks ) chunks.resize( MaxOutputChunks );
 
-    auto& manualChunks = m_manual.GetChunks();
+    auto& manualChunks = GetManualData().GetChunks();
     const auto maxSize = CalcMaxSize();
     int totalSize = 0;
     int idx;

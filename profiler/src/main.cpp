@@ -1418,7 +1418,9 @@ Would you like to enable achievements?
 
     if( tracy::s_config.achievements )
     {
+        const float borderSize = ImGui::GetStyle().PopupBorderSize;
         ImGui::PushStyleVar( ImGuiStyleVar_WindowRounding, 16 * dpiScale );
+        ImGui::PushStyleVar( ImGuiStyleVar_PopupBorderSize, 0.f );
 
         ImGui::PushFont( g_fonts.normal, FontBig );
         const auto starSize = ImGui::CalcTextSize( ICON_FA_STAR );
@@ -1482,7 +1484,10 @@ Would you like to enable achievements?
             const auto c1 = uint32_t( std::lerp( 0x88, 0xFF, t ) );
             color = 0xFF000000 | ( c0 << 16 ) | ( c1 << 8 ) | c1;
         }
-        if( ( animStage == 0 || animStage == 2 ) && ImGui::IsMouseHoveringRect( cursorScreen - ImVec2( dpiScale * 2, dpiScale * 2 ), cursorScreen + starSize + ImVec2( dpiScale * 4, dpiScale * 4 ) ) )
+        const auto wpos = ImGui::GetWindowPos();
+        const auto wend = wpos + ImGui::GetWindowSize();
+        const bool hovered = ( animStage == 0 || animStage == 2 ) && ImGui::IsMouseHoveringRect( wpos, wend );
+        if( hovered )
         {
             color = 0xFFFFFFFF;
             if( ImGui::IsMouseClicked( ImGuiMouseButton_Left ) )
@@ -1496,6 +1501,7 @@ Would you like to enable achievements?
                     showAchievements = true;
                     animStage = 3;
                     s_achievementItem = aItem;
+                    s_switchAchievementCategory = true;
                 }
             }
         }
@@ -1503,12 +1509,12 @@ Would you like to enable achievements?
         draw->PushClipRectFullScreen();
         tracy::DrawGlyphTransformed( draw, g_fonts.normal, FontBig, ICON_FA_STAR, cursorScreen, ImVec2( 0.5f, 0.55f ), spin.Angle(), 1.f, color );
         draw->PopClipRect();
+        draw->AddRect( wpos, wend, hovered ? 0xFFFFFFFF : ImGui::GetColorU32( ImGuiCol_Border ), 16 * dpiScale, 0, borderSize );
         ImGui::Dummy( starSize );
 
         if( aItem )
         {
             ImGui::SameLine();
-            const auto dismiss = ImGui::GetCursorScreenPos();
             const auto th = ImGui::GetTextLineHeight();
             ImGui::SetCursorPosY( cursor.y - th * 0.175f );
             ImGui::TextUnformatted( aItem->name );
@@ -1516,25 +1522,15 @@ Would you like to enable achievements?
             ImGui::SetCursorPos( cursor + ImVec2( starSize.x + ImGui::GetStyle().ItemSpacing.x, th ) );
             tracy::TextDisabledUnformatted( "Click to open" );
             ImGui::PopFont();
-            if( animStage == 2 )
+            if( animStage == 2 && !aItem->keepOpen )
             {
-                if( ImGui::IsMouseHoveringRect( dismiss - ImVec2( 0, dpiScale * 6 ), dismiss + ImVec2( aSize, th * 1.5f + dpiScale * 4 ) ) && ImGui::IsMouseClicked( ImGuiMouseButton_Left ) )
-                {
-                    s_achievementItem = aItem;
-                    s_switchAchievementCategory = true;
-                    showAchievements = true;
-                    animStage = 3;
-                }
-                if( !aItem->keepOpen )
-                {
-                    openTimeLeft -= ImGui::GetIO().DeltaTime;
-                    if( openTimeLeft < 0 ) animStage = 3;
-                }
+                openTimeLeft -= ImGui::GetIO().DeltaTime;
+                if( openTimeLeft < 0 ) animStage = 3;
             }
         }
 
         ImGui::End();
-        ImGui::PopStyleVar();
+        ImGui::PopStyleVar( 2 );
 
         if( showAchievements )
         {

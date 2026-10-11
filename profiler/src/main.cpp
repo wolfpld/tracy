@@ -835,7 +835,6 @@ static void DrawContents()
         if( ImGui::Button( ICON_FA_BOOK " Manual" ) )
         {
             s_manualWindow.Show() = true;
-            if( tracy::s_config.achievements ) s_achievements->Achieve( "manual" );
         }
         ImGui::SameLine();
         if( ImGui::Button( ICON_FA_EARTH_AMERICAS " Web" ) )
@@ -1587,9 +1586,10 @@ Would you like to enable achievements?
         }
     }
 
-    if( !viewPtr && s_manualWindow.Show() )
+    if( s_manualWindow.Show() )
     {
-        s_manualWindow.Draw( s_manualMarkdown );
+        if( tracy::s_config.achievements ) s_achievements->Achieve( "manual" );
+        if( !viewPtr ) s_manualWindow.Draw( s_manualMarkdown );
     }
 
     bptr->EndFrame();

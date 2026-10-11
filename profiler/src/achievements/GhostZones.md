@@ -1,6 +1,6 @@
 # Ghost zones
 
-Automated sampling gives Tracy a rough picture of what your application was doing, even in places where you placed no zones. That data can be displayed as ghost zones, approximate spans of execution reconstructed from the samples, marked with the * ghost* icon so they are never mistaken for real instrumentation.
+[Automated sampling](#sampling) gives Tracy a rough picture of what your application was doing, even in places where you placed no zones. That data can be displayed as [ghost zones](#zoneslocksplots), approximate spans of execution reconstructed from the samples, marked with the * ghost* icon so they are never mistaken for real instrumentation.
 
 On any thread track that has both instrumented zones and sampling data, a * ghost* icon appears next to the thread label. Click it to switch that track between instrumented and ghost display, the same time range, viewed two ways. Threads that contain no instrumented zones display ghost zones automatically.
 

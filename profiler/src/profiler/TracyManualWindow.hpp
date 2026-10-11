@@ -28,6 +28,8 @@ private:
     bool& m_show;
 };
 
+ManualWindow& GetManualWindow();
+
 }
 
 #endif

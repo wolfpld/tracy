@@ -201,4 +201,10 @@ bool ManualWindow::Navigate( const char* anchor )
     return true;
 }
 
+ManualWindow& GetManualWindow()
+{
+    static ManualWindow window( GetManualData() );
+    return window;
+}
+
 }

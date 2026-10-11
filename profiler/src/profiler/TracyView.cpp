@@ -55,8 +55,7 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char*
     , m_horizontalScrollMultiplier( s_config.horizontalScrollMultiplier )
     , m_verticalScrollMultiplier( s_config.verticalScrollMultiplier )
     , m_manualData( GetManualData() )
-    , m_manualWindow( m_manualData )
-    , m_markdown( this, &m_worker, &m_manualWindow )
+    , m_markdown( this, &m_worker, &GetManualWindow() )
 #ifdef __EMSCRIPTEN__
     , m_td( 2, "ViewMt" )
 #else
@@ -88,8 +87,7 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f
     , m_horizontalScrollMultiplier( s_config.horizontalScrollMultiplier )
     , m_verticalScrollMultiplier( s_config.verticalScrollMultiplier )
     , m_manualData( GetManualData() )
-    , m_manualWindow( m_manualData )
-    , m_markdown( this, &m_worker, &m_manualWindow )
+    , m_markdown( this, &m_worker, &GetManualWindow() )
 #ifdef __EMSCRIPTEN__
     , m_td( 2, "ViewMt" )
 #else
@@ -1019,7 +1017,7 @@ bool View::DrawImpl()
         ImGui::EndPopup();
     }
     ImGui::SameLine();
-    ToggleButton( ICON_FA_BOOK, m_manualWindow.Show() );
+    ToggleButton( ICON_FA_BOOK, GetManualWindow().Show() );
     if( m_sscb )
     {
         ImGui::SameLine();
@@ -1236,7 +1234,7 @@ bool View::DrawImpl()
     if( m_sampleParents.symAddr != 0 ) DrawSampleParents();
     if( m_showRanges ) DrawRanges();
     if( m_showWaitStacks ) DrawWaitStacks();
-    if( m_manualWindow.Show() ) m_manualWindow.Draw( m_markdown );
+    if( GetManualWindow().Show() ) GetManualWindow().Draw( m_markdown );
     if( m_showFrameStatistics ) DrawFrameStatistics();
 #ifndef __EMSCRIPTEN__
     if( m_llm.m_show ) m_llm.Draw( m_llmConstraint );

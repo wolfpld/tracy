@@ -168,8 +168,6 @@ public:
     void ViewSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr );
     bool ViewDispatch( const char* fileName, int line, uint64_t symAddr );
 
-    ManualWindow& GetManualWindow() { return m_manualWindow; }
-
     bool ReconnectRequested() const { return m_reconnectRequested; }
     std::string GetAddress() const { return m_worker.GetAddr(); }
     uint16_t GetPort() const { return m_worker.GetPort(); }
@@ -1081,7 +1079,6 @@ private:
     double m_verticalScrollMultiplier = 1.0;
 
     const TracyManualData& m_manualData;
-    ManualWindow m_manualWindow;
     Markdown m_markdown;
 
     TaskDispatch m_td;

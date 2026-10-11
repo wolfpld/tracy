@@ -597,8 +597,7 @@ static void DrawContents()
     static std::string reconnectAddr;
     static uint16_t reconnectPort;
     static bool showFilter = false;
-    static tracy::ManualWindow s_manualWindow( tracy::GetManualData() );
-    static tracy::Markdown s_manualMarkdown( nullptr, nullptr, &s_manualWindow );
+    static tracy::Markdown s_manualMarkdown( nullptr, nullptr, &tracy::GetManualWindow() );
 
 #ifndef __EMSCRIPTEN__
     UpdateBroadcastClients();
@@ -834,7 +833,7 @@ static void DrawContents()
         ImGui::Spacing();
         if( ImGui::Button( ICON_FA_BOOK " Manual" ) )
         {
-            s_manualWindow.Show() = true;
+            tracy::GetManualWindow().Show() = true;
         }
         ImGui::SameLine();
         if( ImGui::Button( ICON_FA_EARTH_AMERICAS " Web" ) )
@@ -1585,10 +1584,10 @@ Would you like to enable achievements?
         }
     }
 
-    if( s_manualWindow.Show() )
+    if( tracy::GetManualWindow().Show() )
     {
         if( tracy::s_config.achievements ) s_achievements->Achieve( "manual" );
-        if( !viewPtr ) s_manualWindow.Draw( s_manualMarkdown );
+        if( !viewPtr ) tracy::GetManualWindow().Draw( s_manualMarkdown );
     }
 
     bptr->EndFrame();

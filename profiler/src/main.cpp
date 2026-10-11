@@ -5,6 +5,7 @@
 #include <inttypes.h>
 #define IMGUI_DEFINE_MATH_OPERATORS 1
 #include <imgui.h>
+#include <numbers>
 #include <mutex>
 #include <stdint.h>
 #include <stdio.h>
@@ -565,6 +566,30 @@ static void DrawAchievements( tracy::data::AchievementItem** items )
         }
     }
 }
+
+struct UnlockSpin
+{
+    void Trigger() { start = ImGui::GetTime(); }
+
+    float Angle()
+    {
+        if( start < 0 ) return 0.f;
+        const double dt = ImGui::GetTime() - start;
+        if( dt >= duration )
+        {
+            start = -1.0;
+            return 0.f;
+        }
+        tracy::s_wasActive = true;
+        const float u = float( dt / duration );
+        const float v = 1.f - u;
+        return turns * 2.f * std::numbers::pi_v<float> * ( 1.f - v * v * v * v );
+    }
+
+    double start = -1.0;
+    static constexpr float duration = 3.f;
+    static constexpr float turns = 6.f;
+};
 
 static void DrawContents()
 {
@@ -1403,6 +1428,7 @@ Would you like to enable achievements?
         static float animProgress = 0;
         static bool showAchievements = false;
         static float openTimeLeft = 0;
+        static UnlockSpin spin;
 
         float aSize = 0;
         const auto aItem = s_achievements->GetNextQueue();
@@ -1413,6 +1439,7 @@ Would you like to enable achievements?
             if( animStage == 0 )
             {
                 animStage = 1;
+                spin.Trigger();
             }
         }
 
@@ -1474,7 +1501,7 @@ Would you like to enable achievements?
         }
         auto draw = ImGui::GetWindowDrawList();
         draw->PushClipRectFullScreen();
-        tracy::DrawGlyphTransformed( draw, g_fonts.normal, FontBig, ICON_FA_STAR, cursorScreen, ImVec2( 0.5f, 0.55f ), 0.f, 1.f, color );
+        tracy::DrawGlyphTransformed( draw, g_fonts.normal, FontBig, ICON_FA_STAR, cursorScreen, ImVec2( 0.5f, 0.55f ), spin.Angle(), 1.f, color );
         draw->PopClipRect();
         ImGui::Dummy( starSize );
 

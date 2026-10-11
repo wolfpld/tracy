@@ -446,6 +446,7 @@ void View::DrawTimelineSections()
         if( IsMouseClickReleased( ImGuiMouseButton_Right ) ) m_setRangePopup = RangeSlim { s, e, true };
         if( IsMouseClicked( ImGuiMouseButton_Middle ) )
         {
+            if( s_config.achievements ) Achieve( "markSections" );
             ZoomToRange( s, e );
         }
     };

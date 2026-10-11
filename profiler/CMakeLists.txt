@@ -221,6 +221,7 @@ Embed(PROFILER_FILES TextLoadTrace src/achievements/LoadTrace.md TEXT)
 Embed(PROFILER_FILES TextManual src/achievements/Manual.md TEXT)
 Embed(PROFILER_FILES TextSamplingIntro src/achievements/SamplingIntro.md TEXT)
 Embed(PROFILER_FILES TextSaveTrace src/achievements/SaveTrace.md TEXT)
+Embed(PROFILER_FILES TextSections src/achievements/Sections.md TEXT)
 
 set(INCLUDES "${CMAKE_CURRENT_BINARY_DIR}")
 set(LIBS "")

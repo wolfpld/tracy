@@ -16,6 +16,7 @@
 #include "data/TextLoadTrace.hpp"
 #include "data/TextManual.hpp"
 #include "data/TextSamplingIntro.hpp"
+#include "data/TextSections.hpp"
 #include "data/TextSaveTrace.hpp"
 
 namespace tracy::data
@@ -75,11 +76,18 @@ AchievementItem ai_annotateZones = {
     .text = Unpack( TextAnnotateZones )
 };
 
+AchievementItem ai_markSections = {
+    .id = "markSections",
+    .name = "Mark sections",
+    .text = Unpack( TextSections )
+};
+
 AchievementItem* ac_instrumentationIntroItems[] = {
     &ai_100million,
     &ai_instrumentationStatistics,
     &ai_findZone,
     &ai_annotateZones,
+    &ai_markSections,
     nullptr
 };
 

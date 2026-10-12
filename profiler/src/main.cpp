@@ -570,6 +570,7 @@ static void DrawAchievements( tracy::data::AchievementItem** items )
 struct UnlockSpin
 {
     void Trigger() { start = ImGui::GetTime(); }
+    bool Active() const { return start >= 0; }
 
     float Angle()
     {
@@ -589,6 +590,38 @@ struct UnlockSpin
     double start = -1.0;
     static constexpr float duration = 3.f;
     static constexpr float turns = 6.f;
+};
+
+struct AttentionDance
+{
+    void Start() { if( start < 0 ) start = ImGui::GetTime(); }
+    void Stop() { start = -1.0; }
+
+    float Angle() const
+    {
+        if( start < 0 ) return 0.f;
+        const float dt = float( ImGui::GetTime() - start );
+        const auto s0 = sin( dt * ( 2.f * std::numbers::pi_v<float> / period ) );
+        const auto s1 = s0 * 0.5f + 0.5f;
+        const auto s2 = s1 * s1 * ( 3.f - 2.f * s1 );
+        return amplitude * s2 * 2.f + 1.f;
+    }
+
+    float Scale() const
+    {
+        if( start < 0 ) return 1.f;
+        const float dt = float( ImGui::GetTime() - start );
+        const float s = sin( dt * ( std::numbers::pi_v<float> / scalePeriod ) );
+        const float s2 = s * s;
+        const float s4 = s2 * s2;
+        return 1.f + scaleAmplitude * s4 * s4 * s4;
+    }
+
+    double start = -1.0;
+    static constexpr float period = 1.f;
+    static constexpr float amplitude = 15.f * std::numbers::pi_v<float> / 180.f;
+    static constexpr float scalePeriod = 0.63f;
+    static constexpr float scaleAmplitude = 0.4f;
 };
 
 static void DrawContents()
@@ -1429,6 +1462,7 @@ Would you like to enable achievements?
         static bool showAchievements = false;
         static float openTimeLeft = 0;
         static UnlockSpin spin;
+        static AttentionDance dance;
 
         float aSize = 0;
         const auto aItem = s_achievements->GetNextQueue();
@@ -1474,17 +1508,22 @@ Would you like to enable achievements?
 
         const auto cursor = ImGui::GetCursorPos();
         const auto cursorScreen = ImGui::GetCursorScreenPos();
+        const auto wpos = ImGui::GetWindowPos();
+        const auto wend = wpos + ImGui::GetWindowSize();
+        const bool hovered = ( animStage == 0 || animStage == 2 ) && ImGui::IsMouseHoveringRect( wpos, wend );
+
+        const bool pulsing = achievementsAttention && !showAchievements;
+        if( pulsing && !spin.Active() ) dance.Start();
+        else dance.Stop();
+
         uint32_t color = 0xFF888888;
-        if( achievementsAttention && !showAchievements )
+        if( pulsing )
         {
             const auto t = sin( ImGui::GetTime() * 4 ) * 0.5f + 0.5f;
             const auto c0 = uint32_t( std::lerp( 0x88, 0x00, t ) );
             const auto c1 = uint32_t( std::lerp( 0x88, 0xFF, t ) );
             color = 0xFF000000 | ( c0 << 16 ) | ( c1 << 8 ) | c1;
         }
-        const auto wpos = ImGui::GetWindowPos();
-        const auto wend = wpos + ImGui::GetWindowSize();
-        const bool hovered = ( animStage == 0 || animStage == 2 ) && ImGui::IsMouseHoveringRect( wpos, wend );
         if( hovered )
         {
             color = 0xFFFFFFFF;
@@ -1505,7 +1544,7 @@ Would you like to enable achievements?
         }
         auto draw = ImGui::GetWindowDrawList();
         draw->PushClipRectFullScreen();
-        tracy::DrawGlyphTransformed( draw, g_fonts.normal, FontBig, ICON_FA_STAR, cursorScreen, ImVec2( 0.5f, 0.55f ), spin.Angle(), 1.f, color );
+        tracy::DrawGlyphTransformed( draw, g_fonts.normal, FontBig, ICON_FA_STAR, cursorScreen, ImVec2( 0.5f, 0.55f ), spin.Angle() + dance.Angle(), dance.Scale(), color );
         draw->PopClipRect();
         draw->AddRect( wpos, wend, hovered ? 0xFFFFFFFF : ImGui::GetColorU32( ImGuiCol_Border ), 16 * dpiScale, 0, borderSize );
         ImGui::Dummy( starSize );

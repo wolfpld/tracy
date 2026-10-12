@@ -51,6 +51,7 @@ protected:
 
     virtual void HeaderTooltip( const char* label ) const {};
     virtual void HeaderExtraContents( const TimelineContext& ctx, int offset, float labelWidth ) {};
+    virtual void HeaderZoomed() {}
 
     virtual int64_t RangeBegin() const = 0;
     virtual int64_t RangeEnd() const = 0;

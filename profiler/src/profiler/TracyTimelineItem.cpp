@@ -108,6 +108,7 @@ void TimelineItem::Draw( bool firstFrame, const TimelineContext& ctx, int yOffse
                 if( t0 < t1 )
                 {
                     m_view.ZoomToRange( t0, t1 );
+                    HeaderZoomed();
                 }
             }
             if( IsMouseClicked( ImGuiMouseButton_Right ) )

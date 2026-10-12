@@ -609,6 +609,7 @@ void View::DrawLockInfoWindow()
         ImGui::TextDisabled( "(%zu)", lock.threads.size() );
         if( threadList )
         {
+            if( s_config.achievements ) Achieve( "lockContention" );
             for( const auto& ti : lock.threads )
             {
                 SmallColorBox( GetThreadColor( ti.thread, 0 ) );

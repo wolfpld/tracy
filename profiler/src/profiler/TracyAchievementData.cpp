@@ -5,6 +5,7 @@
 #include "data/TextAnnotateZones.hpp"
 #include "data/TextAppInfo.hpp"
 #include "data/TextConnectToClient.hpp"
+#include "data/TextContention.hpp"
 #include "data/TextFindZone.hpp"
 #include "data/TextFrameImages.hpp"
 #include "data/TextGhostZones.hpp"
@@ -63,10 +64,19 @@ AchievementItem ai_trackMemory = {
 AchievementItem* ac_memoryItems[] = { &ai_trackMemory, nullptr };
 AchievementCategory ac_memory = { "memory", "Memory", ac_memoryItems };
 
+AchievementItem ai_lockContention = {
+    .id = "lockContention",
+    .name = "Analyze contention",
+    .text = Unpack( TextContention )
+};
+
+AchievementItem* ac_watchLocksItems[] = { &ai_lockContention, nullptr };
+
 AchievementItem ai_watchLocks = {
     .id = "watchLocks",
     .name = "Watch locks",
-    .text = Unpack( TextLocks )
+    .text = Unpack( TextLocks ),
+    .items = ac_watchLocksItems
 };
 
 AchievementItem* ac_locksItems[] = { &ai_watchLocks, nullptr };

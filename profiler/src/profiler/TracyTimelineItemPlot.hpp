@@ -19,6 +19,8 @@ protected:
     uint32_t HeaderLineColor() const override { return 0x8844DDDD; }
     const char* HeaderLabel() const override;
 
+    bool PinToBottom() const override { return true; }
+
     int64_t RangeBegin() const override;
     int64_t RangeEnd() const override;
 

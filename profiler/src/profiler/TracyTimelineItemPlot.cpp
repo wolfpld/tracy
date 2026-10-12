@@ -25,6 +25,11 @@ bool TimelineItemPlot::IsEmpty() const
     return m_plot->data.empty();
 }
 
+void TimelineItemPlot::HeaderZoomed()
+{
+    if( s_config.achievements ) m_view.Achieve( "chartValues" );
+}
+
 const char* TimelineItemPlot::HeaderLabel() const
 {
     static char tmp[1024];

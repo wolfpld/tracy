@@ -15,6 +15,7 @@
 #include "data/TextIntro.hpp"
 #include "data/TextLoadTrace.hpp"
 #include "data/TextManual.hpp"
+#include "data/TextPlots.hpp"
 #include "data/TextSamplingIntro.hpp"
 #include "data/TextSections.hpp"
 #include "data/TextSaveTrace.hpp"
@@ -82,12 +83,19 @@ AchievementItem ai_markSections = {
     .text = Unpack( TextSections )
 };
 
+AchievementItem ai_chartValues = {
+    .id = "chartValues",
+    .name = "Chart values",
+    .text = Unpack( TextPlots )
+};
+
 AchievementItem* ac_instrumentationIntroItems[] = {
     &ai_100million,
     &ai_instrumentationStatistics,
     &ai_findZone,
     &ai_annotateZones,
     &ai_markSections,
+    &ai_chartValues,
     nullptr
 };
 

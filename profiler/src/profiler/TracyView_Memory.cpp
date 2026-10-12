@@ -172,6 +172,8 @@ std::vector<MemoryPage> View::GetMemoryPages() const
 
 void View::DrawMemory()
 {
+    if( s_config.achievements && !m_worker.GetMemoryNamed( m_memInfo.pool ).data.empty() ) Achieve( "trackMemory" );
+
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 1100 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
     m_memoryConstraint.Constrain();

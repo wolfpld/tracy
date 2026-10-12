@@ -15,6 +15,7 @@
 #include "data/TextIntro.hpp"
 #include "data/TextLoadTrace.hpp"
 #include "data/TextManual.hpp"
+#include "data/TextMemory.hpp"
 #include "data/TextPlots.hpp"
 #include "data/TextSamplingIntro.hpp"
 #include "data/TextSections.hpp"
@@ -51,6 +52,15 @@ AchievementItem ai_samplingIntro = {
 
 AchievementItem* ac_samplingItems[] = { &ai_samplingIntro, nullptr };
 AchievementCategory ac_sampling = { "sampling", "Sampling", ac_samplingItems };
+
+AchievementItem ai_trackMemory = {
+    .id = "trackMemory",
+    .name = "Track memory",
+    .text = Unpack( TextMemory )
+};
+
+AchievementItem* ac_memoryItems[] = { &ai_trackMemory, nullptr };
+AchievementCategory ac_memory = { "memory", "Memory", ac_memoryItems };
 
 
 AchievementItem ai_100million = {
@@ -99,11 +109,14 @@ AchievementItem* ac_instrumentationIntroItems[] = {
     nullptr
 };
 
+AchievementItem* ac_instrumentationIntroUnlock[] = { &ai_trackMemory, nullptr };
+
 AchievementItem ai_instrumentationIntro = {
     .id = "instrumentationIntro",
     .name = "Instrumenting your application",
     .text = Unpack( TextInstrumentationIntro ),
-    .items = ac_instrumentationIntroItems
+    .items = ac_instrumentationIntroItems,
+    .unlocks = ac_instrumentationIntroUnlock
 };
 
 AchievementItem ai_frameImages = {
@@ -203,6 +216,7 @@ AchievementCategory* AchievementCategories[] = {
     &ac_firstSteps,
     &ac_instrumentation,
     &ac_sampling,
+    &ac_memory,
     nullptr
 };
 

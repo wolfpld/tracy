@@ -14,6 +14,7 @@
 #include "data/TextInstrumentationStatistics.hpp"
 #include "data/TextIntro.hpp"
 #include "data/TextLoadTrace.hpp"
+#include "data/TextLocks.hpp"
 #include "data/TextManual.hpp"
 #include "data/TextMemory.hpp"
 #include "data/TextPlots.hpp"
@@ -62,6 +63,15 @@ AchievementItem ai_trackMemory = {
 AchievementItem* ac_memoryItems[] = { &ai_trackMemory, nullptr };
 AchievementCategory ac_memory = { "memory", "Memory", ac_memoryItems };
 
+AchievementItem ai_watchLocks = {
+    .id = "watchLocks",
+    .name = "Watch locks",
+    .text = Unpack( TextLocks )
+};
+
+AchievementItem* ac_locksItems[] = { &ai_watchLocks, nullptr };
+AchievementCategory ac_locks = { "locks", "Locks", ac_locksItems };
+
 
 AchievementItem ai_100million = {
     .id = "100million",
@@ -109,7 +119,7 @@ AchievementItem* ac_instrumentationIntroItems[] = {
     nullptr
 };
 
-AchievementItem* ac_instrumentationIntroUnlock[] = { &ai_trackMemory, nullptr };
+AchievementItem* ac_instrumentationIntroUnlock[] = { &ai_trackMemory, &ai_watchLocks, nullptr };
 
 AchievementItem ai_instrumentationIntro = {
     .id = "instrumentationIntro",
@@ -217,6 +227,7 @@ AchievementCategory* AchievementCategories[] = {
     &ac_instrumentation,
     &ac_sampling,
     &ac_memory,
+    &ac_locks,
     nullptr
 };
 

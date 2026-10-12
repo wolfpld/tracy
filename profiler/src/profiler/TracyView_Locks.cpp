@@ -125,6 +125,7 @@ void View::DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLoca
 
             if( IsMouseClicked( ImGuiMouseButton_Left ) )
             {
+                if( s_config.achievements ) Achieve( "watchLocks" );
                 m_lockInfoWindow = id;
             }
             if( IsMouseClicked( ImGuiMouseButton_Middle ) )
@@ -193,6 +194,7 @@ int View::DrawLocks( const TimelineContext& ctx, const std::vector<std::unique_p
                 {
                     if( IsMouseClicked( ImGuiMouseButton_Left ) )
                     {
+                        if( s_config.achievements ) Achieve( "watchLocks" );
                         m_lockInfoWindow = lock.id;
                     }
                     if( IsMouseClicked( ImGuiMouseButton_Middle ) )

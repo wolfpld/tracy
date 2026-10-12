@@ -1590,6 +1590,7 @@ To set a category for the section, start the section with the \texttt{TracySecti
 You can describe each of the categories you want to use with the \texttt{TracySectionSetup(category, fmt, ...)} macro. Section categories with no name set will automatically be assigned a name based on the identifier (e.g., \emph{Category 0}).
 
 \subsection{Marking locks}
+\label{markinglocks}
 
 Modern programs must use multi-threading to achieve the full performance capability of the CPU. However, correct execution requires claiming exclusive access to data shared between threads. When many threads want to simultaneously enter the same critical section, the application's multi-threaded performance advantage nullifies. To help solve this problem, Tracy can collect and display lock interactions in threads.
 

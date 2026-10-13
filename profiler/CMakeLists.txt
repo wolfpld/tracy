@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.21)
 
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/options.cmake)
 
@@ -75,7 +75,7 @@ function(Embed LIST NAME FILE)
         DEPENDS embed ${EMBED_SOURCE}
     )
     list(APPEND ${LIST} data/${NAME}.cpp)
-    return(PROPAGATE ${LIST})
+    set(${LIST} "${${LIST}}" PARENT_SCOPE)
 endfunction()
 
 set(SERVER_FILES

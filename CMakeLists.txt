@@ -33,6 +33,7 @@ else()
 endif()
 
 find_package(Threads REQUIRED)
+find_package(TBB REQUIRED COMPONENTS tbb)
 find_package(rocprofiler-sdk PATHS "/opt/rocm/lib/cmake")
 
 set(TRACY_PUBLIC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/public)

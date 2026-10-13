@@ -31,7 +31,16 @@ list(TRANSFORM TRACY_SERVER_SOURCES PREPEND "${TRACY_SERVER_DIR}/")
 
 add_library(TracyServer STATIC EXCLUDE_FROM_ALL ${TRACY_COMMON_SOURCES} ${TRACY_SERVER_SOURCES})
 target_include_directories(TracyServer PUBLIC ${TRACY_COMMON_DIR} ${TRACY_SERVER_DIR})
-target_link_libraries(TracyServer PUBLIC TracyCapstone libzstd PPQSort::PPQSort tbb)
+
+if (UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
+    # Tracy does not use TBB directly, but the implementation of parallel algorithms
+    # in some versions of libstdc++ depends on TBB. When it does, you must
+    # explicitly link against -ltbb.
+    target_link_libraries(TracyServer PUBLIC TracyCapstone libzstd PPQSort::PPQSort tbb)
+else()
+    target_link_libraries(TracyServer PUBLIC TracyCapstone libzstd PPQSort::PPQSort)
+endif()
+
 if(NO_STATISTICS)
     target_compile_definitions(TracyServer PUBLIC TRACY_NO_STATISTICS)
 endif()

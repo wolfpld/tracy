@@ -33,8 +33,14 @@ else()
 endif()
 
 find_package(Threads REQUIRED)
-find_package(TBB REQUIRED COMPONENTS tbb)
 find_package(rocprofiler-sdk PATHS "/opt/rocm/lib/cmake")
+
+if (UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
+    # Tracy does not use TBB directly, but the implementation of parallel algorithms
+    # in some versions of libstdc++ depends on TBB. When it does, you must
+    # explicitly link against -ltbb.
+    find_package(TBB REQUIRED COMPONENTS tbb)
+endif()
 
 set(TRACY_PUBLIC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/public)
 

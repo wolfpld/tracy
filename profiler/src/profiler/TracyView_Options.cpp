@@ -2,7 +2,6 @@
 #include <random>
 #include <map>
 #include <cstring>
-#include <cstdio>
 
 #include "TracyFilesystem.hpp"
 #include "TracyImGui.hpp"
@@ -41,6 +40,11 @@ static void BuildPlotTree( PlotTreeNode& root, const std::vector<const PlotData*
 {
     for( const auto* p : plots )
     {
+        if( p->type != PlotType::User )
+        {
+            root.plots.emplace_back( p );
+            continue;
+        }
         const char* name = worker.GetString( p->name );
         PlotTreeNode* node = &root;
         const char* segStart = name;
@@ -85,7 +89,8 @@ static void DrawPlotTreeNode( const std::string& label, const std::string& fullP
     bool allVisible = total > 0 && visibleCount == total;
     const bool mixed = visibleCount > 0 && visibleCount < total;
 
-    const bool nodeExpand = ImGui::TreeNodeEx( fullPath.c_str(), ImGuiTreeNodeFlags_None, "" );
+    // Row-wide hit box so the label (drawn after the checkbox) is clickable and highlighted; the checkbox overlaps it.
+    const bool nodeExpand = ImGui::TreeNodeEx( fullPath.c_str(), ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowOverlap, "" );
     ImGui::SameLine();
     const std::string checkboxId = "##hdr_" + fullPath;
     ImGui::PushItemFlag( ImGuiItemFlags_MixedValue, mixed );
@@ -110,17 +115,17 @@ static void DrawPlotTreeNode( const std::string& label, const std::string& fullP
             const char* slash = strrchr( fullName, '/' );
             const char* leaf = slash ? slash + 1 : fullName;
 
+            ImGui::PushID( p );
             SmallColorBox( GetPlotColor( *p, worker ) );
             ImGui::SameLine();
             bool visible = tc.GetItem( p ).IsVisible();
-            char leafId[256];
-            snprintf( leafId, sizeof( leafId ), "%s##%p", leaf, (const void*)p );
-            if( SmallCheckbox( leafId, &visible ) )
+            if( SmallCheckbox( leaf, &visible ) )
             {
                 tc.GetItem( p ).SetVisible( visible );
             }
             ImGui::SameLine();
             ImGui::TextDisabled( "%s data points", RealToString( p->data.size() ) );
+            ImGui::PopID();
         }
         ImGui::TreePop();
     }
@@ -778,21 +783,24 @@ void View::DrawOptions()
         {
             ImGui::SameLine();
             bool hierarchy = m_vd.plotsHierarchy;
+            ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
             if( ImGui::RadioButton( "Flat", !hierarchy ) ) m_vd.plotsHierarchy = false;
             ImGui::SameLine();
             if( ImGui::RadioButton( "Hierarchical", hierarchy ) ) m_vd.plotsHierarchy = true;
+            ImGui::PopStyleVar();
             hierarchy = m_vd.plotsHierarchy;
 
             std::vector<const PlotData*> filteredPlots;
             filteredPlots.reserve( m_worker.GetPlots().size() );
             for( const auto& p : m_worker.GetPlots() )
             {
-                if( m_plotFilter.PassFilter( m_worker.GetString( p->name ) ) )
+                if( m_plotFilter.PassFilter( GetPlotName( *p, m_worker ) ) )
                 {
                     filteredPlots.emplace_back( p );
                 }
             }
 
+            ImGui::AlignTextToFramePadding();
             if( ImGui::SmallButton( "Select all" ) )
             {
                 for( const auto* p : filteredPlots )
@@ -827,22 +835,26 @@ void View::DrawOptions()
                 }
                 for( const auto* p : root.plots )
                 {
+                    ImGui::PushID( p );
                     SmallColorBox( GetPlotColor( *p, m_worker ) );
                     ImGui::SameLine();
                     m_tc.GetItem( p ).VisibilityCheckbox();
                     ImGui::SameLine();
                     ImGui::TextDisabled( "%s data points", RealToString( p->data.size() ) );
+                    ImGui::PopID();
                 }
             }
             else
             {
                 for( const auto* p : filteredPlots )
                 {
+                    ImGui::PushID( p );
                     SmallColorBox( GetPlotColor( *p, m_worker ) );
                     ImGui::SameLine();
                     m_tc.GetItem( p ).VisibilityCheckbox();
                     ImGui::SameLine();
                     ImGui::TextDisabled( "%s data points", RealToString( p->data.size() ) );
+                    ImGui::PopID();
                 }
             }
             ImGui::TreePop();

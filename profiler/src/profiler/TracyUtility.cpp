@@ -172,6 +172,13 @@ uint32_t GetPlotColor( const PlotData& plot, const Worker& worker )
     }
 }
 
+const char* GetPlotName( const PlotData& plot, const Worker& worker )
+{
+    if( plot.type == PlotType::SysTime ) return "CPU usage";
+    if( plot.type == PlotType::Memory && plot.name == 0 ) return "Memory usage";
+    return worker.GetString( plot.name );
+}
+
 const char* FormatPlotValue( double val, PlotValueFormatting format )
 {
     static char buf[64];

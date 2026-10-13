@@ -31,21 +31,15 @@ const char* TimelineItemPlot::HeaderLabel() const
     switch( m_plot->type )
     {
     case PlotType::User:
-        return m_worker.GetString( m_plot->name );
+        return GetPlotName( *m_plot, m_worker );
     case PlotType::Memory:
-        if( m_plot->name == 0 )
-        {
-            return ICON_FA_MEMORY " Memory usage";
-        }
-        else
-        {
-            sprintf( tmp, ICON_FA_MEMORY " %s", m_worker.GetString( m_plot->name ) );
-            return tmp;
-        }
+        sprintf( tmp, ICON_FA_MEMORY " %s", GetPlotName( *m_plot, m_worker ) );
+        return tmp;
     case PlotType::SysTime:
-        return ICON_FA_GAUGE_HIGH " CPU usage";
+        sprintf( tmp, ICON_FA_GAUGE_HIGH " %s", GetPlotName( *m_plot, m_worker ) );
+        return tmp;
     case PlotType::Power:
-        sprintf( tmp, ICON_FA_BOLT " %s", m_worker.GetString( m_plot->name ) );
+        sprintf( tmp, ICON_FA_BOLT " %s", GetPlotName( *m_plot, m_worker ) );
         return tmp;
     default:
         assert( false );

@@ -186,14 +186,14 @@ static void SetupDPIScale()
     auto& style = ImGui::GetStyle();
     style = ImGuiStyle();
     ImGui::StyleColorsDark();
-    style.WindowBorderSize = 1.f;
     style.FrameBorderSize = 1.f;
     style.FrameRounding = 5.f;
-    style.Colors[ImGuiCol_ScrollbarBg] = ImVec4( 1, 1, 1, 0.03f );
+    style.Colors[ImGuiCol_ScrollbarBg] = ImVec4( 0.f, 0.f, 0.f, 0.33f );
     style.Colors[ImGuiCol_Header] = ImVec4(0.26f, 0.59f, 0.98f, 0.25f);
     style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
     style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.26f, 0.59f, 0.98f, 0.45f);
     style.Colors[ImGuiCol_TitleBgCollapsed] = style.Colors[ImGuiCol_TitleBg];
+    style.Colors[ImGuiCol_PopupBg] = ImVec4( 0.12f, 0.12f, 0.12f, 1.f );
     style.ScaleAllSizes( scale );
 
     const auto ty = int( 80 * scale );
@@ -691,7 +691,7 @@ static void DrawContents()
         }
 
         auto& style = ImGui::GetStyle();
-        style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.129f, 0.137f, 0.11f, 1.f );
+        style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.16f, 0.16f, 0.16f, 1.f );
         ImGui::Begin( "Get started", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings );
         char buf[128];
         sprintf( buf, "Tracy Profiler %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
@@ -1452,6 +1452,7 @@ Would you like to enable achievements?
         const float borderSize = ImGui::GetStyle().PopupBorderSize;
         ImGui::PushStyleVar( ImGuiStyleVar_WindowRounding, 16 * dpiScale );
         ImGui::PushStyleVar( ImGuiStyleVar_PopupBorderSize, 0.f );
+        ImGui::PushStyleColor( ImGuiCol_PopupBg, ImVec4( 0.12f, 0.12f, 0.12f, 0.8f ) );
 
         ImGui::PushFont( g_fonts.normal, FontBig );
         const auto starSize = ImGui::CalcTextSize( ICON_FA_STAR );
@@ -1567,6 +1568,7 @@ Would you like to enable achievements?
         }
 
         ImGui::End();
+        ImGui::PopStyleColor();
         ImGui::PopStyleVar( 2 );
 
         if( showAchievements )

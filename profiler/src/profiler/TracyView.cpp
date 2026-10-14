@@ -859,7 +859,7 @@ bool View::DrawImpl()
         style.WindowRounding = wrPrev;
         style.WindowBorderSize = wbsPrev;
         style.WindowPadding = wpPrev;
-        style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.11f, 0.11f, 0.08f, 1.f );
+        style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.16f, 0.16f, 0.16f, 1.f );
     }
 #else
     char tmp[2048];
@@ -1197,7 +1197,7 @@ bool View::DrawImpl()
 
         style.WindowPadding = wpPrev;
 #ifndef TRACY_NO_ROOT_WINDOW
-        style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.11f, 0.11f, 0.08f, 1.f );
+        style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.16f, 0.16f, 0.16f, 1.f );
 #endif
     }
 

@@ -3003,7 +3003,7 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
     }
     else if( lineNum == m_selectedLine )
     {
-        draw->AddRectFilled( wpos + ImVec2( 0, 1 ), wpos + ImVec2( w, ty ), 0xFF333322 );
+        draw->AddRectFilled( wpos + ImVec2( 0, 1 ), wpos + ImVec2( w, ty ), 0xFF444433 );
     }
 
     bool hasHwData = false;
@@ -3346,11 +3346,11 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
     }
     else if( m_selectedAddresses.find( line.addr ) != m_selectedAddresses.end() )
     {
-        draw->AddRectFilled( wpos + ImVec2( 0, 1 ), wpos + ImVec2( w, ty ), 0xFF333322 );
+        draw->AddRectFilled( wpos + ImVec2( 0, 1 ), wpos + ImVec2( w, ty ), 0xFF444433 );
     }
     if( line.addr == m_highlightAddr )
     {
-        draw->AddRectFilled( wpos + ImVec2( 0, 1 ), wpos + ImVec2( w, ty ), 0xFF222233 );
+        draw->AddRectFilled( wpos + ImVec2( 0, 1 ), wpos + ImVec2( w, ty ), 0xFF333344 );
     }
 
     const auto asmIdx = &line - m_asm.data();

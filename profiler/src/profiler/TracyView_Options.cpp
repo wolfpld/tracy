@@ -1,7 +1,7 @@
 #include <inttypes.h>
-#include <random>
 #include <map>
-#include <cstring>
+#include <random>
+#include <string.h>
 
 #include "TracyFilesystem.hpp"
 #include "TracyImGui.hpp"
@@ -829,10 +829,13 @@ void View::DrawOptions()
                 PlotTreeNode root;
                 BuildPlotTree( root, filteredPlots, m_worker );
 
+                // Folder IDs are derived from plot names, keep them out of the toolbar's ID scope.
+                ImGui::PushID( "plotTree" );
                 for( auto& child : root.children )
                 {
                     DrawPlotTreeNode( child.first, child.first, child.second, m_tc, m_worker );
                 }
+                ImGui::PopID();
                 for( const auto* p : root.plots )
                 {
                     ImGui::PushID( p );

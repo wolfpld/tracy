@@ -28,18 +28,19 @@ bool TimelineItemPlot::IsEmpty() const
 const char* TimelineItemPlot::HeaderLabel() const
 {
     static char tmp[1024];
+    const auto plotName = GetPlotName( *m_plot, m_worker );
     switch( m_plot->type )
     {
     case PlotType::User:
-        return GetPlotName( *m_plot, m_worker );
+        return plotName;
     case PlotType::Memory:
-        sprintf( tmp, ICON_FA_MEMORY " %s", GetPlotName( *m_plot, m_worker ) );
+        sprintf( tmp, ICON_FA_MEMORY " %s", plotName );
         return tmp;
     case PlotType::SysTime:
-        sprintf( tmp, ICON_FA_GAUGE_HIGH " %s", GetPlotName( *m_plot, m_worker ) );
+        sprintf( tmp, ICON_FA_GAUGE_HIGH " %s", plotName );
         return tmp;
     case PlotType::Power:
-        sprintf( tmp, ICON_FA_BOLT " %s", GetPlotName( *m_plot, m_worker ) );
+        sprintf( tmp, ICON_FA_BOLT " %s", plotName );
         return tmp;
     default:
         assert( false );

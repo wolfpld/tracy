@@ -744,6 +744,7 @@ void View::DrawCompare()
             {
                 ImGui::Separator();
                 ImGui::TextWrapped( "Both traces must have matches." );
+                ImGui::EndChild();
                 ImGui::End();
                 return;
             }

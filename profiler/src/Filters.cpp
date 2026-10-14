@@ -58,9 +58,12 @@ void Filters::Clear()
 
 void Filters::Draw( float w )
 {
-    m_addrFilter.Draw( "Address filter", w );
-    m_portFilter.Draw( "Port filter", w );
-    m_progFilter.Draw( "Program filter", w );
+    ImGui::SetNextItemWidth( w );
+    m_addrFilter.Draw( "Address filter" );
+    ImGui::SetNextItemWidth( w );
+    m_portFilter.Draw( "Port filter" );
+    ImGui::SetNextItemWidth( w );
+    m_progFilter.Draw( "Program filter" );
 }
 
 bool Filters::IsActive() const

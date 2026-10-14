@@ -462,7 +462,8 @@ void View::DrawStatistics()
     ImGui::AlignTextToFramePadding();
     TextDisabledUnformatted( "Name" );
     ImGui::SameLine();
-    m_statisticsFilter.Draw( ICON_FA_FILTER "###resultFilter", 200 );
+    ImGui::SetNextItemWidth( 200 );
+    m_statisticsFilter.Draw( ICON_FA_FILTER "###resultFilter" );
     ImGui::SameLine();
     if( ImGui::Button( ICON_FA_DELETE_LEFT " Clear" ) )
     {
@@ -477,7 +478,8 @@ void View::DrawStatistics()
         ImGui::SameLine();
         ToggleButton( ICON_FA_SCISSORS, m_shortImageNames );
         ImGui::SameLine();
-        m_statisticsImageFilter.Draw( ICON_FA_FILTER "###imageFilter", 200 );
+        ImGui::SetNextItemWidth( 200 );
+        m_statisticsImageFilter.Draw( ICON_FA_FILTER "###imageFilter" );
         ImGui::SameLine();
         if( ImGui::BeginCombo( "###imageCombo", nullptr, ImGuiComboFlags_NoPreview | ImGuiComboFlags_HeightLarge ) )
         {

@@ -1711,7 +1711,8 @@ void View::DrawFindZoneCpuDetails( int16_t matchSrcloc )
     ImGui::AlignTextToFramePadding();
     TextDisabledUnformatted( "Filter user text:" );
     ImGui::SameLine();
-    bool filterChanged = m_userTextFilter.Draw( ICON_FA_FILTER "###resultFilter", 200 );
+    ImGui::SetNextItemWidth( 200 );
+    bool filterChanged = m_userTextFilter.Draw( ICON_FA_FILTER "###resultFilter" );
 
     ImGui::SameLine();
     if( ImGui::Button( ICON_FA_DELETE_LEFT " Clear###userText" ) )

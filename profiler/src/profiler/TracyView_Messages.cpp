@@ -32,7 +32,8 @@ void View::DrawMessages()
     ImGui::AlignTextToFramePadding();
     ImGui::Text( ICON_FA_FILTER );
     ImGui::SameLine();
-    bool filterChanged = m_messageFilter.m_text.Draw( "##Filter messages", 200 );
+    ImGui::SetNextItemWidth( 200 );
+    bool filterChanged = m_messageFilter.m_text.Draw( "##Filter messages" );
 
     ImGui::SameLine();
     ImGui::Spacing();

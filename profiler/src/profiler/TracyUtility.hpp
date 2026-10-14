@@ -56,6 +56,7 @@ const char* ShortenImageName( const char* image );
 
 uint32_t GetThreadColor( uint64_t thread, int depth, bool dynamic );
 uint32_t GetPlotColor( const PlotData& plot, const Worker& worker );
+const char* GetPlotName( const PlotData& plot, const Worker& worker );
 const char* FormatPlotValue( double val, PlotValueFormatting format );
 
 std::vector<std::string> SplitLines( const char* data, size_t sz );

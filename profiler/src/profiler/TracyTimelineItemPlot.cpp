@@ -33,24 +33,19 @@ void TimelineItemPlot::HeaderZoomed()
 const char* TimelineItemPlot::HeaderLabel() const
 {
     static char tmp[1024];
+    const auto plotName = GetPlotName( *m_plot, m_worker );
     switch( m_plot->type )
     {
     case PlotType::User:
-        return m_worker.GetString( m_plot->name );
+        return plotName;
     case PlotType::Memory:
-        if( m_plot->name == 0 )
-        {
-            return ICON_FA_MEMORY " Memory usage";
-        }
-        else
-        {
-            sprintf( tmp, ICON_FA_MEMORY " %s", m_worker.GetString( m_plot->name ) );
-            return tmp;
-        }
+        sprintf( tmp, ICON_FA_MEMORY " %s", plotName );
+        return tmp;
     case PlotType::SysTime:
-        return ICON_FA_GAUGE_HIGH " CPU usage";
+        sprintf( tmp, ICON_FA_GAUGE_HIGH " %s", plotName );
+        return tmp;
     case PlotType::Power:
-        sprintf( tmp, ICON_FA_BOLT " %s", m_worker.GetString( m_plot->name ) );
+        sprintf( tmp, ICON_FA_BOLT " %s", plotName );
         return tmp;
     default:
         assert( false );

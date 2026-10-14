@@ -1546,7 +1546,7 @@ Would you like to enable achievements?
         draw->PushClipRectFullScreen();
         tracy::DrawGlyphTransformed( draw, g_fonts.normal, FontBig, ICON_FA_STAR, cursorScreen, ImVec2( 0.5f, 0.55f ), spin.Angle() + dance.Angle(), dance.Scale(), color );
         draw->PopClipRect();
-        draw->AddRect( wpos, wend, hovered ? 0xFFFFFFFF : ImGui::GetColorU32( ImGuiCol_Border ), 16 * dpiScale, 0, borderSize );
+        draw->AddRect( wpos, wend, hovered ? 0xFFFFFFFF : ImGui::GetColorU32( ImGuiCol_Border ), 16 * dpiScale, borderSize, 0 );
         ImGui::Dummy( starSize );
 
         if( aItem )

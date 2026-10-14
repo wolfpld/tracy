@@ -397,7 +397,7 @@ void View::DrawMemory()
         auto pages = GetMemoryPages();
         const size_t lines = pages.size();
 
-        ImGui::BeginChild( "##memMap", ImVec2( PageSize + 2, lines + 2 ), false );
+        ImGui::BeginChild( "##memMap", ImVec2( PageSize + 2, lines + 2 ), ImGuiChildFlags_None );
         auto draw = ImGui::GetWindowDrawList();
         const auto wpos = ImGui::GetCursorScreenPos() + ImVec2( 1, 1 );
         const auto dpos = wpos + ImVec2( 0.5f, 0.5f );

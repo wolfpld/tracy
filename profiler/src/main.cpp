@@ -1232,7 +1232,7 @@ static void DrawContents()
             {
                 tracy::OpenWebpage( "https://github.com/wolfpld/tracy/releases" );
             }
-            ImGui::BeginChild( "###notes", ImVec2( 0, 0 ), true );
+            ImGui::BeginChild( "###notes", ImVec2( 0, 0 ), ImGuiChildFlags_Borders );
             if( releaseNotes.empty() )
             {
                 static float rnTime = 0;

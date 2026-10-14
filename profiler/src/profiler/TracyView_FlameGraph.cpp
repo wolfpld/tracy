@@ -1137,7 +1137,7 @@ void View::DrawFlameGraph()
         const auto rows = ( tsz + cols - 1 ) / cols;
         const auto rowsVisible = std::min<float>( rows, 7.5f );
         const auto rowsHeight = ImGui::GetTextLineHeightWithSpacing() * rowsVisible;
-        ImGui::BeginChild( "###flamegraphthreadrows", ImVec2( -1, rowsHeight ), false, ImGuiWindowFlags_AlwaysVerticalScrollbar );
+        ImGui::BeginChild( "###flamegraphthreadrows", ImVec2( -1, rowsHeight ), ImGuiChildFlags_None, ImGuiWindowFlags_AlwaysVerticalScrollbar );
 
         int idx = 0;
         ImGui::BeginTable( "##flamegraphthreadcols", cols, ImGuiTableFlags_NoSavedSettings );
@@ -1296,7 +1296,7 @@ void View::DrawFlameGraph()
             ClampFlameGraphViewport( m_flameGraphViewStart, m_flameGraphViewEnd, zsz );
         }
 
-        ImGui::BeginChild( "##flameGraphBody", ImVec2( 0, 0 ), false, ImGuiWindowFlags_NoScrollWithMouse );
+        ImGui::BeginChild( "##flameGraphBody", ImVec2( 0, 0 ), ImGuiChildFlags_None, ImGuiWindowFlags_NoScrollWithMouse );
         const auto region = ImGui::GetContentRegionAvail();
         const auto wpos = ImGui::GetCursorScreenPos();
         const auto w = region.x;

@@ -1213,9 +1213,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view, WindowConstraints
             for( auto& v : map ) vec.emplace_back( ChildStat { v.first, v.second } );
             pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return lhs.count > rhs.count; } );
 
-            ImGuiContext& g = *GImGui;
-            g.NextWindowData.HasFlags |= ImGuiNextWindowDataFlags_HasWindowFlags;
-            g.NextWindowData.WindowFlags = ImGuiWindowFlags_AlwaysVerticalScrollbar;
+            ImGui::SetNextWindowFlags( ImGuiWindowFlags_AlwaysVerticalScrollbar, true );
 
             if( ImGui::BeginTable( "##ccd", 7, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY ) )
             {

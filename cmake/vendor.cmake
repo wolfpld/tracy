@@ -173,7 +173,7 @@ if(VENDOR_GUI)
     CPMAddPackage(
         NAME ImGui
         GITHUB_REPOSITORY ocornut/imgui
-        GIT_TAG v1.92.9b-docking
+        GIT_TAG v1.93.0-docking
         DOWNLOAD_ONLY TRUE
         PATCHES
             "${CMAKE_CURRENT_LIST_DIR}/imgui-emscripten.patch"

@@ -3473,12 +3473,17 @@ You can also adjust some settings that affect global profiler behavior in this w
 \item \emph{Zone name shortening} -- Sets the default zone name shortening behavior used in new traces. See section~\ref{options} for more information.
 \item \emph{Scroll multipliers} -- Allows you to fine-tune the sensitivity of the horizontal and vertical scroll in the timeline. The default values ($1.0$) are an attempt at the best possible settings, but differences in hardware manufacturers, platform implementations, and user expectations may require adjustments.
 \item \emph{Memory limit} -- When enabled, profiler will stop recording data when memory usage exceeds the specified percentage of the total system memory. This mechanism does not measure the current system memory usage or limits. The upper value is not capped, as you may use swap. See section~\ref{memoryusage} for more information.
-\item \emph{Enable achievements} -- Enables achievements system, accessed through the~\faStar{}~icon in the bottom right corner of the profiler window. It is essentially a gamified tutorial system designed to teach new users how to use the profiler.
+\item \emph{Enable achievements} -- Enables achievements system, accessed through the~\faStar{}~icon in the bottom right corner of the profiler window. It is essentially a gamified tutorial system designed to teach new users how to use the profiler. See section~\ref{achievements} for more information.
 \item \emph{Save UI scale} -- Determines whether the UI scale set by the user should be saved between sessions. This setting is not related to DPI scaling.
 \item \emph{Enable Tracy Assist} -- Controls whether the automated assistant features (based on large language models) are available through the Profiler UI. See section~\ref{tracyassist} for more details.
 \end{itemize}
 
+\subsubsection{Achievements}
+\label{achievements}
 
+The Achievements system is a gamified tutorial that guides new users through the profiler's main features. When enabled through the \emph{Enable achievements} option (section~\ref{aboutwindow}), a \faStar{} button appears in the bottom right corner of the profiler window.
+
+Clicking the \faStar{} button opens the Achievements List, which presents a set of tasks organized into categories. Each task describes what needs to be done to complete it. As you complete achievements, new ones become available. Newly unlocked achievements are marked with an exclamation icon, while completed ones are marked with a checkmark.
 
 \subsubsection{Connection information pop-up}
 \label{connectionpopup}

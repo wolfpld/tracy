@@ -1816,6 +1816,7 @@ If you experience crippling problems while profiling the GPU, you might get bett
 \end{bclogo}
 
 \subsubsection{OpenGL}
+\label{gpuopengl}
 
 You will need to include the \texttt{public/tracy/TracyOpenGL.hpp} header file and declare each of your rendering contexts using the \texttt{TracyGpuContext} macro (typically, you will only have one context). Tracy expects no more than one context per thread and no context migration. To set a custom name for the context, use the \texttt{TracyGpuContextName(name, size)} macro.
 
@@ -1842,6 +1843,7 @@ By default, the OpenGL context is uncalibrated: the CPU and GPU clocks are align
 This is opt-in because OpenGL exposes no atomic CPU+GPU timestamp query (unlike Vulkan's \texttt{VK\_EXT\_calibrated\_timestamps} or Direct3D~12, whose contexts are always calibrated). Recalibration therefore reads the GPU clock with \texttt{glGetInteger64v(GL\_TIMESTAMP)}, which forces a CPU/GPU synchronization (a pipeline stall) each time it runs. Enable it only when the improved long-capture alignment is worth the periodic stall.
 
 \subsubsection{Vulkan}
+\label{gpuvulkan}
 
 Similarly, for Vulkan support you should include the \texttt{public/tracy/TracyVulkan.hpp} header file. Tracing Vulkan devices and queues is a bit more involved, and the Vulkan initialization macro \texttt{TracyVkContext(physdev, device, queue, cmdbuf)} returns an instance of \texttt{TracyVkCtx} object, which tracks an associated Vulkan queue. Cleanup is performed using the \texttt{TracyVkDestroy(ctx)} macro. You may create multiple Vulkan contexts. To set a custom name for the context, use the \texttt{TracyVkContextName(ctx, name, size)} macro.
 
@@ -1870,6 +1872,7 @@ Some applications dynamically link the Vulkan loader, and manage a local symbol 
 When \texttt{TRACY\_VK\_USE\_SYMBOL\_TABLE} is defined the signature of \texttt{TracyVkContext}, \texttt{TracyVkContextCalibrated}, and \texttt{TracyVkContextHostCalibrated} are adjusted to take in the \texttt{VkInstance}, \texttt{PFN\_vkGetInstanceProcAddr}, and \texttt{PFN\_vkGetDeviceProcAddr} to enable constructing a local symbol table to be used to call through the Vulkan API when tracing.
 
 \subsubsection{Direct3D 11}
+\label{gpudirect3d11}
 
 To enable Direct3D 11 support, include the \texttt{public/tracy/TracyD3D11.hpp} header file, and create a \texttt{TracyD3D11Ctx} object with the \texttt{TracyD3D11Context(device, devicecontext)} macro. The object should later be cleaned up with the \texttt{TracyD3D11Destroy} macro. Tracy does not support D3D11 command lists. To set a custom name for the context, use the \texttt{TracyGpuContextName(name, size)} macro.
 
@@ -1878,6 +1881,7 @@ To mark a GPU zone, use the \texttt{TracyD3D11Zone(name)} macro, where \texttt{n
 You also need to periodically collect the GPU events using the \texttt{TracyD3D11Collect} macro. An excellent place to do it is after the swap chain present function.
 
 \subsubsection{Direct3D 12}
+\label{gpudirect3d12}
 
 To enable Direct3D 12 support, include the \texttt{public/tracy/TracyD3D12.hpp} header file. Tracing Direct3D 12 queues is nearly on par with the Vulkan implementation, where a \texttt{TracyD3D12Ctx} is returned from a call to \texttt{TracyD3D12Context(device, queue)}, which should be later cleaned up with the \texttt{TracyD3D12Destroy(ctx)} macro. Multiple contexts can be created, each with any queue type. To set a custom name for the context, use the \texttt{TracyD3D12ContextName(ctx, name, size)} macro.
 
@@ -1892,6 +1896,7 @@ Note that GPU profiling may be slightly inaccurate due to artifacts from dynamic
 Direct3D 12 contexts are always calibrated.
 
 \subsubsection{Metal}
+\label{gpumetal}
 
 To enable Metal support, include the \texttt{public/tracy/TracyMetal.hmm} header file, and create a \texttt{tracy::MetalCtx} object with the \texttt{TracyMetalContext(device)} macro. The object should later be cleaned up with the \texttt{TracyMetalDestroy(context)} macro. To set a custom name for the context, use the \texttt{TracyMetalContextName(name, namelen)} macro. The header file \texttt{TracyMetal.hmm} is intended to be included by \textbf{Objective-C} code, and Objective-C Automatic Reference Counting (ARC) support is required.
 
@@ -1902,6 +1907,7 @@ You may also use \texttt{TracyMetalZoneC(name, encoderDescriptor, color)} to spe
 You are required to periodically collect the GPU events using the \texttt{TracyMetalCollect(ctx)} macro. Good places for collection are: after synchronous waits, after present drawable calls, and inside the completion handler of command buffers.
 
 \subsubsection{OpenCL}
+\label{gpuopencl}
 
 OpenCL support is achieved by including the \texttt{public/tracy/TracyOpenCL.hpp} header file. Tracing OpenCL requires the creation of a Tracy OpenCL context using the macro \texttt{TracyCLContext(context, device)}, which will return an instance of \texttt{TracyCLCtx} object that must be used when creating zones. The specified \texttt{device} must be part of the \texttt{context}. Cleanup is performed using the \texttt{TracyCLDestroy(ctx)} macro. Although not common, it is possible to create multiple OpenCL contexts for the same application. To set a custom name for the context, use the \texttt{TracyCLContextName(ctx, name, size)} macro.
 
@@ -1912,6 +1918,7 @@ OpenCL zones can be created with the \texttt{TracyCLZone(ctx, name)} where \text
 Similar to Vulkan and OpenGL, you also need to periodically collect the OpenCL events using the \texttt{TracyCLCollect(ctx)} macro. An excellent place to perform this operation is after a \texttt{clFinish} since this will ensure that any previously queued OpenCL commands will have finished by this point.
 
 \subsubsection{CUDA}
+\label{gpucuda}
 
 CUDA support is enabled by including the \texttt{public/tracy/TracyCUDA.hpp} header file. To use it, make sure you have the NVIDIA CUDA Toolkit v12.4 (or later) installed, and that the NVIDIA CUPTI library is available in the toolkit (located at \texttt{CUDA\_INSTALLATION\_PATH/extras/CUPTI}).
 
@@ -1926,6 +1933,7 @@ Unlike other GPU backends in Tracy, there is no need to call \texttt{TracyCUDACo
 To stop profiling, call the \texttt{TracyCUDAStopProfiling(ctx)} macro.
 
 \subsubsection{WebGPU}
+\label{gpuwebgpu}
 
 WebGPU support is enabled by including the \texttt{public/tracy/TracyWebGPU.hpp} header file. Both major implementations of WebGPU (Dawn and wgpu-native) are supported.
 

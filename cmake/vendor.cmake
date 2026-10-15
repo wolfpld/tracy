@@ -246,7 +246,7 @@ if(VENDOR_GUI)
     CPMAddPackage(
         NAME md4c
         GITHUB_REPOSITORY mity/md4c
-        GIT_TAG 00788b157b2b6ef3efd8659b66f6521229f382d7
+        GIT_TAG 60e8065cfccd5d7ac561115f9a9bfbdf811f5cc9
         OPTIONS
             "BUILD_SHARED_LIBS OFF"
         EXCLUDE_FROM_ALL TRUE

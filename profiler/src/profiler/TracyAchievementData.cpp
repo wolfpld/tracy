@@ -10,6 +10,7 @@
 #include "data/TextFrameImages.hpp"
 #include "data/TextGhostZones.hpp"
 #include "data/TextGlobalSettings.hpp"
+#include "data/TextGpu.hpp"
 #include "data/TextInstrumentFrames.hpp"
 #include "data/TextInstrumentationIntro.hpp"
 #include "data/TextInstrumentationStatistics.hpp"
@@ -73,6 +74,15 @@ AchievementItem ai_trackMemory = {
 
 AchievementItem* ac_memoryItems[] = { &ai_trackMemory, nullptr };
 AchievementCategory ac_memory = { "memory", "Memory", ac_memoryItems };
+
+AchievementItem ai_profileGpu = {
+    .id = "profileGpu",
+    .name = "Profile the GPU",
+    .text = Unpack( TextGpu )
+};
+
+AchievementItem* ac_gpuItems[] = { &ai_profileGpu, nullptr };
+AchievementCategory ac_gpu = { "gpu", "GPU", ac_gpuItems };
 
 AchievementItem ai_lockContention = {
     .id = "lockContention",
@@ -139,7 +149,7 @@ AchievementItem* ac_instrumentationIntroItems[] = {
     nullptr
 };
 
-AchievementItem* ac_instrumentationIntroUnlock[] = { &ai_trackMemory, &ai_watchLocks, nullptr };
+AchievementItem* ac_instrumentationIntroUnlock[] = { &ai_trackMemory, &ai_profileGpu, &ai_watchLocks, nullptr };
 
 AchievementItem ai_instrumentationIntro = {
     .id = "instrumentationIntro",
@@ -247,6 +257,7 @@ AchievementCategory* AchievementCategories[] = {
     &ac_instrumentation,
     &ac_sampling,
     &ac_memory,
+    &ac_gpu,
     &ac_locks,
     nullptr
 };

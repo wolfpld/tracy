@@ -1993,6 +1993,7 @@ void View::ShowZoneInfo( const ZoneEvent& ev )
 
 void View::ShowZoneInfo( const GpuEvent& ev, uint64_t thread )
 {
+    if( s_config.achievements ) Achieve( "profileGpu" );
     if( m_gpuInfoWindow && m_gpuInfoWindow != &ev )
     {
         m_gpuInfoStack.push_back( m_gpuInfoWindow );

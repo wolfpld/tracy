@@ -165,6 +165,47 @@ def admonitions(text):
     return text
 
 
+def auto_id(title):
+    return '-'.join(''.join(c.lower() if c.isalnum() else ' ' for c in title).split())
+
+
+def force_heading_ids(text, md):
+    """Pandoc omits a `{#id}` suffix equal to the heading's auto-generated
+    identifier; TracyManualData resolves anchor links only from explicit suffixes."""
+    commands = re.findall(
+        r'\\(?:part|chapter|section|subsection|subsubsection|subparagraph|paragraph)\*?'
+        r'\{((?:[^{}]|\{[^{}]*\})*)\}(?:\s*\\label\{([^{}]+)\})?',
+        text,
+    )
+    headings = []
+    in_fence = False
+    for line in md.split('\n'):
+        if line.lstrip().startswith('```'):
+            in_fence = not in_fence
+        elif not in_fence and re.match(r'^#{1,6} ', line):
+            headings.append(line)
+    if len(headings) != len(commands):
+        return md
+    stamp = []
+    for (_, label), heading in zip(commands, headings):
+        m = re.match(r'^#{1,6} (.*)$', heading)
+        stamp.append(bool(label and m and '{' not in m.group(1) and auto_id(m.group(1)) == label))
+    out = []
+    in_fence = False
+    hi = 0
+    for line in md.split('\n'):
+        if line.lstrip().startswith('```'):
+            in_fence = not in_fence
+        elif not in_fence:
+            m = re.match(r'^(#{1,6}) +(.*)$', line)
+            if m:
+                if stamp[hi]:
+                    line = f'{m.group(1)} {m.group(2)} {{#{commands[hi][1]}}}'
+                hi += 1
+        out.append(line)
+    return '\n'.join(out)
+
+
 def icon_explain(text, names):
     """Append an icon legend to each top-level section containing FA icons."""
     lines = text.split('\n')
@@ -219,7 +260,7 @@ def main():
     )
 
     md = tablecaption(md)
-    md = admonitions(md)
+    md = force_heading_ids(text, admonitions(md))
     md = icon_explain(md, names)
 
     out_dir = os.path.dirname(os.path.abspath(args.out))

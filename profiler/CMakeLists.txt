@@ -218,6 +218,7 @@ Embed(PROFILER_FILES TextInstrumentationIntro src/achievements/InstrumentationIn
 Embed(PROFILER_FILES TextInstrumentationStatistics src/achievements/InstrumentationStatistics.md TEXT)
 Embed(PROFILER_FILES TextInstrumentFrames src/achievements/InstrumentFrames.md TEXT)
 Embed(PROFILER_FILES TextIntro src/achievements/Intro.md TEXT)
+Embed(PROFILER_FILES TextLeaks src/achievements/Leaks.md TEXT)
 Embed(PROFILER_FILES TextLoadTrace src/achievements/LoadTrace.md TEXT)
 Embed(PROFILER_FILES TextLocks src/achievements/Locks.md TEXT)
 Embed(PROFILER_FILES TextManual src/achievements/Manual.md TEXT)

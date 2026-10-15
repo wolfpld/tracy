@@ -14,6 +14,7 @@
 #include "data/TextInstrumentationIntro.hpp"
 #include "data/TextInstrumentationStatistics.hpp"
 #include "data/TextIntro.hpp"
+#include "data/TextLeaks.hpp"
 #include "data/TextLoadTrace.hpp"
 #include "data/TextLocks.hpp"
 #include "data/TextManual.hpp"
@@ -55,10 +56,19 @@ AchievementItem ai_samplingIntro = {
 AchievementItem* ac_samplingItems[] = { &ai_samplingIntro, nullptr };
 AchievementCategory ac_sampling = { "sampling", "Sampling", ac_samplingItems };
 
+AchievementItem ai_huntLeaks = {
+    .id = "huntLeaks",
+    .name = "Hunt leaks",
+    .text = Unpack( TextLeaks )
+};
+
+AchievementItem* ac_trackMemoryItems[] = { &ai_huntLeaks, nullptr };
+
 AchievementItem ai_trackMemory = {
     .id = "trackMemory",
     .name = "Track memory",
-    .text = Unpack( TextMemory )
+    .text = Unpack( TextMemory ),
+    .items = ac_trackMemoryItems
 };
 
 AchievementItem* ac_memoryItems[] = { &ai_trackMemory, nullptr };

@@ -333,6 +333,7 @@ void View::DrawMemory()
     ImGui::Separator();
     if( ImGui::TreeNode( ICON_FA_HEART_PULSE " Active allocations" ) )
     {
+        if( s_config.achievements ) Achieve( "huntLeaks" );
         uint64_t total = 0;
         std::vector<const MemEvent*> items;
         items.reserve( mem.active.size() );

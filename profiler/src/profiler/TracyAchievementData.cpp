@@ -11,6 +11,7 @@
 #include "data/TextGhostZones.hpp"
 #include "data/TextGlobalSettings.hpp"
 #include "data/TextGpu.hpp"
+#include "data/TextInspectZone.hpp"
 #include "data/TextInstrumentFrames.hpp"
 #include "data/TextInstrumentationIntro.hpp"
 #include "data/TextInstrumentationStatistics.hpp"
@@ -121,6 +122,18 @@ AchievementItem ai_findZone = {
     .text = Unpack( TextFindZone )
 };
 
+AchievementItem* ac_inspectZoneItems[] = { &ai_findZone, nullptr };
+
+AchievementItem ai_inspectZone = {
+    .id = "inspectZone",
+    .name = "Inspect a zone",
+    .text = Unpack( TextInspectZone ),
+    .items = ac_inspectZoneItems
+};
+
+AchievementItem* ac_analysisItems[] = { &ai_inspectZone, nullptr };
+AchievementCategory ac_analysis = { "analysis", "Analysis", ac_analysisItems };
+
 AchievementItem ai_annotateZones = {
     .id = "annotateZones",
     .name = "Annotate zones",
@@ -142,14 +155,13 @@ AchievementItem ai_chartValues = {
 AchievementItem* ac_instrumentationIntroItems[] = {
     &ai_100million,
     &ai_instrumentationStatistics,
-    &ai_findZone,
     &ai_annotateZones,
     &ai_markSections,
     &ai_chartValues,
     nullptr
 };
 
-AchievementItem* ac_instrumentationIntroUnlock[] = { &ai_trackMemory, &ai_profileGpu, &ai_watchLocks, nullptr };
+AchievementItem* ac_instrumentationIntroUnlock[] = { &ai_trackMemory, &ai_profileGpu, &ai_watchLocks, &ai_inspectZone, nullptr };
 
 AchievementItem ai_instrumentationIntro = {
     .id = "instrumentationIntro",
@@ -259,6 +271,7 @@ AchievementCategory* AchievementCategories[] = {
     &ac_memory,
     &ac_gpu,
     &ac_locks,
+    &ac_analysis,
     nullptr
 };
 

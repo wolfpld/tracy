@@ -198,7 +198,8 @@ public:
             default:
                 assert( false );
             }
-            Glue();
+            ImGui::SameLine( 0, 0 );
+            glue = true;
             break;
         }
         default:

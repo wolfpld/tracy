@@ -1142,11 +1142,12 @@ void Backend::Run()
     NFD_SetWaylandDisplay( s_dpy );
 #endif
 
-    timespec zero = {};
     bool first = true;
-    while( s_running && wl_display_dispatch_timeout( s_dpy, &zero ) != -1 )
+    while( s_running )
     {
-        if( !first && tracy::s_config.focusLostLimit && !s_hasFocus ) std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
+        timespec ts = {};
+        if( !first && tracy::s_config.focusLostLimit && !s_hasFocus ) ts.tv_nsec = 50 * 1000 * 1000;
+        if( wl_display_dispatch_timeout( s_dpy, &ts ) == -1 ) break;
         first = false;
         s_redraw();
         s_mainThreadTasks->Run();

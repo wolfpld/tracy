@@ -17,6 +17,7 @@
 #include "data/TextInstrumentationStatistics.hpp"
 #include "data/TextIntro.hpp"
 #include "data/TextLeaks.hpp"
+#include "data/TextLightFlame.hpp"
 #include "data/TextLoadTrace.hpp"
 #include "data/TextLocks.hpp"
 #include "data/TextManual.hpp"
@@ -129,7 +130,13 @@ AchievementItem ai_readSource = {
     .text = Unpack( TextReadSource )
 };
 
-AchievementItem* ac_inspectZoneItems[] = { &ai_findZone, &ai_readSource, nullptr };
+AchievementItem ai_lightFlame = {
+    .id = "lightFlame",
+    .name = "Light the flame",
+    .text = Unpack( TextLightFlame )
+};
+
+AchievementItem* ac_inspectZoneItems[] = { &ai_findZone, &ai_readSource, &ai_lightFlame, nullptr };
 
 AchievementItem ai_inspectZone = {
     .id = "inspectZone",

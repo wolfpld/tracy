@@ -981,6 +981,7 @@ static void ClampFlameGraphViewport( int64_t& start, int64_t& end, int64_t total
 
 void View::DrawFlameGraph()
 {
+    if( s_config.achievements ) Achieve( "lightFlame" );
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 1400 * scale, 800 * scale ), ImGuiCond_FirstUseEver );
     m_flameGraphConstraint.Constrain();

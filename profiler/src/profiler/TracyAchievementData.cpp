@@ -4,6 +4,7 @@
 #include "data/Text100Million.hpp"
 #include "data/TextAnnotateZones.hpp"
 #include "data/TextAppInfo.hpp"
+#include "data/TextCompareTraces.hpp"
 #include "data/TextConnectToClient.hpp"
 #include "data/TextContention.hpp"
 #include "data/TextFindZone.hpp"
@@ -124,10 +125,19 @@ AchievementItem ai_findZone = {
     .text = Unpack( TextFindZone )
 };
 
+AchievementItem ai_compareTraces = {
+    .id = "compareTraces",
+    .name = "Compare traces",
+    .text = Unpack( TextCompareTraces )
+};
+
+AchievementItem* ac_readSourceItems[] = { &ai_compareTraces, nullptr };
+
 AchievementItem ai_readSource = {
     .id = "readSource",
     .name = "Read the source",
-    .text = Unpack( TextReadSource )
+    .text = Unpack( TextReadSource ),
+    .items = ac_readSourceItems
 };
 
 AchievementItem ai_lightFlame = {

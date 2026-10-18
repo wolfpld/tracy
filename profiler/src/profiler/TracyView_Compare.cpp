@@ -212,6 +212,7 @@ void View::DrawCompare()
     m_compareConstraint.Constrain();
     ImGui::Begin( "Compare traces", &m_compare.show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
+    if( s_config.achievements ) Achieve( "compareTraces" );
 #if defined TRACY_NO_FILESELECTOR
     ImGui::TextWrapped( "File selector is disabled in this build." );
     ImGui::TextWrapped( "Rebuild without the TRACY_NO_FILESELECTOR macro to enable trace comparison." );

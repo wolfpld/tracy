@@ -991,6 +991,8 @@ void SourceView::RenderSymbolView( Worker& worker, View& view, WindowConstraints
         ImGui::RadioButton( "Assembly", &m_displayMode, DisplayAsm );
     }
 
+    if( s_config.achievements && ( m_displayMode == DisplayAsm || m_displayMode == DisplayMixed ) ) view.Achieve( "readAssembly" );
+
     AddrStatData as;
     if( m_cost == CostType::SampleCount )
     {

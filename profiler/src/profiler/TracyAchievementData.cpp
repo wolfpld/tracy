@@ -24,6 +24,7 @@
 #include "data/TextManual.hpp"
 #include "data/TextMemory.hpp"
 #include "data/TextPlots.hpp"
+#include "data/TextReadAssembly.hpp"
 #include "data/TextReadSource.hpp"
 #include "data/TextSamplingIntro.hpp"
 #include "data/TextSections.hpp"
@@ -125,13 +126,19 @@ AchievementItem ai_findZone = {
     .text = Unpack( TextFindZone )
 };
 
+AchievementItem ai_readAssembly = {
+    .id = "readAssembly",
+    .name = "Assembly required",
+    .text = Unpack( TextReadAssembly )
+};
+
 AchievementItem ai_compareTraces = {
     .id = "compareTraces",
     .name = "Compare traces",
     .text = Unpack( TextCompareTraces )
 };
 
-AchievementItem* ac_readSourceItems[] = { &ai_compareTraces, nullptr };
+AchievementItem* ac_readSourceItems[] = { &ai_readAssembly, &ai_compareTraces, nullptr };
 
 AchievementItem ai_readSource = {
     .id = "readSource",

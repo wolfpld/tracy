@@ -22,6 +22,7 @@
 #include "data/TextManual.hpp"
 #include "data/TextMemory.hpp"
 #include "data/TextPlots.hpp"
+#include "data/TextReadSource.hpp"
 #include "data/TextSamplingIntro.hpp"
 #include "data/TextSections.hpp"
 #include "data/TextSaveTrace.hpp"
@@ -122,7 +123,13 @@ AchievementItem ai_findZone = {
     .text = Unpack( TextFindZone )
 };
 
-AchievementItem* ac_inspectZoneItems[] = { &ai_findZone, nullptr };
+AchievementItem ai_readSource = {
+    .id = "readSource",
+    .name = "Read the source",
+    .text = Unpack( TextReadSource )
+};
+
+AchievementItem* ac_inspectZoneItems[] = { &ai_findZone, &ai_readSource, nullptr };
 
 AchievementItem ai_inspectZone = {
     .id = "inspectZone",

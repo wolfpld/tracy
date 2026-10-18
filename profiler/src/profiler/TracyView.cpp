@@ -1420,6 +1420,7 @@ void View::DrawFrameImage( FrameImageCache& cache, const FrameImage& fi, float s
 
 void View::DrawTextEditor()
 {
+    if( s_config.achievements ) Achieve( "readSource" );
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 1800 * scale, 800 * scale ), ImGuiCond_FirstUseEver );
     m_sourceViewConstraint.Constrain();

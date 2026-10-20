@@ -420,10 +420,22 @@ struct SysTraceState
     int ctxBufferIdx = 0;
     bool ctxSwitchCallchain = false;
     RingBuffer* ring = nullptr;
+    int* redirectFd = nullptr;
+    int numRedirectFd = 0;
 };
 
 static SysTraceState s_state;
 
+// Sampling events of one kind on one CPU share a ring: the first thread's event owns it
+// (the sharedRingFd array, per event kind and CPU), the others are redirected into it with
+// PERF_EVENT_IOC_SET_OUTPUT. Redirected fds are kept open, and enabled by the worker.
+static void CloseRedirectFds()
+{
+    for( int i=0; i<s_state.numRedirectFd; i++ ) close( s_state.redirectFd[i] );
+    tracy_free( s_state.redirectFd );
+    s_state.redirectFd = nullptr;
+    s_state.numRedirectFd = 0;
+}
 
 struct PerfIterTarget
 {
@@ -527,7 +539,7 @@ enum TraceEventId
 
 static void ProbePreciseIp( perf_event_attr& pe, pid_t pid );
 
-static bool OpenSampleEvent( const PerfIterTarget& tgt, const perf_event_attr& inPe, int eventId )
+static bool OpenSampleEvent( const PerfIterTarget& tgt, const perf_event_attr& inPe, int eventId, int* sharedRingFd )
 {
     static bool noKernelAccessLogged = false;
     perf_event_attr pe = inPe;
@@ -549,8 +561,15 @@ static bool OpenSampleEvent( const PerfIterTarget& tgt, const perf_event_attr& i
         TracyDebug( "  Failed to setup!" );
         return false;
     }
+    const int slot = eventId * s_state.numCpus + tgt.cpu;
+    if( sharedRingFd[slot] != -1 && ioctl( fd, PERF_EVENT_IOC_SET_OUTPUT, sharedRingFd[slot] ) == 0 )
+    {
+        s_state.redirectFd[s_state.numRedirectFd++] = fd;
+        return true;
+    }
     new( s_state.ring + s_state.numBuffers ) RingBuffer( 64 * 1024, fd, eventId );
     if( !s_state.ring[s_state.numBuffers].IsValid() ) return false;
+    if( sharedRingFd[slot] == -1 ) sharedRingFd[slot] = fd;
     s_state.numBuffers++;
     return true;
 }
@@ -1066,6 +1085,10 @@ bool SysTraceStart( int64_t& samplingPeriod )
     );
     s_state.ring = (RingBuffer*)tracy_malloc( sizeof( RingBuffer ) * maxNumBuffers );
     s_state.numBuffers = 0;
+    int* sharedRingFd = (int*)tracy_malloc( sizeof( int ) * EventVsync * s_state.numCpus );
+    for( int i=0; i<EventVsync*s_state.numCpus; i++ ) sharedRingFd[i] = -1;
+    s_state.redirectFd = (int*)tracy_malloc( sizeof( int ) * maxNumBuffers );
+    s_state.numRedirectFd = 0;
 
     // software sampling
     perf_event_attr pe = {};
@@ -1092,7 +1115,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
         ProbePreciseIp( pe, currentPid );
         for( int i=0; i<numIter; i++ )
         {
-            if( OpenSampleEvent( iter[i], pe, EventCallstack ) ) TracyDebug( "  Target %i ok (EventCallstack)", i );
+            if( OpenSampleEvent( iter[i], pe, EventCallstack, sharedRingFd ) ) TracyDebug( "  Target %i ok (EventCallstack)", i );
         }
     }
 
@@ -1120,13 +1143,13 @@ bool SysTraceStart( int64_t& samplingPeriod )
         ProbePreciseIp( pe, PERF_COUNT_HW_CPU_CYCLES, PERF_COUNT_HW_INSTRUCTIONS, currentPid );
         for( int i=0; i<numIter; i++ )
         {
-            if( OpenSampleEvent( iter[i], pe, EventCpuCycles ) ) TracyDebug( "  Target %i ok (EventCpuCycles)", i );
+            if( OpenSampleEvent( iter[i], pe, EventCpuCycles, sharedRingFd ) ) TracyDebug( "  Target %i ok (EventCpuCycles)", i );
         }
 
         pe.config = PERF_COUNT_HW_INSTRUCTIONS;
         for( int i=0; i<numIter; i++ )
         {
-            if( OpenSampleEvent( iter[i], pe, EventInstructionsRetired ) ) TracyDebug( "  Target %i ok (EventInstructionsRetired)", i );
+            if( OpenSampleEvent( iter[i], pe, EventInstructionsRetired, sharedRingFd ) ) TracyDebug( "  Target %i ok (EventInstructionsRetired)", i );
         }
     }
 
@@ -1142,13 +1165,13 @@ bool SysTraceStart( int64_t& samplingPeriod )
         }
         for( int i=0; i<numIter; i++ )
         {
-            if( OpenSampleEvent( iter[i], pe, EventCacheReference ) ) TracyDebug( "  Target %i ok (EventCacheReference)", i );
+            if( OpenSampleEvent( iter[i], pe, EventCacheReference, sharedRingFd ) ) TracyDebug( "  Target %i ok (EventCacheReference)", i );
         }
 
         pe.config = PERF_COUNT_HW_CACHE_MISSES;
         for( int i=0; i<numIter; i++ )
         {
-            if( OpenSampleEvent( iter[i], pe, EventCacheMiss ) ) TracyDebug( "  Target %i ok (EventCacheMiss)", i );
+            if( OpenSampleEvent( iter[i], pe, EventCacheMiss, sharedRingFd ) ) TracyDebug( "  Target %i ok (EventCacheMiss)", i );
         }
     }
 
@@ -1159,13 +1182,13 @@ bool SysTraceStart( int64_t& samplingPeriod )
         ProbePreciseIp( pe, PERF_COUNT_HW_BRANCH_INSTRUCTIONS, PERF_COUNT_HW_BRANCH_MISSES, currentPid );
         for( int i=0; i<numIter; i++ )
         {
-            if( OpenSampleEvent( iter[i], pe, EventBranchRetired ) ) TracyDebug( "  Target %i ok (EventBranchRetired)", i );
+            if( OpenSampleEvent( iter[i], pe, EventBranchRetired, sharedRingFd ) ) TracyDebug( "  Target %i ok (EventBranchRetired)", i );
         }
 
         pe.config = PERF_COUNT_HW_BRANCH_MISSES;
         for( int i=0; i<numIter; i++ )
         {
-            if( OpenSampleEvent( iter[i], pe, EventBranchMiss ) ) TracyDebug( "  Target %i ok (EventBranchMiss)", i );
+            if( OpenSampleEvent( iter[i], pe, EventBranchMiss, sharedRingFd ) ) TracyDebug( "  Target %i ok (EventBranchMiss)", i );
         }
     }
 
@@ -1284,8 +1307,11 @@ bool SysTraceStart( int64_t& samplingPeriod )
 
     tracy_free( iter );
 
+    tracy_free( sharedRingFd );
+
     if( s_state.numBuffers == 0 || ( externalPid != 0 && s_state.ctxBufferIdx == 0 ) )
     {
+        CloseRedirectFds();
         tracy_free( s_state.ring );
         s_state.ring = nullptr;
         TracyDebug( "Failed to setup any system tracing events, system tracing disabled." );
@@ -1338,7 +1364,7 @@ static uint64_t* GetCallstackBlock( uint64_t cnt, RingBuffer& ring, uint64_t off
     return trace;
 }
 
-void SysTraceWorker( void* ptr )
+void SysTraceWorker( void* )
 {
     ThreadExitHandler threadExitHandler;
     SetThreadName( "Tracy Sampling" );
@@ -1349,6 +1375,7 @@ void SysTraceWorker( void* ptr )
     auto ringArray = s_state.ring;
     auto numBuffers = s_state.numBuffers;
     for( int i=0; i<numBuffers; i++ ) ringArray[i].Enable();
+    for( int i=0; i<s_state.numRedirectFd; i++ ) ioctl( s_state.redirectFd[i], PERF_EVENT_IOC_ENABLE, 0 );
     for(;;)
     {
 #ifdef TRACY_ON_DEMAND
@@ -1730,6 +1757,7 @@ void SysTraceWorker( void* ptr )
     }
 
     for( int i=0; i<numBuffers; i++ ) ringArray[i].~RingBuffer();
+    CloseRedirectFds();
     tracy_free_fast( ringArray );
 }
 

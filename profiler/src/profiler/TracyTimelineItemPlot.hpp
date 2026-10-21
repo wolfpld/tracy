@@ -27,6 +27,7 @@ protected:
     void HeaderTooltip( const char* label ) const override;
     void HeaderExtraContents( const TimelineContext& ctx, int offset, float labelWidth ) override;
     void HeaderZoomed() override;
+    void DrawExtraPopupItems() override;
 
     bool DrawContents( const TimelineContext& ctx, int& offset ) override;
     void DrawFinished() override;

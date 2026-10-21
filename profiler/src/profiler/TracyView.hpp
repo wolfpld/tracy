@@ -20,6 +20,7 @@
 #include "TracyDecayValue.hpp"
 #include "TracyManualWindow.hpp"
 #include "TracyMarkdown.hpp"
+#include "TracyPlotMapping.hpp"
 #include "TracySourceContents.hpp"
 #include "TracyTimelineController.hpp"
 #include "TracyTimelineDraw.hpp"
@@ -205,6 +206,7 @@ public:
     void HighlightThread( uint64_t thread );
     void SelectThread( uint64_t thread );
     uint64_t GetSelectThread() const { return m_selectedThread; }
+    PlotMapping& GetPlotMapping( const PlotData* plot ) { return m_plotMapping[plot]; }
     void ZoomToRange( int64_t start, int64_t end, bool pause = true );
     bool DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vector<uint32_t>& plotDraw, int& offset, bool rightEnd );
     void DrawThread( const TimelineContext& ctx, const ThreadData& thread, const std::vector<TimelineDraw>& draw, const std::vector<ContextSwitchDraw>& ctxDraw, const std::vector<SamplesDraw>& samplesDraw, const std::vector<std::unique_ptr<LockDraw>>& lockDraw, int& offset, int depth, bool hasCtxSwitches, bool hasSamples );
@@ -496,6 +498,7 @@ private:
     unordered_flat_map<uint64_t, bool> m_flameGraphThread;
     unordered_flat_map<const void*, int> m_gpuDrift;
     unordered_flat_map<const PlotData*, PlotView> m_plotView;
+    unordered_flat_map<const PlotData*, PlotMapping> m_plotMapping;
     Vector<const ThreadData*> m_threadOrder;
     Vector<const ThreadData*> m_threadReinsert;
     Vector<float> m_threadDnd;

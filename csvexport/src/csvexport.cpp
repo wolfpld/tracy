@@ -516,6 +516,11 @@ int main(int argc, char** argv)
 
     if(args.plot && args.unwrap)
     {
+        while (!worker.IsBackgroundDone())
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        std::lock_guard<std::mutex> lock(worker.GetDataLock());
         auto& plots = worker.GetPlots();
         for(const auto& plot : plots)
         {

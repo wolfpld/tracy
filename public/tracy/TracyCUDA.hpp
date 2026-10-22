@@ -65,9 +65,9 @@ using CUDACtx = std::nullptr_t;
 // activity enabled, the device hits an illegal memory access once the nodes
 // inside conditional bodies have executed about 699,050 times in a context
 // (observed with CUPTI 13.0). Enabling KERNEL activity avoids it.
-#ifndef TRACY_CUDA_SERIALIZED_KERNEL_ACTIVITY
-#define TRACY_CUDA_SERIALIZED_KERNEL_ACTIVITY (0)
-#endif//TRACY_CUDA_SERIALIZED_KERNEL_ACTIVITY
+#ifndef TRACY_CUDA_FORCE_KERNEL_SERIAL_EXECUTION
+#define TRACY_CUDA_FORCE_KERNEL_SERIAL_EXECUTION (0)
+#endif//TRACY_CUDA_FORCE_KERNEL_SERIAL_EXECUTION
 
 namespace {
 
@@ -1267,7 +1267,7 @@ namespace tracy
 
         static constexpr CUpti_ActivityKind activities[] = {
             // KERNEL and CONCURRENT_KERNEL are mutually exclusive
-            #if TRACY_CUDA_SERIALIZED_KERNEL_ACTIVITY
+            #if TRACY_CUDA_FORCE_KERNEL_SERIAL_EXECUTION
             CUPTI_ACTIVITY_KIND_KERNEL,
             #else
             CUPTI_ACTIVITY_KIND_CONCURRENT_KERNEL,

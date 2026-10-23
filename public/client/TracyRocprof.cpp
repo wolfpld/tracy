@@ -298,8 +298,10 @@ void dispatch_callback( rocprofiler_dispatch_counting_service_data_t dispatch_da
      * set for the agent. If we have, return it. Otherwise, construct a new profile counter
      * set.
      */
-    static std::shared_mutex m_mutex = {};
-    static std::unordered_map<uint64_t, rocprofiler_profile_config_id_t> profile_cache = {};
+    // Intentionally never destroyed: the ROCm runtime may still invoke this callback for
+    // kernel launches during exit, after function-local statics are destroyed.
+    static std::shared_mutex& m_mutex = *new std::shared_mutex;
+    static std::unordered_map<uint64_t, rocprofiler_profile_config_id_t>& profile_cache = *new std::unordered_map<uint64_t, rocprofiler_profile_config_id_t>;
 
     auto search_cache = [&]()
     {

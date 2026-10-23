@@ -58,6 +58,17 @@ using CUDACtx = std::nullptr_t;
 #define TRACY_CUDA_ENABLE_CUDA_CALL_STATS (0)
 #endif//TRACY_CUDA_ENABLE_CUDA_CALL_STATS
 
+// Collect kernel activity as CUPTI_ACTIVITY_KIND_KERNEL instead of
+// CUPTI_ACTIVITY_KIND_CONCURRENT_KERNEL. CUPTI then serializes kernel
+// execution, but this avoids a CUPTI fault in applications that use CUDA graph
+// conditional nodes (IF/WHILE): with CONCURRENT_KERNEL, MEMCPY or MEMSET
+// activity enabled, the device hits an illegal memory access once the nodes
+// inside conditional bodies have executed about 699,050 times in a context
+// (observed with CUPTI 13.0). Enabling KERNEL activity avoids it.
+#ifndef TRACY_CUDA_FORCE_KERNEL_SERIAL_EXECUTION
+#define TRACY_CUDA_FORCE_KERNEL_SERIAL_EXECUTION (0)
+#endif//TRACY_CUDA_FORCE_KERNEL_SERIAL_EXECUTION
+
 namespace {
 
 // TODO(marcos): wrap these in structs for better type safety
@@ -671,6 +682,7 @@ namespace tracy
         // or 0 for records that are not graph-launched or don't have the field.
         static GraphID getGraphIdFromRecord(const CUpti_Activity* record) {
             switch (record->kind) {
+                case CUPTI_ACTIVITY_KIND_KERNEL:
                 case CUPTI_ACTIVITY_KIND_CONCURRENT_KERNEL:
                     return reinterpret_cast<const CUpti_ActivityKernel9*>(record)->graphId;
                 case CUPTI_ACTIVITY_KIND_MEMCPY:
@@ -1102,10 +1114,17 @@ namespace tracy
 
             switch (record->kind)
             {
+            case CUPTI_ACTIVITY_KIND_KERNEL:
             case CUPTI_ACTIVITY_KIND_CONCURRENT_KERNEL:
             {   
                 ZoneNamedN(kernel, "tracy::CUDACtx::DoProcessDeviceEvent[kernel]", instrument);
                 CUpti_ActivityKernel9* kernel9 = (CUpti_ActivityKernel9*) record;
+                // With CUPTI_ACTIVITY_KIND_KERNEL, kernels inside CUDA graph
+                // conditional bodies are reported once per graph launch and
+                // without timestamps.
+                if (kernel9->start == 0) {
+                    break;
+                }
                 APICallInfo apiCall;
                 if (!matchGraphActivityToAPICall(kernel9->correlationId, kernel9->graphId, apiCall)) {
                     return matchError(kernel9->correlationId, "KERNEL");
@@ -1247,8 +1266,12 @@ namespace tracy
         };
 
         static constexpr CUpti_ActivityKind activities[] = {
-            //CUPTI_ACTIVITY_KIND_KERNEL, // mutually exclusive with CONCURRENT_KERNEL
+            // KERNEL and CONCURRENT_KERNEL are mutually exclusive
+            #if TRACY_CUDA_FORCE_KERNEL_SERIAL_EXECUTION
+            CUPTI_ACTIVITY_KIND_KERNEL,
+            #else
             CUPTI_ACTIVITY_KIND_CONCURRENT_KERNEL,
+            #endif
             CUPTI_ACTIVITY_KIND_MEMCPY,
             CUPTI_ACTIVITY_KIND_MEMSET,
             CUPTI_ACTIVITY_KIND_SYNCHRONIZATION,

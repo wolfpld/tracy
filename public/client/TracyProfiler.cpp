@@ -227,7 +227,9 @@ static MappingInfo* LookUpMapping(uintptr_t address)
 {
     // Static state managed by this function. Not constant, we mutate that state as
     // we turn some mappings readable. Initially parsed once here, updated as needed below.
-    static std::vector<MappingInfo> s_mappings = ParseMappings();
+    // Intentionally never destroyed: the profiler threads keep resolving symbols during
+    // exit (e.g. with TRACY_NO_EXIT), after function-local statics are destroyed.
+    static std::vector<MappingInfo>& s_mappings = *new std::vector<MappingInfo>( ParseMappings() );
     MappingInfo* mapping = LookUpMapping( s_mappings, address );
     if( mapping ) return mapping;
 
@@ -1383,7 +1385,9 @@ private:
 
 static ProfilerThreadData& GetProfilerThreadData()
 {
-    static ProfilerThreadDataKey key;
+    // Intentionally never destroyed: threads keep using their profiler data during
+    // exit (e.g. with TRACY_NO_EXIT), after function-local statics are destroyed.
+    static ProfilerThreadDataKey& key = *new ProfilerThreadDataKey;
     return key.get();
 }
 #else

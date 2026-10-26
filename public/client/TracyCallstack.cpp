@@ -239,7 +239,7 @@ private:
         if( cache->ContainsImage( startAddress ) ) return 0;
 
         const uint32_t headerCount = info->dlpi_phnum;
-        TRACY_ASSERT( headerCount > 0 );
+        if( headerCount == 0 ) return 0;
 
         // headers aren't guaranteed to be in address order; find the max
         uint64_t endAddress = startAddress;

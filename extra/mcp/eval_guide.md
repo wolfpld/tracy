@@ -19,6 +19,9 @@ data surface. Common entry points:
 - Frames: `get_frame_count()`, `get_frame_times()`, `get_frame_times_named(name)`,
   `get_frame_boundaries()`, `get_zones_in_frame(...)`
 - Threads: `get_threads()`, `get_thread_name(tid)`, `get_thread_context_switches(tid)`
+  `get_thread_zone_stats(tid)` is `get_all_zone_stats()` restricted to one thread's zones,
+  so a main-thread cost is not mixed with worker threads. A zone name used at several
+  source locations appears once in both, for its last location.
 - Messages / plots / locks / memory / callstacks: `get_messages()`, `get_plots()`,
   `get_locks()`, `get_memory_events()`, `get_callstack_frames(...)`
 - Plot samples: `get_plot_samples(name, start_ns=0, end_ns=max, max_samples=100000)` returns

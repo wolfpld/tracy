@@ -1,5 +1,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <algorithm>
+#include <limits>
 #include <unordered_map>
 
 #ifdef _MSC_VER
@@ -1015,6 +1017,46 @@ PYBIND11_MODULE( TracyServerBindings, m )
         }
         return result;
     } ) )
+
+        .def( "get_plot_samples", locked( +[]( const Worker& w, const std::string& name, int64_t startNs, int64_t endNs, size_t maxSamples ) {
+        std::vector<std::pair<int64_t, double>> result;
+        for( const auto* pd : w.GetPlots() )
+        {
+            if( !pd || w.GetString( pd->name ) != name ) continue;
+            auto first = std::lower_bound( pd->data.begin(), pd->data.end(), startNs,
+                []( const PlotItem& item, int64_t t ) { return item.time.Val() < t; } );
+            auto last = std::lower_bound( first, pd->data.end(), endNs,
+                []( const PlotItem& item, int64_t t ) { return item.time.Val() < t; } );
+            const size_t n = last - first;
+            const size_t step = maxSamples && n > maxSamples ? ( n + maxSamples - 1 ) / maxSamples : 1;
+            for( auto it = first; it < last; it += std::min<size_t>( step, last - it ) )
+                result.emplace_back( it->time.Val(), it->val );
+            break;
+        }
+        return result;
+    } ), py::arg( "name" ), py::arg( "start_ns" ) = 0, py::arg( "end_ns" ) = std::numeric_limits<int64_t>::max(), py::arg( "max_samples" ) = 100000 )
+
+        .def( "get_plot_window_stats", locked( +[]( const Worker& w, const std::string& name, int64_t startNs, int64_t endNs ) {
+        PlotSummary result{ name, 0, 0, 0, 0, 0, "User" };
+        static const char* plotTypeStr[] = { "User", "Memory", "SysTime", "Power" };
+        for( const auto* pd : w.GetPlots() )
+        {
+            if( !pd || w.GetString( pd->name ) != name ) continue;
+            result.type = (uint8_t)pd->type < 4 ? plotTypeStr[(uint8_t)pd->type] : "Unknown";
+            auto first = std::lower_bound( pd->data.begin(), pd->data.end(), startNs,
+                []( const PlotItem& item, int64_t t ) { return item.time.Val() < t; } );
+            for( auto it = first; it != pd->data.end() && it->time.Val() < endNs; ++it )
+            {
+                if( result.count == 0 || it->val < result.min ) result.min = it->val;
+                if( result.count == 0 || it->val > result.max ) result.max = it->val;
+                result.sum += it->val;
+                result.count++;
+            }
+            result.avg = result.count ? result.sum / result.count : 0.0;
+            break;
+        }
+        return result;
+    } ), py::arg( "name" ), py::arg( "start_ns" ) = 0, py::arg( "end_ns" ) = std::numeric_limits<int64_t>::max() )
 
         // --- Memory pools ---
         .def( "get_memory_pools", locked( +[]( const Worker& w ) {

@@ -21,6 +21,11 @@ data surface. Common entry points:
 - Threads: `get_threads()`, `get_thread_name(tid)`, `get_thread_context_switches(tid)`
 - Messages / plots / locks / memory / callstacks: `get_messages()`, `get_plots()`,
   `get_locks()`, `get_memory_events()`, `get_callstack_frames(...)`
+- Plot samples: `get_plot_samples(name, start_ns=0, end_ns=max, max_samples=100000)` returns
+  `(time_ns, value)` pairs, thinned to at most `max_samples`;
+  `get_plot_window_stats(name, start_ns, end_ns)` returns a `PlotSummary`
+  (count/min/max/sum/avg) over just that window. `get_plots()` only
+  summarises the whole trace.
 - Sections: `get_sections()` — timed code sections from
   `TracySectionEnter`/`TracySectionLeave` instrumentation. Returns a list of
   `{category, start, end, text}` dicts (start/end in ns); `category` is the

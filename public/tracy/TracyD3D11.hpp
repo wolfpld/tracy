@@ -183,6 +183,12 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() )
         {
+            if( m_previousCheckpoint != m_nextCheckpoint )
+            {
+                D3D11_QUERY_DATA_TIMESTAMP_DISJOINT disjoint = { };
+                if( m_immediateDevCtx->GetData( m_disjointQuery, &disjoint, sizeof( disjoint ), D3D11_ASYNC_GETDATA_DONOTFLUSH ) != S_OK ) return;
+                m_immediateDevCtx->Begin( m_disjointQuery );
+            }
             m_previousCheckpoint = m_nextCheckpoint = m_queryCounter;
             return;
         }

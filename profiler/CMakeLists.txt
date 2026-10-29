@@ -157,9 +157,9 @@ endif()
 list(TRANSFORM SERVER_FILES PREPEND "src/profiler/")
 
 set(PROFILER_FILES
-    src/ConnectionHistory.cpp
     src/Filters.cpp
     src/Fonts.cpp
+    src/History.cpp
     src/HttpRequest.cpp
     src/ImGuiContext.cpp
     src/ini.c

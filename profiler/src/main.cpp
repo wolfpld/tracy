@@ -65,10 +65,10 @@
 #include "zigzag32.hpp"
 
 #include "Backend.hpp"
-#include "ConnectionHistory.hpp"
 #include "EmscriptenShim.hpp"
 #include "Filters.hpp"
 #include "Fonts.hpp"
+#include "History.hpp"
 #include "HttpRequest.hpp"
 #include "IsElevated.hpp"
 #include "ImGuiContext.hpp"
@@ -105,7 +105,7 @@ static std::mutex resolvLock;
 static tracy::unordered_flat_map<std::string, std::string> resolvMap;
 static ResolvService resolv( port );
 static char addr[1024] = { "127.0.0.1" };
-static ConnectionHistory* connHist;
+static History* hist;
 static std::atomic<ViewShutdown> viewShutdown { ViewShutdown::False };
 static double animTime = 0;
 static float dpiScale = -1.f;
@@ -332,11 +332,11 @@ int main( int argc, char** argv )
         }
     }
 
-    ConnectionHistory connHistory;
+    History history;
     Filters filters;
     tracy::AchievementsMgr achievements;
 
-    connHist = &connHistory;
+    hist = &history;
     filt = &filters;
     s_achievements = &achievements;
 
@@ -973,16 +973,16 @@ static void DrawContents()
         ImGui::TextUnformatted( "Client address" );
         bool connectClicked = false;
         connectClicked |= ImGui::InputTextWithHint( "###connectaddress", "Enter address", addr, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
-        if( !connHist->empty() )
+        if( hist->ConnectionCount() != 0 )
         {
             ImGui::SameLine();
             if( ImGui::BeginCombo( "##frameCombo", nullptr, ImGuiComboFlags_NoPreview ) )
             {
                 int idxRemove = -1;
-                const auto sz = std::min<size_t>( 5, connHist->size() );
+                const auto sz = std::min<size_t>( 5, hist->ConnectionCount() );
                 for( size_t i=0; i<sz; i++ )
                 {
-                    const auto& str = connHist->Name( i );
+                    const auto& str = hist->ConnectionName( i );
                     if( ImGui::Selectable( str.c_str() ) )
                     {
                         memcpy( addr, str.c_str(), str.size() + 1 );
@@ -994,7 +994,7 @@ static void DrawContents()
                 }
                 if( idxRemove >= 0 )
                 {
-                    connHist->Erase( idxRemove );
+                    hist->EraseConnection( idxRemove );
                 }
                 ImGui::EndCombo();
             }
@@ -1017,7 +1017,7 @@ static void DrawContents()
             if( aptr != aend )
             {
                 std::string address( aptr, aend );
-                connHist->Count( address );
+                hist->CountConnection( address );
 
                 auto adata = address.data();
                 auto ptr = adata + address.size() - 1;

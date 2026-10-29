@@ -227,7 +227,7 @@ static MappingInfo* LookUpMapping(uintptr_t address)
 {
     // Static state managed by this function. Not constant, we mutate that state as
     // we turn some mappings readable. Initially parsed once here, updated as needed below.
-    static std::vector<MappingInfo> s_mappings = ParseMappings();
+    static auto& s_mappings = *new std::vector<MappingInfo>( ParseMappings() );
     MappingInfo* mapping = LookUpMapping( s_mappings, address );
     if( mapping ) return mapping;
 
@@ -1383,7 +1383,7 @@ private:
 
 static ProfilerThreadData& GetProfilerThreadData()
 {
-    static ProfilerThreadDataKey key;
+    static auto& key = *new ProfilerThreadDataKey;
     return key.get();
 }
 #else

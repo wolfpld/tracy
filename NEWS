@@ -46,6 +46,8 @@ vx.xx.x (2026-xx-xx)
 - User GUI scale in the profiler can be now controlled with Ctrl + plus/minus
   and reset with Ctrl + zero.
 - Various hardening improvements for correctness across the code base.
+- Fixed a use-after-free crash during program exit when the profiler
+  resolved symbols after static objects had been destroyed (Android).
 
 v0.14.1 (2026-08-22)
 --------------------

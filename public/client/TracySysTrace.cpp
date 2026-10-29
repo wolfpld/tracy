@@ -426,9 +426,6 @@ struct SysTraceState
 
 static SysTraceState s_state;
 
-// Sampling events of one kind on one CPU share a ring: the first thread's event owns it
-// (the sharedRingFd array, per event kind and CPU), the others are redirected into it with
-// PERF_EVENT_IOC_SET_OUTPUT. Redirected fds are kept open, and enabled by the worker.
 static void CloseRedirectFds()
 {
     for( int i=0; i<s_state.numRedirectFd; i++ ) close( s_state.redirectFd[i] );
@@ -537,10 +534,17 @@ enum TraceEventId
     EventWaking,
 };
 
+// Events from EventVsync on are system-wide (one fd per CPU) and never share a ring.
+constexpr int NumSampleEventKinds = EventVsync;
+
 static void ProbePreciseIp( perf_event_attr& pe, pid_t pid );
 
+// Sampling events of one kind on one CPU share a ring: the first thread's event owns it
+// (the sharedRingFd array, per event kind and CPU), the others are redirected into it with
+// PERF_EVENT_IOC_SET_OUTPUT. Redirected fds are kept open, and enabled by the worker.
 static bool OpenSampleEvent( const PerfIterTarget& tgt, const perf_event_attr& inPe, int eventId, int* sharedRingFd )
 {
+    TRACY_ASSERT( eventId < NumSampleEventKinds );
     static bool noKernelAccessLogged = false;
     perf_event_attr pe = inPe;
     int fd = perf_event_open( &pe, tgt.pid, tgt.cpu, -1, PERF_FLAG_FD_CLOEXEC );
@@ -1085,8 +1089,8 @@ bool SysTraceStart( int64_t& samplingPeriod )
     );
     s_state.ring = (RingBuffer*)tracy_malloc( sizeof( RingBuffer ) * maxNumBuffers );
     s_state.numBuffers = 0;
-    int* sharedRingFd = (int*)tracy_malloc( sizeof( int ) * EventVsync * s_state.numCpus );
-    for( int i=0; i<EventVsync*s_state.numCpus; i++ ) sharedRingFd[i] = -1;
+    int* sharedRingFd = (int*)tracy_malloc( sizeof( int ) * NumSampleEventKinds * s_state.numCpus );
+    for( int i=0; i<NumSampleEventKinds*s_state.numCpus; i++ ) sharedRingFd[i] = -1;
     s_state.redirectFd = (int*)tracy_malloc( sizeof( int ) * maxNumBuffers );
     s_state.numRedirectFd = 0;
 

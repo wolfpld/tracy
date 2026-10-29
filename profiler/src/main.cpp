@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <atomic>
 #include <chrono>
+#include <filesystem>
 #include <inttypes.h>
 #define IMGUI_DEFINE_MATH_OPERATORS 1
 #include <imgui.h>
@@ -148,6 +149,28 @@ static void SetWindowTitleCallback( const char* title )
     s_customTitle = true;
 }
 
+struct RecentTrace
+{
+    std::string path;
+    std::string name;
+    std::string dir;
+    uint64_t size;
+};
+
+static std::vector<RecentTrace> recentTraces;
+static bool recentTracesStale = true;
+
+static void RecordTrace( const char* fn )
+{
+    hist->RecordTrace( fn );
+    recentTracesStale = true;
+}
+
+static void TraceSavedCallback( const char* fn )
+{
+    RecordTrace( fn );
+}
+
 static void AttentionCallback()
 {
     bptr->Attention();
@@ -257,7 +280,7 @@ int main( int argc, char** argv )
                 auto f = std::shared_ptr<tracy::FileRead>( tracy::FileRead::Open( "/url.tracy" ) );
                 if( f )
                 {
-                    view.store( std::make_shared<tracy::View>( RunOnMainThread, *f, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements ), std::memory_order_release );
+                    view.store( std::make_shared<tracy::View>( RunOnMainThread, *f, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, TraceSavedCallback, s_achievements ), std::memory_order_release );
                 }
             }
             catch( const tracy::NotTracyDump& ) { badVer.state = tracy::BadVersionState::BadFile; }
@@ -396,7 +419,8 @@ int main( int argc, char** argv )
     {
         try
         {
-            view.store( std::make_shared<tracy::View>( RunOnMainThread, *initFileOpen, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements ), std::memory_order_release );
+            view.store( std::make_shared<tracy::View>( RunOnMainThread, *initFileOpen, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, TraceSavedCallback, s_achievements ), std::memory_order_release );
+            RecordTrace( argv[1] );
         }
         catch( const std::exception& e )
         {
@@ -408,7 +432,7 @@ int main( int argc, char** argv )
     }
     else if( connectTo )
     {
-        view.store( std::make_shared<tracy::View>( RunOnMainThread, connectTo, port, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements ), std::memory_order_release );
+        view.store( std::make_shared<tracy::View>( RunOnMainThread, connectTo, port, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, TraceSavedCallback, s_achievements ), std::memory_order_release );
     }
 
     tracy::Fileselector::Init( backend.HandleType(), backend.Handle() );
@@ -623,6 +647,49 @@ struct AttentionDance
     static constexpr float scalePeriod = 0.63f;
     static constexpr float scaleAmplitude = 0.4f;
 };
+
+#ifndef TRACY_NO_FILESELECTOR
+static void OpenTraceFile( const char* fn )
+{
+    try
+    {
+        auto f = std::shared_ptr<tracy::FileRead>( tracy::FileRead::Open( fn ) );
+        if( f )
+        {
+            loadThread = std::thread( [f, path = std::string( fn )] {
+                try
+                {
+                    view.store( std::make_shared<tracy::View>( RunOnMainThread, *f, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, TraceSavedCallback, s_achievements ), std::memory_order_release );
+                    RunOnMainThread( [path] { RecordTrace( path.c_str() ); } );
+                }
+                catch( const tracy::UnsupportedVersion& e )
+                {
+                    badVer.state = tracy::BadVersionState::UnsupportedVersion;
+                    badVer.version = e.version;
+                }
+                catch( const tracy::LegacyVersion& e )
+                {
+                    badVer.state = tracy::BadVersionState::LegacyVersion;
+                    badVer.version = e.version;
+                }
+                catch( const tracy::LoadFailure& e )
+                {
+                    badVer.state = tracy::BadVersionState::LoadFailure;
+                    badVer.msg = e.msg;
+                }
+            } );
+        }
+    }
+    catch( const tracy::NotTracyDump& )
+    {
+        badVer.state = tracy::BadVersionState::BadFile;
+    }
+    catch( const tracy::FileReadError& )
+    {
+        badVer.state = tracy::BadVersionState::ReadError;
+    }
+}
+#endif
 
 static void DrawContents()
 {
@@ -970,121 +1037,143 @@ static void DrawContents()
             ImGui::PopStyleColor();
         }
         ImGui::Separator();
-        ImGui::TextUnformatted( "Client address" );
-        bool connectClicked = false;
-        connectClicked |= ImGui::InputTextWithHint( "###connectaddress", "Enter address", addr, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
-        if( hist->ConnectionCount() != 0 )
+        if( ImGui::BeginTabBar( "##welcometabs" ) )
         {
-            ImGui::SameLine();
-            if( ImGui::BeginCombo( "##frameCombo", nullptr, ImGuiComboFlags_NoPreview ) )
+            if( ImGui::BeginTabItem( "By address" ) )
             {
-                int idxRemove = -1;
-                const auto sz = std::min<size_t>( 5, hist->ConnectionCount() );
-                for( size_t i=0; i<sz; i++ )
+                ImGui::TextUnformatted( "Client address" );
+                bool connectClicked = false;
+                connectClicked |= ImGui::InputTextWithHint( "###connectaddress", "Enter address", addr, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
+                if( hist->ConnectionCount() != 0 )
                 {
-                    const auto& str = hist->ConnectionName( i );
-                    if( ImGui::Selectable( str.c_str() ) )
+                    ImGui::SameLine();
+                    if( ImGui::BeginCombo( "##frameCombo", nullptr, ImGuiComboFlags_NoPreview ) )
                     {
-                        memcpy( addr, str.c_str(), str.size() + 1 );
+                        int idxRemove = -1;
+                        const auto sz = std::min<size_t>( 5, hist->ConnectionCount() );
+                        for( size_t i=0; i<sz; i++ )
+                        {
+                            const auto& str = hist->ConnectionName( i );
+                            if( ImGui::Selectable( str.c_str() ) )
+                            {
+                                memcpy( addr, str.c_str(), str.size() + 1 );
+                            }
+                            if( ImGui::IsItemHovered() && ImGui::IsKeyPressed( ImGuiKey_Delete, false ) )
+                            {
+                                idxRemove = (int)i;
+                            }
+                        }
+                        if( idxRemove >= 0 )
+                        {
+                            hist->EraseConnection( idxRemove );
+                        }
+                        ImGui::EndCombo();
                     }
-                    if( ImGui::IsItemHovered() && ImGui::IsKeyPressed( ImGuiKey_Delete, false ) )
+                }
+#ifdef __EMSCRIPTEN__
+                ImGui::BeginDisabled();
+#endif
+                connectClicked |= ImGui::Button( ICON_FA_WIFI " Connect" );
+#ifdef __EMSCRIPTEN__
+                ImGui::EndDisabled();
+                connectClicked = false;
+#endif
+                if( connectClicked && *addr && !loadThread.joinable() )
+                {
+                    auto aptr = addr;
+                    while( *aptr == ' ' || *aptr == '\t' ) aptr++;
+                    auto aend = aptr;
+                    while( *aend && *aend != ' ' && *aend != '\t' ) aend++;
+
+                    if( aptr != aend )
                     {
-                        idxRemove = (int)i;
+                        std::string address( aptr, aend );
+                        hist->CountConnection( address );
+
+                        auto adata = address.data();
+                        auto ptr = adata + address.size() - 1;
+                        while( ptr > adata && *ptr != ':' ) ptr--;
+                        if( *ptr == ':' )
+                        {
+                            std::string addrPart = std::string( adata, ptr );
+                            uint16_t portPart = (uint16_t)atoi( ptr+1 );
+                            view.store( std::make_shared<tracy::View>( RunOnMainThread, addrPart.c_str(), portPart, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, TraceSavedCallback, s_achievements ), std::memory_order_release );
+                        }
+                        else
+                        {
+                            view.store( std::make_shared<tracy::View>( RunOnMainThread, address.c_str(), port, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, TraceSavedCallback, s_achievements ), std::memory_order_release );
+                        }
                     }
                 }
-                if( idxRemove >= 0 )
+                if( tracy::s_config.memoryLimit )
                 {
-                    hist->EraseConnection( idxRemove );
+                    ImGui::SameLine();
+                    tracy::TextColoredUnformatted( 0xFF00FFFF, ICON_FA_TRIANGLE_EXCLAMATION );
+                    tracy::TooltipIfHovered( "Memory limit is active" );
                 }
-                ImGui::EndCombo();
+
+                ImGui::EndTabItem();
             }
-        }
-#ifdef __EMSCRIPTEN__
-        ImGui::BeginDisabled();
-#endif
-        connectClicked |= ImGui::Button( ICON_FA_WIFI " Connect" );
-#ifdef __EMSCRIPTEN__
-        ImGui::EndDisabled();
-        connectClicked = false;
-#endif
-        if( connectClicked && *addr && !loadThread.joinable() )
-        {
-            auto aptr = addr;
-            while( *aptr == ' ' || *aptr == '\t' ) aptr++;
-            auto aend = aptr;
-            while( *aend && *aend != ' ' && *aend != '\t' ) aend++;
-
-            if( aptr != aend )
-            {
-                std::string address( aptr, aend );
-                hist->CountConnection( address );
-
-                auto adata = address.data();
-                auto ptr = adata + address.size() - 1;
-                while( ptr > adata && *ptr != ':' ) ptr--;
-                if( *ptr == ':' )
-                {
-                    std::string addrPart = std::string( adata, ptr );
-                    uint16_t portPart = (uint16_t)atoi( ptr+1 );
-                    view.store( std::make_shared<tracy::View>( RunOnMainThread, addrPart.c_str(), portPart, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements ), std::memory_order_release );
-                }
-                else
-                {
-                    view.store( std::make_shared<tracy::View>( RunOnMainThread, address.c_str(), port, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements ), std::memory_order_release );
-                }
-            }
-        }
-        if( tracy::s_config.memoryLimit )
-        {
-            ImGui::SameLine();
-            tracy::TextColoredUnformatted( 0xFF00FFFF, ICON_FA_TRIANGLE_EXCLAMATION );
-            tracy::TooltipIfHovered( "Memory limit is active" );
-        }
-        ImGui::SameLine( 0, ImGui::GetTextLineHeight() * 2 );
-
 #ifndef TRACY_NO_FILESELECTOR
-        if( ImGui::Button( ICON_FA_FOLDER_OPEN " Open saved trace" ) && !loadThread.joinable() )
-        {
-            tracy::Fileselector::OpenFile( "tracy", "Tracy Profiler trace file", []( const char* fn ) {
-                try
+            if( ImGui::BeginTabItem( "Saved traces" ) )
+            {
+                if( ImGui::Button( ICON_FA_FOLDER_OPEN " Browse…" ) && !loadThread.joinable() )
                 {
-                    auto f = std::shared_ptr<tracy::FileRead>( tracy::FileRead::Open( fn ) );
-                    if( f )
+                    tracy::Fileselector::OpenFile( "tracy", "Tracy Profiler trace file", OpenTraceFile );
+                }
+                ImGui::Separator();
+                // The files are only looked up when the tab is shown, not every frame.
+                if( recentTracesStale )
+                {
+                    recentTracesStale = false;
+                    recentTraces.clear();
+                    for( const auto& path : hist->RecentTraces() )
                     {
-                        loadThread = std::thread( [f] {
-                            try
-                            {
-                                view.store( std::make_shared<tracy::View>( RunOnMainThread, *f, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements ), std::memory_order_release );
-                            }
-                            catch( const tracy::UnsupportedVersion& e )
-                            {
-                                badVer.state = tracy::BadVersionState::UnsupportedVersion;
-                                badVer.version = e.version;
-                            }
-                            catch( const tracy::LegacyVersion& e )
-                            {
-                                badVer.state = tracy::BadVersionState::LegacyVersion;
-                                badVer.version = e.version;
-                            }
-                            catch( const tracy::LoadFailure& e )
-                            {
-                                badVer.state = tracy::BadVersionState::LoadFailure;
-                                badVer.msg = e.msg;
-                            }
-                        } );
+                        std::error_code ec;
+                        const std::filesystem::path p( path );
+                        if( !std::filesystem::is_regular_file( p, ec ) ) continue;
+                        const auto size = std::filesystem::file_size( p, ec );
+                        recentTraces.push_back( { path, p.filename().string(), p.parent_path().string(), ec ? 0 : size } );
+                        if( recentTraces.size() == 5 ) break;
                     }
                 }
-                catch( const tracy::NotTracyDump& )
+
+                std::string toOpen;
+                const ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg;
+                if( ImGui::BeginTable( "##recenttraces", 3, flags ) )
                 {
-                    badVer.state = tracy::BadVersionState::BadFile;
+                    ImGui::TableSetupColumn( "Name", ImGuiTableColumnFlags_WidthStretch );
+                    ImGui::TableSetupColumn( "Size", ImGuiTableColumnFlags_WidthFixed, ImGui::GetTextLineHeight() * 5 );
+                    ImGui::TableSetupColumn( "Directory", ImGuiTableColumnFlags_WidthStretch );
+                    ImGui::TableHeadersRow();
+
+                    int idx = 0;
+                    for( const auto& t : recentTraces )
+                    {
+                        ImGui::TableNextRow();
+                        ImGui::PushID( idx++ );
+                        ImGui::TableNextColumn();
+                        if( ImGui::Selectable( t.name.c_str(), false, ImGuiSelectableFlags_SpanAllColumns ) && !loadThread.joinable() ) toOpen = t.path;
+                        tracy::TooltipIfHovered( t.path.c_str() );
+                        ImGui::PopID();
+                        ImGui::TableNextColumn();
+                        ImGui::TextUnformatted( tracy::MemSizeToString( t.size ) );
+                        ImGui::TableNextColumn();
+                        ImGui::TextDisabled( "%s", t.dir.c_str() );
+                    }
+                    ImGui::EndTable();
+                    if( recentTraces.empty() ) ImGui::TextDisabled( "No recent traces." );
                 }
-                catch( const tracy::FileReadError& )
-                {
-                    badVer.state = tracy::BadVersionState::ReadError;
-                }
-            } );
-        }
+                ImGui::EndTabItem();
+                if( !toOpen.empty() ) OpenTraceFile( toOpen.c_str() );
+            }
+            else
+            {
+                recentTracesStale = true;
+            }
 #endif
+            ImGui::EndTabBar();
+        }
 
         if( badVer.state != tracy::BadVersionState::Ok )
         {
@@ -1191,7 +1280,7 @@ static void DrawContents()
                 }
                 if( selected && !loadThread.joinable() )
                 {
-                    view.store( std::make_shared<tracy::View>( RunOnMainThread, v->address.c_str(), v->port, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements ), std::memory_order_release );
+                    view.store( std::make_shared<tracy::View>( RunOnMainThread, v->address.c_str(), v->port, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, TraceSavedCallback, s_achievements ), std::memory_order_release );
                 }
                 ImGui::NextColumn();
                 const auto acttime = ( v->activeTime + ( time - v->time ) / 1000 ) * 1000000000ll;
@@ -1364,7 +1453,7 @@ static void DrawContents()
         viewShutdown.store( ViewShutdown::False, std::memory_order_relaxed );
         if( reconnect )
         {
-            view.store( std::make_unique<tracy::View>( RunOnMainThread, reconnectAddr.c_str(), reconnectPort, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements ), std::memory_order_release );
+            view.store( std::make_unique<tracy::View>( RunOnMainThread, reconnectAddr.c_str(), reconnectPort, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, TraceSavedCallback, s_achievements ), std::memory_order_release );
         }
         break;
     default:

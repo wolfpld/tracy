@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <assert.h>
+#include <filesystem>
 #include <stdio.h>
 
 #include <nlohmann/json.hpp>
@@ -8,6 +9,8 @@
 
 #include "../../server/tracy_pdqsort.h"
 #include "profiler/TracyStorage.hpp"
+
+static constexpr size_t RecentTracesMax = 10;
 
 History::History()
     : m_fn( tracy::GetSavePath( "history.json" ) )
@@ -43,6 +46,18 @@ void History::Load()
                 if( !inserted ) it->second += std::min( count, UINT64_MAX - it->second );
             }
         }
+
+        if( json.contains( "recentTraces" ) && json["recentTraces"].is_array() )
+        {
+            for( auto& v : json["recentTraces"] )
+            {
+                if( !v.is_string() ) continue;
+                auto path = v.get<std::string>();
+                if( path.empty() || path.find( '\0' ) != std::string::npos || std::find( m_recentTraces.begin(), m_recentTraces.end(), path ) != m_recentTraces.end() ) continue;
+                m_recentTraces.push_back( std::move( path ) );
+                if( m_recentTraces.size() == RecentTracesMax ) break;
+            }
+        }
     }
     catch( nlohmann::json::exception& )
     {
@@ -58,7 +73,7 @@ void History::Save() const
     auto connections = nlohmann::json::array();
     for( const auto& c : m_connectionsVec ) connections.push_back( { { "address", c->first }, { "count", c->second } } );
 
-    const nlohmann::json j = { { "connections", connections } };
+    const nlohmann::json j = { { "connections", connections }, { "recentTraces", m_recentTraces } };
     const auto data = j.dump( 2, ' ', false, nlohmann::json::error_handler_t::replace );
 
     FILE* f = fopen( m_fn.c_str(), "wb" );
@@ -98,4 +113,14 @@ void History::EraseConnection( size_t idx )
     assert( idx < m_connectionsVec.size() );
     m_connectionsMap.erase( m_connectionsVec[idx] );
     Rebuild();
+}
+
+void History::RecordTrace( const char* path )
+{
+    std::error_code ec;
+    auto abs = std::filesystem::absolute( std::filesystem::path( path ), ec ).lexically_normal().string();
+    if( ec ) abs = path;
+    m_recentTraces.erase( std::remove( m_recentTraces.begin(), m_recentTraces.end(), abs ), m_recentTraces.end() );
+    m_recentTraces.insert( m_recentTraces.begin(), std::move( abs ) );
+    if( m_recentTraces.size() > RecentTracesMax ) m_recentTraces.resize( RecentTracesMax );
 }

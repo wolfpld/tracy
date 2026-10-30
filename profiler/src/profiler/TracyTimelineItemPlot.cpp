@@ -120,6 +120,20 @@ void TimelineItemPlot::DrawFinished()
     m_draw.clear();
 }
 
+void TimelineItemPlot::DrawExtraPopupItems()
+{
+    if( ImGui::BeginMenu( "Y-axis scale" ) )
+    {
+        auto& current = m_view.GetPlotMapping( m_plot );
+        for( uint8_t i=0; i<(uint8_t)PlotMapping::Count; i++ )
+        {
+            const auto mapping = (PlotMapping)i;
+            if( ImGui::MenuItem( PlotMappingName( mapping ), nullptr, current == mapping ) ) current = mapping;
+        }
+        ImGui::EndMenu();
+    }
+}
+
 void TimelineItemPlot::Preprocess( const TimelineContext& ctx, TaskDispatch& td, bool visible, int yPos )
 {
     assert( m_draw.empty() );

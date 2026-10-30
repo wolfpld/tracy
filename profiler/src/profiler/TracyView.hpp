@@ -150,9 +150,10 @@ public:
     using SetTitleCallback = void(*)( const char* );
     using SetScaleCallback = void(*)( int );
     using AttentionCallback = void(*)();
+    using TraceSavedCallback = void(*)( const char* );
 
-    View( void(*cbMainThread)(const std::function<void()>&, bool), const char* addr, uint16_t port, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, AchievementsMgr* amgr );
-    View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, AchievementsMgr* amgr );
+    View( void(*cbMainThread)(const std::function<void()>&, bool), const char* addr, uint16_t port, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, TraceSavedCallback tscb, AchievementsMgr* amgr );
+    View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, TraceSavedCallback tscb, AchievementsMgr* amgr );
     ~View();
 
     bool Draw();
@@ -714,6 +715,7 @@ private:
     bool m_titleSet = false;
     SetScaleCallback m_sscb;
     AttentionCallback m_acb;
+    TraceSavedCallback m_tscb;
 
     float m_notificationTime = 0;
     float m_sendInFlightTime = 0;

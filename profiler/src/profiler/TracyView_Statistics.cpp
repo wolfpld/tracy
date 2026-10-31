@@ -80,7 +80,10 @@ void View::DrawStatistics()
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        ImGui::RadioButton( ICON_FA_DISPLAY " GPU", &m_statMode, 2 );
+        if( ImGui::RadioButton( ICON_FA_DISPLAY " GPU", &m_statMode, 2 ) )
+        {
+            if( s_config.achievements ) Achieve( "gpuStats" );
+        }
     }
     ImGui::SameLine();
     ImGui::Spacing();

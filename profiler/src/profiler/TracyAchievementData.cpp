@@ -12,6 +12,7 @@
 #include "data/TextGhostZones.hpp"
 #include "data/TextGlobalSettings.hpp"
 #include "data/TextGpu.hpp"
+#include "data/TextGpuStats.hpp"
 #include "data/TextInspectZone.hpp"
 #include "data/TextInstrumentFrames.hpp"
 #include "data/TextInstrumentationIntro.hpp"
@@ -81,10 +82,18 @@ AchievementItem ai_trackMemory = {
 AchievementItem* ac_memoryItems[] = { &ai_trackMemory, nullptr };
 AchievementCategory ac_memory = { "memory", "Memory", ac_memoryItems };
 
+AchievementItem ai_gpuStats = {
+    .id = "gpuStats",
+    .name = "GPU statistics",
+    .text = Unpack( TextGpuStats )
+};
+
+AchievementItem* ac_profileGpuItems[] = { &ai_gpuStats, nullptr };
 AchievementItem ai_profileGpu = {
     .id = "profileGpu",
     .name = "Profile the GPU",
-    .text = Unpack( TextGpu )
+    .text = Unpack( TextGpu ),
+    .items = ac_profileGpuItems
 };
 
 AchievementItem* ac_gpuItems[] = { &ai_profileGpu, nullptr };

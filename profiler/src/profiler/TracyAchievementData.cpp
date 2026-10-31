@@ -25,6 +25,7 @@
 #include "data/TextLocks.hpp"
 #include "data/TextManual.hpp"
 #include "data/TextMemory.hpp"
+#include "data/TextMemoryPools.hpp"
 #include "data/TextNameThreads.hpp"
 #include "data/TextPlots.hpp"
 #include "data/TextReadAssembly.hpp"
@@ -77,7 +78,13 @@ AchievementItem ai_allocStacks = {
     .text = Unpack( TextAllocStacks )
 };
 
-AchievementItem* ac_trackMemoryItems[] = { &ai_huntLeaks, &ai_allocStacks, nullptr };
+AchievementItem ai_memoryPools = {
+    .id = "memoryPools",
+    .name = "Separate pools",
+    .text = Unpack( TextMemoryPools )
+};
+
+AchievementItem* ac_trackMemoryItems[] = { &ai_huntLeaks, &ai_allocStacks, &ai_memoryPools, nullptr };
 
 AchievementItem ai_trackMemory = {
     .id = "trackMemory",

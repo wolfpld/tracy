@@ -191,6 +191,7 @@ void View::DrawMemory()
             {
                 if( ImGui::Selectable( v.first == 0 ? "Default allocator" : m_worker.GetString( v.first ) ) )
                 {
+                    if( s_config.achievements && v.first != 0 ) Achieve( "memoryPools" );
                     m_memInfo.pool = v.first;
                     m_memInfo.showAllocList = false;
                 }

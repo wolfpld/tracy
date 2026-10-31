@@ -8,6 +8,7 @@
 #include "data/TextCompareTraces.hpp"
 #include "data/TextConnectToClient.hpp"
 #include "data/TextContention.hpp"
+#include "data/TextEntryStacks.hpp"
 #include "data/TextFindZone.hpp"
 #include "data/TextFrameImages.hpp"
 #include "data/TextGhostZones.hpp"
@@ -61,7 +62,13 @@ AchievementItem ai_samplingStats = {
     .text = Unpack( TextSamplingStats )
 };
 
-AchievementItem* ac_samplingIntroItems[] = { &ai_ghostZones, &ai_samplingStats, nullptr };
+AchievementItem ai_entryStacks = {
+    .id = "entryStacks",
+    .name = "Open entry stacks",
+    .text = Unpack( TextEntryStacks )
+};
+
+AchievementItem* ac_samplingIntroItems[] = { &ai_ghostZones, &ai_samplingStats, &ai_entryStacks, nullptr };
 
 AchievementItem ai_samplingIntro = {
     .id = "samplingIntro",

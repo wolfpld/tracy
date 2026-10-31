@@ -33,6 +33,7 @@ void View::DrawFrameStatistics()
                 if( ImGui::Selectable( GetFrameSetName( *fd ), isSelected ) )
                 {
                     m_frames = fd;
+                    if( s_config.achievements && fd->name != 0 ) Achieve( "addFrameSets" );
                     fsz = m_worker.GetFullFrameCount( *m_frames );
                 }
                 if( isSelected )

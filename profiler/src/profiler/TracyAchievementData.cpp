@@ -2,6 +2,7 @@
 #include "TracyEmbed.hpp"
 
 #include "data/Text100Million.hpp"
+#include "data/TextAddFrameSets.hpp"
 #include "data/TextAllocStacks.hpp"
 #include "data/TextAnnotateZones.hpp"
 #include "data/TextAppInfo.hpp"
@@ -254,8 +255,15 @@ AchievementItem ai_frameImages = {
     .text = Unpack( TextFrameImages )
 };
 
+AchievementItem ai_addFrameSets = {
+    .id = "addFrameSets",
+    .name = "Add frame sets",
+    .text = Unpack( TextAddFrameSets )
+};
+
 AchievementItem* ac_instrumentFramesItems[] = {
     &ai_frameImages,
+    &ai_addFrameSets,
     nullptr
 };
 

@@ -318,6 +318,7 @@ void View::DrawTimelineFrames( const FrameData& frames )
         if( IsMouseClicked( ImGuiMouseButton_Left ) )
         {
             m_frames = &frames;
+            if( s_config.achievements && frames.name != 0 ) Achieve( "addFrameSets" );
         }
     }
 }

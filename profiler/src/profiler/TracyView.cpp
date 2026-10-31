@@ -1067,6 +1067,7 @@ bool View::DrawImpl()
                 if( ImGui::Selectable( GetFrameSetName( *fd ), isSelected ) )
                 {
                     m_frames = fd;
+                    if( s_config.achievements && fd->name != 0 ) Achieve( "addFrameSets" );
                 }
                 if( isSelected )
                 {

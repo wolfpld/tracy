@@ -37,6 +37,7 @@
 #include "data/TextSamplingStats.hpp"
 #include "data/TextSections.hpp"
 #include "data/TextSaveTrace.hpp"
+#include "data/TextZoneCallstacks.hpp"
 
 namespace tracy::data
 {
@@ -229,6 +230,12 @@ AchievementItem ai_logMessages = {
     .text = Unpack( TextLogMessages )
 };
 
+AchievementItem ai_zoneCallstacks = {
+    .id = "zoneCallstacks",
+    .name = "Capture zone call stacks",
+    .text = Unpack( TextZoneCallstacks )
+};
+
 AchievementItem* ac_instrumentationIntroItems[] = {
     &ai_100million,
     &ai_instrumentationStatistics,
@@ -236,6 +243,7 @@ AchievementItem* ac_instrumentationIntroItems[] = {
     &ai_markSections,
     &ai_chartValues,
     &ai_logMessages,
+    &ai_zoneCallstacks,
     nullptr
 };
 

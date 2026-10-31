@@ -301,6 +301,7 @@ void View::DrawZoneInfoWindow()
             }
             if( ImGui::Button( ICON_FA_ALIGN_JUSTIFY " Call stack" ) )
             {
+                if( s_config.achievements ) Achieve( "zoneCallstacks" );
                 m_callstackView = {
                     .id = extra.callstack.Val(),
                     .thread = tid
@@ -1512,6 +1513,7 @@ void View::DrawGpuInfoWindow()
             }
             if( ImGui::Button( ICON_FA_ALIGN_JUSTIFY " Call stack" ) )
             {
+                if( s_config.achievements ) Achieve( "zoneCallstacks" );
                 m_callstackView = {
                     .id = ev.callstack.Val(),
                     .thread = m_gpuInfoWindowThread

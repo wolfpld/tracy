@@ -31,6 +31,7 @@
 #include "data/TextReadAssembly.hpp"
 #include "data/TextReadSource.hpp"
 #include "data/TextSamplingIntro.hpp"
+#include "data/TextSamplingStats.hpp"
 #include "data/TextSections.hpp"
 #include "data/TextSaveTrace.hpp"
 
@@ -54,7 +55,13 @@ AchievementItem ai_ghostZones = {
     .text = Unpack( TextGhostZones )
 };
 
-AchievementItem* ac_samplingIntroItems[] = { &ai_ghostZones, nullptr };
+AchievementItem ai_samplingStats = {
+    .id = "samplingStats",
+    .name = "Read sampling statistics",
+    .text = Unpack( TextSamplingStats )
+};
+
+AchievementItem* ac_samplingIntroItems[] = { &ai_ghostZones, &ai_samplingStats, nullptr };
 
 AchievementItem ai_samplingIntro = {
     .id = "samplingIntro",

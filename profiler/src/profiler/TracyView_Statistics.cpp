@@ -66,13 +66,19 @@ void View::DrawStatistics()
         {
             ImGui::Spacing();
             ImGui::SameLine();
-            ImGui::RadioButton( ICON_FA_EYE_DROPPER " Sampling", &m_statMode, 1 );
+            if( ImGui::RadioButton( ICON_FA_EYE_DROPPER " Sampling", &m_statMode, 1 ) )
+            {
+                if( s_config.achievements ) Achieve( "samplingStats" );
+            }
         }
         else if( m_worker.GetSymbolsCount() > 0 )
         {
             ImGui::Spacing();
             ImGui::SameLine();
-            ImGui::RadioButton( ICON_FA_PUZZLE_PIECE " Symbols", &m_statMode, 1 );
+            if( ImGui::RadioButton( ICON_FA_PUZZLE_PIECE " Symbols", &m_statMode, 1 ) )
+            {
+                if( s_config.achievements ) Achieve( "samplingStats" );
+            }
         }
     }
     if( m_worker.GetGpuZoneCount() > 0 )

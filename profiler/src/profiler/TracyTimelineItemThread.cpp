@@ -256,6 +256,34 @@ void TimelineItemThread::HeaderTooltip( const char* label ) const
     ImGui::EndTooltip();
 }
 
+static bool IsThreadNamePlaceholder( const char* name, const std::string& program )
+{
+    if( name == nullptr || name[0] == '\0' || strcmp( name, "???" ) == 0 ) return true;
+    if( strcmp( name, "Main thread" ) == 0 ) return true;
+    if( strncmp( name, "Tracy ", 6 ) == 0 ) return true;  // client library helper threads
+    if( program.empty() ) return false;
+    if( const auto slash = strchr( name, '/' ) ) name = slash + 1;  // imported traces prefix names with program[pid]/
+    char a[512], b[512];
+    auto normalize = []( char* dst, size_t sz, const char* src ) {
+        size_t o = 0;
+        for( ; src[o] != '\0' && o + 1 < sz; o++ ) dst[o] = (char)tolower( (unsigned char)src[o] );
+        dst[o] = '\0';
+        const auto len = strlen( dst );
+        if( len > 4 && strcmp( dst + len - 4, ".exe" ) == 0 ) dst[len - 4] = '\0';
+    };
+    normalize( a, sizeof( a ), name );
+    normalize( b, sizeof( b ), program.c_str() );
+    return strcmp( a, b ) == 0;
+}
+
+void TimelineItemThread::HeaderClicked()
+{
+    if( s_config.achievements && !IsThreadNamePlaceholder( m_worker.GetThreadName( m_thread->id ), m_worker.GetCaptureProgram() ) )
+    {
+        m_view.Achieve( "nameThreads" );
+    }
+}
+
 void TimelineItemThread::HeaderExtraContents( const TimelineContext& ctx, int offset, float labelWidth )
 {
     m_view.DrawThreadMessagesList( ctx, m_msgDraw, offset, m_thread->id );

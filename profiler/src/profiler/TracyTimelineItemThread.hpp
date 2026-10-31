@@ -23,6 +23,7 @@ protected:
     int64_t RangeEnd() const override;
 
     void HeaderTooltip( const char* label ) const override;
+    void HeaderClicked() override;
     void HeaderExtraContents( const TimelineContext& ctx, int offset, float labelWidth ) override;
 
     bool DrawContents( const TimelineContext& ctx, int& offset ) override;

@@ -23,6 +23,7 @@
 #include "data/TextLocks.hpp"
 #include "data/TextManual.hpp"
 #include "data/TextMemory.hpp"
+#include "data/TextNameThreads.hpp"
 #include "data/TextPlots.hpp"
 #include "data/TextReadAssembly.hpp"
 #include "data/TextReadSource.hpp"
@@ -242,10 +243,17 @@ AchievementItem ai_appInfo = {
     .text = Unpack( TextAppInfo )
 };
 
+AchievementItem ai_nameThreads = {
+    .id = "nameThreads",
+    .name = "Name your threads",
+    .text = Unpack( TextNameThreads )
+};
+
 AchievementItem* ac_connectToServerItems[] = {
     &ai_saveTrace,
     &ai_loadTrace,
     &ai_appInfo,
+    &ai_nameThreads,
     nullptr
 };
 

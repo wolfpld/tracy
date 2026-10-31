@@ -1,6 +1,6 @@
 # Find some zones
 
-To find a zone, open the [Find zone window](#findzone) with the * Find* button on the top bar and type in the zone name — in most cases the function name in the code.
+To find a zone, open the [Find zone window](#findzone) with the * Find* button on the top bar and type in the zone name, in most cases the function name in the code.
 
 1. If several zones share the name, a list of matches is shown. Select the one you're looking for.
 2. The window shows a histogram of execution times, along with statistics such as total time, mean, and median.

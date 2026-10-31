@@ -466,6 +466,7 @@ void View::DrawMemory()
         auto tree = GetCallstackFrameTreeBottomUp( mem );
         if( !tree.empty() )
         {
+            if( s_config.achievements ) Achieve( "allocStacks" );
             int idx = 0;
             DrawFrameTreeLevel( tree, idx );
         }
@@ -504,6 +505,7 @@ void View::DrawMemory()
         auto tree = GetCallstackFrameTreeTopDown( mem );
         if( !tree.empty() )
         {
+            if( s_config.achievements ) Achieve( "allocStacks" );
             int idx = 0;
             DrawFrameTreeLevel( tree, idx );
         }

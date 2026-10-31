@@ -2,6 +2,7 @@
 #include "TracyEmbed.hpp"
 
 #include "data/Text100Million.hpp"
+#include "data/TextAllocStacks.hpp"
 #include "data/TextAnnotateZones.hpp"
 #include "data/TextAppInfo.hpp"
 #include "data/TextCompareTraces.hpp"
@@ -70,7 +71,13 @@ AchievementItem ai_huntLeaks = {
     .text = Unpack( TextLeaks )
 };
 
-AchievementItem* ac_trackMemoryItems[] = { &ai_huntLeaks, nullptr };
+AchievementItem ai_allocStacks = {
+    .id = "allocStacks",
+    .name = "Trace allocation call stacks",
+    .text = Unpack( TextAllocStacks )
+};
+
+AchievementItem* ac_trackMemoryItems[] = { &ai_huntLeaks, &ai_allocStacks, nullptr };
 
 AchievementItem ai_trackMemory = {
     .id = "trackMemory",

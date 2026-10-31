@@ -24,6 +24,7 @@
 #include "data/TextLightFlame.hpp"
 #include "data/TextLoadTrace.hpp"
 #include "data/TextLocks.hpp"
+#include "data/TextLogMessages.hpp"
 #include "data/TextManual.hpp"
 #include "data/TextMemory.hpp"
 #include "data/TextMemoryPools.hpp"
@@ -221,12 +222,19 @@ AchievementItem ai_chartValues = {
     .text = Unpack( TextPlots )
 };
 
+AchievementItem ai_logMessages = {
+    .id = "logMessages",
+    .name = "Log messages",
+    .text = Unpack( TextLogMessages )
+};
+
 AchievementItem* ac_instrumentationIntroItems[] = {
     &ai_100million,
     &ai_instrumentationStatistics,
     &ai_annotateZones,
     &ai_markSections,
     &ai_chartValues,
+    &ai_logMessages,
     nullptr
 };
 

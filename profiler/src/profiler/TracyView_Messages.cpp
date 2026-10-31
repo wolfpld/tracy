@@ -29,6 +29,8 @@ void View::DrawMessages()
         return;
     }
 
+    if( s_config.achievements ) Achieve( "logMessages" );
+
     ImGui::AlignTextToFramePadding();
     ImGui::Text( ICON_FA_FILTER );
     ImGui::SameLine();

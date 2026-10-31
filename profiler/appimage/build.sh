@@ -59,7 +59,8 @@ cp "$ROOT/icon/icon.svg" "$APPDIR/usr/share/icons/hicolor/scalable/apps/tracy.sv
 cp "$ROOT/icon/application-tracy.svg" "$APPDIR/usr/share/icons/hicolor/scalable/mimetypes/"
 ln -s usr/share/applications/tracy.desktop "$APPDIR/tracy.desktop"
 ln -s usr/share/icons/hicolor/scalable/apps/tracy.svg "$APPDIR/tracy.svg"
-ln -s tracy.svg "$APPDIR/.DirIcon"
+cp "$ROOT/icon/icon.png" "$APPDIR/tracy.png"
+ln -s tracy.png "$APPDIR/.DirIcon"
 ln -s usr/bin/tracy-profiler "$APPDIR/AppRun"
 
 ldd "$APPDIR/usr/bin/tracy-profiler"

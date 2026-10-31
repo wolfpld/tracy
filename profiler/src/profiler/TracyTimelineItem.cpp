@@ -100,6 +100,7 @@ void TimelineItem::Draw( bool firstFrame, const TimelineContext& ctx, int yOffse
             if( IsMouseClicked( ImGuiMouseButton_Left ) )
             {
                 m_showFull = !m_showFull;
+                HeaderClicked();
             }
             if( IsMouseClicked( ImGuiMouseButton_Middle ) )
             {

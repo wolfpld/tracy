@@ -999,6 +999,7 @@ bool View::DrawImpl()
         const auto& ctd = m_worker.GetCpuThreadData();
         if( ButtonDisablable( ICON_FA_SLIDERS " CPU data", ctd.empty() ) )
         {
+            if( s_config.achievements ) Achieve( "cpuData" );
             m_showCpuDataWindow = true;
         }
         ToggleButton( ICON_FA_NOTE_STICKY " Annotations", m_showAnnotationList );

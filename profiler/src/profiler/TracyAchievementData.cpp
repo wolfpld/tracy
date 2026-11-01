@@ -10,6 +10,7 @@
 #include "data/TextConnectToClient.hpp"
 #include "data/TextContention.hpp"
 #include "data/TextContextSwitches.hpp"
+#include "data/TextCpuData.hpp"
 #include "data/TextEntryStacks.hpp"
 #include "data/TextFindZone.hpp"
 #include "data/TextFrameImages.hpp"
@@ -78,7 +79,13 @@ AchievementItem ai_contextSwitches = {
     .text = Unpack( TextContextSwitches )
 };
 
-AchievementItem* ac_samplingIntroItems[] = { &ai_ghostZones, &ai_samplingStats, &ai_entryStacks, &ai_contextSwitches, nullptr };
+AchievementItem ai_cpuData = {
+    .id = "cpuData",
+    .name = "See every process that ran",
+    .text = Unpack( TextCpuData )
+};
+
+AchievementItem* ac_samplingIntroItems[] = { &ai_ghostZones, &ai_samplingStats, &ai_entryStacks, &ai_contextSwitches, &ai_cpuData, nullptr };
 
 AchievementItem ai_samplingIntro = {
     .id = "samplingIntro",

@@ -41,6 +41,7 @@
 #include "data/TextSamplingStats.hpp"
 #include "data/TextSections.hpp"
 #include "data/TextSaveTrace.hpp"
+#include "data/TextSurviveCrash.hpp"
 #include "data/TextZoneCallstacks.hpp"
 
 namespace tracy::data
@@ -225,7 +226,13 @@ AchievementItem ai_frameStats = {
     .text = Unpack( TextFrameStatistics )
 };
 
-AchievementItem* ac_inspectZoneItems[] = { &ai_findZone, &ai_readSource, &ai_lightFlame, &ai_frameStats, nullptr };
+AchievementItem ai_surviveCrash = {
+    .id = "surviveCrash",
+    .name = "Survive a crash",
+    .text = Unpack( TextSurviveCrash )
+};
+
+AchievementItem* ac_inspectZoneItems[] = { &ai_findZone, &ai_readSource, &ai_lightFlame, &ai_frameStats, &ai_surviveCrash, nullptr };
 
 AchievementItem ai_inspectZone = {
     .id = "inspectZone",

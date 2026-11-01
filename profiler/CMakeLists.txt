@@ -244,6 +244,7 @@ Embed(PROFILER_FILES TextCompareTraces src/achievements/CompareTraces.md TEXT)
 Embed(PROFILER_FILES TextSamplingIntro src/achievements/SamplingIntro.md TEXT)
 Embed(PROFILER_FILES TextSamplingStats src/achievements/SamplingStats.md TEXT)
 Embed(PROFILER_FILES TextSaveTrace src/achievements/SaveTrace.md TEXT)
+Embed(PROFILER_FILES TextSurviveCrash src/achievements/SurviveCrash.md TEXT)
 Embed(PROFILER_FILES TextZoneCallstacks src/achievements/ZoneCallstacks.md TEXT)
 Embed(PROFILER_FILES TextSections src/achievements/Sections.md TEXT)
 

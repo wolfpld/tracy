@@ -1324,6 +1324,7 @@ bool View::DrawImpl()
         if( crash.thread != 0 )
         {
             m_reactToCrash = false;
+            if( s_config.achievements ) Achieve( "surviveCrash" );
             ImGui::OpenPopup( "Application crashed!" );
         }
     }

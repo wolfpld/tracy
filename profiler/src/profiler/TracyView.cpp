@@ -1238,7 +1238,11 @@ bool View::DrawImpl()
     if( GetManualWindow().Show() ) GetManualWindow().Draw( m_markdown );
     if( m_showFrameStatistics ) DrawFrameStatistics();
 #ifndef __EMSCRIPTEN__
-    if( m_llm.m_show ) m_llm.Draw( m_llmConstraint );
+    if( m_llm.m_show )
+    {
+        if( s_config.achievements ) Achieve( "askAssist" );
+        m_llm.Draw( m_llmConstraint );
+    }
 #endif
 
     if( m_setRangePopup.active )

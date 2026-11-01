@@ -1,4 +1,5 @@
 #include "TracyAchievements.hpp"
+#include "TracyConfig.hpp"
 #include "TracyEmbed.hpp"
 
 #include "data/Text100Million.hpp"
@@ -7,6 +8,7 @@
 #include "data/TextAnnotateZones.hpp"
 #include "data/TextAnnotations.hpp"
 #include "data/TextAppInfo.hpp"
+#include "data/TextAskAssist.hpp"
 #include "data/TextCompareTraces.hpp"
 #include "data/TextConnectToClient.hpp"
 #include "data/TextContention.hpp"
@@ -242,7 +244,14 @@ AchievementItem ai_surviveCrash = {
     .text = Unpack( TextSurviveCrash )
 };
 
-AchievementItem* ac_inspectZoneItems[] = { &ai_findZone, &ai_readSource, &ai_lightFlame, &ai_frameStats, &ai_surviveCrash, nullptr };
+AchievementItem ai_askAssist = {
+    .id = "askAssist",
+    .name = "Ask Tracy Assist",
+    .text = Unpack( TextAskAssist ),
+    .visible = [] { return s_config.llm; }
+};
+
+AchievementItem* ac_inspectZoneItems[] = { &ai_findZone, &ai_readSource, &ai_lightFlame, &ai_frameStats, &ai_surviveCrash, &ai_askAssist, nullptr };
 
 AchievementItem ai_inspectZone = {
     .id = "inspectZone",

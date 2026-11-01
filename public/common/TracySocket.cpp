@@ -129,30 +129,32 @@ bool Socket::Connect( const char* addr, uint16_t port )
 
     if( m_ptr )
     {
-        const auto c = connect( m_connSock, m_ptr->ai_addr, m_ptr->ai_addrlen );
-        if( c == -1 )
-        {
-#if defined _WIN32
-            const auto err = WSAGetLastError();
-            if( err == WSAEALREADY || err == WSAEINPROGRESS ) return false;
-            if( err != WSAEISCONN )
-            {
-                freeaddrinfo( m_res );
-                closesocket( m_connSock );
-                m_ptr = nullptr;
-                return false;
-            }
+        // On Linux / Win32 we could call connect() again to check readiness, but on macOS
+        // a refused connection will show up as EISCONN with SO_ERROR & ECONNREFUSED.
+        struct pollfd fd;
+        fd.fd = (socket_t)m_connSock;
+        fd.events = POLLOUT; // check write readiness
+        fd.revents = 0;
+        if( poll( &fd, 1, 0 ) <= 0 ) return false; // no event yet or poll() failed
+
+        int err = 0;
+#ifdef _WIN32
+        int errlen = sizeof( err );
+        getsockopt( m_connSock, SOL_SOCKET, SO_ERROR, (char*)&err, &errlen );
 #else
-            const auto err = errno;
-            if( err == EALREADY || err == EINPROGRESS ) return false;
-            if( err != EISCONN )
-            {
-                freeaddrinfo( m_res );
-                close( m_connSock );
-                m_ptr = nullptr;
-                return false;
-            }
+        socklen_t errlen = sizeof( err );
+        getsockopt( m_connSock, SOL_SOCKET, SO_ERROR, &err, &errlen );
 #endif
+        if(err != 0)
+        {
+            freeaddrinfo( m_res );
+#ifdef _WIN32
+            closesocket( m_connSock );
+#else
+            close( m_connSock );
+#endif
+            m_ptr = nullptr;
+            return false;
         }
 
 #if defined _WIN32

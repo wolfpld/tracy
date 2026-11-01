@@ -1011,6 +1011,7 @@ bool View::DrawImpl()
         }
         if( ButtonDisablable( ICON_FA_IMAGES " Frame statistics", !m_worker.AreFramesUsed() ) )
         {
+            if( s_config.achievements ) Achieve( "frameStats" );
             m_showFrameStatistics = true;
         }
         ImGui::EndPopup();

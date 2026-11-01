@@ -14,6 +14,7 @@
 #include "data/TextEntryStacks.hpp"
 #include "data/TextFindZone.hpp"
 #include "data/TextFrameImages.hpp"
+#include "data/TextFrameStatistics.hpp"
 #include "data/TextGhostZones.hpp"
 #include "data/TextGlobalSettings.hpp"
 #include "data/TextGpu.hpp"
@@ -208,7 +209,13 @@ AchievementItem ai_lightFlame = {
     .text = Unpack( TextLightFlame )
 };
 
-AchievementItem* ac_inspectZoneItems[] = { &ai_findZone, &ai_readSource, &ai_lightFlame, nullptr };
+AchievementItem ai_frameStats = {
+    .id = "frameStats",
+    .name = "Frame statistics",
+    .text = Unpack( TextFrameStatistics )
+};
+
+AchievementItem* ac_inspectZoneItems[] = { &ai_findZone, &ai_readSource, &ai_lightFlame, &ai_frameStats, nullptr };
 
 AchievementItem ai_inspectZone = {
     .id = "inspectZone",
@@ -277,10 +284,13 @@ AchievementItem ai_frameImages = {
     .text = Unpack( TextFrameImages )
 };
 
+AchievementItem* ac_addFrameSetsUnlock[] = { &ai_frameStats, nullptr };
+
 AchievementItem ai_addFrameSets = {
     .id = "addFrameSets",
     .name = "Add frame sets",
-    .text = Unpack( TextAddFrameSets )
+    .text = Unpack( TextAddFrameSets ),
+    .unlocks = ac_addFrameSetsUnlock
 };
 
 AchievementItem* ac_instrumentFramesItems[] = {

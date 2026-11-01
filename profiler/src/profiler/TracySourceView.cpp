@@ -1072,6 +1072,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view, WindowConstraints
                         {
                             m_cost = CostType::BranchMiss;
                         }
+                        if( s_config.achievements && m_cost != CostType::SampleCount ) view.Achieve( "hwCounters" );
                     }
                     if( (CostType)idx == s_costSeparateAfter ) ImGui::Separator();
                     idx++;

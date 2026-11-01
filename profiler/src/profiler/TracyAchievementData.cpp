@@ -20,6 +20,7 @@
 #include "data/TextGlobalSettings.hpp"
 #include "data/TextGpu.hpp"
 #include "data/TextGpuStats.hpp"
+#include "data/TextHwCounters.hpp"
 #include "data/TextInspectZone.hpp"
 #include "data/TextInstrumentFrames.hpp"
 #include "data/TextInstrumentationIntro.hpp"
@@ -184,10 +185,19 @@ AchievementItem ai_findZone = {
     .text = Unpack( TextFindZone )
 };
 
+AchievementItem ai_hwCounters = {
+    .id = "hwCounters",
+    .name = "Hardware counters",
+    .text = Unpack( TextHwCounters )
+};
+
+AchievementItem* ac_readAssemblyItems[] = { &ai_hwCounters, nullptr };
+
 AchievementItem ai_readAssembly = {
     .id = "readAssembly",
     .name = "Assembly required",
-    .text = Unpack( TextReadAssembly )
+    .text = Unpack( TextReadAssembly ),
+    .items = ac_readAssemblyItems
 };
 
 AchievementItem ai_compareTraces = {

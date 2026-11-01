@@ -533,6 +533,7 @@ static void DrawAchievements( tracy::data::AchievementItem** items )
     while( *items )
     {
         auto& it = *items++;
+        if( it->visible && !it->visible() ) continue;
         if( it->unlockTime > 0 )
         {
             if( it->doneTime > 0 ) ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );

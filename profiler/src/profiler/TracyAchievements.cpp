@@ -171,6 +171,7 @@ bool AchievementsMgr::NeedsAttention() const
     for( auto& v : m_map )
     {
         auto& it = v.second.item;
+        if( it->visible && !it->visible() ) continue;
         if( it->unlockTime > 0 && !it->hideNew ) return true;
         if( it->doneTime > 0 && !it->hideCompleted ) return true;
     }
@@ -189,6 +190,7 @@ bool AchievementsMgr::CategoryNeedsAttention( const char* id ) const
                 if( v.second.category == (*c) )
                 {
                     auto& it = v.second.item;
+                    if( it->visible && !it->visible() ) continue;
                     if( it->unlockTime > 0 && !it->hideNew ) return true;
                     if( it->doneTime > 0 && !it->hideCompleted ) return true;
                 }

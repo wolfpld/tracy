@@ -23,6 +23,7 @@ struct AchievementItem
     std::string text;
     AchievementItem** items;
     AchievementItem** unlocks;
+    bool (*visible)();
     bool keepOpen;
     uint64_t unlockTime;
     uint64_t doneTime;

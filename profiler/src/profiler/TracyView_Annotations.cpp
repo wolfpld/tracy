@@ -12,6 +12,7 @@ namespace tracy
 
 void View::AddAnnotation( int64_t start, int64_t end )
 {
+    if( s_config.achievements ) Achieve( "annotations" );
     auto ann = std::make_shared<Annotation>();
     ann->text = GenerateAbstractName();
     ann->range.active = true;

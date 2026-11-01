@@ -5,6 +5,7 @@
 #include "data/TextAddFrameSets.hpp"
 #include "data/TextAllocStacks.hpp"
 #include "data/TextAnnotateZones.hpp"
+#include "data/TextAnnotations.hpp"
 #include "data/TextAppInfo.hpp"
 #include "data/TextCompareTraces.hpp"
 #include "data/TextConnectToClient.hpp"
@@ -203,10 +204,19 @@ AchievementItem ai_readSource = {
     .items = ac_readSourceItems
 };
 
+AchievementItem ai_annotations = {
+    .id = "annotations",
+    .name = "Annotate the timeline",
+    .text = Unpack( TextAnnotations )
+};
+
+AchievementItem* ac_lightFlameItems[] = { &ai_annotations, nullptr };
+
 AchievementItem ai_lightFlame = {
     .id = "lightFlame",
     .name = "Light the flame",
-    .text = Unpack( TextLightFlame )
+    .text = Unpack( TextLightFlame ),
+    .items = ac_lightFlameItems
 };
 
 AchievementItem ai_frameStats = {

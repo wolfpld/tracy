@@ -9,6 +9,7 @@
 #include "data/TextCompareTraces.hpp"
 #include "data/TextConnectToClient.hpp"
 #include "data/TextContention.hpp"
+#include "data/TextContextSwitches.hpp"
 #include "data/TextEntryStacks.hpp"
 #include "data/TextFindZone.hpp"
 #include "data/TextFrameImages.hpp"
@@ -71,7 +72,13 @@ AchievementItem ai_entryStacks = {
     .text = Unpack( TextEntryStacks )
 };
 
-AchievementItem* ac_samplingIntroItems[] = { &ai_ghostZones, &ai_samplingStats, &ai_entryStacks, nullptr };
+AchievementItem ai_contextSwitches = {
+    .id = "contextSwitches",
+    .name = "See the whole machine",
+    .text = Unpack( TextContextSwitches )
+};
+
+AchievementItem* ac_samplingIntroItems[] = { &ai_ghostZones, &ai_samplingStats, &ai_entryStacks, &ai_contextSwitches, nullptr };
 
 AchievementItem ai_samplingIntro = {
     .id = "samplingIntro",

@@ -763,6 +763,7 @@ bool View::DrawImpl()
         if( m_worker.GetZoneCount() > 0 ) Achieve( "instrumentationIntro" );
         if( m_worker.GetZoneCount() > 100 * 1000 * 1000 ) Achieve( "100million" );
         if( m_worker.GetCallstackSampleCount() > 0 ) Achieve( "samplingIntro" );
+        if( s_config.achievements && m_worker.HasContextSwitches() ) Achieve( "contextSwitches" );
         if( m_worker.AreFramesUsed() ) Achieve( "instrumentFrames" );
     }
 

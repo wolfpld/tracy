@@ -57,11 +57,16 @@
 
 #include <algorithm>
 #include <atomic>
-#if defined __SANITIZE_ADDRESS__ || ( defined __has_feature && __has_feature( address_sanitizer ) )
+#if defined __SANITIZE_ADDRESS__
 #  define TRACY_SANITIZE_ADDRESS
-#  ifndef _WIN32
-#    include <sys/syscall.h>
+#elif defined __has_feature
+#  if __has_feature( address_sanitizer )
+#    define TRACY_SANITIZE_ADDRESS
 #  endif
+#endif
+#if defined TRACY_SANITIZE_ADDRESS && ( defined __linux__ || defined __APPLE__ || defined __FreeBSD__ || defined __NetBSD__ || defined __OpenBSD__ || defined __DragonFly__ )
+#  define TRACY_SAFE_COPY_RAW_WRITE
+#  include <sys/syscall.h>
 #endif
 #include <chrono>
 #include <limits>
@@ -3509,7 +3514,7 @@ char* Profiler::SafeCopyProlog( const char* data, size_t size )
     {
         size_t sendsize = size - offset;
         ssize_t result1, result2;
-#ifdef TRACY_SANITIZE_ADDRESS
+#ifdef TRACY_SAFE_COPY_RAW_WRITE
         while( ( result1 = syscall( SYS_write, m_pipe[1], data + offset, sendsize ) ) < 0 && errno == EINTR ) { /* retry */ }
 #else
         while( ( result1 = write( m_pipe[1], data + offset, sendsize ) ) < 0 && errno == EINTR ) { /* retry */ }

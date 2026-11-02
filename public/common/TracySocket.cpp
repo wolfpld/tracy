@@ -131,11 +131,12 @@ bool Socket::Connect( const char* addr, uint16_t port )
     {
         // On Linux / Win32 we could call connect() again to check readiness, but on macOS
         // a refused connection will show up as EISCONN with SO_ERROR & ECONNREFUSED.
-        struct pollfd fd;
-        fd.fd = (socket_t)m_connSock;
-        fd.events = POLLOUT; // check write readiness
-        fd.revents = 0;
-        if( poll( &fd, 1, 0 ) <= 0 ) return false; // no event yet or poll() failed
+        fd_set writeSet, exceptSet;
+        FD_ZERO( &writeSet ); FD_ZERO( &exceptSet );
+        FD_SET( m_connSock, &writeSet );
+        FD_SET( m_connSock, &exceptSet );
+        timeval tv { 0, 0 };
+        if( select( m_connSock + 1, nullptr, &writeSet, &exceptSet, &tv ) <= 0 ) return false;
 
         int err = 0;
 #ifdef _WIN32
@@ -145,7 +146,7 @@ bool Socket::Connect( const char* addr, uint16_t port )
         socklen_t errlen = sizeof( err );
         getsockopt( m_connSock, SOL_SOCKET, SO_ERROR, &err, &errlen );
 #endif
-        if(err != 0)
+        if( err != 0 )
         {
             freeaddrinfo( m_res );
 #ifdef _WIN32

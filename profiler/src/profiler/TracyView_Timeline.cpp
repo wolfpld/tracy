@@ -57,6 +57,8 @@ void View::HandleTimelineMouse( int64_t timespan, const ImVec2& wpos, float w )
             const auto s = std::min( m_highlightZoom.start, m_highlightZoom.end );
             const auto e = std::max( m_highlightZoom.start, m_highlightZoom.end );
 
+            if( s_config.achievements ) Achieve( "navigate" );
+
             // ZoomToRange disables m_highlightZoom.active
             if( io.KeyCtrl )
             {
@@ -227,6 +229,7 @@ void View::HandleTimelineKeyboard( int64_t timespan, const ImVec2& wpos, float w
 
     if( anyDeltaApplied )
     {
+        if( s_config.achievements ) Achieve( "navigate" );
         if( m_viewMode == ViewMode::LastFrames ) m_viewMode = ViewMode::LastRange;
         if( nextTimelineRangeStart > nextTimelineRangeEnd ) return;
 

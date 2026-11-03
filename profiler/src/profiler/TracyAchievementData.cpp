@@ -37,6 +37,7 @@
 #include "data/TextMemory.hpp"
 #include "data/TextMemoryPools.hpp"
 #include "data/TextNameThreads.hpp"
+#include "data/TextNavigate.hpp"
 #include "data/TextPlots.hpp"
 #include "data/TextReadAssembly.hpp"
 #include "data/TextReadSource.hpp"
@@ -370,11 +371,18 @@ AchievementItem ai_nameThreads = {
     .text = Unpack( TextNameThreads )
 };
 
+AchievementItem ai_navigate = {
+    .id = "navigate",
+    .name = "Navigating the view",
+    .text = Unpack( TextNavigate )
+};
+
 AchievementItem* ac_connectToServerItems[] = {
     &ai_saveTrace,
     &ai_loadTrace,
     &ai_appInfo,
     &ai_nameThreads,
+    &ai_navigate,
     nullptr
 };
 

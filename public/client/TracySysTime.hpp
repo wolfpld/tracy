@@ -18,10 +18,11 @@ public:
     SysTime();
     float Get();
 
-    void ReadTimes();
-
 private:
+    bool ReadTimes();
+
     uint64_t idle, used;
+    bool haveBaseline;
 };
 
 }

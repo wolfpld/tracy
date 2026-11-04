@@ -220,7 +220,7 @@ AchievementItem ai_compareTraces = {
     .text = Unpack( TextCompareTraces )
 };
 
-AchievementItem* ac_readSourceItems[] = { &ai_readAssembly, &ai_compareTraces, nullptr };
+AchievementItem* ac_readSourceItems[] = { &ai_readAssembly, nullptr };
 
 AchievementItem ai_readSource = {
     .id = "readSource",
@@ -229,28 +229,25 @@ AchievementItem ai_readSource = {
     .items = ac_readSourceItems
 };
 
-AchievementItem ai_timeRanges = {
-    .id = "timeRanges",
-    .name = "Set a time range",
-    .text = Unpack( TextTimeRanges )
-};
-
-AchievementItem* ac_annotationsItems[] = { &ai_timeRanges, nullptr };
-
 AchievementItem ai_annotations = {
     .id = "annotations",
     .name = "Annotate the timeline",
-    .text = Unpack( TextAnnotations ),
-    .items = ac_annotationsItems
+    .text = Unpack( TextAnnotations )
 };
 
-AchievementItem* ac_lightFlameItems[] = { &ai_annotations, nullptr };
+AchievementItem* ac_timeRangesItems[] = { &ai_annotations, nullptr };
+
+AchievementItem ai_timeRanges = {
+    .id = "timeRanges",
+    .name = "Set a time range",
+    .text = Unpack( TextTimeRanges ),
+    .items = ac_timeRangesItems
+};
 
 AchievementItem ai_lightFlame = {
     .id = "lightFlame",
     .name = "Light the flame",
-    .text = Unpack( TextLightFlame ),
-    .items = ac_lightFlameItems
+    .text = Unpack( TextLightFlame )
 };
 
 AchievementItem ai_frameStats = {
@@ -272,7 +269,7 @@ AchievementItem ai_askAssist = {
     .visible = [] { return s_config.llm; }
 };
 
-AchievementItem* ac_inspectZoneItems[] = { &ai_findZone, &ai_readSource, &ai_lightFlame, &ai_frameStats, &ai_surviveCrash, &ai_askAssist, nullptr };
+AchievementItem* ac_inspectZoneItems[] = { &ai_findZone, &ai_readSource, &ai_lightFlame, nullptr };
 
 AchievementItem ai_inspectZone = {
     .id = "inspectZone",
@@ -281,7 +278,7 @@ AchievementItem ai_inspectZone = {
     .items = ac_inspectZoneItems
 };
 
-AchievementItem* ac_analysisItems[] = { &ai_inspectZone, nullptr };
+AchievementItem* ac_analysisItems[] = { &ai_inspectZone, &ai_frameStats, &ai_surviveCrash, &ai_askAssist, &ai_timeRanges, &ai_compareTraces, nullptr };
 AchievementCategory ac_analysis = { "analysis", "Analysis", ac_analysisItems };
 
 AchievementItem ai_annotateZones = {
@@ -315,13 +312,11 @@ AchievementItem ai_zoneCallstacks = {
 };
 
 AchievementItem* ac_instrumentationIntroItems[] = {
-    &ai_100million,
     &ai_instrumentationStatistics,
     &ai_annotateZones,
     &ai_markSections,
-    &ai_chartValues,
-    &ai_logMessages,
     &ai_zoneCallstacks,
+    &ai_100million,
     nullptr
 };
 
@@ -363,7 +358,7 @@ AchievementItem ai_instrumentFrames = {
     .items = ac_instrumentFramesItems
 };
 
-AchievementItem* ac_instrumentationItems[] = { &ai_instrumentationIntro, &ai_instrumentFrames, nullptr };
+AchievementItem* ac_instrumentationItems[] = { &ai_instrumentationIntro, &ai_chartValues, &ai_logMessages, &ai_instrumentFrames, nullptr };
 AchievementCategory ac_instrumentation = { "instrumentation", "Instrumentation", ac_instrumentationItems };
 
 
@@ -398,11 +393,11 @@ AchievementItem ai_navigate = {
 };
 
 AchievementItem* ac_connectToServerItems[] = {
-    &ai_saveTrace,
-    &ai_loadTrace,
+    &ai_navigate,
     &ai_appInfo,
     &ai_nameThreads,
-    &ai_navigate,
+    &ai_saveTrace,
+    &ai_loadTrace,
     nullptr
 };
 

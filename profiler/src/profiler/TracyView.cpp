@@ -1007,6 +1007,7 @@ bool View::DrawImpl()
         const auto cscnt = m_worker.GetContextSwitchSampleCount();
         if( ButtonDisablable( ICON_FA_HOURGLASS_HALF " Wait stacks", cscnt == 0 ) )
         {
+            if( s_config.achievements ) Achieve( "waitStacks" );
             m_showWaitStacks = true;
         }
         if( ButtonDisablable( ICON_FA_IMAGES " Frame statistics", !m_worker.AreFramesUsed() ) )

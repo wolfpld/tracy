@@ -46,6 +46,7 @@
 #include "data/TextSections.hpp"
 #include "data/TextSaveTrace.hpp"
 #include "data/TextSurviveCrash.hpp"
+#include "data/TextWaitStacks.hpp"
 #include "data/TextZoneCallstacks.hpp"
 
 namespace tracy::data
@@ -80,10 +81,19 @@ AchievementItem ai_entryStacks = {
     .text = Unpack( TextEntryStacks )
 };
 
+AchievementItem ai_waitStacks = {
+    .id = "waitStacks",
+    .name = "Read wait stacks",
+    .text = Unpack( TextWaitStacks )
+};
+
+AchievementItem* ac_contextSwitchesItems[] = { &ai_waitStacks, nullptr };
+
 AchievementItem ai_contextSwitches = {
     .id = "contextSwitches",
     .name = "See the whole machine",
-    .text = Unpack( TextContextSwitches )
+    .text = Unpack( TextContextSwitches ),
+    .items = ac_contextSwitchesItems
 };
 
 AchievementItem ai_cpuData = {

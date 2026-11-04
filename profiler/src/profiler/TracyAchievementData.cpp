@@ -46,6 +46,7 @@
 #include "data/TextSections.hpp"
 #include "data/TextSaveTrace.hpp"
 #include "data/TextSurviveCrash.hpp"
+#include "data/TextTimeRanges.hpp"
 #include "data/TextWaitStacks.hpp"
 #include "data/TextZoneCallstacks.hpp"
 
@@ -228,10 +229,19 @@ AchievementItem ai_readSource = {
     .items = ac_readSourceItems
 };
 
+AchievementItem ai_timeRanges = {
+    .id = "timeRanges",
+    .name = "Set a time range",
+    .text = Unpack( TextTimeRanges )
+};
+
+AchievementItem* ac_annotationsItems[] = { &ai_timeRanges, nullptr };
+
 AchievementItem ai_annotations = {
     .id = "annotations",
     .name = "Annotate the timeline",
-    .text = Unpack( TextAnnotations )
+    .text = Unpack( TextAnnotations ),
+    .items = ac_annotationsItems
 };
 
 AchievementItem* ac_lightFlameItems[] = { &ai_annotations, nullptr };

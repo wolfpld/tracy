@@ -1261,6 +1261,7 @@ bool View::DrawImpl()
         {
             if( ImGui::Selectable( r.name ) )
             {
+                if( s_config.achievements ) Achieve( "timeRanges" );
                 r.range->active = true;
                 r.range->min = s;
                 r.range->max = e;

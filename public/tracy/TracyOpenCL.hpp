@@ -114,7 +114,7 @@ namespace tracy {
             MemWrite(&item->gpuNewContext.period, 1.0f);
             MemWrite(&item->gpuNewContext.type, GpuContextType::OpenCL);
             MemWrite(&item->gpuNewContext.context, uint8_t(m_contextId));
-            MemWrite(&item->gpuNewContext.flags, GpuContextFlags(0));
+            MemWrite(&item->gpuNewContext.flags, GpuContextNone);
 #ifdef TRACY_ON_DEMAND
             GetProfiler().DeferItem(*item);
 #endif

@@ -347,7 +347,7 @@ private:
         MemWrite(&item->gpuNewContext.period, period);
         MemWrite(&item->gpuNewContext.context, static_cast<uint8_t>(m_contextId));
         //MemWrite(&item->gpuNewContext.flags, GpuContextCalibration);
-        MemWrite(&item->gpuNewContext.flags, GpuContextFlags(0));
+        MemWrite(&item->gpuNewContext.flags, GpuContextNone);
         MemWrite(&item->gpuNewContext.type, GpuContextType::Metal);
         SubmitQueueItem(item);
     }

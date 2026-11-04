@@ -1461,7 +1461,7 @@ namespace tracy
             #if TRACY_CUDA_CALIBRATED_CONTEXT
             tracyMemWrite(item->gpuNewContext.flags, GpuContextCalibration);
             #else
-            tracyMemWrite(item->gpuNewContext.flags, tracy::GpuContextFlags(0));
+            tracyMemWrite(item->gpuNewContext.flags, tracy::GpuContextNone);
             #endif
             #ifdef TRACY_ON_DEMAND
             GetProfiler().DeferItem(*item);

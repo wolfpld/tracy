@@ -173,7 +173,7 @@ public:
 #ifdef TRACY_OPENGL_AUTO_CALIBRATION
         MemWrite( &item->gpuNewContext.flags, GpuContextFlags( GpuContextCalibration ) );
 #else
-        MemWrite( &item->gpuNewContext.flags, GpuContextFlags( 0 ) );
+        MemWrite( &item->gpuNewContext.flags, GpuContextNone );
 #endif
         MemWrite( &item->gpuNewContext.type, GpuContextType::OpenGl );
 

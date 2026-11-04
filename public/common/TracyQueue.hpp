@@ -534,6 +534,7 @@ enum class GpuContextType : uint8_t
 
 enum GpuContextFlags : uint8_t
 {
+    GpuContextNone          = 0,
     GpuContextCalibration   = 1 << 0
 };
 

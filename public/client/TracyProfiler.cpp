@@ -4481,11 +4481,11 @@ void Profiler::ProcessSysTime()
     auto t = std::chrono::high_resolution_clock::now().time_since_epoch().count();
     if( t - m_sysTimeLast > 100000000 )    // 100 ms
     {
+        m_sysTimeLast = t;
+
         auto sysTime = m_sysTime.Get();
         if( sysTime >= 0 )
         {
-            m_sysTimeLast = t;
-
             TracyLfqPrepare( QueueType::SysTimeReport );
             MemWrite( &item->sysTime.time, GetTime() );
             MemWrite( &item->sysTime.sysTime, sysTime );

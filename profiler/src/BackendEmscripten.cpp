@@ -37,10 +37,22 @@ static void SetClipboard( ImGuiContext*, const char* text )
     s_clipboard = text;
     EM_ASM( {
         var text = UTF8ToString($0);
-        if( navigator.clipboard && navigator.clipboard.writeText )
-        {
-            navigator.clipboard.writeText( text );
-        }
+        // navigator.clipboard only exists in secure contexts (https, localhost) and can reject the write.
+        // Fall back to a hidden textarea then. Both need a recent user action, which a key press or click provides.
+        var fallback = function() {
+            var prev = document.activeElement;
+            var ta = document.createElement( 'textarea' );
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild( ta );
+            ta.select();
+            try { document.execCommand( 'copy' ); } catch( e ) {}
+            document.body.removeChild( ta );
+            if( prev && prev.focus ) prev.focus();
+        };
+        if( navigator.clipboard && navigator.clipboard.writeText ) navigator.clipboard.writeText( text ).catch( fallback );
+        else fallback();
     }, text );
 }
 

@@ -54,6 +54,10 @@ bool View::DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vect
             max = pv.max;
         }
 
+        const auto mapping = GetPlotMapping( &plot );
+        min = MapPlotValue( mapping, min );
+        max = MapPlotValue( mapping, max );
+
         const auto color = GetPlotColor( plot, m_worker );
         const auto bg = 0x22000000 | ( DarkenColorMore( color ) & 0xFFFFFF );
         const auto fill = 0x22000000 | ( DarkenColor( color ) & 0xFFFFFF );
@@ -73,7 +77,7 @@ bool View::DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vect
             const auto i0 = *it++;
             const auto& v0 = vec[i0];
             double x = ( v0.time.Val() - m_vd.zvStart ) * pxns;
-            double y = PlotHeight - ( v0.val - min ) * revrange * PlotHeight;
+            double y = PlotHeight - ( MapPlotValue( mapping, v0.val ) - min ) * revrange * PlotHeight;
 
             if( first )
             {
@@ -119,13 +123,13 @@ bool View::DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vect
                 const auto i1 = i0 + cnt - 1;
                 const auto& v1 = vec[i1];
                 px = x;
-                py = PlotHeight - ( v1.val - min ) * revrange * PlotHeight;
+                py = PlotHeight - ( MapPlotValue( mapping, v1.val ) - min ) * revrange * PlotHeight;
                 const auto imin = *it++;
                 const auto imax = *it++;
                 const auto vmin = vec[imin].val;
                 const auto vmax = vec[imax].val;
-                const auto ymin = offset + PlotHeight - ( vmin - min ) * revrange * PlotHeight;
-                const auto ymax = offset + PlotHeight - ( vmax - min ) * revrange * PlotHeight;
+                const auto ymin = offset + PlotHeight - ( MapPlotValue( mapping, vmin ) - min ) * revrange * PlotHeight;
+                const auto ymax = offset + PlotHeight - ( MapPlotValue( mapping, vmax ) - min ) * revrange * PlotHeight;
                 if( cnt < MaxShow )
                 {
                     DrawLine( draw, dpos + ImVec2( x, ymin ), dpos + ImVec2( x, ymax ), color );
@@ -134,7 +138,7 @@ bool View::DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vect
                     {
                         const auto is = i0 + i;
                         const auto& vs = vec[is];
-                        auto ys = PlotHeight - ( vs.val - min ) * revrange * PlotHeight;
+                        auto ys = PlotHeight - ( MapPlotValue( mapping, vs.val ) - min ) * revrange * PlotHeight;
                         DrawPlotPoint( wpos, x, ys, offset, color, hover, vs.val, plot.format, PlotHeight );
                     }
                 }
@@ -190,7 +194,7 @@ bool View::DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vect
                 else
                 {
                     x0 = ( plot.data.back().time.Val() - m_vd.zvStart ) * pxns;
-                    y = PlotHeight - ( plot.data.back().val - min ) * revrange * PlotHeight;
+                    y = PlotHeight - ( MapPlotValue( mapping, plot.data.back().val ) - min ) * revrange * PlotHeight;
                     DrawLine( draw, dpos + ImVec2( x0, offset + y ), dpos + ImVec2( x1, offset + y ), color );
                 }
 

@@ -3,6 +3,7 @@
 #endif
 
 #include <algorithm>
+#include <map>
 #include <sstream>
 #include <string>
 
@@ -31,6 +32,7 @@ static void print_usage_exit( int e )
     fprintf( stderr, "  -f, --filter arg           Filter zone names (default: "
                      ")\n" );
     fprintf( stderr, "  -F, --frames               Report frame statistics, one row per frame set\n" );
+    fprintf( stderr, "  -S, --sections             Add per-section frame statistics (only with -F)\n" );
     fprintf( stderr, "  -s, --sep arg              CSV separator (default: ,)\n" );
     fprintf( stderr, "  -c, --case                 Case sensitive filtering\n" );
     fprintf( stderr, "  -e, --self                 Get self times\n" );
@@ -55,6 +57,7 @@ struct Args
     bool unwrapMessages;
     bool plot;
     bool frames;
+    bool sections;
     int truncated_mean_percentile;
 };
 
@@ -62,13 +65,14 @@ static Args parse_args( int argc, char** argv )
 {
     if( argc == 1 ) print_usage_exit( 1 );
 
-    Args args = { "", ",", "", false, false, false, false, false, false, false, 0 };
+    Args args = { "", ",", "", false, false, false, false, false, false, false, false, 0 };
 
     struct option long_opts[] = {
         { "help", no_argument, nullptr, 'h' },
         { "version", no_argument, nullptr, 'V' },
         { "filter", required_argument, nullptr, 'f' },
         { "frames", no_argument, nullptr, 'F' },
+        { "sections", no_argument, nullptr, 'S' },
         { "sep", required_argument, nullptr, 's' },
         { "case", no_argument, nullptr, 'c' },
         { "self", no_argument, nullptr, 'e' },
@@ -81,7 +85,7 @@ static Args parse_args( int argc, char** argv )
     };
 
     int c;
-    while( ( c = getopt_long( argc, argv, "hf:Fs:t:ceugmpV", long_opts, nullptr ) ) != -1 )
+    while( ( c = getopt_long( argc, argv, "hf:FSs:t:ceugmpV", long_opts, nullptr ) ) != -1 )
     {
         switch( c )
         {
@@ -96,6 +100,9 @@ static Args parse_args( int argc, char** argv )
             break;
         case 'F':
             args.frames = true;
+            break;
+        case 'S':
+            args.sections = true;
             break;
         case 's':
             args.separator = optarg;
@@ -316,9 +323,29 @@ int main( int argc, char** argv )
         }
 
         const auto& frames = worker.GetFrames();
+        const auto span = worker.GetLastTime();
 
-        std::vector<const char*> columns {
-            "frame_set",
+        // Sections aggregated by name; open sections reach the end of the trace, as in the UI.
+        std::map<std::string, std::vector<std::pair<int64_t, int64_t>>> sections;
+        if( args.sections )
+        {
+            for( const auto& s : worker.GetSections() )
+            {
+                for( const auto& v : s.second )
+                {
+                    if( !v.text.Active() ) continue;
+                    sections[worker.GetString( v.text )].emplace_back( v.start.Val(), v.end.IsNonNegative() ? v.end.Val() : span );
+                }
+            }
+        }
+
+        std::vector<const char*> columns { "frame_set" };
+        if( args.sections )
+        {
+            columns.push_back( "section" );
+            columns.push_back( "instances" );
+        }
+        columns.insert( columns.end(), {
             "continuous",
             "frames",
             "counts",
@@ -334,32 +361,24 @@ int main( int argc, char** argv )
             "p90_ns",
             "p99_ns",
             "p99_9_ns"
-        };
+        } );
 
         std::string header = join( columns, args.separator );
         printf( "%s\n", header.data() );
 
-        const auto span = worker.GetLastTime();
-        for( const auto& fd : frames )
+        const auto PrintStats = [&]( const char* setName, const char* section, size_t instances, bool continuous, size_t fsz, std::vector<int64_t>& times )
         {
-            std::vector<int64_t> times;
-            const auto fsz = worker.GetFullFrameCount( *fd );
-            times.reserve( fsz );
+            const auto vsz = times.size();
+            if( vsz == 0 ) return;
+            std::ranges::sort( times );
+
             int64_t total = 0;
             double sumSq = 0;
-            for( size_t i=0; i<fsz; i++ )
+            for( const auto t : times )
             {
-                const auto t = worker.GetFrameTime( *fd, i );
-                if( t > 0 )
-                {
-                    times.push_back( t );
-                    total += t;
-                    sumSq += double( t ) * t;
-                }
+                total += t;
+                sumSq += double( t ) * t;
             }
-            const auto vsz = times.size();
-            if( vsz == 0 ) continue;
-            std::ranges::sort( times );
 
             // Same definitions as the profiler's Frame statistics window: nearest-rank
             // percentiles and sample (n-1) standard deviation.
@@ -368,26 +387,92 @@ int main( int argc, char** argv )
             double sd = 0;
             if( vsz > 1 ) sd = sqrt( ( sumSq - 2. * double( total ) * avg + avg * avg * vsz ) / ( vsz - 1 ) );
 
-            std::vector<std::string> values( columns.size() );
-            values[0] = worker.GetString( fd->name );
-            values[1] = fd->continuous ? "1" : "0";
-            values[2] = std::to_string( fsz );
-            values[3] = std::to_string( vsz );
-            values[4] = std::to_string( total );
-            values[5] = span > 0 ? std::to_string( 100. * total / span ) : "0";
-            values[6] = std::to_string( times.front() );
-            values[7] = std::to_string( times.back() );
-            values[8] = std::to_string( avg );
-            values[9] = std::to_string( Percentile( 0.5 ) );
-            values[10] = std::to_string( sd );
-            values[11] = std::to_string( 100. * sd / avg );
-            values[12] = std::to_string( Percentile( 0.75 ) );
-            values[13] = std::to_string( Percentile( 0.9 ) );
-            values[14] = std::to_string( Percentile( 0.99 ) );
-            values[15] = std::to_string( Percentile( 0.999 ) );
+            std::vector<std::string> values;
+            values.reserve( columns.size() );
+            values.emplace_back( setName );
+            if( args.sections )
+            {
+                values.emplace_back( section );
+                values.emplace_back( std::to_string( instances ) );
+            }
+            values.emplace_back( continuous ? "1" : "0" );
+            values.emplace_back( std::to_string( fsz ) );
+            values.emplace_back( std::to_string( vsz ) );
+            values.emplace_back( std::to_string( total ) );
+            values.emplace_back( span > 0 ? std::to_string( 100. * total / span ) : "0" );
+            values.emplace_back( std::to_string( times.front() ) );
+            values.emplace_back( std::to_string( times.back() ) );
+            values.emplace_back( std::to_string( avg ) );
+            values.emplace_back( std::to_string( Percentile( 0.5 ) ) );
+            values.emplace_back( std::to_string( sd ) );
+            values.emplace_back( std::to_string( 100. * sd / avg ) );
+            values.emplace_back( std::to_string( Percentile( 0.75 ) ) );
+            values.emplace_back( std::to_string( Percentile( 0.9 ) ) );
+            values.emplace_back( std::to_string( Percentile( 0.99 ) ) );
+            values.emplace_back( std::to_string( Percentile( 0.999 ) ) );
 
             std::string row = join( values, args.separator );
             printf( "%s\n", row.data() );
+        };
+
+        for( const auto& fd : frames )
+        {
+            const auto fsz = worker.GetFullFrameCount( *fd );
+            const auto setName = worker.GetString( fd->name );
+
+            std::vector<int64_t> times;
+            times.reserve( fsz );
+            for( size_t i=0; i<fsz; i++ )
+            {
+                const auto t = worker.GetFrameTime( *fd, i );
+                if( t > 0 ) times.push_back( t );
+            }
+            PrintStats( setName, "", 0, fd->continuous, fsz, times );
+
+            for( const auto& s : sections )
+            {
+                std::vector<std::pair<int, int>> ranges;
+                ranges.reserve( s.second.size() );
+                for( const auto& r : s.second )
+                {
+                    const auto fr = worker.GetFrameRange( *fd, r.first, r.second );
+                    if( fr.second > fr.first ) ranges.emplace_back( fr );
+                }
+                std::ranges::sort( ranges );
+
+                // Overlapping instances share frames, so merge the index ranges before collection.
+                times.clear();
+                const auto Collect = [&]( int f, int l )
+                {
+                    for( int i=f; i<l; i++ )
+                    {
+                        const auto t = worker.GetFrameTime( *fd, i );
+                        if( t > 0 ) times.push_back( t );
+                    }
+                };
+                int first = -1, last = -1;
+                for( const auto& r : ranges )
+                {
+                    if( first < 0 )
+                    {
+                        first = r.first;
+                        last = r.second;
+                    }
+                    else if( r.first <= last )
+                    {
+                        last = std::max( last, r.second );
+                    }
+                    else
+                    {
+                        Collect( first, last );
+                        first = r.first;
+                        last = r.second;
+                    }
+                }
+                if( first >= 0 ) Collect( first, last );
+
+                PrintStats( setName, s.first.c_str(), s.second.size(), fd->continuous, fsz, times );
+            }
         }
         return 0;
     }

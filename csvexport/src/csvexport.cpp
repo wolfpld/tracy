@@ -30,6 +30,7 @@ static void print_usage_exit( int e )
     fprintf( stderr, "  -V, --version              Show version information\n" );
     fprintf( stderr, "  -f, --filter arg           Filter zone names (default: "
                      ")\n" );
+    fprintf( stderr, "  -F, --frames               Report frame statistics, one row per frame set\n" );
     fprintf( stderr, "  -s, --sep arg              CSV separator (default: ,)\n" );
     fprintf( stderr, "  -c, --case                 Case sensitive filtering\n" );
     fprintf( stderr, "  -e, --self                 Get self times\n" );
@@ -53,6 +54,7 @@ struct Args
     bool show_gpu;
     bool unwrapMessages;
     bool plot;
+    bool frames;
     int truncated_mean_percentile;
 };
 
@@ -60,12 +62,13 @@ static Args parse_args( int argc, char** argv )
 {
     if( argc == 1 ) print_usage_exit( 1 );
 
-    Args args = { "", ",", "", false, false, false, false, false, false, 0 };
+    Args args = { "", ",", "", false, false, false, false, false, false, false, 0 };
 
     struct option long_opts[] = {
         { "help", no_argument, nullptr, 'h' },
         { "version", no_argument, nullptr, 'V' },
         { "filter", required_argument, nullptr, 'f' },
+        { "frames", no_argument, nullptr, 'F' },
         { "sep", required_argument, nullptr, 's' },
         { "case", no_argument, nullptr, 'c' },
         { "self", no_argument, nullptr, 'e' },
@@ -78,7 +81,7 @@ static Args parse_args( int argc, char** argv )
     };
 
     int c;
-    while( ( c = getopt_long( argc, argv, "hf:s:t:ceugmpV", long_opts, nullptr ) ) != -1 )
+    while( ( c = getopt_long( argc, argv, "hf:Fs:t:ceugmpV", long_opts, nullptr ) ) != -1 )
     {
         switch( c )
         {
@@ -90,6 +93,9 @@ static Args parse_args( int argc, char** argv )
             exit( 0 );
         case 'f':
             args.filter = optarg;
+            break;
+        case 'F':
+            args.frames = true;
             break;
         case 's':
             args.separator = optarg;
@@ -297,6 +303,93 @@ int main( int argc, char** argv )
     while( !worker.AreSourceLocationZonesReady() )
     {
         std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+    }
+
+    if( args.frames )
+    {
+        // The base frame set always holds two bootstrap events; the profiler
+        // only considers frames present past that point.
+        if( !worker.AreFramesUsed() )
+        {
+            printf( "There are currently no frames!\n" );
+            return 0;
+        }
+
+        const auto& frames = worker.GetFrames();
+
+        std::vector<const char*> columns {
+            "frame_set",
+            "continuous",
+            "frames",
+            "counts",
+            "total_ns",
+            "span_perc",
+            "min_ns",
+            "max_ns",
+            "mean_ns",
+            "median_ns",
+            "std_ns",
+            "cv_perc",
+            "p75_ns",
+            "p90_ns",
+            "p99_ns",
+            "p99_9_ns"
+        };
+
+        std::string header = join( columns, args.separator );
+        printf( "%s\n", header.data() );
+
+        const auto span = worker.GetLastTime();
+        for( const auto& fd : frames )
+        {
+            std::vector<int64_t> times;
+            const auto fsz = worker.GetFullFrameCount( *fd );
+            times.reserve( fsz );
+            int64_t total = 0;
+            double sumSq = 0;
+            for( size_t i=0; i<fsz; i++ )
+            {
+                const auto t = worker.GetFrameTime( *fd, i );
+                if( t > 0 )
+                {
+                    times.push_back( t );
+                    total += t;
+                    sumSq += double( t ) * t;
+                }
+            }
+            const auto vsz = times.size();
+            if( vsz == 0 ) continue;
+            std::ranges::sort( times );
+
+            // Same definitions as the profiler's Frame statistics window: nearest-rank
+            // percentiles and sample (n-1) standard deviation.
+            const auto Percentile = [&times, vsz]( double p ) { return times[std::min( vsz - 1, size_t( p * vsz ) )]; };
+            const double avg = double( total ) / vsz;
+            double sd = 0;
+            if( vsz > 1 ) sd = sqrt( ( sumSq - 2. * double( total ) * avg + avg * avg * vsz ) / ( vsz - 1 ) );
+
+            std::vector<std::string> values( columns.size() );
+            values[0] = worker.GetString( fd->name );
+            values[1] = fd->continuous ? "1" : "0";
+            values[2] = std::to_string( fsz );
+            values[3] = std::to_string( vsz );
+            values[4] = std::to_string( total );
+            values[5] = span > 0 ? std::to_string( 100. * total / span ) : "0";
+            values[6] = std::to_string( times.front() );
+            values[7] = std::to_string( times.back() );
+            values[8] = std::to_string( avg );
+            values[9] = std::to_string( Percentile( 0.5 ) );
+            values[10] = std::to_string( sd );
+            values[11] = std::to_string( 100. * sd / avg );
+            values[12] = std::to_string( Percentile( 0.75 ) );
+            values[13] = std::to_string( Percentile( 0.9 ) );
+            values[14] = std::to_string( Percentile( 0.99 ) );
+            values[15] = std::to_string( Percentile( 0.999 ) );
+
+            std::string row = join( values, args.separator );
+            printf( "%s\n", row.data() );
+        }
+        return 0;
     }
 
     if( args.show_gpu )

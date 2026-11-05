@@ -14,10 +14,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../../getopt/getopt.h"
-#include "../../public/common/TracyVersion.hpp"
 #include "../../server/TracyFileRead.hpp"
 #include "../../server/TracyWorker.hpp"
+#include "../../getopt/getopt.h"
+#include "../../public/common/TracyVersion.hpp"
 #include "GitRef.hpp"
 
 static void print_usage_exit( int e )

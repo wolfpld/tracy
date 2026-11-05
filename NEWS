@@ -5,12 +5,13 @@ here.
 vx.xx.x (2026-xx-xx)
 --------------------
 
-- Ability to pin/anchor threads and plots to the viewport.
 - API break: various lock-related "AfterUnlock" instrumentation methods were
   renamed to "BeforeUnlock". Call sites need to be adjusted with regard to
   the placement around the lock unlock calls, to match the name.
 - All Tracy macros need to be semicolon-terminated now (would be API break,
   but 0.9.0 already stated this is required).
+- New UI color scheme.
+- Ability to pin/anchor threads and plots to the viewport.
 - Lock event processing on the server side has been rewritten from scratch,
   fixing many outstanding issues.
   - The cost of displaying large amounts of lock event data has been greatly
@@ -45,9 +46,26 @@ vx.xx.x (2026-xx-xx)
 - Changed the GPU zones icon from an eye to a display monitor.
 - User GUI scale in the profiler can be now controlled with Ctrl + plus/minus
   and reset with Ctrl + zero.
+- Improved achievements (tutorial) system.
+  - Quality pass on the existing achievement texts.
+  - Added user manual references to the achievement descriptions.
+  - Expanded the number of achievements from 12 to 47, covering all the major
+    profiler surfaces.
+  - The achievements star is now animated.
+  - Achievements can no longer be achieved when the whole feature is
+    disabled.
+  - Correctness fixes.
+- The built-in user manual can be now opened from the initial connect / open
+  file dialog, enabling early guidance for profiler integration and setup.
+- Added support for rendering CJK typography.
+- Added plot filtering and optional tree hierarchy.
 - Various hardening improvements for correctness across the code base.
 - Fixed a use-after-free crash during program exit when the profiler
   resolved symbols after static objects had been destroyed (Android).
+- Added C API for sections.
+- Improved reported system information on Apple platforms.
+- Added export of frame statistics to the cvsexport utility (-F option).
+  - Can also print per-section statistics, if -S option is passed.
 
 v0.14.1 (2026-08-22)
 --------------------

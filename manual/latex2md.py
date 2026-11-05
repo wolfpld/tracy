@@ -21,7 +21,7 @@ NAMES = (
     ('capturing', 'Capturing the data'),
     ('analyzingdata', 'Analyzing captured data'),
     ('tracyassist', 'Tracy Assist'),
-    ('csvexport', 'Exporting zone statistics to CSV'),
+    ('csvexport', 'Exporting statistics to CSV'),
     ('importingdata', 'Importing external profiling data'),
     ('configurationfiles', 'Configuration files'),
 )

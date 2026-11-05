@@ -108,7 +108,7 @@ Hello and welcome to the Tracy Profiler user manual! Here you will find all the 
 \item Chapter~\ref{capturing}, \emph{\nameref{capturing}}, goes into more detail on how the profiling information can be captured and stored on disk.
 \item Chapter~\ref{analyzingdata}, \emph{\nameref{analyzingdata}}, guides you through the graphical user interface of the profiler.
 \item Chapter~\ref{tracyassist}, \emph{\nameref{tracyassist}}, describes how to use the built-in AI assistant.
-\item Chapter~\ref{csvexport}, \emph{\nameref{csvexport}}, explains how to export some zone timing statistics into a CSV format.
+\item Chapter~\ref{csvexport}, \emph{\nameref{csvexport}}, explains how to export zone and frame timing statistics into a CSV format.
 \item Chapter~\ref{importingdata}, \emph{\nameref{importingdata}}, documents how to import data from other profilers.
 \item Chapter~\ref{configurationfiles}, \emph{\nameref{configurationfiles}}, gives information on the profiler settings.
 \end{itemize}
@@ -819,7 +819,7 @@ To enable network communication, Tracy needs to open a listening port. Make sure
 When using Tracy Profiler, keep in mind the following requirements:
 
 \begin{itemize}
-\item The application may use each lock in no more than 64 unique threads.
+\item The application may use each lock in no more than 65535 unique threads.
 \item There can be no more than 65534 unique source locations\footnote{A source location is a place in the code, which is identified by source file name and line number, for example, when you markup a zone.}. This number is further split in half between native code source locations and dynamic source locations (for example, when Lua instrumentation is used).
 \item If there are recursive zones at any point in a zone stack, each unique zone source location should not appear more than 255 times.
 \item Profiling session cannot be longer than 1.6 days ($2^{47}$ \si{\nano\second}). This also includes on-demand sessions.
@@ -1626,14 +1626,6 @@ logo=\bclampe
 The standard \texttt{std::condition\_variable} is only able to accept \texttt{std::mutex} locks. To be able to use Tracy lock wrapper, use \texttt{std::condition\_variable\_any} instead.
 \end{bclogo}
 
-\begin{bclogo}[
-noborder=true,
-couleur=black!5,
-logo=\bcattention
-]{Caveats}
-Due to the limits of internal bookkeeping in the profiler, you may use each lock in no more than 64 unique threads. If you have many short-lived temporary threads, consider using a thread pool to limit the number of created threads.
-\end{bclogo}
-
 \subsubsection{Custom locks}
 
 If using the \texttt{TracyLockable} or \texttt{TracySharedLockable} wrappers does not fit your needs, you may want to add a more fine-grained instrumentation to your code. Classes \texttt{LockableCtx} and \texttt{SharedLockableCtx} contained in the \texttt{TracyLock.hpp} header contain all the required functionality. Lock implementations in classes \texttt{Lockable} and \texttt{SharedLockable} show how to properly perform context handling.
@@ -1929,6 +1921,8 @@ Cleanup is handled using the \texttt{TracyCUDAContextDestroy(ctx)} macro. To ass
 To begin instrumentation of all CUDA API calls, use the \texttt{TracyCUDAStartProfiling(ctx)} macro. This initiates the profiling of CUDA events, including relevant GPU activity such as kernel execution, memory transfers, and synchronization. This instrumentation is automatic and requires no code annotation\footnote{CUDA does not provide an API to retrieve timestamps associated with events. Therefore, the typical GPU instrumentation design of Tracy cannot be applied.}. CUDA Graph-launched kernels are properly correlated and displayed as GPU zones on the timeline. Additionally, CUDA Driver API memory operations are tracked, providing visibility into memory allocation and transfer activity.
 
 Unlike other GPU backends in Tracy, there is no need to call \texttt{TracyCUDACollect(ctx)} periodically, since a background collector thread is enabled by default. This behavior can be disabled by defining \texttt{TRACY\_CUDA\_ENABLE\_COLLECTOR\_THREAD} as \texttt{0} prior to including \texttt{TracyCUDA.hpp}.
+
+Kernel activity is collected as \texttt{CUPTI\_ACTIVITY\_KIND\_CONCURRENT\_KERNEL}. Applications that use CUDA graph conditional nodes (IF/WHILE) may hit a CUPTI fault in this mode. Define \texttt{TRACY\_CUDA\_FORCE\_KERNEL\_SERIAL\_EXECUTION} as \texttt{1} prior to including \texttt{TracyCUDA.hpp} to instead collect \texttt{CUPTI\_ACTIVITY\_KIND\_KERNEL} activity, which avoids the fault at the cost of serializing kernel execution. Note that kernels executing inside conditional graph bodies are then reported without timestamps and are dropped from the trace.
 
 To stop profiling, call the \texttt{TracyCUDAStopProfiling(ctx)} macro.
 
@@ -2378,6 +2372,19 @@ However, the validation comes with a performance cost, which you may not want to
 
 There is no explicit support for transient zones (section~\ref{transientzones}) in the C API macros. However, this functionality can be implemented by following instructions outlined in section~\ref{capibindings}.
 
+\subsubsection{Section markup}
+
+To mark sections, as described in section~\ref{markingsections}, use the following macros:
+
+\begin{itemize}
+\item \texttt{TracyCSectionEnter(fmt, ...)}
+\item \texttt{TracyCSectionEnterCategory(category, fmt, ...)}
+\item \texttt{TracyCSectionLeave(id)}
+\item \texttt{TracyCSectionSetup(category, fmt, ...)}
+\end{itemize}
+
+Like their C++ counterparts, \texttt{TracyCSectionEnter} and \texttt{TracyCSectionEnterCategory} return a section identifier, which you must store and pass to the \texttt{TracyCSectionLeave} macro.
+
 \subsubsection{Lock markup}
 
 Marking locks in the C API is done with the following macros:
@@ -2786,6 +2793,7 @@ Inside \texttt{eval}, the variable \texttt{ctx} is a \texttt{Worker} instance. A
 \begin{itemize}
 \item \texttt{get\_all\_zone\_stats()} --- Returns a \texttt{dict[str, ZoneStats]} keyed by zone name. Each \texttt{ZoneStats} has \texttt{min}, \texttt{max}, \texttt{total}, \texttt{avg}, \texttt{count}, \texttt{sum\_sq} (all in nanoseconds). Includes nested zones.
 \item \texttt{get\_root\_zone\_stats()} --- Like \texttt{get\_all\_zone\_stats()} but aggregates only top-level zones per thread. Safe to sum across zones.
+\item \texttt{get\_thread\_zone\_stats(thread\_id)} --- Like \texttt{get\_all\_zone\_stats()} but counts only zones recorded on the given thread.
 \item \texttt{get\_zone\_stats(srcloc\_id)} --- Stats for a single source location.
 \item \texttt{get\_zone\_durations(name)} --- List of individual zone durations (ns) for distribution analysis.
 \item \texttt{get\_zone\_source\_location(name)} --- Returns \texttt{\{"name", "function", "file", "line", "color"\}} for the named zone.
@@ -2811,6 +2819,8 @@ Inside \texttt{eval}, the variable \texttt{ctx} is a \texttt{Worker} instance. A
 \item \texttt{get\_threads()} --- List of \texttt{ThreadData} objects with \texttt{id}, \texttt{count}, \texttt{is\_fiber}.
 \item \texttt{get\_messages()} --- List of \texttt{MessageInfo} objects with \texttt{time}, \texttt{text}, \texttt{color}, \texttt{thread}.
 \item \texttt{get\_plots()} --- List of \texttt{PlotSummary} objects with \texttt{name}, \texttt{type}, \texttt{min}, \texttt{max}, \texttt{sum}, \texttt{avg}, \texttt{count}.
+\item \texttt{get\_plot\_samples(name, start\_ns, end\_ns, max\_samples)} --- List of \texttt{(time, value)} pairs for the named plot, decimated to no more than \texttt{max\_samples} entries.
+\item \texttt{get\_plot\_window\_stats(name, start\_ns, end\_ns)} --- \texttt{PlotSummary} for the named plot, computed only over the samples in the time window.
 \item \texttt{get\_memory\_events()} --- List of raw allocation events including pointer, size, alloc/free times, and callstack index.
 \item \texttt{get\_locks()} --- List of \texttt{LockSummary} objects. Use \texttt{get\_lock\_wait\_stats()} for contention analysis.
 \item \texttt{get\_symbol\_stats()} --- Callstack-sample hit counts per symbol. Sort by \texttt{excl} to find hot functions.
@@ -3428,7 +3438,7 @@ logo=\bcattention
 \subsection{Interactive profiling}
 \label{interactiveprofiling}
 
-If you want to look at the profile data in real-time (or load a saved trace file), you can use the data analysis utility \texttt{tracy-profiler} contained in the \texttt{profiler} directory. After starting the application, you will be greeted with a welcome dialog (figure~\ref{welcomedialog}), presenting a bunch of useful links (\faBook{}~\emph{User manual}, \faEarthAmericas{}~\emph{Web}, \faComments~\emph{Join chat} and \faHeart{}~\emph{Sponsor}). The \faEarthAmericas{}~\emph{Web} button opens a drop-down list with links to the profiler's \emph{\faHouseChimney{}~Home page} and a bunch of \emph{\faVideo{}~Feature videos}.
+If you want to look at the profile data in real-time (or load a saved trace file), you can use the data analysis utility \texttt{tracy-profiler} contained in the \texttt{profiler} directory. After starting the application, you will be greeted with a welcome dialog (figure~\ref{welcomedialog}), presenting a bunch of useful links (\faBook{}~\emph{User manual}, \faEarthAmericas{}~\emph{Web}, \faComments~\emph{Join chat} and \faHeart{}~\emph{Sponsor}). The \faBook{}~\emph{User manual} button opens the user manual, displayed directly in the profiler. The \faEarthAmericas{}~\emph{Web} button opens a drop-down list with links to the profiler's \emph{\faHouseChimney{}~Home page} and a bunch of \emph{\faVideo{}~Feature videos}.
 
 The \emph{\faWrench{}~Wrench} button opens the about dialog, which also contains a number of global settings you may want to tweak (section~\ref{aboutwindow}).
 
@@ -5544,10 +5554,10 @@ Attachments can be added through the \emph{\faRobot{}~Tracy Assist} buttons avai
 
 Contents of some attachments can be viewed by clicking the \emph{\faEye{}~View} button next to the attachment.
 
-\section{Exporting zone statistics to CSV}
+\section{Exporting statistics to CSV}
 \label{csvexport}
 
-You can use the command-line utility \texttt{tracy-csvexport} from the \texttt{csvexport} directory to export primary zone statistics from a saved trace into a CSV format.
+You can use the command-line utility \texttt{tracy-csvexport} from the \texttt{csvexport} directory to export primary zone and frame statistics from a saved trace into a CSV format.
 The tool requires a single .tracy file as an argument and prints the result into the standard output (stdout), from where you can redirect it into a file or use it as an input into another tool.
 By default, the utility will list all zones with the following columns:
 
@@ -5569,6 +5579,8 @@ You can customize the output with the following command line options:
 \begin{itemize}
   \item \texttt{-h, -\hspace{-1.25ex} -help} -- Display a help message
   \item \texttt{-f, -\hspace{-1.25ex} -filter <name>} -- Filter the zone names
+  \item \texttt{-F, -\hspace{-1.25ex} -frames} -- Report frame statistics, one row per frame set
+  \item \texttt{-S, -\hspace{-1.25ex} -sections} -- Add per-section frame statistics (only available with \texttt{-F})
   \item \texttt{-c, -\hspace{-1.25ex} -case} -- Make the name filtering case sensitive
   \item \texttt{-s, -\hspace{-1.25ex} -sep <separator>} -- Customize the CSV separator (default is \enquote{\texttt{,}})
   \item \texttt{-e, -\hspace{-1.25ex} -self} -- Use self time (equivalent to the \enquote{Self time} toggle in the profiler GUI)
@@ -5578,6 +5590,29 @@ You can customize the output with the following command line options:
   \item \texttt{-p, -\hspace{-1.25ex} -plot} -- Report plot data (only available with \texttt{-u})
   \item \texttt{-t, -\hspace{-1.25ex} -truncated\_mean [percentile]} -- Report truncated mean; the percentile argument is optional and defaults to 90 (valid range: 1--99)
 \end{itemize}
+
+The \texttt{-F} option reports frame statistics instead, with one row per frame set and the following columns:
+
+\begin{itemize}
+  \item \texttt{frame\_set} -- Frame set name
+  \item \texttt{continuous} -- 1 when the frame set is made of continuous frames, 0 when it is made of discontinuous ones (see section~\ref{markingframes})
+  \item \texttt{frames} -- Number of frames in the set
+  \item \texttt{counts} -- Number of frames included in the statistics
+  \item \texttt{total\_ns} -- Total frame time in nanoseconds
+  \item \texttt{span\_perc} -- Total frame time as a percentage of the program's execution time
+  \item \texttt{min\_ns} -- Minimum frame time in nanoseconds
+  \item \texttt{max\_ns} -- Maximum frame time in nanoseconds
+  \item \texttt{mean\_ns} -- Mean frame time in nanoseconds
+  \item \texttt{median\_ns} -- Median frame time in nanoseconds
+  \item \texttt{std\_ns} -- Standard deviation of the frame time in nanoseconds
+  \item \texttt{cv\_perc} -- Coefficient of variation (standard deviation divided by the mean) as a percentage
+  \item \texttt{p75\_ns} -- Frame time at the 75th percentile in nanoseconds
+  \item \texttt{p90\_ns} -- Frame time at the 90th percentile in nanoseconds
+  \item \texttt{p99\_ns} -- Frame time at the 99th percentile in nanoseconds
+  \item \texttt{p99\_9\_ns} -- Frame time at the 99.9th percentile in nanoseconds
+\end{itemize}
+
+The \texttt{-S} option extends the report with per-section rows, listing for each section name the statistics of the frames during which that section was active. The \texttt{section} column holds the section name, which is empty for the frame set rows, and \texttt{instances} holds the number of recorded section instances.
 
 \section{Importing external profiling data}
 \label{importingdata}

@@ -44,6 +44,10 @@ public:
     void Close();
 
     int Send( const void* buf, int len );
+#ifdef TRACY_WEBSOCKET_SUPPORT
+    // buf has WebSocketMaxHeaderSize bytes of room, followed by len bytes of data.
+    int SendFramed( void* buf, int len );
+#endif
     int GetSendBufSize();
 
     int ReadUpTo( void* buf, int len );

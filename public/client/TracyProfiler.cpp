@@ -1566,6 +1566,13 @@ TRACY_API bool IsDataPortListening() { return s_dataPortListening.load( std::mem
 
 constexpr static size_t SafeSendBufferSize = 65536;
 
+#ifdef TRACY_WEBSOCKET_SUPPORT
+// Room before the compressed data for the header of the transport (a WebSocket frame), to send both in one write.
+constexpr static size_t TransportHeaderSize = WebSocketMaxHeaderSize;
+#else
+constexpr static size_t TransportHeaderSize = 0;
+#endif
+
 Profiler::Profiler()
     : m_timeBegin( 0 )
     , m_mainThread( detail::GetThreadHandleImpl() )
@@ -1585,7 +1592,7 @@ Profiler::Profiler()
     , m_buffer( (char*)tracy_malloc( TargetFrameSize*3 ) )
     , m_bufferOffset( 0 )
     , m_bufferStart( 0 )
-    , m_lz4Buf( (char*)tracy_malloc( LZ4Size + sizeof( lz4sz_t ) ) )
+    , m_packetBuf( (char*)tracy_malloc( TransportHeaderSize + LZ4Size + sizeof( lz4sz_t ) ) )
     , m_serialQueue( 1024*1024 )
     , m_serialDequeue( 1024*1024 )
 #ifndef TRACY_NO_FRAME_IMAGE
@@ -1794,7 +1801,7 @@ Profiler::~Profiler()
 #endif
     tracy_free( m_safeSendBuffer );
 
-    tracy_free( m_lz4Buf );
+    tracy_free( m_packetBuf );
     tracy_free( m_buffer );
     LZ4_freeStream( (LZ4_stream_t*)m_stream );
 
@@ -3551,9 +3558,14 @@ void Profiler::SafeCopyEpilog( char* buf )
 
 bool Profiler::SendData( const char* data, size_t len )
 {
-    const lz4sz_t lz4sz = LZ4_compress_fast_continue( (LZ4_stream_t*)m_stream, data, m_lz4Buf + sizeof( lz4sz_t ), (int)len, LZ4Size, 1 );
-    memcpy( m_lz4Buf, &lz4sz, sizeof( lz4sz ) );
-    return m_sock->Send( m_lz4Buf, lz4sz + sizeof( lz4sz_t ) ) != -1;
+    const auto lz4Buf = m_packetBuf + TransportHeaderSize;
+    const lz4sz_t lz4sz = LZ4_compress_fast_continue( (LZ4_stream_t*)m_stream, data, lz4Buf + sizeof( lz4sz_t ), (int)len, LZ4Size, 1 );
+    memcpy( lz4Buf, &lz4sz, sizeof( lz4sz ) );
+#ifdef TRACY_WEBSOCKET_SUPPORT
+    return m_sock->SendFramed( m_packetBuf, lz4sz + sizeof( lz4sz_t ) ) != -1;
+#else
+    return m_sock->Send( m_packetBuf, lz4sz + sizeof( lz4sz_t ) ) != -1;
+#endif
 }
 
 void Profiler::SendString( uint64_t str, const char* ptr, size_t len, QueueType type )

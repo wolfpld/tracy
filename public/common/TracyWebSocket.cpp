@@ -709,6 +709,18 @@ int Socket::WsSend( const void* buf, int len )
     return SendUnframed( buf, len );
 }
 
+int Socket::SendFramed( void* buf, int len )
+{
+    if( m_wsState == WsDetect ) return -1;
+    auto data = (char*)buf + WebSocketMaxHeaderSize;
+    if( m_wsState != WsActive ) return SendUnframed( data, len );
+    uint8_t hdr[WebSocketMaxHeaderSize];
+    const auto hl = WsMakeHeader( hdr, len );
+    auto start = data - hl;
+    memcpy( start, hdr, hl );
+    return SendUnframed( start, hl + len ) == -1 ? -1 : len;
+}
+
 }
 
 #endif

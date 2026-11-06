@@ -24,12 +24,49 @@ static float s_prevScale = -1;
 static int s_width, s_height;
 static uint64_t s_time;
 static const char* s_prevCursor = nullptr;
+// Clipboard
+//
+// Browsers only give out the clipboard text in the paste event, but Dear ImGui wants it synchronously, in the middle
+// of a frame. The text is cached when the event fires (tracy_paste_clipboard) and GetClipboard returns the cache.
+// navigator.clipboard.readText() is not used, as it is asynchronous and makes browsers ask for permission.
+//
+// When pasting with the shortcut, the key event goes to Dear ImGui as usual and it pastes the cached text. The event
+// must not be default-prevented, or the browser won't send the paste event. Pastes without the shortcut, e.g. from
+// the menu of the browser, are turned into one so that the text is filtered the same way.
+//
+// Limitations:
+// - Only the text of the last paste event is available, so the clipboard can't be read on demand, e.g. from a button.
+//   navigator.clipboard.readText() would allow it, but it is harder to support and asks the user for confirmation.
+// - macOS Cmd shortcuts are not handled. That needs io.ConfigMacOSXBehaviors, and a workaround for the browser not
+//   sending key up events while Cmd is held.
+//
+// Same approach as:
+// - https://github.com/pongasoft/emscripten-glfw/blob/master/docs/Usage.md#clipboard-support
+// - https://github.com/Armchair-Software/emscripten-browser-clipboard
 static std::string s_clipboard;
+
+// True from the paste shortcut until its paste event. Dear ImGui does the pasting then.
+// It is not cleared by the key up, which the browser doesn't always send.
+static bool s_pasteShortcut = false;
 
 extern "C" void tracy_paste_clipboard( const char* text )
 {
     s_clipboard = text;
-    ImGui::GetIO().AddInputCharactersUTF8( text );
+    // If the paste didn't come from the shortcut, fake it so that Dear ImGui does the pasting.
+    // It only accepts exactly Ctrl+V, so release the other modifiers. The next key event sets them again.
+    if( !s_pasteShortcut )
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        io.AddKeyEvent( ImGuiMod_Shift, false );
+        io.AddKeyEvent( ImGuiMod_Alt, false );
+        io.AddKeyEvent( ImGuiMod_Super, false );
+        io.AddKeyEvent( ImGuiMod_Ctrl, true );
+        io.AddKeyEvent( ImGuiKey_V, true );
+        io.AddKeyEvent( ImGuiKey_V, false );
+        io.AddKeyEvent( ImGuiMod_Ctrl, false );
+    }
+    s_pasteShortcut = false;
+    tracy::s_wasActive = true;
 }
 
 static void SetClipboard( ImGuiContext*, const char* text )
@@ -162,6 +199,18 @@ static ImGuiKey TranslateKeyCode( const char* code )
     return ImGuiKey_None;
 }
 
+// Ctrl+V, Cmd+V and Shift+Insert.
+static bool IsPasteShortcut( const EmscriptenKeyboardEvent* e, ImGuiKey key )
+{
+    return ( ( e->ctrlKey || e->metaKey ) && key == ImGuiKey_V ) || ( e->shiftKey && !e->ctrlKey && key == ImGuiKey_Insert );
+}
+
+// Dear ImGui only pastes on exactly Ctrl+V or Shift+Insert.
+static bool ImGuiPastes( const EmscriptenKeyboardEvent* e, ImGuiKey key )
+{
+    return !e->altKey && ( key == ImGuiKey_Insert || !e->shiftKey );
+}
+
 static void UpdateKeyModifiers( const EmscriptenKeyboardEvent* e )
 {
     ImGuiIO& io = ImGui::GetIO();
@@ -256,6 +305,13 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
         const auto code = TranslateKeyCode( e->code );
         if( code == ImGuiKey_None ) return EM_FALSE;
         ImGui::GetIO().AddKeyEvent( code, true );
+        // Let the browser handle the shortcut, or it won't send the paste event.
+        if( IsPasteShortcut( e, code ) )
+        {
+            // If it doesn't, let the paste event fake it.
+            s_pasteShortcut = ImGuiPastes( e, code );
+            return EM_FALSE;
+        }
         if( e->key[0] && !e->key[1] && !e->ctrlKey && !e->metaKey ) ImGui::GetIO().AddInputCharacter( *e->key );
         return EM_TRUE;
     } );
@@ -269,7 +325,7 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
     EM_ASM( {
         document.addEventListener( 'paste', function( e ) {
             var text = ( e.clipboardData || window.clipboardData ).getData( 'text' );
-            if( text ) ccall( 'tracy_paste_clipboard', 'void', ['string'], [text] );
+            ccall( 'tracy_paste_clipboard', 'void', ['string'], [text] );
         } );
     } );
 

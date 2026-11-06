@@ -45,7 +45,8 @@ static const char* s_prevCursor = nullptr;
 // - https://github.com/Armchair-Software/emscripten-browser-clipboard
 static std::string s_clipboard;
 
-// True while the paste shortcut is held. Dear ImGui does the pasting then.
+// True from the paste shortcut until its paste event. Dear ImGui does the pasting then.
+// It is not cleared by the key up, which the browser doesn't always send.
 static bool s_pasteShortcut = false;
 
 extern "C" void tracy_paste_clipboard( const char* text )
@@ -60,6 +61,7 @@ extern "C" void tracy_paste_clipboard( const char* text )
         io.AddKeyEvent( ImGuiKey_V, false );
         io.AddKeyEvent( ImGuiMod_Ctrl, false );
     }
+    s_pasteShortcut = false;
     tracy::s_wasActive = true;
 }
 
@@ -304,7 +306,6 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
     } );
     emscripten_set_keyup_callback( EMSCRIPTEN_EVENT_TARGET_WINDOW, nullptr, EM_TRUE, [] ( int, const EmscriptenKeyboardEvent* e, void* ) -> EM_BOOL {
         UpdateKeyModifiers( e );
-        s_pasteShortcut = false;
         const auto code = TranslateKeyCode( e->code );
         if( code == ImGuiKey_None ) return EM_FALSE;
         ImGui::GetIO().AddKeyEvent( code, false );

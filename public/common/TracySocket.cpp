@@ -266,6 +266,11 @@ int Socket::Send( const void* _buf, int len )
 
 int Socket::GetSendBufSize()
 {
+#ifdef __EMSCRIPTEN__
+    // getsockopt( SO_SNDBUF ) is not implemented by Emscripten's socket layer.
+    // The browser queues what is sent, so return a size that doesn't limit TracyWorker.
+    return 256 * 1024;
+#else
     const auto sock = m_sock.load( std::memory_order_relaxed );
     int bufSize;
 #if defined _WIN32
@@ -276,6 +281,7 @@ int Socket::GetSendBufSize()
     getsockopt( sock, SOL_SOCKET, SO_SNDBUF, &bufSize, &sz );
 #endif
     return bufSize;
+#endif
 }
 
 int Socket::RecvBuffered( void* buf, int len, int timeout )

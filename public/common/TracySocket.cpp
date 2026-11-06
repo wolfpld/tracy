@@ -248,7 +248,12 @@ void Socket::Close()
     m_sock.store( -1, std::memory_order_relaxed );
 }
 
-int Socket::Send( const void* _buf, int len )
+int Socket::Send( const void* buf, int len )
+{
+    return SendUnframed( buf, len );
+}
+
+int Socket::SendUnframed( const void* _buf, int len )
 {
     const auto sock = m_sock.load( std::memory_order_relaxed );
     auto buf = (const char*)_buf;
@@ -314,7 +319,12 @@ int Socket::RecvBuffered( void* buf, int len, int timeout )
     return sz;
 }
 
-int Socket::Recv( void* _buf, int len, int timeout )
+int Socket::Recv( void* buf, int len, int timeout )
+{
+    return RecvUnframed( buf, len, timeout );
+}
+
+int Socket::RecvUnframed( void* _buf, int len, int timeout )
 {
     const auto sock = m_sock.load( std::memory_order_relaxed );
     auto buf = (char*)_buf;
@@ -335,13 +345,12 @@ int Socket::Recv( void* _buf, int len, int timeout )
 
 int Socket::ReadUpTo( void* _buf, int len )
 {
-    const auto sock = m_sock.load( std::memory_order_relaxed );
     auto buf = (char*)_buf;
 
     int rd = 0;
     while( len > 0 )
     {
-        const auto res = recv( sock, buf, len, 0 );
+        const auto res = Recv( buf, len, -1 );
         if( res == 0 ) break;
         if( res == -1 ) return -1;
         len -= res;

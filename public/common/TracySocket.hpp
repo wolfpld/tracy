@@ -75,6 +75,9 @@ public:
 private:
     int RecvBuffered( void* buf, int len, int timeout );
     int Recv( void* buf, int len, int timeout );
+    // RecvUnframed and SendUnframed use the socket directly, with no WebSocket framing. The other functions (ReadRaw included) go through Recv and Send.
+    int RecvUnframed( void* buf, int len, int timeout );
+    int SendUnframed( const void* buf, int len );
 
     bool ReadImpl( char*& buf, int& len, int timeout );
 

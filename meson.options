@@ -6,6 +6,7 @@ option('no_callstack', type : 'boolean', value : false, description : 'Disable a
 option('no_callstack_inlines', type : 'boolean', value : false, description : 'Disables the inline functions in callstacks')
 option('only_localhost', type : 'boolean', value : false, description : 'Only listen on the localhost interface')
 option('websocket_support', type : 'boolean', value : false, description : 'Accept WebSocket connections (web viewer) on the data port')
+option('websocket_origins', type : 'string', value : '', description : 'Comma separated list of web page origins allowed to connect over WebSocket, besides localhost (also settable through the environment variable of the same name)')
 option('no_broadcast', type : 'boolean', value : false, description : 'Disable client discovery by broadcast to local network')
 option('only_ipv4', type : 'boolean', value : false, description : 'Tracy will only accept connections on IPv4 addresses (disable IPv6)')
 option('no_code_transfer', type : 'boolean', value : false, description : 'Disable collection of source code')

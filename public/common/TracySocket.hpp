@@ -79,6 +79,10 @@ private:
     int RecvUnframed( void* buf, int len, int timeout );
     int SendUnframed( const void* buf, int len );
 
+#ifdef TRACY_WEBSOCKET_SUPPORT
+    bool WsHandshake( int timeout );
+#endif
+
     bool ReadImpl( char*& buf, int& len, int timeout );
 
     char* m_buf;

@@ -41,6 +41,10 @@ if get_option('websocket_support')
   tracy_common_args += ['-DTRACY_WEBSOCKET_SUPPORT']
 endif
 
+if get_option('websocket_origins') != ''
+  tracy_common_args += ['-DTRACY_WEBSOCKET_ORIGINS="'+get_option('websocket_origins')+'"']
+endif
+
 if get_option('no_broadcast')
   tracy_common_args += ['-DTRACY_NO_BROADCAST']
 endif

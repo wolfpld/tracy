@@ -37,6 +37,10 @@ if get_option('only_localhost')
   tracy_common_args += ['-DTRACY_ONLY_LOCALHOST']
 endif
 
+if get_option('websocket_support')
+  tracy_common_args += ['-DTRACY_WEBSOCKET_SUPPORT']
+endif
+
 if get_option('no_broadcast')
   tracy_common_args += ['-DTRACY_NO_BROADCAST']
 endif

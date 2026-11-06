@@ -115,6 +115,7 @@ set_option_value_as_string(TRACY_PLATFORM_HEADER "Path to a header providing TRA
 set_option(TRACY_NO_CALLSTACK "Disable all callstack related functionality" OFF TracyClient)
 set_option(TRACY_NO_CALLSTACK_INLINES "Disables the inline functions in callstacks" OFF TracyClient)
 set_option(TRACY_ONLY_LOCALHOST "Only listen on the localhost interface" OFF TracyClient)
+set_option(TRACY_WEBSOCKET_SUPPORT "Accept WebSocket connections (web viewer) on the data port" OFF TracyClient)
 set_option(TRACY_NO_BROADCAST "Disable client discovery by broadcast to local network" OFF TracyClient)
 set_option(TRACY_ONLY_IPV4 "Tracy will only accept connections on IPv4 addresses (disable IPv6)" OFF TracyClient)
 set_option(TRACY_NO_CODE_TRANSFER "Disable collection of source code" OFF TracyClient)

@@ -52,30 +52,34 @@ jobs:
         meson compile -C build-meson
     - name: Test application
       uses: ./.github/actions/test-tracy
+
+    # --- 修改以下 CMake 构建步骤，加入 /arch:SSE2 兼容老 CPU ---
     - name: Build profiler
       run: |
-        cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
+        cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }} -DCMAKE_CXX_FLAGS="/arch:SSE2" -DCMAKE_C_FLAGS="/arch:SSE2"
         cmake --build profiler/build --parallel 2 --config Release
     - name: Build update
       run: |
-        cmake -B update/build -S update -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
+        cmake -B update/build -S update -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }} -DCMAKE_CXX_FLAGS="/arch:SSE2" -DCMAKE_C_FLAGS="/arch:SSE2"
         cmake --build update/build --parallel --config Release
     - name: Build capture
       run: |
-        cmake -B capture/build -S capture -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
+        cmake -B capture/build -S capture -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }} -DCMAKE_CXX_FLAGS="/arch:SSE2" -DCMAKE_C_FLAGS="/arch:SSE2"
         cmake --build capture/build --parallel --config Release
     - name: Build csvexport
       run: |
-        cmake -B csvexport/build -S csvexport -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
+        cmake -B csvexport/build -S csvexport -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }} -DCMAKE_CXX_FLAGS="/arch:SSE2" -DCMAKE_C_FLAGS="/arch:SSE2"
         cmake --build csvexport/build --parallel --config Release
     - name: Build import
       run: |
-        cmake -B import/build -S import -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
+        cmake -B import/build -S import -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }} -DCMAKE_CXX_FLAGS="/arch:SSE2" -DCMAKE_C_FLAGS="/arch:SSE2"
         cmake --build import/build --parallel --config Release
     - name: Build merge
       run: |
-        cmake -B merge/build -S merge -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
+        cmake -B merge/build -S merge -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }} -DCMAKE_CXX_FLAGS="/arch:SSE2" -DCMAKE_C_FLAGS="/arch:SSE2"
         cmake --build merge/build --parallel --config Release
+    # -------------------------------------------------------------
+
     - name: Package artifacts
       run: |
         mkdir bin

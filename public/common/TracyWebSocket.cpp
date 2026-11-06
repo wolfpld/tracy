@@ -1,5 +1,7 @@
 #ifdef TRACY_WEBSOCKET_SUPPORT
 
+#include <chrono>
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -15,10 +17,6 @@
 #  endif
 #  include <winsock2.h>
 #  include <ws2tcpip.h>
-#  ifdef _MSC_VER
-#    pragma warning(disable:4244)
-#    pragma warning(disable:4267)
-#  endif
 #  define poll WSAPoll
 #else
 #  include <arpa/inet.h>
@@ -197,6 +195,12 @@ static bool WebSocketOriginAllowed( const char* origin, size_t len, const char* 
     return false;
 }
 
+// Fixed GUID from RFC 6455 section 1.3. It is appended to the client key to build the accept key.
+constexpr char WsGuid[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+constexpr size_t WsGuidLen = sizeof( WsGuid ) - 1;
+// Sec-WebSocket-Key is 16 random bytes, base64 encoded.
+constexpr size_t WsKeyLen = 24;
+
 // SHA-1, see RFC 3174.
 constexpr size_t WsSha1DigestSize = 20;
 constexpr size_t WsSha1BlockSize = 64;
@@ -338,22 +342,108 @@ static bool WsHasToken( const char* val, size_t len, const char* token )
     return false;
 }
 
+enum WsOpcode : uint8_t
+{
+    WsOpContinuation = 0,
+    WsOpBinary = 2,
+    WsOpClose = 8,
+    WsOpPing = 9,
+    WsOpPong = 10
+};
+
+constexpr uint8_t WsFin = 0x80;
+constexpr uint8_t WsMaskBit = 0x80;
+constexpr uint8_t WsOpcodeMask = 0x0f;
+// The RSV1-3 bits, used by extensions.
+constexpr uint8_t WsRsvMask = 0x70;
+constexpr uint8_t WsLenMask = 0x7f;
+// WsLen16 and WsLen64 say that the length follows in 2 or 8 bytes.
+constexpr uint8_t WsLen16 = 126;
+constexpr uint8_t WsLen64 = 127;
+constexpr int WsMaxLen16 = 65535;
+// Payloads up to this size are sent with their header in one buffer, on the stack.
+constexpr int WsSendCopyMax = 1024;
+// Frames without payload data read by one call to WsHasData or WsRecv.
+constexpr int WsMaxControlPerPoll = 16;
+// A Close frame starts with a 16-bit status code.
+constexpr int WsCloseCodeSize = 2;
+constexpr uint16_t WsCloseProtocolError = 1002;
+
+static int WsMakeHeader( uint8_t* h, uint64_t len )
+{
+    h[0] = WsFin | WsOpBinary;
+    if( len <= WsMaxLen7 )
+    {
+        h[1] = uint8_t( len );
+        return WsBaseHdrSize;
+    }
+    if( len <= WsMaxLen16 )
+    {
+        h[1] = WsLen16;
+        h[2] = uint8_t( len >> 8 );
+        h[3] = uint8_t( len );
+        return WsBaseHdrSize + WsLen16Size;
+    }
+    h[1] = WsLen64;
+    for( int i=0; i<WsLen64Size; i++ ) h[WsBaseHdrSize+i] = uint8_t( len >> ( 56 - 8 * i ) );
+    return WsBaseHdrSize + WsLen64Size;
+}
+
+int Socket::WsDetectProtocol( int timeout )
+{
+    const auto sock = m_sock.load( std::memory_order_relaxed );
+    struct pollfd fd;
+    fd.fd = (socket_t)sock;
+    fd.events = POLLIN;
+    if( poll( &fd, 1, timeout ) <= 0 ) return -1;
+
+    // One byte tells the two apart: the Tracy handshake starts with 'T', an HTTP request with 'G'.
+    char c;
+    const auto n = recv( sock, &c, 1, MSG_PEEK );
+    if( n == 0 ) return 0;
+    if( n < 0 ) return -1;
+    if( c != 'G' )
+    {
+        m_wsState = WsNone;
+        return 1;
+    }
+    if( !WsHandshake( timeout ) ) return 0;
+    m_wsState = WsActive;
+    return 1;
+}
+
 bool Socket::WsHandshake( int timeout )
 {
     const auto sock = m_sock.load( std::memory_order_relaxed );
-    char req[8192];
+    // A browser handshake is a few hundred bytes to 2 KB. 16 KB is the cap for the stack buffer, a bigger request gets a 431.
+    char req[16384];
     size_t len = 0;
     size_t hdrEnd = 0;
-    for( int left=timeout; left>0 && !hdrEnd; left-=100 )
+    // A negative timeout waits forever.
+    const auto end = std::chrono::steady_clock::now() + std::chrono::milliseconds( timeout < 0 ? 0 : timeout );
+    while( !hdrEnd && len < sizeof( req ) )
     {
+        auto left = std::chrono::duration_cast<std::chrono::milliseconds>( end - std::chrono::steady_clock::now() ).count();
+        if( timeout < 0 ) left = -1;
+        else if( left < 0 ) left = 0;
         struct pollfd fd;
         fd.fd = (socket_t)sock;
         fd.events = POLLIN;
-        if( poll( &fd, 1, 100 ) <= 0 ) continue;
-        const auto r = recv( sock, req + len, sizeof( req ) - len, 0 );
+        const auto pr = poll( &fd, 1, (int)left );
+        if( pr == 0 ) break;
+        if( pr < 0 )
+        {
+#ifndef _WIN32
+            if( errno == EINTR && left != 0 ) continue;
+#endif
+            break;
+        }
+        // The client waits for the response before it sends frames, so only the request is read here.
+        const auto r = recv( sock, req + len, int( sizeof( req ) - len ), 0 );
         if( r <= 0 ) return false;
+        const auto prev = len;
         len += r;
-        for( size_t j=0; j+3<len; j++ )
+        for( size_t j = prev > 3 ? prev - 3 : 0; j+3<len; j++ )
         {
             if( memcmp( req + j, "\r\n\r\n", 4 ) == 0 )
             {
@@ -361,14 +451,15 @@ bool Socket::WsHandshake( int timeout )
                 break;
             }
         }
-        if( !hdrEnd && len == sizeof( req ) ) break;
     }
 
     static const char bad[] = "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
+    static const char tooLarge[] = "HTTP/1.1 431 Request Header Fields Too Large\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
     static const char forbidden[] = "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
     if( !hdrEnd )
     {
-        SendUnframed( bad, sizeof( bad ) - 1 );
+        if( len == sizeof( req ) ) SendUnframed( tooLarge, sizeof( tooLarge ) - 1 );
+        else SendUnframed( bad, sizeof( bad ) - 1 );
         return false;
     }
 
@@ -398,17 +489,17 @@ bool Socket::WsHandshake( int timeout )
         }
     }
 
-    if( !WsFindHeader( req, hdrEnd, "sec-websocket-key", val, valLen ) || valLen != 24 )
+    if( !WsFindHeader( req, hdrEnd, "sec-websocket-key", val, valLen ) || valLen != WsKeyLen )
     {
         SendUnframed( bad, sizeof( bad ) - 1 );
         return false;
     }
-    uint8_t keyGuid[60];
-    memcpy( keyGuid, val, 24 );
-    memcpy( keyGuid + 24, "258EAFA5-E914-47DA-95CA-C5AB0DC85B11", 36 );
-    uint8_t digest[20];
+    uint8_t keyGuid[WsKeyLen + WsGuidLen];
+    memcpy( keyGuid, val, WsKeyLen );
+    memcpy( keyGuid + WsKeyLen, WsGuid, WsGuidLen );
+    uint8_t digest[WsSha1DigestSize];
     WsSha1( keyGuid, sizeof( keyGuid ), digest );
-    char accept[32];
+    char accept[WsAcceptSize];
     WsBase64Sha1( digest, accept );
 
     bool binary = false;
@@ -419,6 +510,203 @@ bool Socket::WsHandshake( int timeout )
         "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: %s\r\n%s\r\n",
         accept, binary ? "Sec-WebSocket-Protocol: binary\r\n" : "" );
     return SendUnframed( resp, rl ) != -1;
+}
+
+int Socket::WsRecv( void* _buf, int len, int timeout )
+{
+    auto& f = m_wsFrame;
+    auto buf = (uint8_t*)_buf;
+    for( int steps=0; ; steps++ )
+    {
+        if( f.Pending() )
+        {
+            const int n = f.remain < uint64_t( len ) ? int( f.remain ) : len;
+            const auto r = RecvUnframed( buf, n, timeout );
+            if( r <= 0 ) return r;
+            for( int i=0; i<r; i++ ) buf[i] ^= f.mask[( f.maskOff + i ) & 3];
+            f.maskOff = uint8_t( f.maskOff + r );
+            f.remain -= r;
+            if( f.remain == 0 ) f.hdrDone = false;
+            return r;
+        }
+        // A peer sending only control frames must not keep the caller from checking if it should exit.
+        // The read gives up even if its timeout is not over, which is fine for such a peer. Without a timeout it can't be interrupted anyway.
+        if( steps == WsMaxControlPerPoll && timeout >= 0 ) return -1;
+        const auto r = WsFrameStep( timeout );
+        if( r <= 0 ) return r;
+    }
+}
+
+// Reads a frame header, and the whole frame if it is a control frame.
+// Returns 1 on progress, 0 when the connection is closed or broken, -1 when no data is available yet.
+int Socket::WsFrameStep( int timeout )
+{
+    auto& f = m_wsFrame;
+    if( f.closed ) return 0;
+    if( !f.hdrDone )
+    {
+        for(;;)
+        {
+            // A masked frame has at least this much header. A shorter read is fine, the size is worked out again below.
+            int need = WsBaseHdrSize + WsMaskSize;
+            if( f.hdrLen >= WsBaseHdrSize )
+            {
+                const auto l7 = f.hdr[1] & WsLenMask;
+                need = WsBaseHdrSize + ( l7 == WsLen16 ? WsLen16Size : l7 == WsLen64 ? WsLen64Size : 0 ) + ( ( f.hdr[1] & WsMaskBit ) ? WsMaskSize : 0 );
+            }
+            if( f.hdrLen >= need ) break;
+            const auto r = RecvUnframed( f.hdr + f.hdrLen, need - f.hdrLen, timeout );
+            if( r <= 0 ) return r;
+            f.hdrLen = uint8_t( f.hdrLen + r );
+        }
+
+        // Client frames must be masked.
+        if( !( f.hdr[1] & WsMaskBit ) )
+        {
+            WsClose( WsCloseProtocolError );
+            return 0;
+        }
+        f.opcode = f.hdr[0] & WsOpcodeMask;
+        const auto l7 = f.hdr[1] & WsLenMask;
+        uint64_t plen;
+        int off = WsBaseHdrSize;
+        if( l7 == WsLen16 )
+        {
+            plen = ( uint64_t( f.hdr[2] ) << 8 ) | f.hdr[3];
+            off = WsBaseHdrSize + WsLen16Size;
+        }
+        else if( l7 == WsLen64 )
+        {
+            plen = 0;
+            for( int i=0; i<WsLen64Size; i++ ) plen = ( plen << 8 ) | f.hdr[WsBaseHdrSize+i];
+            off = WsBaseHdrSize + WsLen64Size;
+        }
+        else
+        {
+            plen = l7;
+        }
+        // No extension is negotiated. A length must use the fewest bytes, and a 64-bit one can't have its top bit set.
+        const bool badLen = ( l7 == WsLen16 && plen <= WsMaxLen7 ) || ( l7 == WsLen64 && ( plen <= uint64_t( WsMaxLen16 ) || ( plen >> 63 ) != 0 ) );
+        if( ( f.hdr[0] & WsRsvMask ) || badLen )
+        {
+            WsClose( WsCloseProtocolError );
+            return 0;
+        }
+        memcpy( f.mask, f.hdr + off, WsMaskSize );
+        f.maskOff = 0;
+        f.ctlLen = 0;
+        f.remain = plen;
+        const bool fin = ( f.hdr[0] & WsFin ) != 0;
+        f.hdrLen = 0;
+
+        if( f.opcode >= 8 )
+        {
+            if( plen > WsMaxControlLen || !fin )
+            {
+                WsClose( WsCloseProtocolError );
+                return 0;
+            }
+        }
+        else if( f.opcode == WsOpBinary ? f.fragmented : ( f.opcode != WsOpContinuation || !f.fragmented ) )
+        {
+            // Text and reserved opcodes, and a data frame that doesn't fit in the message sequence.
+
+            WsClose( WsCloseProtocolError );
+            return 0;
+        }
+        f.hdrDone = true;
+        if( f.opcode < 8 )
+        {
+            f.fragmented = !fin;
+            if( plen == 0 ) f.hdrDone = false;
+            return 1;
+        }
+    }
+
+    // Control frame payload.
+    while( f.remain > 0 )
+    {
+        const auto r = RecvUnframed( f.ctl + f.ctlLen, int( f.remain ), timeout );
+        if( r <= 0 ) return r;
+        for( int i=0; i<r; i++ ) f.ctl[f.ctlLen+i] ^= f.mask[( f.maskOff + i ) & 3];
+        f.maskOff = uint8_t( f.maskOff + r );
+        f.ctlLen = uint8_t( f.ctlLen + r );
+        f.remain -= r;
+    }
+    f.hdrDone = false;
+    switch( f.opcode )
+    {
+    case WsOpClose:
+        WsSendControl( WsOpClose, f.ctl, f.ctlLen >= WsCloseCodeSize ? WsCloseCodeSize : 0 );
+        f.closed = true;
+        return 0;
+    case WsOpPing:
+        WsSendControl( WsOpPong, f.ctl, f.ctlLen );
+        return 1;
+    case WsOpPong:
+        return 1;
+    default:
+        WsClose( WsCloseProtocolError );
+        return 0;
+    }
+}
+
+bool Socket::WsHasData()
+{
+    if( m_wsFrame.closed ) return true;
+
+    // A broken connection counts as having data, as with a plain socket, so that the next read reports it.
+    struct pollfd fd;
+    fd.fd = (socket_t)m_sock.load( std::memory_order_relaxed );
+    fd.events = POLLIN;
+    const auto pr = poll( &fd, 1, 0 );
+    if( pr > 0 && ( fd.revents & ( POLLERR | POLLHUP ) ) ) return true;
+    if( pr <= 0 ) return m_wsFrame.Pending();
+
+    // Consume control frames, report only when payload data is pending (or the connection is gone).
+    // The number of frames is limited, or a peer sending nothing else would keep the caller from checking if it
+    // should exit. The rest is read on the next call.
+    for( int i=0; i<WsMaxControlPerPoll; i++ )
+    {
+        if( m_wsFrame.Pending() ) return true;
+        const auto r = WsFrameStep( 0 );
+        if( r == 0 ) return true;
+        if( r < 0 ) return false;
+    }
+    return m_wsFrame.Pending();
+}
+
+// Called from the receive path. Only the profiler thread uses the socket, so this can't land between the parts of a send.
+void Socket::WsSendControl( uint8_t opcode, const uint8_t* data, int len )
+{
+    uint8_t frame[WsBaseHdrSize+WsMaxControlLen];
+    frame[0] = WsFin | opcode;
+    frame[1] = uint8_t( len );
+    memcpy( frame + WsBaseHdrSize, data, len );
+    SendUnframed( frame, WsBaseHdrSize + len );
+}
+
+// Sends a Close frame with the status code. Every later read reports that the connection is closed.
+void Socket::WsClose( uint16_t code )
+{
+    const uint8_t payload[WsCloseCodeSize] = { uint8_t( code >> 8 ), uint8_t( code ) };
+    WsSendControl( WsOpClose, payload, WsCloseCodeSize );
+    m_wsFrame.closed = true;
+}
+
+int Socket::WsSend( const void* buf, int len )
+{
+    uint8_t hdr[WebSocketMaxHeaderSize];
+    const auto hl = WsMakeHeader( hdr, len );
+    if( len <= WsSendCopyMax )
+    {
+        uint8_t tmp[WebSocketMaxHeaderSize + WsSendCopyMax];
+        memcpy( tmp, hdr, hl );
+        memcpy( tmp + hl, buf, len );
+        return SendUnframed( tmp, hl + len ) == -1 ? -1 : len;
+    }
+    if( SendUnframed( hdr, hl ) == -1 ) return -1;
+    return SendUnframed( buf, len );
 }
 
 }

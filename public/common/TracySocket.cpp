@@ -102,6 +102,9 @@ Socket::Socket( int sock )
     , m_sock( sock )
     , m_bufLeft( 0 )
     , m_ptr( nullptr )
+#ifdef TRACY_WEBSOCKET_SUPPORT
+    , m_wsState( WsDetect )
+#endif
 {
 }
 
@@ -240,6 +243,10 @@ void Socket::Close()
 {
     const auto sock = m_sock.load( std::memory_order_relaxed );
     TRACY_ASSERT( sock != -1 );
+#ifdef TRACY_WEBSOCKET_SUPPORT
+    // Without a Close frame the browser reports code 1006, and may drop the last message.
+    if( m_wsState == WsActive && !m_wsFrame.closed ) WsClose( 1000 );
+#endif
 #ifdef _WIN32
     closesocket( sock );
 #else
@@ -250,6 +257,10 @@ void Socket::Close()
 
 int Socket::Send( const void* buf, int len )
 {
+#ifdef TRACY_WEBSOCKET_SUPPORT
+    if( m_wsState == WsDetect ) return -1;
+    if( m_wsState == WsActive ) return WsSend( buf, len );
+#endif
     return SendUnframed( buf, len );
 }
 
@@ -321,6 +332,14 @@ int Socket::RecvBuffered( void* buf, int len, int timeout )
 
 int Socket::Recv( void* buf, int len, int timeout )
 {
+#ifdef TRACY_WEBSOCKET_SUPPORT
+    if( m_wsState == WsDetect )
+    {
+        const auto r = WsDetectProtocol( timeout );
+        if( r <= 0 ) return r;
+    }
+    if( m_wsState == WsActive ) return WsRecv( buf, len, timeout );
+#endif
     return RecvUnframed( buf, len, timeout );
 }
 
@@ -343,6 +362,7 @@ int Socket::RecvUnframed( void* _buf, int len, int timeout )
     }
 }
 
+// Waits until len bytes are read or the connection closes. There is no way to interrupt it, use the overload with an exit callback for that.
 int Socket::ReadUpTo( void* _buf, int len )
 {
     auto buf = (char*)_buf;
@@ -410,6 +430,11 @@ bool Socket::HasData()
 {
     const auto sock = m_sock.load( std::memory_order_relaxed );
     if( m_bufLeft > 0 ) return true;
+
+#ifdef TRACY_WEBSOCKET_SUPPORT
+    if( m_wsState == WsDetect ) return false;
+    if( m_wsState == WsActive ) return WsHasData();
+#endif
 
     struct pollfd fd;
     fd.fd = (socket_t)sock;

@@ -53,9 +53,13 @@ extern "C" void tracy_paste_clipboard( const char* text )
 {
     s_clipboard = text;
     // If the paste didn't come from the shortcut, fake it so that Dear ImGui does the pasting.
+    // It only accepts exactly Ctrl+V, so release the other modifiers. The next key event sets them again.
     if( !s_pasteShortcut )
     {
         ImGuiIO& io = ImGui::GetIO();
+        io.AddKeyEvent( ImGuiMod_Shift, false );
+        io.AddKeyEvent( ImGuiMod_Alt, false );
+        io.AddKeyEvent( ImGuiMod_Super, false );
         io.AddKeyEvent( ImGuiMod_Ctrl, true );
         io.AddKeyEvent( ImGuiKey_V, true );
         io.AddKeyEvent( ImGuiKey_V, false );
@@ -201,6 +205,12 @@ static bool IsPasteShortcut( const EmscriptenKeyboardEvent* e, ImGuiKey key )
     return ( ( e->ctrlKey || e->metaKey ) && key == ImGuiKey_V ) || ( e->shiftKey && !e->ctrlKey && key == ImGuiKey_Insert );
 }
 
+// Dear ImGui only pastes on exactly Ctrl+V or Shift+Insert.
+static bool ImGuiPastes( const EmscriptenKeyboardEvent* e, ImGuiKey key )
+{
+    return !e->altKey && ( key == ImGuiKey_Insert || !e->shiftKey );
+}
+
 static void UpdateKeyModifiers( const EmscriptenKeyboardEvent* e )
 {
     ImGuiIO& io = ImGui::GetIO();
@@ -298,7 +308,8 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
         // Let the browser handle the shortcut, or it won't send the paste event.
         if( IsPasteShortcut( e, code ) )
         {
-            s_pasteShortcut = true;
+            // If it doesn't, let the paste event fake it.
+            s_pasteShortcut = ImGuiPastes( e, code );
             return EM_FALSE;
         }
         if( e->key[0] && !e->key[1] && !e->ctrlKey && !e->metaKey ) ImGui::GetIO().AddInputCharacter( *e->key );

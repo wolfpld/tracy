@@ -433,7 +433,12 @@ bool View::Draw()
         ImGui::PushFont( g_fonts.normal, FontBig );
         TextCentered( ICON_FA_HANDSHAKE );
         ImGui::PopFont();
+#ifdef __EMSCRIPTEN__
+        // The browser doesn't tell why a WebSocket connection failed.
+        ImGui::TextUnformatted( "Could not connect, or the client disconnected during the initial handshake.\nIs the client running, and built with TRACY_WEBSOCKET_SUPPORT?" );
+#else
         ImGui::TextUnformatted( "The client you are trying to connect to has disconnected during the initial\nconnection handshake. Please check your network configuration." );
+#endif
         ImGui::Separator();
         if( ImGui::Button( "Will do" ) )
         {

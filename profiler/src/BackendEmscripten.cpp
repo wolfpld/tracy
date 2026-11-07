@@ -199,6 +199,43 @@ static ImGuiKey TranslateKeyCode( const char* code )
     return ImGuiKey_None;
 }
 
+// What each physical key sent to Dear ImGui when it was pressed.
+// The character of a key can change before it is released (AltGr let go first), so the release can't work it out again.
+// Two things are left as they are, because the fixes cost more than the bugs:
+// - Two keys can send the same ImGuiKey (the key labelled A, and AltGr plus the key at QWERTY's A). Letting go of one
+//   releases it for both. Counting the presses would fix it, with a second table.
+// - Nothing is cleared when the window loses focus. The next press of a key overwrites its old entry anyway.
+static ImGuiKey s_sentKey[ImGuiKey_NamedKey_COUNT];
+
+// Letters follow the layout, so Ctrl+Z is on the key labelled Z. Everything else uses the physical key,
+// including letters that aren't A-Z.
+static ImGuiKey TranslateKeyDown( const EmscriptenKeyboardEvent* e )
+{
+    const ImGuiKey physical = TranslateKeyCode( e->code );
+    if( physical == ImGuiKey_None ) return ImGuiKey_None;
+    ImGuiKey& sent = s_sentKey[physical - ImGuiKey_NamedKey_BEGIN];
+    if( !e->repeat || sent == ImGuiKey_None )
+    {
+        const char c = e->key[0];
+        const bool letter = !e->key[1] && ( ( c >= 'a' && c <= 'z' ) || ( c >= 'A' && c <= 'Z' ) );
+        const ImGuiKey key = letter ? (ImGuiKey)( ImGuiKey_A + ( c & 0x1f ) - 1 ) : physical;
+        // The key up was missed, so release the old key now.
+        if( sent != ImGuiKey_None && sent != key ) ImGui::GetIO().AddKeyEvent( sent, false );
+        sent = key;
+    }
+    return sent;
+}
+
+static ImGuiKey TranslateKeyUp( const EmscriptenKeyboardEvent* e )
+{
+    const ImGuiKey physical = TranslateKeyCode( e->code );
+    if( physical == ImGuiKey_None ) return ImGuiKey_None;
+    ImGuiKey& sent = s_sentKey[physical - ImGuiKey_NamedKey_BEGIN];
+    const ImGuiKey key = sent != ImGuiKey_None ? sent : physical;
+    sent = ImGuiKey_None;
+    return key;
+}
+
 // Ctrl+V, Cmd+V and Shift+Insert.
 static bool IsPasteShortcut( const EmscriptenKeyboardEvent* e, ImGuiKey key )
 {
@@ -302,13 +339,13 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
     } );
     emscripten_set_keydown_callback( EMSCRIPTEN_EVENT_TARGET_WINDOW, nullptr, EM_TRUE, [] ( int, const EmscriptenKeyboardEvent* e, void* ) -> EM_BOOL {
         UpdateKeyModifiers( e );
-        const auto code = TranslateKeyCode( e->code );
+        const auto code = TranslateKeyDown( e );
         if( code == ImGuiKey_None ) return EM_FALSE;
         ImGui::GetIO().AddKeyEvent( code, true );
         // Let the browser handle the shortcut, or it won't send the paste event.
         if( IsPasteShortcut( e, code ) )
         {
-            // If it doesn't, let the paste event fake it.
+            // If Dear ImGui won't paste for this chord, the paste event fakes a Ctrl+V.
             s_pasteShortcut = ImGuiPastes( e, code );
             return EM_FALSE;
         }
@@ -317,7 +354,7 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
     } );
     emscripten_set_keyup_callback( EMSCRIPTEN_EVENT_TARGET_WINDOW, nullptr, EM_TRUE, [] ( int, const EmscriptenKeyboardEvent* e, void* ) -> EM_BOOL {
         UpdateKeyModifiers( e );
-        const auto code = TranslateKeyCode( e->code );
+        const auto code = TranslateKeyUp( e );
         if( code == ImGuiKey_None ) return EM_FALSE;
         ImGui::GetIO().AddKeyEvent( code, false );
         return EM_TRUE;

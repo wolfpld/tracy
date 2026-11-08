@@ -10,14 +10,6 @@
 namespace tracy
 {
 
-// Short list based on GetTypes() in TracySourceTokenizer.cpp
-constexpr const char* TypesList[] = {
-    "bool ", "char ", "double ", "float ", "int ", "long ", "short ",
-    "signed ", "unsigned ", "void ", "wchar_t ", "size_t ", "int8_t ",
-    "int16_t ", "int32_t ", "int64_t ", "intptr_t ", "uint8_t ", "uint16_t ",
-    "uint32_t ", "uint64_t ", "ptrdiff_t ", nullptr
-};
-
 static constexpr char OpSyms[] = "+-*/%^&|~!<>=[](){}\"";
 
 static bool IsOperatorBracket( const char* start, const char* ptr )
@@ -98,27 +90,42 @@ const char* ShortenZoneName( ShortenName type, const char* name, ImVec2& tsz, fl
     }
 
     ptr = buf;
-    for(;;)
+    auto params = end;
+    while( params > buf && params[-1] != '(' ) params--;
+    if( params > buf )
     {
-        auto match = TypesList;
-        while( *match )
+        auto sp = params;
+        for(;;)
         {
-            auto m = *match;
-            auto p = ptr;
-            while( *m )
+            while( sp > buf && sp[-1] != ' ' ) sp--;
+            if( sp == buf ) break;
+            sp--;
+            auto word = sp;
+            while( word > buf && word[-1] != ' ' ) word--;
+            bool operatorSpace = false;
+            for( auto o = word; o + 8 <= sp; o++ )
             {
-                if( *m != *p ) break;
-                m++;
-                p++;
+                if( ( o == word || o[-1] == ':' ) && memcmp( o, "operator", 8 ) == 0 )
+                {
+                    auto t = o + 8;
+                    while( t < sp && strchr( OpSyms, *t ) != nullptr ) t++;
+                    if( t == sp )
+                    {
+                        operatorSpace = true;
+                        break;
+                    }
+                }
             }
-            if( !*m )
+            if( !operatorSpace )
             {
-                ptr = p;
+                auto q = buf;
+                while( q + 9 <= sp && memcmp( q, "operator ", 9 ) != 0 ) q++;
+                if( q + 9 > sp ) ptr = sp + 1;
                 break;
             }
-            match++;
+            if( word == buf ) break;
+            sp = word;
         }
-        if( !*match ) break;
     }
 
     tsz = ImGui::CalcTextSize( ptr, end );

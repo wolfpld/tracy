@@ -4409,7 +4409,7 @@ Enabling the \emph{Inherit parent colors} option will cause zones that have a co
 \begin{itemize}
 \item \emph{Disabled} -- Shortening of zone names is not performed and names are always displayed in full (e.g.\ \texttt{bool ns::container<float>::add(const float\&)}).
 \item \emph{Minimal length} -- Always reduces zone name to minimal length, even if there is space available for a longer form (e.g.\ \texttt{add()}).
-\item \emph{Only normalize} -- Only performs normalization of the zone name\footnote{The normalization process removes the function \texttt{const} qualifier, some common return type declarations and all function parameters and template arguments.}, but does not remove namespaces (e.g.\ \texttt{ns::container<>::add()}).
+\item \emph{Only normalize} -- Only performs normalization of the zone name\footnote{The normalization process removes the function \texttt{const} qualifier, the return type declaration and all function parameters and template arguments.}, but does not remove namespaces (e.g.\ \texttt{ns::container<>::add()}).
 \item \emph{As needed} -- Name shortening steps will be performed only if there is no space to display a complete zone name, and only until the name fits available space, or shortening is no longer possible (e.g.\ \texttt{container<>::add()}).
 \item \emph{As needed + normalize} -- Same as above, but zone name normalization will always be performed, even if the entire zone name fits in the space available.
 \end{itemize}

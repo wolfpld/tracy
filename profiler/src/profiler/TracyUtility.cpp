@@ -18,6 +18,18 @@ constexpr const char* TypesList[] = {
     "uint32_t ", "uint64_t ", "ptrdiff_t ", nullptr
 };
 
+static constexpr char OpSyms[] = "+-*/%^&|~!<>=[](){}\"";
+
+static bool IsOperatorBracket( const char* start, const char* ptr )
+{
+    auto anchor = ptr;
+    while( anchor > start && strchr( OpSyms, anchor[-1] ) != nullptr ) anchor--;
+    if( ptr - anchor >= 2 ) return false;
+    if( ptr - anchor == 1 && ptr[-1] != '<' ) return false;
+    if( anchor - start < 8 || memcmp( anchor - 8, "operator", 8 ) != 0 ) return false;
+    return anchor == start + 8 || anchor[-9] == ' ' || anchor[-9] == ':';
+}
+
 const char* ShortenZoneName( ShortenName type, const char* name, ImVec2& tsz, float zsz )
 {
     assert( type != ShortenName::Never );
@@ -38,6 +50,11 @@ const char* ShortenZoneName( ShortenName type, const char* name, ImVec2& tsz, fl
         memcpy( dst, start, ptr - start + 1 );
         dst += ptr - start + 1;
         if( ptr == end ) break;
+        if( IsOperatorBracket( name, ptr ) )
+        {
+            ptr++;
+            continue;
+        }
         cnt++;
         ptr++;
         while( cnt > 0 )
@@ -112,6 +129,7 @@ const char* ShortenZoneName( ShortenName type, const char* name, ImVec2& tsz, fl
         auto p = ptr;
         while( p < end && *p != ':' ) p++;
         if( p == end ) return ptr;
+        if( p - ptr >= 9 && memcmp( ptr, "operator ", 9 ) == 0 ) return ptr;
         p++;
         while( p < end && *p == ':' ) p++;
         ptr = p;

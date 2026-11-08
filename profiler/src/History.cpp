@@ -118,7 +118,7 @@ void History::EraseConnection( size_t idx )
 void History::RecordTrace( const char* path )
 {
     std::error_code ec;
-    auto abs = std::filesystem::absolute( std::filesystem::path( path ), ec ).lexically_normal().string();
+    auto abs = std::filesystem::weakly_canonical( std::filesystem::path( path ), ec ).string();
     if( ec ) abs = path;
     m_recentTraces.erase( std::remove( m_recentTraces.begin(), m_recentTraces.end(), abs ), m_recentTraces.end() );
     m_recentTraces.insert( m_recentTraces.begin(), std::move( abs ) );

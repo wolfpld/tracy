@@ -149,6 +149,7 @@ static void SetWindowTitleCallback( const char* title )
     s_customTitle = true;
 }
 
+#ifndef TRACY_NO_FILESELECTOR
 struct RecentTrace
 {
     std::string path;
@@ -158,6 +159,7 @@ struct RecentTrace
 };
 
 static std::vector<RecentTrace> recentTraces;
+#endif
 static bool recentTracesStale = true;
 
 static void RecordTrace( const char* fn )
@@ -1141,7 +1143,11 @@ static void DrawContents()
 
                 std::string toOpen;
                 const ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg;
-                if( ImGui::BeginTable( "##recenttraces", 3, flags ) )
+                if( recentTraces.empty() )
+                {
+                    ImGui::TextDisabled( "No recent traces." );
+                }
+                else if( ImGui::BeginTable( "##recenttraces", 3, flags ) )
                 {
                     ImGui::TableSetupColumn( "Name", ImGuiTableColumnFlags_WidthStretch );
                     ImGui::TableSetupColumn( "Size", ImGuiTableColumnFlags_WidthFixed, ImGui::GetTextLineHeight() * 5 );
@@ -1163,7 +1169,6 @@ static void DrawContents()
                         ImGui::TextDisabled( "%s", t.dir.c_str() );
                     }
                     ImGui::EndTable();
-                    if( recentTraces.empty() ) ImGui::TextDisabled( "No recent traces." );
                 }
                 ImGui::EndTabItem();
                 if( !toOpen.empty() ) OpenTraceFile( toOpen.c_str() );

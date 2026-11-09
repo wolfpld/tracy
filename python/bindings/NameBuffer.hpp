@@ -43,11 +43,12 @@ class NameBuffer {
 
   BufferEntry add(const std::string& name) {
     std::lock_guard<std::mutex> lock(m_mutex);
-    if (m_index >= BUFFER_SIZE || name.size() > NAME_LENGTH)
+    if (m_index >= BUFFER_SIZE || name.size() >= NAME_LENGTH)
       return std::make_pair(std::nullopt, nullptr);
 
     auto index = m_index++;
     name.copy(m_buffer[index], name.size());
+    m_buffer[index][name.size()] = '\0';
     return std::make_pair(index, m_buffer[index]);
   }
 

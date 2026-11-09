@@ -811,6 +811,7 @@ static BroadcastMessage& GetBroadcastMessage( const char* procname, size_t pnsz,
     msg.listenPort = port;
     msg.pid = GetPid();
 
+    pnsz = std::min<size_t>( pnsz, WelcomeMessageProgramNameSize - 1 );
     memcpy( msg.programName, procname, pnsz );
     memset( msg.programName + pnsz, 0, WelcomeMessageProgramNameSize - pnsz );
 

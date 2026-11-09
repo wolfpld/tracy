@@ -1,7 +1,11 @@
 #ifndef __EMSCRIPTENSHIM_HPP__
 #define __EMSCRIPTENSHIM_HPP__
 
-#if defined __EMSCRIPTEN__ || defined __APPLE__
+#include <atomic>
+#include <memory>
+
+// Any standard library without std::atomic<std::shared_ptr> (P0718), such as libc++ on any platform
+#if !defined __cpp_lib_atomic_shared_ptr
 
 namespace std {
 

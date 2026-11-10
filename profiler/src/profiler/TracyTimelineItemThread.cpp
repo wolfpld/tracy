@@ -754,7 +754,12 @@ void TimelineItemThread::PreprocessMessages( const TimelineContext& ctx, const V
             if( num == 1 ) return msg == *it;
             return msg && thread == tid && (*it)->time <= msg->time && ( next == vec.end() || (*next)->time > msg->time );
         };
-        m_msgDraw.emplace_back( MessagesDraw { *it, contains( hMsg, hThread ), contains( sMsg, sThread ), uint32_t( num ) } );
+        m_msgDraw.emplace_back( MessagesDraw {
+            .msg = *it,
+            .highlight = contains( hMsg, hThread ),
+            .selected = contains( sMsg, sThread ),
+            .num = uint32_t( num )
+        } );
         it = next;
     }
 }

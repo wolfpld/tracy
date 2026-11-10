@@ -324,6 +324,7 @@ void View::DrawMessages()
             {
                 DrawMessageLine( *msgs[msgIdx], hasCallstack, idx );
             }
+            m_msgToFocus.Decay( nullptr );
         }
         else
         {
@@ -378,7 +379,6 @@ void View::DrawMessageLine( const MessageData& msg, bool hasCallstack, int& idx 
     if( m_msgToFocus == &msg )
     {
         ImGui::SetScrollHereY();
-        m_msgToFocus.Decay( nullptr );
         m_messagesScrollBottom = false;
     }
     ImGui::TableNextColumn();

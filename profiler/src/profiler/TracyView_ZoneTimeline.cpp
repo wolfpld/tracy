@@ -124,9 +124,9 @@ void View::DrawThreadMessagesList( const TimelineContext& ctx, const std::vector
 
         unsigned int color = 0xFFDDDDDD;
         float animOff = 0;
-        if( v.highlight )
+        if( v.highlight || v.selected )
         {
-            color = 0xFF4444FF;
+            color = v.highlight ? 0xFF4444FF : 0xFF44DDFF;
             if( !isMsgHovered )
             {
                 animOff = -fabs( sin( s_time * 8 ) ) * th;
@@ -165,6 +165,7 @@ void View::DrawThreadMessagesList( const TimelineContext& ctx, const std::vector
             {
                 m_showMessages = true;
                 m_msgToFocus = &msg;
+                m_msgSelected = &msg;
             }
             if( IsMouseClicked( ImGuiMouseButton_Middle ) )
             {

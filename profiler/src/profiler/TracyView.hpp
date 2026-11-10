@@ -189,6 +189,7 @@ public:
     int GetNextGpuIdx() { return m_gpuIdx++; }
 
     const MessageData* GetMessageHighlight() const { return m_msgHighlight; }
+    const MessageData* GetMessageSelected() const { return m_showMessages ? m_msgSelected : nullptr; }
     uint32_t GetLockInfoWindow() const { return m_lockInfoWindow; }
 
     const std::string& GetFilename() const { return m_filename; }
@@ -583,6 +584,7 @@ private:
     DecayValue<const MessageData*> m_msgHighlight = nullptr;
     DecayValue<uint32_t> m_lockHoverHighlight = InvalidId;
     DecayValue<const MessageData*> m_msgToFocus = nullptr;
+    const MessageData* m_msgSelected = nullptr;
     const GpuEvent* m_gpuInfoWindow = nullptr;
     const GpuEvent* m_gpuHighlight = nullptr;
     uint64_t m_gpuInfoWindowThread;

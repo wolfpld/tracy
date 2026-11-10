@@ -357,10 +357,17 @@ void View::DrawMessageLine( const MessageData& msg, bool hasCallstack, int& idx 
     const auto text = m_worker.GetString( msg.ref );
     const auto tid = m_worker.DecompressThread( msg.thread );
     ImGui::PushID( &msg );
-    if( ImGui::Selectable( TimeToStringExact( msg.time ), m_msgHighlight == &msg, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap ) )
+    const bool highlight = m_msgHighlight == &msg;
+    const bool selected = highlight || m_msgSelected == &msg;
+    ImGui::PushStyleColor( ImGuiCol_Header, highlight ? 0x664444FF : 0x6644DDFF );
+    ImGui::PushStyleColor( ImGuiCol_HeaderHovered, 0x664444FF );
+    ImGui::PushStyleColor( ImGuiCol_HeaderActive, 0x664444FF );
+    if( ImGui::Selectable( TimeToStringExact( msg.time ), selected, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap ) )
     {
+        m_msgSelected = &msg;
         CenterAtTime( msg.time );
     }
+    ImGui::PopStyleColor( 3 );
     if( ImGui::IsItemHovered() )
     {
         m_msgHighlight = &msg;

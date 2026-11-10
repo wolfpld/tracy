@@ -63,6 +63,7 @@ struct MessagesDraw
 {
     short_ptr<MessageData> msg;
     bool highlight;
+    bool selected;
     uint32_t num;
 };
 

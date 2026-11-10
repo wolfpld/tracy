@@ -924,10 +924,17 @@ void View::DrawZoneInfoWindow()
                                 ImGui::PushID( *msgit );
                                 ImGui::TableNextRow();
                                 ImGui::TableNextColumn();
-                                if( ImGui::Selectable( m_messageTimeRelativeToZone ? TimeToString( (*msgit)->time - ev.Start() ) : TimeToStringExact( (*msgit)->time ), m_msgHighlight == *msgit, ImGuiSelectableFlags_SpanAllColumns ) )
+                                const bool highlight = m_msgHighlight == *msgit;
+                                const bool selected = highlight || GetMessageSelected() == *msgit;
+                                ImGui::PushStyleColor( ImGuiCol_Header, highlight ? 0x664444FF : 0x6644DDFF );
+                                ImGui::PushStyleColor( ImGuiCol_HeaderHovered, 0x664444FF );
+                                ImGui::PushStyleColor( ImGuiCol_HeaderActive, 0x664444FF );
+                                if( ImGui::Selectable( m_messageTimeRelativeToZone ? TimeToString( (*msgit)->time - ev.Start() ) : TimeToStringExact( (*msgit)->time ), selected, ImGuiSelectableFlags_SpanAllColumns ) )
                                 {
+                                    m_msgSelected = *msgit;
                                     CenterAtTime( (*msgit)->time );
                                 }
+                                ImGui::PopStyleColor( 3 );
                                 if( ImGui::IsItemHovered() )
                                 {
                                     m_msgHighlight = *msgit;

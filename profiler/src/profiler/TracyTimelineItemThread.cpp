@@ -741,6 +741,8 @@ void TimelineItemThread::PreprocessMessages( const TimelineContext& ctx, const V
 
     const auto hMsg = m_view.GetMessageHighlight();
     const auto hThread = hMsg ? m_worker.DecompressThread( hMsg->thread ) : 0;
+    const auto sMsg = m_view.GetMessageSelected();
+    const auto sThread = sMsg ? m_worker.DecompressThread( sMsg->thread ) : 0;
 
     while( it < end )
     {
@@ -748,24 +750,11 @@ void TimelineItemThread::PreprocessMessages( const TimelineContext& ctx, const V
         const auto nextTime = msgTime + MinVisNs;
         const auto next = std::upper_bound( it, vec.end(), nextTime, [] ( const auto& lhs, const auto& rhs ) { return lhs < rhs->time; } );
         const auto num = next - it;
-        bool hilite;
-        if( num == 1 )
-        {
-            hilite = hMsg == *it;
-        }
-        else
-        {
-            if( hMsg && hThread == tid )
-            {
-                const auto hTime = hMsg->time;
-                hilite = (*it)->time <= hTime && ( next == vec.end() || (*next)->time > hTime );
-            }
-            else
-            {
-                hilite = false;
-            }
-        }
-        m_msgDraw.emplace_back( MessagesDraw { *it, hilite, uint32_t( num ) } );
+        const auto contains = [&] ( const MessageData* msg, uint64_t thread ) {
+            if( num == 1 ) return msg == *it;
+            return msg && thread == tid && (*it)->time <= msg->time && ( next == vec.end() || (*next)->time > msg->time );
+        };
+        m_msgDraw.emplace_back( MessagesDraw { *it, contains( hMsg, hThread ), contains( sMsg, sThread ), uint32_t( num ) } );
         it = next;
     }
 }

@@ -318,7 +318,8 @@ void View::DrawMessages()
         ImGui::TableHeadersRow();
 
         int idx = 0;
-        if( m_msgToFocus )
+        const bool focusing = m_msgToFocus != nullptr;
+        if( focusing )
         {
             for( const auto& msgIdx : m_msgList )
             {
@@ -339,7 +340,7 @@ void View::DrawMessages()
             }
         }
 
-        if( m_worker.IsConnected() && ImGui::GetScrollY() >= ImGui::GetScrollMaxY() )
+        if( !focusing && m_worker.IsConnected() && ImGui::GetScrollY() >= ImGui::GetScrollMaxY() )
         {
             ImGui::SetScrollHereY( 1.f );
         }

@@ -1,4 +1,6 @@
+enable_language(C)
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 option(EXTERNAL_PYBIND11 "Whether to download pybind11" ON)
 

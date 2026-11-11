@@ -554,9 +554,12 @@ std::string TracyLlmTools::SearchWeb( std::string query )
     return SearchWebDuckDuckGo( query );
 }
 
+static const std::string GoogleSearchAddress = "https://customsearch.googleapis.com/customsearch/v1";
+
 std::string TracyLlmTools::SearchWebGoogle( std::string query )
 {
-    const auto response = FetchHttp( "https://customsearch.googleapis.com/customsearch/v1?key=" + s_config.llmSearchApiKey + "&cx=" + s_config.llmSearchIdentifier + "&q=" + query );
+    const auto& address = s_config.llmSearchAddress.empty() ? GoogleSearchAddress : s_config.llmSearchAddress;
+    const auto response = FetchHttp( address + "?key=" + s_config.llmSearchApiKey + "&cx=" + s_config.llmSearchIdentifier + "&q=" + query );
     try
     {
         auto json = nlohmann::json::parse( response );

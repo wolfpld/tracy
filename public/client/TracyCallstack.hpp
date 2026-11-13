@@ -17,6 +17,18 @@
 namespace tracy
 {
 
+// Address to store for a callstack frame that is suspended in a call, given the return address reported by the unwinder.
+// It lies inside the call instruction, so that the code that runs after the call returns is not attributed to the frame.
+// See the contract in TracyCallstack.h. Frames that were interrupted (sample leaf, signal frame) must not go through it.
+static constexpr tracy_force_inline uint64_t CallstackLookupAddress( uint64_t returnAddress )
+{
+#if defined __arm__ || defined _M_ARM
+    // The unwinders strip the Thumb bit, but the raw perf callchain does not: without this, R-1 would be the start of the next instruction.
+    returnAddress &= ~uint64_t( 1 );
+#endif
+    return returnAddress - 1;
+}
+
 struct ImageEntry
 {
     uint64_t m_startAddress = 0;
@@ -121,6 +133,9 @@ static tracy_force_inline void* Callstack( int32_t depth )
     TRACY_ASSERT( depth >= 1 && depth < 63 );
     auto trace = (uintptr_t*)tracy_malloc( ( 1 + depth ) * sizeof( uintptr_t ) );
     const auto num = ___tracy_RtlWalkFrameChain( (void**)( trace + 1 ), depth, 0 );
+    // Every frame is suspended in a call (the first one is in the caller of RtlWalkFrameChain), they are all return addresses.
+    // DbgHelp looks addresses up as is (SymFromAddr, SymGetLineFromAddr64, SymQueryInlineTrace), it does not compensate.
+    for( size_t i=1; i<=num; i++ ) trace[i] = (uintptr_t)CallstackLookupAddress( trace[i] );
     *trace = num;
     return trace;
 }
@@ -136,10 +151,14 @@ struct BacktraceState
 static _Unwind_Reason_Code tracy_unwind_callback( struct _Unwind_Context* ctx, void* arg )
 {
     auto state = (BacktraceState*)arg;
-    uintptr_t pc = _Unwind_GetIP( ctx );
+    // A frame that is suspended in a call reports the return address, which has to be moved back into the call.
+    // A frame that was interrupted (a signal frame) reports the exact address ("before the instruction"), which is kept.
+    int ipBeforeInsn = 0;
+    uintptr_t pc = _Unwind_GetIPInfo( ctx, &ipBeforeInsn );
     if( pc )
     {
         if( state->current == state->end ) return _URC_END_OF_STACK;
+        if( !ipBeforeInsn ) pc = (uintptr_t)CallstackLookupAddress( pc );
         *state->current++ = (void*)pc;
     }
     return _URC_NO_REASON;
@@ -171,6 +190,12 @@ static tracy_force_inline void* Callstack( int32_t depth )
 #else
     const auto num = (size_t)backtrace( (void**)(trace+1), depth );
 #endif
+
+    // These unwinders give no information on signal frames: every address is taken as a return address.
+    for( size_t i=1; i<=num; i++ )
+    {
+        if( trace[i] != 0 ) trace[i] = (uintptr_t)CallstackLookupAddress( trace[i] );
+    }
 
     *trace = num;
 

@@ -20,7 +20,6 @@
 #include "TracyDecayValue.hpp"
 #include "TracyManualWindow.hpp"
 #include "TracyMarkdown.hpp"
-#include "TracyPlotMapping.hpp"
 #include "TracySourceContents.hpp"
 #include "TracyTimelineController.hpp"
 #include "TracyTimelineDraw.hpp"
@@ -43,6 +42,8 @@
 
 namespace tracy
 {
+
+enum class PlotMapping : uint8_t;
 
 constexpr const char* GpuContextNames[] = {
     "Invalid",
@@ -213,8 +214,8 @@ public:
     void HighlightThread( uint64_t thread );
     void SelectThread( uint64_t thread );
     uint64_t GetSelectThread() const { return m_selectedThread; }
-    PlotMapping GetPlotMapping( const PlotData* plot ) const { auto it = m_plotMapping.find( plot ); return it == m_plotMapping.end() ? PlotMapping::Linear : it->second; }
-    void SetPlotMapping( const PlotData* plot, PlotMapping mapping ) { if( mapping == PlotMapping::Linear ) m_plotMapping.erase( plot ); else m_plotMapping[plot] = mapping; }
+    PlotMapping GetPlotMapping( const PlotData* plot ) const;
+    void SetPlotMapping( const PlotData* plot, PlotMapping mapping );
     void ZoomToRange( int64_t start, int64_t end, bool pause = true );
     bool DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vector<uint32_t>& plotDraw, int& offset, bool rightEnd );
     void DrawThread( const TimelineContext& ctx, const ThreadData& thread, const std::vector<TimelineDraw>& draw, const std::vector<ContextSwitchDraw>& ctxDraw, const std::vector<SamplesDraw>& samplesDraw, const std::vector<std::unique_ptr<LockDraw>>& lockDraw, int& offset, int depth, bool hasCtxSwitches, bool hasSamples );

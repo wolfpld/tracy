@@ -1,4 +1,5 @@
 #include "TracyImGui.hpp"
+#include "TracyPlotMapping.hpp"
 #include "TracyPrint.hpp"
 #include "TracyTimelineContext.hpp"
 #include "TracyTimelineItemPlot.hpp"

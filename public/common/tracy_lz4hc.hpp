@@ -293,11 +293,13 @@ LZ4LIB_API LZ4_streamHC_t* LZ4_initStreamHC(void* buffer, size_t size);
  * LZ4_slideInputBufferHC() */
 
 /* LZ4_resetStreamHC() : deprecated (v1.11.0)
- * Replaced by LZ4_initStreamHC(), which initializes a memory segment containing arbitrary garbage data,
- * followed by LZ4_resetStreamHC_fast() to select the compression level.
- * LZ4_resetStreamHC_fast() alone is the recommended function to start a new stream of blocks.
+ * LZ4_resetStreamHC(s, level) is replaced by :
+ *     LZ4_initStreamHC(s, sizeof(*s));
+ *     LZ4_resetStreamHC_fast(s, level);
+ * Same behavior : @s may contain garbage, and is initialized as a state of sizeof(LZ4_streamHC_t) bytes.
+ * To start a new stream on an already initialized state, LZ4_resetStreamHC_fast(s, level) alone is faster.
  */
-LZ4_DEPRECATED("use LZ4_initStreamHC() and LZ4_resetStreamHC_fast() instead") LZ4LIB_API void LZ4_resetStreamHC (LZ4_streamHC_t* streamHCPtr, int compressionLevel);
+LZ4_DEPRECATED("use LZ4_initStreamHC(s, sizeof(*s)) then LZ4_resetStreamHC_fast(s, level) instead") LZ4LIB_API void LZ4_resetStreamHC (LZ4_streamHC_t* streamHCPtr, int compressionLevel);
 
 }
 

@@ -128,7 +128,7 @@
 /*------   Version   ------*/
 #define LZ4_VERSION_MAJOR    1    /* for breaking interface changes  */
 #define LZ4_VERSION_MINOR   11    /* for new (non-breaking) interface capabilities */
-#define LZ4_VERSION_RELEASE  0    /* for tweaks, bug-fixes, or development */
+#define LZ4_VERSION_RELEASE  1    /* for tweaks, bug-fixes, or development */
 
 #define LZ4_VERSION_NUMBER (LZ4_VERSION_MAJOR *100*100 + LZ4_VERSION_MINOR *100 + LZ4_VERSION_RELEASE)
 
@@ -863,10 +863,10 @@ LZ4_DEPRECATED("This function is deprecated and unsafe. Consider using LZ4_decom
 LZ4LIB_API int LZ4_decompress_fast_usingDict (const char* src, char* dst, int originalSize, const char* dictStart, int dictSize);
 
 /*! LZ4_resetStream() : deprecated (v1.11.0)
- *  Same as LZ4_initStream(streamPtr, sizeof(LZ4_stream_t)) : prefer LZ4_initStream().
- *  To start a new stream with an initialized state, LZ4_resetStream_fast() is faster.
+ *  LZ4_resetStream(s) is replaced by LZ4_initStream(s, sizeof(*s)) : same behavior, @s may contain garbage.
+ *  To start a new stream on an already initialized state, LZ4_resetStream_fast(s) is faster.
  */
-LZ4_DEPRECATED("use LZ4_initStream() instead") LZ4LIB_API void LZ4_resetStream (LZ4_stream_t* streamPtr);
+LZ4_DEPRECATED("use LZ4_initStream(s, sizeof(*s)) instead") LZ4LIB_API void LZ4_resetStream (LZ4_stream_t* streamPtr);
 
 }
 

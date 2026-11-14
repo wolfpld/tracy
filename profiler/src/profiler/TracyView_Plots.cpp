@@ -74,6 +74,8 @@ bool View::DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vect
         }
 
         const auto mapping = GetPlotMapping( &plot );
+        const auto rawMin = min;
+        const auto rawMax = max;
         min = MapPlotValue( mapping, min );
         max = MapPlotValue( mapping, max );
 
@@ -85,6 +87,21 @@ bool View::DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vect
 
         const auto revrange = 1.0 / ( max - min );
         const auto MapY = [&] ( double val ) { return PlotHeight - ( MapPlotValue( mapping, val ) - min ) * revrange * PlotHeight; };
+
+        const auto tickLineColor = 0x44000000 | ( color & 0xFFFFFF );
+        const auto tickTextColor = 0x99000000 | ( color & 0xFFFFFF );
+        double lastTickY = PlotHeight + ty;
+        ForEachPlotTick( mapping, rawMin, rawMax, [&] ( double val ) {
+            const auto tickY = MapY( val );
+            if( lastTickY - tickY < ty ) return;
+            lastTickY = tickY;
+            DrawLine( draw, dpos + ImVec2( 0, offset + tickY ), dpos + ImVec2( w, offset + tickY ), tickLineColor );
+            // keep clear of the rMax/rMin labels at the top and bottom
+            if( tickY >= ty * 1.5 && tickY <= PlotHeight - ty * 1.5 )
+            {
+                DrawTextSuperContrast( draw, wpos + ImVec2( 0, offset + tickY - ty * 0.5 ), tickTextColor, FormatPlotValue( val, plot.format ) );
+            }
+        } );
 
         auto it = plotDraw.begin();
         auto end = plotDraw.end();

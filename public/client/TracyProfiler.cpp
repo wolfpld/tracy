@@ -2119,7 +2119,7 @@ void Profiler::Worker()
         HandshakeStatus handshake = HandshakeWelcome;
         m_sock->Send( &handshake, sizeof( handshake ) );
 
-        LZ4_resetStream( (LZ4_stream_t*)m_stream );
+        LZ4_initStream( m_stream, sizeof( LZ4_stream_t ) );
         m_sock->Send( &welcome, sizeof( welcome ) );
 
         m_threadCtx = 0;

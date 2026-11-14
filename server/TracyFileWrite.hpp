@@ -54,7 +54,7 @@ public:
             break;
         case FileCompression::Extreme:
             m_streamHC = LZ4_createStreamHC();
-            LZ4_resetStreamHC( m_streamHC, LZ4HC_CLEVEL_MAX );
+            LZ4_resetStreamHC_fast( m_streamHC, LZ4HC_CLEVEL_MAX );
             break;
         case FileCompression::Zstd:
             m_streamZstd = ZSTD_createCStream();

@@ -124,11 +124,11 @@ void TimelineItemPlot::DrawExtraPopupItems()
 {
     if( ImGui::BeginMenu( "Y-axis scale" ) )
     {
-        auto& current = m_view.GetPlotMapping( m_plot );
+        const auto current = m_view.GetPlotMapping( m_plot );
         for( uint8_t i=0; i<(uint8_t)PlotMapping::Count; i++ )
         {
             const auto mapping = (PlotMapping)i;
-            if( ImGui::MenuItem( PlotMappingName( mapping ), nullptr, current == mapping ) ) current = mapping;
+            if( ImGui::MenuItem( PlotMappingName( mapping ), nullptr, current == mapping ) ) m_view.SetPlotMapping( m_plot, mapping );
         }
         ImGui::EndMenu();
     }

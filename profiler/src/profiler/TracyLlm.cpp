@@ -468,6 +468,17 @@ void TracyLlm::Draw( WindowConstraints& constraints )
             if( ImGui::Button( ICON_FA_HOUSE "##csekey" ) ) OpenWebpage( "https://developers.google.com/custom-search/v1/overview" );
 
             ImGui::AlignTextToFramePadding();
+            ImGui::TextUnformatted( "Google Search Address:" );
+            ImGui::SameLine();
+            snprintf( buf, sizeof( buf ), "%s", s_config.llmSearchAddress.c_str() );
+            ImGui::SetNextItemWidth( ImGui::GetContentRegionAvail().x );
+            if( ImGui::InputTextWithHint( "##cseaddress", "https://customsearch.googleapis.com/customsearch/v1", buf, sizeof( buf ) ) )
+            {
+                s_config.llmSearchAddress = buf;
+                SaveConfig();
+            }
+
+            ImGui::AlignTextToFramePadding();
             ImGui::TextUnformatted( "Brave Search API Key:" );
             ImGui::SameLine();
             snprintf( buf, sizeof( buf ), "%s", s_config.llmSearchBraveApiKey.c_str() );

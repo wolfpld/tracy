@@ -129,31 +129,44 @@ bool Socket::Connect( const char* addr, uint16_t port )
 
     if( m_ptr )
     {
-        const auto c = connect( m_connSock, m_ptr->ai_addr, m_ptr->ai_addrlen );
-        if( c == -1 )
+#ifdef _WIN32
+        fd_set writeSet, exceptSet;
+        FD_ZERO( &writeSet ); FD_ZERO( &exceptSet );
+        FD_SET( m_connSock, &writeSet ); // check write readiness
+        FD_SET( m_connSock, &exceptSet ); // check errors
+        timeval tv { 0, 0 };
+        if( select( 0 /* ignored */, nullptr, &writeSet, &exceptSet, &tv ) <= 0 ) return false;
+
+        int err = 0;
+        int errlen = sizeof( err );
+        const int status = getsockopt( m_connSock, SOL_SOCKET, SO_ERROR, (char*)&err, &errlen );
+
+        if( status != 0 || err != 0 )
         {
-#if defined _WIN32
-            const auto err = WSAGetLastError();
-            if( err == WSAEALREADY || err == WSAEINPROGRESS ) return false;
-            if( err != WSAEISCONN )
-            {
-                freeaddrinfo( m_res );
-                closesocket( m_connSock );
-                m_ptr = nullptr;
-                return false;
-            }
-#else
-            const auto err = errno;
-            if( err == EALREADY || err == EINPROGRESS ) return false;
-            if( err != EISCONN )
-            {
-                freeaddrinfo( m_res );
-                close( m_connSock );
-                m_ptr = nullptr;
-                return false;
-            }
-#endif
+            freeaddrinfo( m_res );
+            closesocket( m_connSock );
+            m_ptr = nullptr;
+            return false;
         }
+#else
+        struct pollfd fd;
+        fd.fd = (socket_t)m_connSock;
+        fd.events = POLLOUT; // check write readiness
+        fd.revents = 0;
+        if( poll( &fd, 1, 0 ) <= 0 ) return false; // no event yet or poll() failed
+
+        int err = 0;
+        socklen_t errlen = sizeof( err );
+        const int status = getsockopt( m_connSock, SOL_SOCKET, SO_ERROR, &err, &errlen );
+
+        if( fd.revents != POLLOUT || status != 0 || err != 0 )
+        {
+            freeaddrinfo( m_res );
+            close( m_connSock );
+            m_ptr = nullptr;
+            return false;
+        }
+#endif
 
 #if defined _WIN32
         u_long nonblocking = 0;

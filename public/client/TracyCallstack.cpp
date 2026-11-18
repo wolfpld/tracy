@@ -1784,6 +1784,7 @@ static int CallstackDataCb( void* /*data*/, uintptr_t pc, uintptr_t lowaddr, con
         {
             symname = dlinfo.dli_sname;
             symoff = (char*)pc - (char*)dlinfo.dli_saddr;
+            if( dlinfo.dli_saddr ) cb_data[cb_num].symAddr = (uint64_t)dlinfo.dli_saddr;
             const char* demangled = ___tracy_demangle( symname );
             if( demangled ) symname = demangled;
         }
@@ -1857,6 +1858,9 @@ static void CallstackErrorCb( void* /*data*/, const char* /*msg*/, int /*errnum*
 
 void SymInfoCallback( void* /*data*/, uintptr_t pc, const char* symname, uintptr_t symval, uintptr_t symsize )
 {
+    // libbacktrace reports a pc it has no symbol for with a null name and a zero value; keep the address
+    // CallstackDataCb found for the frame (its dladdr fallback finds one in a library libbacktrace can't read).
+    if( !symname ) return;
     cb_data[cb_num-1].symLen = (uint32_t)symsize;
     cb_data[cb_num-1].symAddr = (uint64_t)symval;
 }

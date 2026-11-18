@@ -1210,7 +1210,7 @@ private:
     int m_bufferOffset;
     int m_bufferStart;
 
-    char* m_lz4Buf;
+    char* m_packetBuf;
 
     FastVector<QueueItem> m_serialQueue, m_serialDequeue;
     TracyMutex m_serialLock;

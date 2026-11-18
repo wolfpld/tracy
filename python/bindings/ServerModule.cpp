@@ -509,7 +509,6 @@ PYBIND11_MODULE( TracyServerBindings, m )
             // Returns list of (start_ns, duration_ns, thread_id) — thread_id is the OS thread ID
         std::vector<std::tuple<int64_t, int64_t, uint64_t>> result;
 #ifndef TRACY_NO_STATISTICS
-        const auto& threads = w.GetThreadData();
         for( const auto& kv : w.GetSourceLocationZones() )
         {
             if( std::string( w.GetZoneName( w.GetSourceLocation( kv.first ) ) ) != name ) continue;
@@ -518,8 +517,7 @@ PYBIND11_MODULE( TracyServerBindings, m )
                 if( result.size() >= maxSamples ) goto done_occ_thread;
                 const auto* z = ztd.Zone();
                 if( !z || !z->IsEndValid() ) continue;
-                const uint16_t tidx = ztd.Thread();
-                const uint64_t tid = ( tidx < threads.size() && threads[tidx] ) ? threads[tidx]->id : 0;
+                const uint64_t tid = w.DecompressThread( ztd.Thread() );
                 result.emplace_back( z->Start(), z->End() - z->Start(), tid );
             }
         }
@@ -702,7 +700,7 @@ PYBIND11_MODULE( TracyServerBindings, m )
         {
             py::dict d;
             d["time"] = s.time.Val();
-            d["thread"] = (uint32_t)s.thread;
+            d["thread"] = w.DecompressThread( s.thread );
             result.append( d );
         }
         return result;
@@ -1031,7 +1029,7 @@ PYBIND11_MODULE( TracyServerBindings, m )
                 msg.time,
                 std::string( w.GetString( msg.ref ) ),
                 msg.color,
-                (uint64_t)msg.thread } );
+                w.DecompressThread( msg.thread ) } );
         }
         return result;
     } ) )

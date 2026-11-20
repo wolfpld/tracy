@@ -33,7 +33,7 @@ namespace tracy
 
 double s_time = 0;
 
-View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char* addr, uint16_t port, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, AchievementsMgr* amgr )
+View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char* addr, uint16_t port, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, TraceSavedCallback tscb, AchievementsMgr* amgr )
     : m_worker( addr, port, s_config.memoryLimit == 0 ? -1 : ( s_config.memoryLimitPercent * tracy::GetPhysicalMemorySize() / 100 ) )
     , m_staticView( false )
     , m_viewMode( ViewMode::LastFrames )
@@ -48,6 +48,7 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char*
     , m_stcb( stcb )
     , m_sscb( sscb )
     , m_acb( acb )
+    , m_tscb( tscb )
     , m_cbMainThread( cbMainThread )
     , m_achievementsMgr( amgr )
     , m_achievements( s_config.achievements )
@@ -66,7 +67,7 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char*
     SetupRanges();
 }
 
-View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, AchievementsMgr* amgr )
+View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, TraceSavedCallback tscb, AchievementsMgr* amgr )
     : m_worker( f )
     , m_filename( f.GetFilename() )
     , m_staticView( true )
@@ -78,6 +79,7 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f
     , m_stcb( stcb )
     , m_sscb( sscb )
     , m_acb( acb )
+    , m_tscb( tscb )
     , m_userData( m_worker.GetCaptureProgram().c_str(), m_worker.GetCaptureTime(), f.GetFilename().c_str() )
     , m_cbMainThread( cbMainThread )
     , m_achievementsMgr( amgr )
@@ -689,6 +691,7 @@ bool View::Draw()
         if( ImGui::Button( ICON_FA_FLOPPY_DISK " Save trace" ) )
         {
             saveFailed = !Save( fn, comp, zlvl, buildDict, streams );
+            if( !saveFailed ) m_tscb( fn );
             m_filenameStaging.clear();
             ImGui::CloseCurrentPopup();
             Achieve( "saveTrace" );

@@ -16,40 +16,21 @@ namespace tracy
 
 extern double s_time;
 
+static size_t CompareZoneCount( const Worker& worker, int16_t srcloc, bool gpu )
+{
+    return gpu ? worker.GetGpuZonesForSourceLocation( srcloc ).zones.size() : worker.GetZonesForSourceLocation( srcloc ).zones.size();
+}
+
 void View::FindZonesCompare()
 {
-    m_compare.match[0] = m_worker.GetMatchingSourceLocation( m_compare.pattern, m_compare.ignoreCase );
-    if( !m_compare.match[0].empty() )
+    const Worker* workers[2] = { &m_worker, m_compare.second.get() };
+    for( int i=0; i<2; i++ )
     {
-        auto it = m_compare.match[0].begin();
-        while( it != m_compare.match[0].end() )
-        {
-            if( m_worker.GetZonesForSourceLocation( *it ).zones.empty() )
-            {
-                it = m_compare.match[0].erase( it );
-            }
-            else
-            {
-                ++it;
-            }
-        }
-    }
-
-    m_compare.match[1] = m_compare.second->GetMatchingSourceLocation( m_compare.pattern, m_compare.ignoreCase );
-    if( !m_compare.match[1].empty() )
-    {
-        auto it = m_compare.match[1].begin();
-        while( it != m_compare.match[1].end() )
-        {
-            if( m_compare.second->GetZonesForSourceLocation( *it ).zones.empty() )
-            {
-                it = m_compare.match[1].erase( it );
-            }
-            else
-            {
-                ++it;
-            }
-        }
+        auto& match = m_compare.match[i];
+        match = workers[i]->GetMatchingSourceLocation( m_compare.pattern, m_compare.ignoreCase );
+        match.erase( std::remove_if( match.begin(), match.end(), [&]( int16_t v ) {
+            return CompareZoneCount( *workers[i], v, m_compare.gpuZones ) == 0;
+        } ), match.end() );
     }
 }
 
@@ -329,6 +310,7 @@ void View::DrawCompare()
     {
         m_compare.Reset();
         m_compare.ResetLimitRange();
+        m_compare.gpuZones = false;
         m_compare.second.reset();
         m_compare.userData.reset();
         ImGui::End();
@@ -650,6 +632,24 @@ void View::DrawCompare()
             }
             ImGui::SameLine();
             ImGui::Checkbox( "Ignore case", &m_compare.ignoreCase );
+            ImGui::SameLine();
+            const bool gpuReady = m_worker.AreGpuSourceLocationZonesReady() && m_compare.second->AreGpuSourceLocationZonesReady();
+            int zoneType = m_compare.gpuZones ? 1 : 0;
+            bool zoneTypeChanged = ImGui::RadioButton( "CPU", &zoneType, 0 );
+            ImGui::SameLine();
+            ImGui::BeginDisabled( !gpuReady );
+            zoneTypeChanged |= ImGui::RadioButton( "GPU", &zoneType, 1 );
+            ImGui::EndDisabled();
+            if( !gpuReady && ImGui::IsItemHovered( ImGuiHoveredFlags_AllowWhenDisabled ) )
+            {
+                ImGui::SetTooltip( "Computing GPU zone data…" );
+            }
+            if( zoneTypeChanged && ( zoneType == 1 ) != m_compare.gpuZones )
+            {
+                m_compare.gpuZones = zoneType == 1;
+                m_compare.Reset();
+                if( m_compare.pattern[0] != '\0' ) FindZonesCompare();
+            }
             m_compareConstraint.MarkMinWidth();
 
             if( findClicked )
@@ -693,7 +693,7 @@ void View::DrawCompare()
                 for( auto& v : m_compare.match[0] )
                 {
                     auto& srcloc = m_worker.GetSourceLocation( v );
-                    auto& zones = m_worker.GetZonesForSourceLocation( v ).zones;
+                    const auto zoneCnt = CompareZoneCount( m_worker, v, m_compare.gpuZones );
                     SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
                     ImGui::SameLine();
                     ImGui::PushID( idx );
@@ -701,7 +701,7 @@ void View::DrawCompare()
                     ImGui::RadioButton( m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ), &m_compare.selMatch[0], idx++ );
                     ImGui::PopStyleVar();
                     ImGui::SameLine();
-                    ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s", RealToString( zones.size() ), LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
+                    ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s", RealToString( zoneCnt ), LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
                     ImGui::PopID();
                 }
                 ImGui::NextColumn();
@@ -711,13 +711,13 @@ void View::DrawCompare()
                 for( auto& v : m_compare.match[1] )
                 {
                     auto& srcloc = m_compare.second->GetSourceLocation( v );
-                    auto& zones = m_compare.second->GetZonesForSourceLocation( v ).zones;
+                    const auto zoneCnt = CompareZoneCount( *m_compare.second, v, m_compare.gpuZones );
                     ImGui::PushID( -1 - idx );
                     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
                     ImGui::RadioButton( m_compare.second->GetString( srcloc.name.active ? srcloc.name : srcloc.function ), &m_compare.selMatch[1], idx++ );
                     ImGui::PopStyleVar();
                     ImGui::SameLine();
-                    ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s", RealToString( zones.size() ), LocationToString( m_compare.second->GetString( srcloc.file ), srcloc.line ) );
+                    ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s", RealToString( zoneCnt ), LocationToString( m_compare.second->GetString( srcloc.file ), srcloc.line ) );
                     ImGui::PopID();
                 }
                 ImGui::NextColumn();
@@ -860,8 +860,11 @@ void View::DrawCompare()
 
         if( zonesMode )
         {
-            auto& zoneData0 = m_worker.GetZonesForSourceLocation( m_compare.match[0][m_compare.selMatch[0]] );
-            auto& zoneData1 = m_compare.second->GetZonesForSourceLocation( m_compare.match[1][m_compare.selMatch[1]] );
+            const auto selSrcloc0 = m_compare.match[0][m_compare.selMatch[0]];
+            const auto selSrcloc1 = m_compare.match[1][m_compare.selMatch[1]];
+
+            auto zoneStats = [&]( auto& zoneData0, auto& zoneData1, auto startOf, auto endOf )
+            {
             auto& zones0 = zoneData0.zones;
             auto& zones1 = zoneData1.zones;
             zones0.ensure_sorted();
@@ -869,7 +872,7 @@ void View::DrawCompare()
 
             if( m_compare.limitRange )
             {
-                constexpr auto cmp = []( const auto& e, int64_t v ){ return e.Zone()->Start() < v; };
+                const auto cmp = [startOf]( const auto& e, int64_t v ){ return startOf( e ) < v; };
                 auto lo0It = std::lower_bound( zones0.begin(), zones0.end(), m_compare.range[0].min, cmp );
                 auto hi0It = std::lower_bound( lo0It, zones0.end(), m_compare.range[0].max, cmp );
                 auto lo1It = std::lower_bound( zones1.begin(), zones1.end(), m_compare.range[1].min, cmp );
@@ -895,8 +898,7 @@ void View::DrawCompare()
                         double sumSq = 0;
                         for( size_t i = 0; i < zsz[k]; i++ )
                         {
-                            auto& zone = *zones[lo[k] + i].Zone();
-                            const auto t = zone.End() - zone.Start();
+                            const auto t = endOf( zones[lo[k] + i] ) - startOf( zones[lo[k] + i] );
                             vec.emplace_back( t );
                             total += t;
                             sumSq += double(t) * t;
@@ -952,8 +954,7 @@ void View::DrawCompare()
                         size_t i;
                         for( i=m_compare.sortedNum[k]; i<zsz[k]; i++ )
                         {
-                            auto& zone = *zones[i].Zone();
-                            const auto t = zone.End() - zone.Start();
+                            const auto t = endOf( zones[i] ) - startOf( zones[i] );
                             vec.emplace_back( t );
                             total += t;
                         }
@@ -967,6 +968,20 @@ void View::DrawCompare()
                         m_compare.sortedNum[k] = i;
                     }
                 }
+            }
+            };
+
+            if( m_compare.gpuZones )
+            {
+                zoneStats( m_worker.GetGpuZonesForSourceLocation( selSrcloc0 ), m_compare.second->GetGpuZonesForSourceLocation( selSrcloc1 ),
+                    []( const auto& e ){ return e.Zone()->GpuStart(); },
+                    []( const auto& e ){ return e.Zone()->GpuEnd(); } );
+            }
+            else
+            {
+                zoneStats( m_worker.GetZonesForSourceLocation( selSrcloc0 ), m_compare.second->GetZonesForSourceLocation( selSrcloc1 ),
+                    []( const auto& e ){ return e.Zone()->Start(); },
+                    []( const auto& e ){ return e.Zone()->End(); } );
             }
         }
         else

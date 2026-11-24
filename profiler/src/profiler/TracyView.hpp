@@ -930,6 +930,7 @@ private:
         bool show = false;
         bool ignoreCase = false;
         bool link = true;
+        bool gpuZones = false;
         std::unique_ptr<Worker> second;
         std::unique_ptr<UserData> userData;
         std::thread loadThread;

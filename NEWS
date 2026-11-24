@@ -2,6 +2,11 @@ Note: There is no guarantee that version mismatched client and server will
 be able to talk with each other. Network protocol breakages won't be listed
 here.
 
+vx.xx.x (2026-xx-xx)
+--------------------
+
+- The trace Compare window can now show/compare GPU zones.
+
 v0.15.0 (2026-11-05)
 --------------------
 

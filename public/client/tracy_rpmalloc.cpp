@@ -221,6 +221,13 @@ extern int madvise(caddr_t, size_t, int);
 
 #include <atomic>
 
+#if defined(__VXWORKS__)
+// VxWorks' <base/b_atomic_t.h> already declares atomic32_t and atomic64_t
+// as plain integers in the global namespace.
+#  define atomic32_t rpmalloc_atomic32_t
+#  define atomic64_t rpmalloc_atomic64_t
+#endif
+
 typedef std::atomic<int32_t> atomic32_t;
 typedef std::atomic<int64_t> atomic64_t;
 typedef std::atomic<void*> atomicptr_t;
@@ -977,6 +984,10 @@ _rpmalloc_unmap_os(void* address, size_t size, size_t offset, size_t release) {
 		if (madvise(address, size, MADV_PAGEOUT)) {
 #elif defined(MADV_FREE)
 		if (madvise(address, size, MADV_FREE)) {
+#elif defined(__VXWORKS__)
+		// VxWorks has no madvise(); the pages stay committed until the
+		// span is released with munmap().
+		if (0) {
 #else
 		if (posix_madvise(address, size, POSIX_MADV_DONTNEED)) {
 #endif
@@ -3515,5 +3526,10 @@ rpmalloc_heap_thread_set_current(rpmalloc_heap_t* heap) {
 #endif
 
 }
+
+#if defined(__VXWORKS__)
+#  undef atomic32_t
+#  undef atomic64_t
+#endif
 
 #endif

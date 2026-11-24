@@ -55,6 +55,11 @@
 #  include <sys/stat.h>
 #endif
 
+#if defined __VXWORKS__ && defined __RTP__
+#  include <sys/utsname.h>
+#  include <rtpLib.h>
+#endif
+
 #include <algorithm>
 #include <atomic>
 #if defined __SANITIZE_ADDRESS__
@@ -454,6 +459,13 @@ static const char* GetProcessName()
     if( buf ) processName = buf;
 #elif defined __QNX__
     processName = __progname;
+#elif defined __VXWORKS__ && defined __RTP__
+    static RTP_DESC desc;
+    if( rtpInfoGet( (RTP_ID)getpid(), &desc ) == OK && desc.pathName[0] )
+    {
+        processName = desc.pathName;
+        for( const char* p = desc.pathName; *p; p++ ) if( *p == '/' ) processName = p + 1;
+    }
 #endif
     return processName;
 }
@@ -495,6 +507,10 @@ static const char* GetProcessExecutablePath()
     static char buf[_PC_PATH_MAX + 1];
     _cmdname(buf);
     return buf;
+#elif defined __VXWORKS__ && defined __RTP__
+    static RTP_DESC desc;
+    if( rtpInfoGet( (RTP_ID)getpid(), &desc ) != OK ) return nullptr;
+    return desc.pathName;
 #else
     return nullptr;
 #endif
@@ -589,6 +605,10 @@ static const char* GetHostInfo()
     ptr += sprintf( ptr, "OS: BSD (OpenBSD)\n" );
 #elif defined __QNX__
     ptr += sprintf( ptr, "OS: QNX\n" );
+#elif defined __VXWORKS__ && defined __RTP__
+    struct utsname utsName;
+    if( uname( &utsName ) == 0 ) ptr += sprintf( ptr, "OS: %s (%s, %s)\n", utsName.sysname, utsName.release, utsName.kernelversion );
+    else ptr += sprintf( ptr, "OS: VxWorks\n" );
 #else
     ptr += sprintf( ptr, "OS: unknown\n" );
 #endif
@@ -1647,8 +1667,8 @@ Profiler::Profiler()
 
 #if !defined _WIN32 && !defined TRACY_HAS_CUSTOM_SAFE_COPY
     pipe(m_pipe);
-#  if defined __APPLE__ || defined __FreeBSD__ || defined __NetBSD__ || defined __OpenBSD__ || defined __DragonFly__
-    // FreeBSD/XNU don't have F_SETPIPE_SZ, so use the default
+#  if defined __APPLE__ || defined __FreeBSD__ || defined __NetBSD__ || defined __OpenBSD__ || defined __DragonFly__ || defined __VXWORKS__
+    // FreeBSD/XNU/VxWorks don't have F_SETPIPE_SZ, so use the default
     m_pipeBufSize = 16384;
 #  else
     m_pipeBufSize = (int)(ptrdiff_t)SafeSendBufferSize;

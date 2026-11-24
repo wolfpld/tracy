@@ -42,6 +42,8 @@
 #  include <sys/neutrino.h>
 #elif defined __APPLE__
 #  include <mach/mach.h>
+#elif defined __VXWORKS__ && defined __RTP__
+#  include <taskLib.h>
 #endif
 
 #ifdef __MINGW32__
@@ -100,6 +102,9 @@ TRACY_API uint32_t GetThreadHandleImpl()
     return getthrid();
 #elif defined __QNX__
     return (uint32_t) gettid();
+#elif defined __VXWORKS__ && defined __RTP__
+    // In an RTP, TASK_ID is a 32-bit object handle.
+    return (uint32_t)(uintptr_t)taskIdSelf();
 #elif defined __EMSCRIPTEN__
     // Not supported, but let it compile.
     return 0;
@@ -193,6 +198,9 @@ TRACY_API void SetThreadNameWithHint( const char* name, int32_t groupHint )
         }
 #endif
     }
+#elif defined __VXWORKS__ && defined __RTP__
+    // Also renames the VxWorks task, so the name shows up in `i` / `ps`.
+    pthread_setname_np( pthread_self(), name );
 #elif defined __QNX__
     {
         const auto sz = strlen( name );
@@ -304,6 +312,14 @@ TRACY_API const char* GetThreadName( uint32_t id )
    pthread_setcancelstate( cs, 0 );
 # endif
   return buf;
+#elif defined __VXWORKS__ && defined __RTP__
+    // Tasks that never called SetThreadName() still have a VxWorks task name.
+    const char* taskNameStr = taskName( (TASK_ID)(uintptr_t)id );
+    if( taskNameStr && *taskNameStr )
+    {
+        snprintf( buf, sizeof( buf ), "%s", taskNameStr );
+        return buf;
+    }
 #elif defined __QNX__
     static char qnxNameBuf[_NTO_THREAD_NAME_MAX + 1] = {0};
     if (pthread_getname_np(static_cast<int>(id), qnxNameBuf, _NTO_THREAD_NAME_MAX) == 0) {
@@ -411,6 +427,9 @@ TRACY_API const char* GetUserFullName()
     ULONG size = sizeof( buf );
     if( GetUserNameExA( NameDisplay, buf, &size ) ) return buf;
 #  endif
+    return nullptr;
+#elif defined __VXWORKS__
+    // VxWorks' struct passwd has no pw_gecos.
     return nullptr;
 #elif defined __ANDROID__
     const auto passwd = getpwuid( getuid() );

@@ -353,7 +353,9 @@ TRACY_API const char* GetThreadName( uint32_t id )
 
 TRACY_API const char* GetEnvVar( const char* name )
 {
-#if defined _WIN32
+#if defined TRACY_HAS_CUSTOM_GETENV
+    return PlatformGetEnvVar(name);
+#elif defined _WIN32
     // unfortunately getenv() on Windows is just fundamentally broken.  It caches the entire
     // environment block once on startup, then never refreshes it again.  If any environment
     // strings are added or modified after startup of the CRT, those changes will not be

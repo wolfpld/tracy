@@ -54,4 +54,9 @@ void PlatformAllocatorThreadInit()   {}
 void PlatformAllocatorFinalize()     {}
 void PlatformAllocatorThreadFinalize(){}
 
+const char* PlatformGetEnvVar( const char* name )
+{
+    return nullptr;
+}
+
 }

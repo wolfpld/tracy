@@ -68,6 +68,14 @@ void  PlatformAllocatorThreadInit();
 void  PlatformAllocatorFinalize();
 void  PlatformAllocatorThreadFinalize();
 
+// --- Get Environment --------------------------------------------------------
+//
+// Provides a platform-specific implementation for retrieving environment
+// variables. Returns the variable's value, or nullptr if unavailable.
+//
+//#define TRACY_HAS_CUSTOM_GETENV
+const char* PlatformGetEnvVar( const char* name );
+
 }
 
 #endif

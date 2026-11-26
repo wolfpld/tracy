@@ -261,7 +261,7 @@ if(VENDOR_GUI)
         CPMAddPackage(
             NAME base64
             GITHUB_REPOSITORY aklomp/base64
-            GIT_TAG v0.5.2
+            GIT_TAG v0.5.3
             OPTIONS
                 "BASE64_BUILD_CLI OFF"
                 "BASE64_WITH_OpenMP OFF"

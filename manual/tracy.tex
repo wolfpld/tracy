@@ -5387,15 +5387,12 @@ There are no ideal LLM providers, but here are some options:
 
 \begin{itemize}
 \item \emph{llama.cpp} (\url{https://github.com/ggml-org/llama.cpp}) -- Recommended as the easiest to use. Clone from git and build it yourself. By default it fits the model automatically to available memory. It is rapidly advancing with new features and model support. Most other providers use it to do the actual work, and they typically use an outdated release. The \url{https://llama.app/} site might provide easy way to install llama.
-\item \emph{llama-swap} (\url{https://github.com/mostlygeek/llama-swap}) -- Wrapper for llama.cpp that allows model selection. Recommended to augment the above.
 \item \emph{LM Studio} (\url{https://lmstudio.ai/}) -- It is easy to install on all platforms and has a GUI. But it is overwhelming when it comes to the number of options it offers. Some people may question the licensing. Its features lag a behind llama.cpp. Manual configuration of each model is required. To get it to work properly, go to it settings (using the gear icon in the bottom right corner of the program window), then select the Developer tab and enable \enquote{When applicable, separate \texttt{reasoning\_content} and \texttt{content} in API responses}.
 \end{itemize}
 
 \subsection{Model selection}
 
 Once you have installed the service provider, you will need to download the model files. The exact process depends on the provider you chose. LM Studio, for example, has a built-in downloader with an easy-to-use UI. For llama.cpp, you can follow their documentation (e.g., the \texttt{-hf} parameter) or download the model file via your web browser. Tracy will not issue commands to download any model on its own.
-
-There are two different model types that Tracy expects to have available. Ideally both models would be loaded and ready to go at the same time.
 
 \subsubsection{Chat model}
 
@@ -5432,12 +5429,6 @@ Each token present in the context window may require a fairly large amount of me
 
 The realistic minimum required context size for Tracy to run the assistant is 100K tokens, but feel free to experiment.
 \end{bclogo}
-
-\subsubsection{Fast model}
-
-Sometimes Tracy needs to do some language processing where speed is more important than the smarts. The default setting is to use the chat model with the reasoning disabled, which is fine for most applications.
-
-It may be more convenient to use a small, quick model instead, in which case enable the \emph{Fast model} checkbox and choose the second model. To save precious GPU resources for the chat model, you may want to keep this model entirely in system RAM (set \texttt{-ngl 0} for llama.cpp or set \enquote{GPU offload} to 0 in LM Studio) and disable the KV cache offload to GPU (set \texttt{-nkvo} for llama.cpp or disable \enquote{Offload KV Cache to GPU Memory} in LM Studio).
 
 \subsubsection{In practice}
 
@@ -5478,12 +5469,11 @@ The control section allows you to clear the chat contents, reconnect to the LLM 
 	\end{itemize}
 Personality changes do not take effect until you start a new chat.
 \item \emph{\faEarthAmericas{}~Internet access} -- Determines whether the model can access network resources such as Wikipedia queries, web searches, and web page retrievals.
-\item \emph{\faTag{}~Annotate call stacks} -- Enables automatic annotation of call stacks (see section~\ref{callstackwindow}). Disabled by default, as it requires proper configuration of the fast model.
+\item \emph{\faTag{}~Annotate call stacks} -- Enables automatic annotation of call stacks (see section~\ref{callstackwindow}). Disabled by default.
 \item \emph{\faHandPointRight{}~Show summary} -- Shows a short conversation topic after the initial question is asked.
 \item \emph{\faCommentDots{}~Chat suggestions} -- Suggests the next question the user may want to ask.
 \item \emph{Advanced} -- More advanced options are hidden here.
 \begin{itemize}
-\item \emph{\faBoltLightning{}~Fast model} -- Select the fast model.
 \item \emph{\faTemperatureHalf{}~Temperature} -- Allows changing default model temperature setting.
 \item \emph{\faLightbulb{}~Show all thinking regions} -- Always shows all reasoning sections and all tool calls made by model.
 \item \emph{Tool reply size limit} -- Configurable maximum size for tool responses.

@@ -98,7 +98,6 @@ private:
     std::unique_ptr<TracyLlmTools> m_tools;
 
     int m_modelIdx;
-    int m_fastIdx;
 
     std::atomic<bool> m_exit;
     std::condition_variable m_cv;

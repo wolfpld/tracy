@@ -279,41 +279,6 @@ void TracyLlm::Draw( WindowConstraints& constraints )
         if( ImGui::TreeNode( "Advanced" ) )
         {
             if( responding ) ImGui::BeginDisabled();
-            ImGui::AlignTextToFramePadding();
-            if( ImGui::Checkbox( ICON_FA_BOLT_LIGHTNING " Fast model:", &s_config.llmSeparateFastModel ) ) SaveConfig();
-            ImGui::SameLine();
-            if( !s_config.llmSeparateFastModel ) ImGui::BeginDisabled();
-            if( models.empty() || m_fastIdx < 0 )
-            {
-                ImGui::TextUnformatted( "No models available" );
-            }
-            else
-            {
-                ImGui::SetNextItemWidth( ImGui::GetContentRegionAvail().x );
-                if( ImGui::BeginCombo( "##fastmodel", models[m_fastIdx].name.c_str() ) )
-                {
-                    for( size_t i = 0; i < models.size(); ++i )
-                    {
-                        const auto& model = models[i];
-                        if( model.embeddings ) continue;
-                        if( ImGui::Selectable( model.name.c_str(), i == m_fastIdx ) )
-                        {
-                            m_fastIdx = i;
-                            s_config.llmFastModel = model.name;
-                            SaveConfig();
-                        }
-                        if( m_fastIdx == i ) ImGui::SetItemDefaultFocus();
-                        if( !model.quant.empty() )
-                        {
-                            ImGui::SameLine();
-                            ImGui::TextDisabled( "(%s)", model.quant.c_str() );
-                        }
-                    }
-                    ImGui::EndCombo();
-                }
-            }
-            if( !s_config.llmSeparateFastModel ) ImGui::EndDisabled();
-
             ImGui::Checkbox( ICON_FA_TEMPERATURE_HALF " Temperature", &m_setTemperature );
             ImGui::SameLine();
             ImGui::SetNextItemWidth( 40 * scale );
@@ -793,8 +758,7 @@ void TracyLlm::WorkerThread()
             auto param = m_currentJob->param2;
             auto callback = m_currentJob->callback2;
             lock.unlock();
-            const int modelIdx = s_config.llmSeparateFastModel ? m_fastIdx : m_modelIdx;
-            auto response = m_api->SendMessage( param, modelIdx );
+            auto response = m_api->SendMessage( param, m_modelIdx );
             callback( response );
             lock.lock();
             break;
@@ -819,7 +783,6 @@ void TracyLlm::WorkerThread()
 void TracyLlm::UpdateModels()
 {
     m_modelIdx = -1;
-    m_fastIdx = -1;
 
     auto& models = m_api->GetModels();
     auto it = std::ranges::find_if( models, []( const auto& model ) { return model.name == s_config.llmModel; } );
@@ -837,23 +800,6 @@ void TracyLlm::UpdateModels()
     else
     {
         m_modelIdx = std::distance( models.begin(), it );
-    }
-
-    it = std::ranges::find_if( models, []( const auto& model ) { return model.name == s_config.llmFastModel; } );
-    if( it == models.end() )
-    {
-        for( int i=0; i<models.size(); i++ )
-        {
-            if( !models[i].embeddings )
-            {
-                m_fastIdx = i;
-                break;
-            }
-        }
-    }
-    else
-    {
-        m_fastIdx = std::distance( models.begin(), it );
     }
 }
 
@@ -1041,8 +987,7 @@ bool TracyLlm::QueueFastMessageLocking( const nlohmann::json& req, std::function
 // requires m_jobsLock
 bool TracyLlm::QueueFastMessage( const nlohmann::json& req, std::function<void(nlohmann::json)> callback )
 {
-    const int modelIdx = s_config.llmSeparateFastModel ? m_fastIdx : m_modelIdx;
-    if( !m_api->IsConnected() || modelIdx < 0 ) return false;
+    if( !m_api->IsConnected() || m_modelIdx < 0 ) return false;
     m_jobs.emplace_back( std::make_shared<WorkItem>( WorkItem {
         .task = Task::FastMessage,
         .callback2 = std::move( callback ),

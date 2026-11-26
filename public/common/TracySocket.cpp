@@ -569,15 +569,10 @@ UdpBroadcast::~UdpBroadcast()
     if( m_sock != -1 ) Close();
 }
 
-bool UdpBroadcast::Open( const char* addr, uint16_t port )
+bool UdpBroadcast::Open( const char* addr )
 {
     TRACY_ASSERT( m_sock == -1 );
 
-    // The broadcast address is a numeric IPv4 address (Send sends to the address parsed here), so the socket is created
-    // directly rather than through getaddrinfo, which resolved nothing more. On macOS the first getaddrinfo with a host
-    // name loads libnetwork (dlopen); called from the profiler's worker thread, which starts during static
-    // initialization, it can deadlock with dyld while the main thread is still running image initializers.
-    (void)port;
     if( inet_pton( AF_INET, addr, &m_addr ) != 1 ) return false;
 
     int sock = socket( AF_INET, SOCK_DGRAM, IPPROTO_UDP );

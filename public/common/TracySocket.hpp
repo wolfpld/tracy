@@ -115,7 +115,7 @@ public:
     UdpBroadcast();
     ~UdpBroadcast();
 
-    bool Open( const char* addr, uint16_t port );
+    bool Open( const char* addr );
     void Close();
 
     int Send( uint16_t port, const void* data, int len );

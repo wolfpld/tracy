@@ -229,18 +229,6 @@ bool TracyLlmApi::ChatCompletion( const nlohmann::json& req, const std::function
     }
 }
 
-bool TracyLlmApi::Embeddings( const nlohmann::json& req, nlohmann::json& response, bool separateConnection )
-{
-    assert( m_curl );
-
-    std::string buf;
-    auto res = PostRequest( m_url + "/v1/embeddings", req.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace ), buf, separateConnection );
-    if( res != 200 ) return false;
-
-    response = nlohmann::json::parse( buf );
-    return true;
-}
-
 int TracyLlmApi::Tokenize( const std::string& text, int modelIdx )
 {
     if( m_type == Type::LlamaSwap || m_type == Type::LlamaCpp )
@@ -257,7 +245,7 @@ int TracyLlmApi::Tokenize( const std::string& text, int modelIdx )
             url = m_url + "/tokenize";
             req["model"] = m_models[modelIdx].name;
         }
-        auto res = PostRequest( url, req.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace ), buf, true );
+        auto res = PostRequest( url, req.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace ), buf );
         if( res != 200 ) return -1;
 
         try
@@ -288,7 +276,7 @@ nlohmann::json TracyLlmApi::SendMessage( const nlohmann::json& chat, int modelId
 
     auto data = req.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
     std::string buf;
-    auto res = PostRequest( m_url + "/v1/chat/completions", data, buf, true );
+    auto res = PostRequest( m_url + "/v1/chat/completions", data, buf );
 
     try
     {
@@ -323,22 +311,17 @@ int64_t TracyLlmApi::GetRequest( const std::string& url, std::string& response )
     return http_code;
 }
 
-int64_t TracyLlmApi::PostRequest( const std::string& url, const std::string& data, std::string& response, bool separateConnection )
+int64_t TracyLlmApi::PostRequest( const std::string& url, const std::string& data, std::string& response )
 {
-    assert( m_curl );
     response.clear();
+
+    auto curl = curl_easy_init();
+    if( !curl ) return -1;
+    SetupCurl( curl );
 
     curl_slist *hdr = nullptr;
     hdr = curl_slist_append( hdr, "Accept: application/json" );
     hdr = curl_slist_append( hdr, "Content-Type: application/json" );
-
-    auto curl = m_curl;
-    if( separateConnection )
-    {
-        curl = curl_easy_init();
-        if( !curl ) return -1;
-        SetupCurl( curl );
-    }
 
     curl_easy_setopt( curl, CURLOPT_URL, url.c_str() );
     curl_easy_setopt( curl, CURLOPT_HTTPHEADER, hdr );
@@ -351,13 +334,13 @@ int64_t TracyLlmApi::PostRequest( const std::string& url, const std::string& dat
     curl_slist_free_all( hdr );
     if( res != CURLE_OK )
     {
-        if( separateConnection ) curl_easy_cleanup( curl );
+        curl_easy_cleanup( curl );
         return -1;
     }
 
     int64_t http_code = 0;
     curl_easy_getinfo( curl, CURLINFO_RESPONSE_CODE, &http_code );
-    if( separateConnection ) curl_easy_cleanup( curl );
+    curl_easy_cleanup( curl );
     return http_code;
 }
 

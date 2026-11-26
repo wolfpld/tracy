@@ -5367,13 +5367,6 @@ spec-default = true
 spec-type = draft-mtp
 chat-template-kwargs = {"preserve_thinking": true}
 ctx-size = 100000
-
-[nomic-ai/nomic-embed-text-v1.5-GGUF:Q4_K_M]
-hf = nomic-ai/nomic-embed-text-v1.5-GGUF:Q4_K_M
-embedding = true
-parallel = 4
-ctx-size = 8192
-cache-ram = 0
 \end{lstlisting}
 \item Run \texttt{llama serve -{}-models-preset llama.ini}
 \item Connect to llama.cpp inside the profiler!
@@ -5402,7 +5395,7 @@ There are no ideal LLM providers, but here are some options:
 
 Once you have installed the service provider, you will need to download the model files. The exact process depends on the provider you chose. LM Studio, for example, has a built-in downloader with an easy-to-use UI. For llama.cpp, you can follow their documentation (e.g., the \texttt{-hf} parameter) or download the model file via your web browser. Tracy will not issue commands to download any model on its own.
 
-There are three different model types that Tracy expects to have available. Ideally all three models would be loaded and ready to go at the same time.
+There are two different model types that Tracy expects to have available. Ideally both models would be loaded and ready to go at the same time.
 
 \subsubsection{Chat model}
 
@@ -5439,12 +5432,6 @@ Each token present in the context window may require a fairly large amount of me
 
 The realistic minimum required context size for Tracy to run the assistant is 100K tokens, but feel free to experiment.
 \end{bclogo}
-
-\subsubsection{Embedding model}
-
-This is a small model used for semantic search in the user manual. This should be \textbf{nomic-embed-text-1.5}, which is provided by default by LM Studio, or which you can download on your own for llama.cpp.
-
-LM Studio properly labels the model's capabilities. This is not the case with the llama.cpp/llama-swap setup. To make it work, your embedding model's name must contain the word \texttt{embed}.
 
 \subsubsection{Fast model}
 
@@ -5483,7 +5470,6 @@ The control section allows you to clear the chat contents, reconnect to the LLM 
 \begin{itemize}
 \item \emph{\faPlug{}~API} -- Enter the endpoint URL of the LLM provider here. A drop-down list is provided as a convenient way to select the default configuration of various providers. Note that the drop-down list is only used to fill in the endpoint URL. While Tracy does adapt to different ways each provider behaves, the feature detection is performed based on the endpoint conversation, not the drop-down selection.
 \item \emph{\faComments{}~Chat model} -- Here you can select one of the models you have configured in the LLM provider for chat.
-\item \emph{\faBookBookmark{}~Embeddings model} -- Select the vector embeddings model.
 \item \emph{Personality} -- Choose how the assistant should behave. Note that the actual behavior will vary depending on the language model you have chosen. The following options are available:
 	\begin{itemize}
 	\item \emph{\faFaceMeh{}~Assistant} -- The default behavior of the model with Tracy Assist role guidance.
@@ -5506,8 +5492,6 @@ Personality changes do not take effect until you start a new chat.
 \end{itemize}
 \end{itemize}
 
-The \emph{\faBook{}~Learn manual} button is used to build the search index for the user manual. This process only takes a short amount of time, and the results are cached until either the embeddings model changes or the manual is updated.
-
 The horizontal meter directly below shows how much of the context size has been used. Tracy uses various techniques to manage context size, such as limiting the amount of data provided to the model or removing older data. However, the context will eventually be fully utilized during an extended conversation, resulting in a significant degradation of the quality of model responses.
 
 The chat section contains the conversation with the automated assistant with alternating user and assistant turns. Clicking on the~\emph{\faUser{}~User} role icon removes the chat content up to the selected question. Similarly, clicking on the~\emph{\faRobot{}~Assistant} role icon removes the conversation content up to this point and generates another response from the assistant.
@@ -5527,7 +5511,7 @@ The automated assistant has access to a set of tools that allow it to gather inf
 \item \emph{Dictionary} -- Look up word definitions in Wiktionary.
 \item \emph{Web search} -- Search the web for information. Uses Google Search API if configured, otherwise falls back to Brave search, and then to DuckDuckGo.
 \item \emph{Webpage retrieval} -- Fetch and parse webpage content for analysis.
-\item \emph{Manual search} -- Perform semantic search in this user manual. Requires an embeddings model to be selected and the \emph{Learn manual} button to be clicked.
+\item \emph{Manual search} -- Search this user manual.
 \item \emph{Source file} -- Retrieve source file contents from the captured trace.
 \item \emph{Source search} -- Search within the captured source files using regular expressions.
 \item \emph{Symbol disassembly} -- Retrieve the disassembly and the captured profiling data of the symbol.

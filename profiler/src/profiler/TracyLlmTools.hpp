@@ -3,12 +3,10 @@
 
 #include <nlohmann/json.hpp>
 #include <memory>
-#include <mutex>
 #include <string>
-#include <thread>
 #include <vector>
 
-#include "TracyLlmEmbeddings.hpp"
+#include "TracyLlmBm25.hpp"
 #include "tracy_robin_hood.h"
 
 class EmbedData;
@@ -17,33 +15,19 @@ namespace tracy
 {
 
 struct LlmSkill;
-class TracyLlmApi;
 class View;
 class Worker;
 
 class TracyLlmTools
 {
 public:
-    struct EmbeddingState
-    {
-        std::string model;
-        bool done = false;
-        bool inProgress = false;
-        float progress = 0;
-    };
-
     TracyLlmTools( Worker& worker, const View& view, const std::vector<LlmSkill>& skills );
     ~TracyLlmTools();
 
-    std::string HandleToolCalls( const std::string& tool, const nlohmann::json& json, TracyLlmApi& api, int contextSize, bool hasEmbeddingsModel );
+    std::string HandleToolCalls( const std::string& tool, const nlohmann::json& json, int contextSize );
     std::string GetCurrentTime() const;
 
     static int CalcCtxBasedLimit( int ctxSize );
-
-    [[nodiscard]] EmbeddingState GetManualEmbeddingsState() const;
-    void SelectManualEmbeddings( const std::string& model );
-    void BuildManualEmbeddings( const std::string& model, TracyLlmApi& api );
-    void CancelManualEmbeddings();
 
     bool m_netAccess = true;
 
@@ -60,7 +44,7 @@ private:
     std::string SearchWebBrave( std::string query );
     std::string SearchWebDuckDuckGo( std::string query );
     std::string GetWebpage( const std::string& url );
-    std::string SearchManual( const std::string& query, TracyLlmApi& api, bool hasEmbeddingsModel );
+    std::string SearchManual( const std::string& query );
     std::string SourceFile( const std::string& file, uint32_t line, uint32_t context, uint32_t contextBack ) const;
     std::string SourceSearch( std::string query, bool caseInsensitive, const std::string& path ) const;
     std::string GetSkill( const std::string& name ) const;
@@ -68,19 +52,11 @@ private:
     std::string SymbolParents( const std::string& address, uint32_t limit, const std::string& mode ) const;
     std::string SamplingStats( const std::string& query, uint32_t limit ) const;
 
-    void ManualEmbeddingsWorker( TracyLlmApi& api );
-
     unordered_flat_map<std::string, std::string> m_webCache;
 
     int m_ctxSize;
 
-    mutable std::mutex m_lock;
-    std::thread m_thread;
-    bool m_cancel = false;
-    EmbeddingState m_manualEmbeddingState;
-    std::unique_ptr<TracyLlmEmbeddings> m_manualEmbeddings;
-
-    std::vector<std::pair<std::string, uint32_t>> m_chunkData;
+    std::unique_ptr<TracyLlmBm25> m_manualSearch;
 
     Worker& m_worker;
     const View& m_view;

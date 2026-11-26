@@ -148,8 +148,8 @@ if(NOT EMSCRIPTEN)
     list(APPEND SERVER_FILES
         TracyLlm.cpp
         TracyLlmApi.cpp
+        TracyLlmBm25.cpp
         TracyLlmChat.cpp
-        TracyLlmEmbeddings.cpp
         TracyLlmTools.cpp
     )
 endif()
@@ -376,7 +376,6 @@ if(NOT EMSCRIPTEN)
         base64
         tidy-static
         TracyPugixml
-        usearch
     )
 endif()
 

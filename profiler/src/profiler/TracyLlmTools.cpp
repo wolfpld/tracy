@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <curl/curl.h>
 #include <inttypes.h>
+#include <mutex>
 #include <nlohmann/json.hpp>
 #include <libbase64.h>
 #include <pugixml.hpp>
@@ -14,11 +15,9 @@
 #include "TracyConfig.hpp"
 #include "TracyDisassembly.hpp"
 #include "TracyLlm.hpp"
-#include "TracyLlmApi.hpp"
 #include "TracyLlmTools.hpp"
 #include "TracyManualData.hpp"
 #include "TracyPrint.hpp"
-#include "TracyStorage.hpp"
 #include "TracyUtility.hpp"
 #include "TracyView.hpp"
 #include "TracyWorker.hpp"
@@ -90,31 +89,9 @@ TracyLlmTools::TracyLlmTools( Worker& worker, const View& view, const std::vecto
     , m_view( view )
     , m_skills( skills )
 {
-    int idx = 0;
-    for( auto& chunk : GetManualData().GetChunks() )
-    {
-        std::string hdr;
-        if( !chunk.section.empty() ) hdr += "Section " + chunk.section;
-        if( !chunk.title.empty() )
-        {
-            if( !chunk.section.empty() ) hdr += ": ";
-            hdr += chunk.title;
-        }
-        hdr += '\n';
-
-        for( auto& line : SplitLines( chunk.text.c_str(), chunk.text.size() ) )
-        {
-            if( line.empty() ) continue;
-            m_chunkData.emplace_back( hdr + line, idx );
-        }
-        idx++;
-    }
 }
 
-TracyLlmTools::~TracyLlmTools()
-{
-    CancelManualEmbeddings();
-}
+TracyLlmTools::~TracyLlmTools() = default;
 
 template<typename T>
 static T GetParam( const nlohmann::json& json, const char* name )
@@ -150,7 +127,7 @@ static T GetParamOpt( const nlohmann::json& json, const char* name, T def )
 #define ParamOptBool(name, def) GetParamOpt<bool>( json, name, def )
 #define ParamOptString(name, def) GetParamOpt<const std::string&>( json, name, def )
 
-std::string TracyLlmTools::HandleToolCalls( const std::string& tool, const nlohmann::json& json, TracyLlmApi& api, int contextSize, bool hasEmbeddingsModel )
+std::string TracyLlmTools::HandleToolCalls( const std::string& tool, const nlohmann::json& json, int contextSize )
 {
     m_ctxSize = contextSize;
 
@@ -178,7 +155,7 @@ std::string TracyLlmTools::HandleToolCalls( const std::string& tool, const nlohm
         }
         else if( tool == "user_manual" )
         {
-            return SearchManual( Param( "query" ), api, hasEmbeddingsModel );
+            return SearchManual( Param( "query" ) );
         }
         else if( tool == "source_file" )
         {
@@ -226,142 +203,6 @@ std::string TracyLlmTools::GetCurrentTime() const
     strftime( buffer, sizeof( buffer ), "%Y-%m-%d %H:%M:%S", tm );
 
     return buffer;
-}
-
-TracyLlmTools::EmbeddingState TracyLlmTools::GetManualEmbeddingsState() const
-{
-    std::lock_guard lock( m_lock );
-    return m_manualEmbeddingState;
-}
-
-void TracyLlmTools::SelectManualEmbeddings( const std::string& model )
-{
-    std::lock_guard lock( m_lock );
-    assert( !m_manualEmbeddingState.inProgress );
-    if( m_manualEmbeddingState.done && m_manualEmbeddingState.model == model ) return;
-
-    auto cache = GetCachePath( model.c_str() );
-
-    try
-    {
-        m_manualEmbeddings = std::make_unique<TracyLlmEmbeddings>( cache, GetManualData().GetHash() );
-        m_manualEmbeddingState = { .model = model, .done = true };
-    }
-    catch( std::exception& ) {}
-}
-
-void TracyLlmTools::BuildManualEmbeddings( const std::string& model, TracyLlmApi& api )
-{
-    std::unique_lock lock( m_lock );
-    assert( !m_manualEmbeddingState.inProgress );
-    if( m_manualEmbeddingState.done && m_manualEmbeddingState.model == model ) return;
-
-    lock.unlock();
-    if( m_thread.joinable() ) m_thread.join();
-
-    assert( !m_cancel );
-    m_manualEmbeddingState = { .model = model, .inProgress = true };
-    m_thread = std::thread( [this, &api] { ManualEmbeddingsWorker( api ); } );
-}
-
-void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
-{
-    auto cache = GetCachePath( m_manualEmbeddingState.model.c_str() );
-
-    std::unique_lock lock( m_lock );
-    if( m_cancel )
-    {
-        m_manualEmbeddingState.inProgress = false;
-        m_manualEmbeddingState.done = false;
-        return;
-    }
-    lock.unlock();
-
-    size_t length;
-    {
-        nlohmann::json req;
-        req["input"] = "";
-        req["model"] = m_manualEmbeddingState.model;
-
-        nlohmann::json response;
-        api.Embeddings( req, response );
-
-        length = response["data"][0]["embedding"].size();
-    }
-
-    if( length == 0 )
-    {
-        lock.lock();
-        m_manualEmbeddingState.inProgress = false;
-        return;
-    }
-
-    const auto csz = m_chunkData.size();
-    m_manualEmbeddings = std::make_unique<TracyLlmEmbeddings>( length, csz );
-
-    constexpr size_t batchSize = 4;
-
-    std::vector<float> embeddings;
-    embeddings.reserve( length );
-
-    size_t i = 0;
-    while( i < csz )
-    {
-        lock.lock();
-        if( m_cancel )
-        {
-            m_manualEmbeddingState.inProgress = false;
-            m_manualEmbeddingState.done = false;
-            return;
-        }
-        m_manualEmbeddingState.progress = (float)i / csz;
-        lock.unlock();
-
-        const auto bsz = std::min( batchSize, csz - i );
-        std::vector<std::string> batch;
-        batch.reserve( bsz );
-        for( size_t j=0; j<bsz; j++ ) batch.emplace_back( "search_document: " + m_chunkData[i+j].first );
-
-        nlohmann::json req;
-        req["input"] = std::move( batch );
-        req["model"] = m_manualEmbeddingState.model;
-
-        nlohmann::json response;
-        if( !api.Embeddings( req, response ) )
-        {
-            m_manualEmbeddingState.inProgress = false;
-            m_manualEmbeddingState.done = false;
-            return;
-        }
-
-        auto& data = response["data"];
-        for( size_t j=0; j<bsz; j++ )
-        {
-            embeddings.clear();
-            for( auto& item : data[j]["embedding"] ) embeddings.emplace_back( item.get<float>() );
-            m_manualEmbeddings->Add( m_chunkData[i+j].second, embeddings );
-        }
-
-        i += bsz;
-    }
-
-    m_manualEmbeddings->Save( cache, GetManualData().GetHash() );
-
-    lock.lock();
-    m_manualEmbeddingState.inProgress = false;
-    m_manualEmbeddingState.done = true;
-}
-
-void TracyLlmTools::CancelManualEmbeddings()
-{
-    if( m_thread.joinable() )
-    {
-        m_lock.lock();
-        m_cancel = true;
-        m_lock.unlock();
-        m_thread.join();
-        m_cancel = false;
-    }
 }
 
 int TracyLlmTools::CalcCtxBasedLimit( int ctxSize )
@@ -803,67 +644,53 @@ std::string TracyLlmTools::GetWebpage( const std::string& url )
     return response;
 }
 
-std::string TracyLlmTools::SearchManual( const std::string& query, TracyLlmApi& api, bool hasEmbeddingsModel )
+std::string TracyLlmTools::SearchManual( const std::string& query )
 {
-    if( !hasEmbeddingsModel ) return "Searching the user manual requires vector embeddings model to be selected. You must inform the user that he should download such a model using their LLM provider software, so you can use this tool.";
-    if( !m_manualEmbeddingState.done ) return "User manual embedding vectors are not calculated. You must inform the user that he should click the \"Learn manual\" button, so you can use this tool.";
-
-    constexpr size_t MaxSearchResults = 20;
-    constexpr size_t MaxOutputChunks = 10;
-
-    nlohmann::json req;
-    req["input"] = "search_query: " + query;
-    req["model"] = m_manualEmbeddingState.model;
-
-    nlohmann::json response;
-    if( !api.Embeddings( req, response, true ) ) return "Error: Failed to get embedding for the query";
-    auto& embedding = response["data"][0]["embedding"];
-
-    if( embedding.empty() ) return "Error: Failed to get embedding for the query";
-
-    std::vector<float> vec;
-    vec.reserve( embedding.size() );
-    for( auto& item : embedding ) vec.emplace_back( item.get<float>() );
-
-    auto results = m_manualEmbeddings->Search( vec, MaxSearchResults );
-    std::ranges::sort( results, []( const auto& a, const auto& b ) { return a.distance < b.distance; } );
-
-    std::vector<std::pair<int, float>> chunks;
-    chunks.reserve( results.size() );
-    for( auto& item : results )
+    const auto& manualChunks = GetManualData().GetChunks();
+    if( !m_manualSearch )
     {
-        const auto chunk = m_manualEmbeddings->Get( item.idx );
-        if( std::ranges::find_if( chunks, [chunk]( const auto& v ) { return v.first == chunk; } ) == chunks.end() ) chunks.emplace_back( chunk, item.distance );
+        std::vector<TracyLlmBm25::Doc> docs;
+        docs.reserve( manualChunks.size() );
+        for( auto& chunk : manualChunks )
+        {
+            std::string header;
+            if( !chunk.section.empty() ) header += chunk.section + " ";
+            header += chunk.title;
+            if( !chunk.parents.empty() ) header += " " + chunk.parents;
+            docs.emplace_back( TracyLlmBm25::Doc { std::move( header ), chunk.text } );
+        }
+        m_manualSearch = std::make_unique<TracyLlmBm25>( std::move( docs ) );
     }
-    if( chunks.size() > MaxOutputChunks ) chunks.resize( MaxOutputChunks );
 
-    auto& manualChunks = GetManualData().GetChunks();
+    constexpr size_t MaxOutputChunks = 10;
+    auto results = m_manualSearch->Search( query, MaxOutputChunks );
+
     const auto maxSize = CalcMaxSize();
     int totalSize = 0;
-    int idx;
-    for( idx = 0; idx < chunks.size(); idx++ )
+    size_t idx;
+    for( idx = 0; idx < results.size(); idx++ )
     {
-        totalSize += manualChunks[chunks[idx].first].text.size();
+        totalSize += (int)manualChunks[results[idx].doc].text.size();
         if( totalSize >= maxSize ) break;
     }
-    if( idx < chunks.size() ) chunks.resize( idx );
+    if( idx < results.size() ) results.resize( idx );
 
-    nlohmann::json json;
-    for( auto& chunk : chunks )
+    nlohmann::json json = nlohmann::json::array();
+    for( auto& r : results )
     {
-        auto& m = manualChunks[chunk.first];
+        auto& m = manualChunks[r.doc];
 
-        nlohmann::json r = {
-            { "distance", chunk.second },
+        nlohmann::json j = {
+            { "score", r.score },
             { "content", m.text },
             { "parents", m.parents }
         };
 
-        if( !m.title.empty() ) r["title"] = m.title;
-        if( !m.section.empty() ) r["section"] = m.section;
-        if( !m.link.empty() ) r["link"] = m.link;
+        if( !m.title.empty() ) j["title"] = m.title;
+        if( !m.section.empty() ) j["section"] = m.section;
+        if( !m.link.empty() ) j["link"] = m.link;
 
-        json.emplace_back( std::move( r ) );
+        json.emplace_back( std::move( j ) );
     }
 
     return json.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );

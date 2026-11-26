@@ -117,36 +117,6 @@ void TracyLlm::Draw( WindowConstraints& constraints )
 
     auto& style = ImGui::GetStyle();
 
-    const auto manualEmbeddingsState = m_tools->GetManualEmbeddingsState();
-    if( manualEmbeddingsState.inProgress )
-    {
-        ImGui::PushFont( g_fonts.normal, FontBig );
-        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 7 ) * 0.5f ) );
-        TextCentered( ICON_FA_BOOK_BOOKMARK );
-        ImGui::Spacing();
-        TextCentered( "Building manual embeddings…" );
-        ImGui::Spacing();
-        DrawWaitingDotsCentered( s_time );
-        ImGui::TextUnformatted( "" );
-        ImGui::PopFont();
-        const float w = 100 * scale;
-        const float ww = ImGui::GetWindowWidth();
-        ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-        ImGui::SetCursorPosX( ( ww - w ) * 0.5f );
-        ImGui::ProgressBar( manualEmbeddingsState.progress, ImVec2( w, 0 ), "" );
-        ImGui::PopStyleVar();
-        ImGui::Spacing();
-        char tmp[128];
-        snprintf( tmp, sizeof( tmp ), "Progress: %.1f%%", manualEmbeddingsState.progress * 100 );
-        TextCentered( tmp );
-        ImGui::Spacing();
-        const auto sz = ImGui::CalcTextSize( "Cancel" ).x + style.FramePadding.x * 2;
-        ImGui::SetCursorPosX( ( ImGui::GetWindowWidth() - sz ) * 0.5f );
-        if( ImGui::Button( "Cancel" ) ) m_tools->CancelManualEmbeddings();
-        ImGui::End();
-        return;
-    }
-
     ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 1.f, 0.f, 1.0f ) );
     ImGui::AlignTextToFramePadding();
     ImGui::TextWrapped( ICON_FA_TRIANGLE_EXCLAMATION );
@@ -264,39 +234,6 @@ void TracyLlm::Draw( WindowConstraints& constraints )
             }
         }
 
-        ImGui::AlignTextToFramePadding();
-        TextDisabledUnformatted( ICON_FA_BOOK_BOOKMARK " Embeddings model:" );
-        ImGui::SameLine();
-        if( models.empty() || m_embedIdx < 0 )
-        {
-            ImGui::TextUnformatted( "No models available" );
-        }
-        else
-        {
-            ImGui::SetNextItemWidth( ImGui::GetContentRegionAvail().x );
-            if( ImGui::BeginCombo( "##embedmodel", models[m_embedIdx].name.c_str() ) )
-            {
-                for( size_t i = 0; i < models.size(); ++i )
-                {
-                    const auto& model = models[i];
-                    if( !model.embeddings ) continue;
-                    if( ImGui::Selectable( model.name.c_str(), i == m_embedIdx ) )
-                    {
-                        m_embedIdx = i;
-                        s_config.llmEmbeddingsModel = model.name;
-                        SaveConfig();
-                        m_tools->SelectManualEmbeddings( model.name );
-                    }
-                    if( m_embedIdx == i ) ImGui::SetItemDefaultFocus();
-                    if( !model.quant.empty() )
-                    {
-                        ImGui::SameLine();
-                        ImGui::TextDisabled( "(%s)", model.quant.c_str() );
-                    }
-                }
-                ImGui::EndCombo();
-            }
-        }
         if( responding ) ImGui::EndDisabled();
 
         ImGui::Separator();
@@ -511,19 +448,6 @@ void TracyLlm::Draw( WindowConstraints& constraints )
         ImGui::PopFont();
         ImGui::End();
         return;
-    }
-
-    if( !manualEmbeddingsState.done || m_embedIdx < 0 || manualEmbeddingsState.model != models[m_embedIdx].name )
-    {
-        if( m_embedIdx < 0 ) ImGui::BeginDisabled();
-        if( ImGui::SmallButton( ICON_FA_BOOK_BOOKMARK " Learn manual" ) )
-        {
-            m_jobsLock.lock();
-            if( m_currentJob ) m_currentJob->stop = true;
-            m_jobsLock.unlock();
-            m_tools->BuildManualEmbeddings( models[m_embedIdx].name, *m_api );
-        }
-        if( m_embedIdx < 0 ) ImGui::EndDisabled();
     }
 
     const auto ctxSize = models[m_modelIdx].contextSize;
@@ -896,7 +820,6 @@ void TracyLlm::UpdateModels()
 {
     m_modelIdx = -1;
     m_fastIdx = -1;
-    m_embedIdx = -1;
 
     auto& models = m_api->GetModels();
     auto it = std::ranges::find_if( models, []( const auto& model ) { return model.name == s_config.llmModel; } );
@@ -931,28 +854,6 @@ void TracyLlm::UpdateModels()
     else
     {
         m_fastIdx = std::distance( models.begin(), it );
-    }
-
-    it = std::ranges::find_if( models, []( const auto& model ) { return model.name == s_config.llmEmbeddingsModel; } );
-    if( it == models.end() )
-    {
-        for( int i=0; i<models.size(); i++ )
-        {
-            if( models[i].embeddings )
-            {
-                m_embedIdx = i;
-                break;
-            }
-        }
-    }
-    else
-    {
-        m_embedIdx = std::distance( models.begin(), it );
-    }
-
-    if( m_embedIdx >= 0 )
-    {
-        m_tools->SelectManualEmbeddings( models[m_embedIdx].name );
     }
 }
 
@@ -1503,7 +1404,7 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
                 std::string result;
                 try
                 {
-                    result = m_tools->HandleToolCalls( name, nlohmann::json::parse( arguments ), *m_api, m_api->GetModels()[m_modelIdx].contextSize, m_embedIdx >= 0 );
+                    result = m_tools->HandleToolCalls( name, nlohmann::json::parse( arguments ), m_api->GetModels()[m_modelIdx].contextSize );
                 }
                 catch( const nlohmann::json::exception& e )
                 {

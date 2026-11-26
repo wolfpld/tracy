@@ -99,7 +99,6 @@ private:
 
     int m_modelIdx;
     int m_fastIdx;
-    int m_embedIdx;
 
     std::atomic<bool> m_exit;
     std::condition_variable m_cv;

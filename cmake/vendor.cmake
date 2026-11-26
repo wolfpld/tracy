@@ -280,15 +280,6 @@ if(VENDOR_GUI)
             EXCLUDE_FROM_ALL TRUE
         )
 
-        # usearch
-
-        CPMAddPackage(
-            NAME usearch
-            GITHUB_REPOSITORY unum-cloud/usearch
-            GIT_TAG v2.26.6
-            EXCLUDE_FROM_ALL TRUE
-        )
-
         # pugixml
 
         pkg_check_modules(PUGIXML pugixml)

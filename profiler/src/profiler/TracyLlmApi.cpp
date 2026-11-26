@@ -262,12 +262,10 @@ int TracyLlmApi::Tokenize( const std::string& text, int modelIdx )
     return -1;
 }
 
-nlohmann::json TracyLlmApi::SendMessage( const nlohmann::json& chat, int modelIdx )
+nlohmann::json TracyLlmApi::SendMessage( const nlohmann::json& chat, const std::string& model )
 {
-    assert( m_curl );
-
     nlohmann::json req = {
-        { "model", m_models[modelIdx].name },
+        { "model", model },
         { "messages", chat },
         { "chat_template_kwargs", {
             { "enable_thinking", false }

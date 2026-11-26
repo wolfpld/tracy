@@ -38,7 +38,6 @@ class TracyLlm
     {
         Connect,
         SendMessage,
-        FastMessage,
         Tokenize
     };
 
@@ -73,6 +72,7 @@ private:
     bool QueueFastMessage( const nlohmann::json& req, std::function<void(nlohmann::json)> callback );
 
     void WorkerThread();
+    void AuxWorkerThread();
 
     void UpdateModels();
     void ResetChat();
@@ -101,13 +101,18 @@ private:
 
     std::atomic<bool> m_exit;
     std::condition_variable m_cv;
+    std::condition_variable m_auxCv;
+    std::condition_variable m_auxIdleCv;
     std::thread m_thread;
+    std::thread m_auxThread;
 
     mutable std::mutex m_jobsLock;
     std::vector<std::shared_ptr<WorkItem>> m_jobs;
+    std::vector<std::shared_ptr<WorkItem>> m_auxJobs;
     std::shared_ptr<WorkItem> m_currentJob;
 
     bool m_busy = false;
+    bool m_auxBusy = false;
     bool m_focusInput = false;
     std::atomic<int> m_chatId {0};
     int m_usedCtx = 0;

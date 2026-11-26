@@ -67,9 +67,9 @@ TracyLlm::TracyLlm( Worker& worker, View& view )
     m_chatUi = std::make_unique<TracyLlmChat>( view, worker, m_skills );
     m_tools = std::make_unique<TracyLlmTools>( worker, view, m_skills );
 
-    m_busy = true;
     QueueConnect();
     m_thread = std::thread( [this] { WorkerThread(); } );
+    m_auxThread = std::thread( [this] { AuxWorkerThread(); } );
 }
 
 TracyLlm::~TracyLlm()
@@ -77,15 +77,18 @@ TracyLlm::~TracyLlm()
     delete[] m_input;
     delete[] m_apiInput;
 
-    if( m_thread.joinable() )
+    if( m_thread.joinable() || m_auxThread.joinable() )
     {
         {
             std::lock_guard lock( m_jobsLock );
             if( m_currentJob ) m_currentJob->stop = true;
             m_exit.store( true, std::memory_order_release );
             m_cv.notify_all();
+            m_auxCv.notify_all();
+            m_auxIdleCv.notify_all();
         }
         m_thread.join();
+        m_auxThread.join();
     }
 }
 
@@ -740,12 +743,14 @@ void TracyLlm::WorkerThread()
         case Task::Connect:
         {
             auto callback = m_currentJob->callback;
-            m_busy = true;
+            m_auxIdleCv.wait( lock, [this] { return !m_auxBusy || m_exit.load( std::memory_order_acquire ); } );
+            if( m_exit.load( std::memory_order_acquire ) ) break;
             lock.unlock();
             m_api->Connect( s_config.llmAddress.c_str() );
             callback();
             lock.lock();
             m_busy = false;
+            m_auxCv.notify_all();
             break;
         }
         case Task::SendMessage:
@@ -753,16 +758,6 @@ void TracyLlm::WorkerThread()
             SendMessage();
             lock.lock();
             break;
-        case Task::FastMessage:
-        {
-            auto param = m_currentJob->param2;
-            auto callback = m_currentJob->callback2;
-            lock.unlock();
-            auto response = m_api->SendMessage( param, m_modelIdx );
-            callback( response );
-            lock.lock();
-            break;
-        }
         case Task::Tokenize:
         {
             auto param = m_currentJob->param;
@@ -779,6 +774,33 @@ void TracyLlm::WorkerThread()
         m_currentJob.reset();
     }
 };
+
+void TracyLlm::AuxWorkerThread()
+{
+    std::unique_lock lock( m_jobsLock );
+    while( !m_exit.load( std::memory_order_acquire ) )
+    {
+        m_auxCv.wait( lock, [this] { return ( !m_auxJobs.empty() && !m_busy ) || m_exit.load( std::memory_order_acquire ); } );
+        if( m_exit.load( std::memory_order_acquire ) ) break;
+
+        auto job = std::move( m_auxJobs.front() );
+        m_auxJobs.erase( m_auxJobs.begin() );
+        m_auxBusy = true;
+
+        const bool valid = m_modelIdx >= 0 && (size_t)m_modelIdx < m_api->GetModels().size();
+        const std::string model = valid ? m_api->GetModels()[m_modelIdx].name : std::string();
+
+        lock.unlock();
+        if( valid )
+        {
+            auto response = m_api->SendMessage( job->param2, model );
+            job->callback2( std::move( response ) );
+        }
+        lock.lock();
+        m_auxBusy = false;
+        m_auxIdleCv.notify_all();
+    }
+}
 
 void TracyLlm::UpdateModels()
 {
@@ -954,6 +976,7 @@ void TracyLlm::UpdateSystemPrompt()
 // requires m_jobsLock
 void TracyLlm::QueueConnect()
 {
+    m_busy = true;
     m_jobs.emplace_back( std::make_shared<WorkItem>( WorkItem {
         .task = Task::Connect,
         .callback = [this] { UpdateModels(); }
@@ -988,12 +1011,11 @@ bool TracyLlm::QueueFastMessageLocking( const nlohmann::json& req, std::function
 bool TracyLlm::QueueFastMessage( const nlohmann::json& req, std::function<void(nlohmann::json)> callback )
 {
     if( !m_api->IsConnected() || m_modelIdx < 0 ) return false;
-    m_jobs.emplace_back( std::make_shared<WorkItem>( WorkItem {
-        .task = Task::FastMessage,
+    m_auxJobs.emplace_back( std::make_shared<WorkItem>( WorkItem {
         .callback2 = std::move( callback ),
         .param2 = req
     } ) );
-    m_cv.notify_all();
+    m_auxCv.notify_all();
     return true;
 }
 

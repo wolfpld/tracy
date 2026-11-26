@@ -35,7 +35,7 @@ public:
     bool Connect( const char* url );
     bool ChatCompletion( const nlohmann::json& req, const std::function<bool(const nlohmann::json&)>& callback, int modelIdx );
     [[nodiscard]] int Tokenize( const std::string& text, int modelIdx );
-    [[nodiscard]] nlohmann::json SendMessage( const nlohmann::json& chat, int modelIdx );
+    [[nodiscard]] nlohmann::json SendMessage( const nlohmann::json& chat, const std::string& model );
 
     [[nodiscard]] bool IsConnected() const { return m_curl != nullptr; }
     [[nodiscard]] const std::vector<LlmModel>& GetModels() const { return m_models; }

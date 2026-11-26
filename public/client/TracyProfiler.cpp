@@ -1666,16 +1666,23 @@ Profiler::Profiler()
     m_safeSendBuffer = (char*)tracy_malloc( SafeSendBufferSize );
 
 #if !defined _WIN32 && !defined TRACY_HAS_CUSTOM_SAFE_COPY
-    pipe(m_pipe);
+    if( pipe( m_pipe ) != 0 )
+    {
+        m_pipe[0] = m_pipe[1] = -1;
+        m_pipeBufSize = 0;
+    }
+    else
+    {
 #  if defined __APPLE__ || defined __FreeBSD__ || defined __NetBSD__ || defined __OpenBSD__ || defined __DragonFly__ || defined __VXWORKS__
-    // FreeBSD/XNU/VxWorks don't have F_SETPIPE_SZ, so use the default
-    m_pipeBufSize = 16384;
+        // FreeBSD/XNU/VxWorks don't have F_SETPIPE_SZ, so use the default
+        m_pipeBufSize = 16384;
 #  else
-    m_pipeBufSize = (int)(ptrdiff_t)SafeSendBufferSize;
-    while( fcntl( m_pipe[0], F_SETPIPE_SZ, m_pipeBufSize ) < 0 && errno == EPERM ) m_pipeBufSize /= 2; // too big; reduce
-    m_pipeBufSize = fcntl( m_pipe[0], F_GETPIPE_SZ );
+        m_pipeBufSize = (int)(ptrdiff_t)SafeSendBufferSize;
+        while( fcntl( m_pipe[0], F_SETPIPE_SZ, m_pipeBufSize ) < 0 && errno == EPERM ) m_pipeBufSize /= 2; // too big; reduce
+        m_pipeBufSize = fcntl( m_pipe[0], F_GETPIPE_SZ );
 #  endif
-    fcntl( m_pipe[1], F_SETFL, O_NONBLOCK );
+        fcntl( m_pipe[1], F_SETFL, O_NONBLOCK );
+    }
 #endif
 
 #if !defined(TRACY_DELAYED_INIT) || !defined(TRACY_MANUAL_LIFETIME)

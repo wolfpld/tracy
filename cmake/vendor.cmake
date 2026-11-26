@@ -72,7 +72,7 @@ endif()
 CPMAddPackage(
     NAME zstd
     GITHUB_REPOSITORY facebook/zstd
-    GIT_TAG v1.5.7
+    GIT_TAG v1.6.0
     OPTIONS
         "ZSTD_BUILD_SHARED OFF"
     EXCLUDE_FROM_ALL TRUE

@@ -85,7 +85,7 @@ void SysPower::ScanDirectory( const char* path, int parent )
                 FILE* f = fopen( tmp, "r" );
                 if( f )
                 {
-                    (void)fscanf( f, "%" PRIu64, &maxRange );
+                    if( fscanf( f, "%" PRIu64, &maxRange ) != 1 ) maxRange = 0;
                     fclose( f );
                 }
             }

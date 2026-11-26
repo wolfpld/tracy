@@ -569,51 +569,35 @@ UdpBroadcast::~UdpBroadcast()
     if( m_sock != -1 ) Close();
 }
 
-bool UdpBroadcast::Open( const char* addr, uint16_t port )
+bool UdpBroadcast::Open( const char* addr )
 {
     TRACY_ASSERT( m_sock == -1 );
 
-    struct addrinfo hints;
-    struct addrinfo *res, *ptr;
+    if( inet_pton( AF_INET, addr, &m_addr ) != 1 ) return false;
 
-    memset( &hints, 0, sizeof( hints ) );
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_DGRAM;
-
-    char portbuf[32];
-    sprintf( portbuf, "%" PRIu16, port );
-
-    if( getaddrinfo( addr, portbuf, &hints, &res ) != 0 ) return false;
-    int sock = 0;
-    for( ptr = res; ptr; ptr = ptr->ai_next )
-    {
-        if( ( sock = socket( ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol ) ) == -1 ) continue;
+    int sock = socket( AF_INET, SOCK_DGRAM, IPPROTO_UDP );
+    if( sock == -1 ) return false;
 #if defined __APPLE__
-        int val = 1;
-        setsockopt( sock, SOL_SOCKET, SO_NOSIGPIPE, &val, sizeof( val ) );
+    int val = 1;
+    setsockopt( sock, SOL_SOCKET, SO_NOSIGPIPE, &val, sizeof( val ) );
 #endif
 #if defined _WIN32
-        unsigned long broadcast = 1;
-        if( setsockopt( sock, SOL_SOCKET, SO_BROADCAST, (const char*)&broadcast, sizeof( broadcast ) ) == -1 )
+    unsigned long broadcast = 1;
+    if( setsockopt( sock, SOL_SOCKET, SO_BROADCAST, (const char*)&broadcast, sizeof( broadcast ) ) == -1 )
 #else
-        int broadcast = 1;
-        if( setsockopt( sock, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof( broadcast ) ) == -1 )
+    int broadcast = 1;
+    if( setsockopt( sock, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof( broadcast ) ) == -1 )
 #endif
-        {
+    {
 #ifdef _WIN32
-            closesocket( sock );
+        closesocket( sock );
 #else
-            close( sock );
+        close( sock );
 #endif
-            continue;
-        }
-        break;
+        return false;
     }
-    freeaddrinfo( res );
-    if( !ptr ) return false;
 
     m_sock = sock;
-    inet_pton( AF_INET, addr, &m_addr );
     return true;
 }
 

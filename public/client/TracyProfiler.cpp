@@ -2026,7 +2026,7 @@ void Profiler::Worker()
 #  else
     const char* addr = "255.255.255.255";
 #  endif
-    if( !m_broadcast->Open( addr, broadcastPort ) )
+    if( !m_broadcast->Open( addr ) )
     {
         m_broadcast->~UdpBroadcast();
         tracy_free( m_broadcast );

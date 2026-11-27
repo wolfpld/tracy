@@ -184,6 +184,11 @@ std::string TracyLlmTools::HandleToolCalls( const std::string& tool, const nlohm
             std::string empty;
             return SamplingStats( ParamOptString( "query", empty ), ParamOptU32( "limit", 30 ) );
         }
+        else if( tool == "status_update" )
+        {
+            Param( "message" );
+            return "Reported.";
+        }
         return "Unknown tool call: " + tool;
     }
     catch( const std::exception& e )

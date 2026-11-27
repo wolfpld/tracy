@@ -229,6 +229,23 @@
 {
   "type": "function",
   "function": {
+    "name": "status_update",
+    "description": "Report progress to the user while working on a multi-step task. The message must be a single short line of a few words, in the language the user is using. Example: 'Comparing the two call stacks…'.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string",
+          "description": "Short one-line progress message, ending with an ellipsis."
+        }
+      },
+      "required": ["message"]
+    }
+  }
+},
+{
+  "type": "function",
+  "function": {
     "name": "sampling_stats",
     "description": "Get sampling statistics for functions, sorted by time spent in each.",
     "parameters": {

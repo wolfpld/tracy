@@ -69,6 +69,33 @@ static const char* utfendl( const char* str, int len )
     return str;
 }
 
+static std::string SanitizeStatus( const std::string& msg )
+{
+    std::string str = msg;
+    for( auto& c : str )
+    {
+        if( c == '\n' || c == '\r' ) c = ' ';
+    }
+    if( utflen( str.c_str() ) > 60 )
+    {
+        str.resize( utfendl( str.c_str(), 60 ) - str.c_str() );
+    }
+    return str;
+}
+
+static std::string StatusMessage( const nlohmann::json& function )
+{
+    if( !function.contains( "name" ) || !function["name"].is_string() || function["name"].get_ref<const std::string&>() != TracyLlmChat::StatusTool ) return "";
+    if( !function.contains( "arguments" ) ) return "";
+    try
+    {
+        auto args = nlohmann::json::parse( function["arguments"].get_ref<const std::string&>() );
+        if( args.contains( "message" ) && args["message"].is_string() ) return SanitizeStatus( args["message"].get<std::string>() );
+    }
+    catch( nlohmann::json::exception& ) {}
+    return "";
+}
+
 
 std::string TracyLlmChat::ToolCallDescription( const nlohmann::json& json ) const
 {
@@ -372,10 +399,41 @@ bool TracyLlmChat::Turn( TurnRole role, std::vector<nlohmann::json>::iterator it
     }
     else
     {
+        // The think node spans the whole tool loop until a reply with content, so the
+        // label must come from the last update of the run, not of this message alone.
+        std::string status;
+        if( think != Think::Hide )
+        {
+            for( auto cit = it; cit != end; ++cit )
+            {
+                const auto& line = *cit;
+                if( !line.contains( "role" ) ) break;
+                const auto& lineRole = line["role"].get_ref<const std::string&>();
+                if( lineRole == "tool" ) continue;
+                if( lineRole != "assistant" ) break;
+
+                const bool hasContent = line.contains( "content" ) &&
+                    line["content"].get_ref<const std::string&>().find_first_not_of( '\n' ) != std::string::npos;
+                if( cit != it && hasContent ) break;
+
+                if( line.contains( "tool_calls" ) )
+                {
+                    for( auto& call : line["tool_calls"] )
+                    {
+                        if( !call.contains( "function" ) ) continue;
+                        auto s = StatusMessage( call["function"] );
+                        if( !s.empty() ) status = std::move( s );
+                    }
+                }
+                if( hasContent ) break;
+            }
+        }
+        const char* statusStr = status.empty() ? nullptr : status.c_str();
+
         if( think == Think::Show && json.contains( "reasoning_content" ) )
         {
             auto& reasoning = json["reasoning_content"].get_ref<const std::string&>();
-            ThinkScope( !roleChange );
+            ThinkScope( !roleChange, statusStr );
             if( m_thinkOpen )
             {
                 PrintThink( reasoning.c_str(), reasoning.size() );
@@ -417,7 +475,7 @@ bool TracyLlmChat::Turn( TurnRole role, std::vector<nlohmann::json>::iterator it
         }
         if( think != Think::Hide && json.contains( "tool_calls" ) )
         {
-            ThinkScope( !roleChange && !json.contains( "content" ) );
+            ThinkScope( !roleChange && !json.contains( "content" ), statusStr );
             if( m_thinkOpen )
             {
                 ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.5f, 0.5f, 0.5f, 1.f ) );
@@ -434,13 +492,22 @@ bool TracyLlmChat::Turn( TurnRole role, std::vector<nlohmann::json>::iterator it
                             if( first ) first = false;
                             else ImGui::Spacing();
 
+                            auto& name = function["name"].get_ref<const std::string&>();
+                            if( name == StatusTool )
+                            {
+                                const auto statusLine = StatusMessage( function );
+                                ImGui::PushFont( g_fonts.italic, FontNormal );
+                                ImGui::TextDisabled( "%s", statusLine.empty() ? "Progress update…" : statusLine.c_str() );
+                                ImGui::PopFont();
+                                continue;
+                            }
+
                             std::string tmp = "##" + id;
                             auto open = ImGui::TreeNodeEx( tmp.c_str(), ImGuiTreeNodeFlags_SpanAvailWidth );
                             ImGui::SameLine();
                             const auto desc = ToolCallDescription( function );
                             if( desc.empty() )
                             {
-                                auto& name = function["name"].get_ref<const std::string&>();
                                 ImGui::Text( "Tool call (%s/%s)…", name.c_str(), id.substr( 0, 8 ).c_str() );
                             }
                             else
@@ -550,14 +617,20 @@ void TracyLlmChat::NormalScope()
     m_thinkActive = false;
 }
 
-void TracyLlmChat::ThinkScope( bool spacing )
+void TracyLlmChat::ThinkScope( bool spacing, const char* status )
 {
     if( m_thinkActive ) return;
     m_thinkActive = true;
     if( spacing ) ImGui::Spacing();
     ImGui::PushID( m_thinkIdx++ );
     ImGui::PushStyleColor( ImGuiCol_Text, ThinkColor );
-    m_thinkOpen = ImGui::TreeNode( ICON_FA_LIGHTBULB " Internal thoughts…" );
+    std::string label;
+    if( status != nullptr )
+    {
+        label = ICON_FA_LIGHTBULB " ";
+        label += status;
+    }
+    m_thinkOpen = ImGui::TreeNode( "think", "%s", status != nullptr ? label.c_str() : ICON_FA_LIGHTBULB " Internal thoughts…" );
 }
 
 void TracyLlmChat::PrintThink( const char* str, size_t size )

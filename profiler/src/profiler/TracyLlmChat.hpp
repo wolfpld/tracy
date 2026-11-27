@@ -17,6 +17,7 @@ class TracyLlmChat
 {
 public:
     static constexpr const char* ForgetMsg = "<removed to save context>";
+    static constexpr const char* StatusTool = "status_update";
 
     enum class TurnRole
     {
@@ -48,7 +49,7 @@ public:
 
 private:
     void NormalScope();
-    void ThinkScope( bool spacing = false );
+    void ThinkScope( bool spacing = false, const char* status = nullptr );
 
     void PrintThink( const char* str, size_t size );
 

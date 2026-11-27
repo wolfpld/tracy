@@ -232,7 +232,6 @@ void TracyLlmChat::Begin()
     m_thinkActive = false;
     m_thinkOpen = false;
     m_thinkIdx = 0;
-    m_roleIdx = 0;
     m_label.clear();
 }
 
@@ -250,7 +249,6 @@ void TracyLlmChat::End()
         }
         NormalScope();
         ImGui::EndGroup();
-        ImGui::PopID();
     }
 }
 
@@ -276,7 +274,6 @@ bool TracyLlmChat::Turn( TurnRole role, std::vector<nlohmann::json>::iterator it
             }
             NormalScope();
             ImGui::EndGroup();
-            ImGui::PopID();
         }
         m_thinkActive = false;
         m_thinkOpen = false;
@@ -288,7 +285,6 @@ bool TracyLlmChat::Turn( TurnRole role, std::vector<nlohmann::json>::iterator it
             ImGui::Spacing();
         }
         int trashIdx = role == TurnRole::Assistant ? (int)TurnRole::Regenerate : (int)TurnRole::Trash;
-        ImGui::PushID( m_roleIdx++ );
         auto diff = m_maxWidth - m_width[(int)role];
         if( ImGui::IsMouseHoveringRect( ImGui::GetCursorScreenPos(), ImGui::GetCursorScreenPos() + ImVec2( m_maxWidth, ImGui::GetTextLineHeight() ) ) )
         {

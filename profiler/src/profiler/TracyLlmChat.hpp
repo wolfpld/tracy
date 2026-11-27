@@ -62,7 +62,6 @@ private:
     bool m_thinkActive;
     bool m_thinkOpen;
     int m_thinkIdx;
-    int m_roleIdx;
 
     Markdown m_markdown;
     std::string m_label;

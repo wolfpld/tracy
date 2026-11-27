@@ -795,6 +795,7 @@ void TracyLlm::AuxWorkerThread()
         {
             auto response = m_api->SendMessage( job->param2, model );
             job->callback2( std::move( response ) );
+            m_view.RequestRefresh();
         }
         lock.lock();
         m_auxBusy = false;

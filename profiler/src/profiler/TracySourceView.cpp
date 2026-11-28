@@ -999,7 +999,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view, WindowConstraints
         if( m_calcInlineStats )
         {
             GatherIpStats( m_symAddr, as, worker, limitView, view, m_source.filename(), m_propagateInlines );
-            GatherAdditionalIpStats( m_symAddr, as, worker, limitView, view, m_source.filename(), m_propagateInlines );
+            GatherAdditionalIpStats( m_symAddr, as, worker, limitView, view, m_source.filename(), m_propagateInlines, m_asm );
         }
         else
         {
@@ -1014,7 +1014,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view, WindowConstraints
                     iptr++;
                 }
             }
-            GatherAdditionalIpStats( m_baseAddr, as, worker, limitView, view, m_source.filename(), m_propagateInlines );
+            GatherAdditionalIpStats( m_baseAddr, as, worker, limitView, view, m_source.filename(), m_propagateInlines, m_asm );
         }
     }
     else
@@ -2089,7 +2089,7 @@ void SourceView::AttachRangeToLlm( size_t start, size_t stop, Worker& worker, Vi
     if( m_calcInlineStats )
     {
         GatherIpStats( m_symAddr, as, worker, limitView, view, nullptr, false );
-        GatherAdditionalIpStats( m_symAddr, as, worker, limitView, view, nullptr, false );
+        GatherAdditionalIpStats( m_symAddr, as, worker, limitView, view, nullptr, false, m_asm );
     }
     else
     {
@@ -2104,7 +2104,7 @@ void SourceView::AttachRangeToLlm( size_t start, size_t stop, Worker& worker, Vi
                 iptr++;
             }
         }
-        GatherAdditionalIpStats( m_baseAddr, as, worker, limitView, view, nullptr, false );
+        GatherAdditionalIpStats( m_baseAddr, as, worker, limitView, view, nullptr, false, m_asm );
     }
 
     char tmp[32];

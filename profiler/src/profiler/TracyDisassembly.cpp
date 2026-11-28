@@ -1,4 +1,5 @@
 #include <capstone.h>
+#include <algorithm>
 #include <string.h>
 
 #include "TracyDisassembly.hpp"
@@ -731,7 +732,7 @@ nlohmann::json JsonDisassembly( uint64_t symAddr, Worker& worker, const View& vi
             iptr++;
         }
     }
-    GatherAdditionalIpStats( symAddr, as, worker, false, view, nullptr, false );
+    GatherAdditionalIpStats( symAddr, as, worker, false, view, nullptr, false, data.lines );
 
     char tmp[32];
     sprintf( tmp, "0x%" PRIx64, symAddr );
@@ -864,7 +865,17 @@ void GatherIpStats( uint64_t baseAddr, AddrStatData& as, const Worker& worker, b
     }
 }
 
-void GatherAdditionalIpStats( uint64_t baseAddr, AddrStatData& as, Worker& worker, bool limitView, const View& view, const char* filename, bool propagateInlines )
+// Child samples are stored at the address of the frame, which lies inside the call instruction (the last byte of it, for
+// lookup addresses) and not necessarily at its start. The disassembly is keyed by instruction start.
+static uint64_t InstructionContaining( const std::vector<AsmLine>& lines, uint64_t addr )
+{
+    auto it = std::upper_bound( lines.begin(), lines.end(), addr, []( uint64_t a, const AsmLine& l ) { return a < l.addr; } );
+    if( it == lines.begin() ) return addr;
+    --it;
+    return addr < it->addr + it->len ? it->addr : addr;
+}
+
+void GatherAdditionalIpStats( uint64_t baseAddr, AddrStatData& as, Worker& worker, bool limitView, const View& view, const char* filename, bool propagateInlines, const std::vector<AsmLine>& lines )
 {
     if( !worker.AreSymbolSamplesReady() ) return;
     auto sym = worker.GetSymbolData( baseAddr );
@@ -881,17 +892,18 @@ void GatherAdditionalIpStats( uint64_t baseAddr, AddrStatData& as, Worker& worke
             if( it == cp->end() ) continue;
             auto end = std::lower_bound( it, cp->end(), range.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
             const auto ccnt = uint64_t( end - it );
-            auto eit = as.ipCountAsm.find( ip );
+            const auto insn = InstructionContaining( lines, ip );
+            auto eit = as.ipCountAsm.find( insn );
             if( eit == as.ipCountAsm.end() )
             {
-                as.ipCountAsm.emplace( ip, AddrStat { 0, ccnt } );
+                eit = as.ipCountAsm.emplace( insn, AddrStat { 0, ccnt } ).first;
             }
             else
             {
                 eit->second.ext += ccnt;
             }
             as.ipTotalAsm.ext += ccnt;
-            if( as.ipMaxAsm.ext < ccnt ) as.ipMaxAsm.ext = ccnt;
+            if( as.ipMaxAsm.ext < eit->second.ext ) as.ipMaxAsm.ext = eit->second.ext;
 
             if( filename )
             {
@@ -934,17 +946,18 @@ void GatherAdditionalIpStats( uint64_t baseAddr, AddrStatData& as, Worker& worke
             auto cp = worker.GetChildSamples( ip );
             if( !cp ) continue;
             const auto ccnt = cp->size();
-            auto eit = as.ipCountAsm.find( ip );
+            const auto insn = InstructionContaining( lines, ip );
+            auto eit = as.ipCountAsm.find( insn );
             if( eit == as.ipCountAsm.end() )
             {
-                as.ipCountAsm.emplace( ip, AddrStat { 0, ccnt } );
+                eit = as.ipCountAsm.emplace( insn, AddrStat { 0, ccnt } ).first;
             }
             else
             {
                 eit->second.ext += ccnt;
             }
             as.ipTotalAsm.ext += ccnt;
-            if( as.ipMaxAsm.ext < ccnt ) as.ipMaxAsm.ext = ccnt;
+            if( as.ipMaxAsm.ext < eit->second.ext ) as.ipMaxAsm.ext = eit->second.ext;
 
             if( filename )
             {

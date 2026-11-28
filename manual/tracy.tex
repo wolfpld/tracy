@@ -4994,9 +4994,13 @@ Stack frame location may be displayed in the following number of ways, depending
 \begin{itemize}
 \item \emph{Source code} -- displays source file and line number associated with the frame.
 \item \emph{Entry point} -- source code at the beginning of the function containing selected frame, or function call place in case of inline frames.
-\item \emph{Return address} -- shows return address, which you may use to pinpoint the exact instruction in the disassembly.
+\item \emph{Return address} -- shows the address stored in the frame, which you may use to pinpoint the exact instruction in the disassembly. See the note below about what this address is.
 \item \emph{Symbol address} -- displays begin address of the function containing the frame address.
 \end{itemize}
+
+\paragraph{Frame addresses}
+\label{callstackaddresses}
+Tracy stores, for every frame, an address that lies inside the instruction which is executing in that frame (a \emph{lookup address}, the same notion as the address gdb uses to find the source location of a frame). For the frame that was interrupted (the first frame of a sample, or a frame interrupted by a signal) this is the exact instruction pointer. For every other frame, which is suspended in a call, it is the return address minus one, so that it points inside the call instruction. Looking the return address up directly would attribute the code that follows the call (for example inlined destructors of temporaries) to the caller, or even attribute a call that ends a function to the next function. As a consequence, the address displayed for a caller frame is one lower than the one displayed by a debugger. Traces recorded before this change hold the addresses reported by the unwinder, which are return addresses.
 
 In some cases, it may not be possible to decode stack frame addresses correctly. Such frames will be presented with a dimmed \enquote{\texttt{[ntdll.dll]}} name of the image containing the frame address, or simply \enquote{\texttt{[unknown]}} if the profiler cannot retrieve even this information. Additionally, \enquote{\texttt{[kernel]}} is used to indicate unknown stack frames within the operating system's internal routines.
 

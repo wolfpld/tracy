@@ -150,6 +150,8 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
                     auto trace = (uint64_t*)tracy_malloc( ( 1 + sz ) * sizeof( uint64_t ) );
                     memcpy( trace, &sz, sizeof( uint64_t ) );
                     memcpy( trace+1, sw->stack, sizeof( uint64_t ) * sz );
+                    // The first address is the instruction that was executing, the following ones are return addresses
+                    for( uint64_t i=2; i<=sz; i++ ) trace[i] = CallstackLookupAddress( trace[i] );
                     TracyLfqPrepare( QueueType::CallstackSample );
                     MemWrite( &item->callstackSampleFat.time, int64_t( sw->eventTimeStamp ) );
                     MemWrite( &item->callstackSampleFat.thread, sw->stackThread );
@@ -1355,14 +1357,25 @@ static uint64_t* GetCallstackBlock( uint64_t cnt, RingBuffer& ring, uint64_t off
     }
 #endif
 
+    // The callchain is made of segments (kernel, user), each one introduced by a PERF_CONTEXT_* marker. The first address of a
+    // segment is the instruction that was executing when the segment was entered, and stays exact. The following ones are
+    // return addresses, which are moved into the call instruction (see the contract in TracyCallstack.h).
+    // Note: the first user address of a thread that was in the kernel is the instruction after the system call instruction when
+    // it entered through a system call. It is kept as is, which is the exact address for a page fault or an interrupt.
+    uint64_t out = 0;
+    bool isReturnAddress = false;       // the first address after a marker is the instruction that was executing
     for( uint64_t j=1; j<=cnt; j++ )
     {
-        if( trace[j] >= (uint64_t)-4095 )       // PERF_CONTEXT_MAX
+        const auto addr = trace[j];
+        if( addr >= (uint64_t)-4095 )   // PERF_CONTEXT_MAX
         {
-            memmove( trace+j, trace+j+1, sizeof( uint64_t ) * ( cnt - j ) );
-            cnt--;
+            isReturnAddress = false;
+            continue;
         }
+        trace[1+out++] = ( isReturnAddress && addr != 0 ) ? CallstackLookupAddress( addr ) : addr;
+        isReturnAddress = true;
     }
+    cnt = out;
 
     memcpy( trace, &cnt, sizeof( uint64_t ) );
     return trace;

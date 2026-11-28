@@ -1,4 +1,5 @@
 #include "TracyImGui.hpp"
+#include "TracyPlotMapping.hpp"
 #include "TracyPrint.hpp"
 #include "TracyTimelineContext.hpp"
 #include "TracyTimelineItemPlot.hpp"
@@ -87,6 +88,12 @@ void TimelineItemPlot::HeaderTooltip( const char* label ) const
     {
         TextFocused( "D/s (10s):", RealToString( double( std::distance( it, m_plot->data.end() ) ) / tr10 * 1000000000ll ) );
     }
+    const auto mapping = m_view.GetPlotMapping( m_plot );
+    if( mapping != PlotMapping::Linear )
+    {
+        ImGui::Separator();
+        TextFocused( "Y-axis scale:", PlotMappingName( mapping ) );
+    }
     ImGui::EndTooltip();
 }
 
@@ -97,7 +104,16 @@ void TimelineItemPlot::HeaderExtraContents( const TimelineContext& ctx, int offs
 
     char tmp[128];
     sprintf( tmp, "(y-range: %s, visible data points: %s)", FormatPlotValue( m_plot->rMax - m_plot->rMin, m_plot->format ), RealToString( m_plot->num ) );
-    draw->AddText( ctx.wpos + ImVec2( ty * 1.5f + labelWidth, offset ), 0xFF226E6E, tmp );
+    const auto pos = ctx.wpos + ImVec2( ty * 1.5f + labelWidth, offset );
+    draw->AddText( pos, 0xFF226E6E, tmp );
+
+    const auto mapping = m_view.GetPlotMapping( m_plot );
+    if( mapping != PlotMapping::Linear )
+    {
+        char scale[64];
+        snprintf( scale, sizeof( scale ), "[%s scale]", PlotMappingName( mapping ) );
+        draw->AddText( pos + ImVec2( ImGui::CalcTextSize( tmp ).x + ty * 0.5f, 0 ), HeaderColor(), scale );
+    }
 }
 
 int64_t TimelineItemPlot::RangeBegin() const
@@ -118,6 +134,20 @@ bool TimelineItemPlot::DrawContents( const TimelineContext& ctx, int& offset )
 void TimelineItemPlot::DrawFinished()
 {
     m_draw.clear();
+}
+
+void TimelineItemPlot::DrawExtraPopupItems()
+{
+    if( ImGui::BeginMenu( "Y-axis scale" ) )
+    {
+        const auto current = m_view.GetPlotMapping( m_plot );
+        for( uint8_t i=0; i<(uint8_t)PlotMapping::Count; i++ )
+        {
+            const auto mapping = (PlotMapping)i;
+            if( ImGui::MenuItem( PlotMappingName( mapping ), nullptr, current == mapping ) ) m_view.SetPlotMapping( m_plot, mapping );
+        }
+        ImGui::EndMenu();
+    }
 }
 
 void TimelineItemPlot::Preprocess( const TimelineContext& ctx, TaskDispatch& td, bool visible, int yPos )

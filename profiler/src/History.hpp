@@ -7,8 +7,8 @@
 #include <unordered_map>
 #include <vector>
 
-// Persisted connection history, stored in history.json in the profiler's save
-// directory.
+// Persisted "recently used" lists, stored together in a single history.json
+// in the profiler's save directory.
 class History
 {
 public:
@@ -21,6 +21,10 @@ public:
     void CountConnection( const std::string& address );
     void EraseConnection( size_t idx );
 
+    // Trace files that were opened or saved, most recent first.
+    const std::vector<std::string>& RecentTraces() const { return m_recentTraces; }
+    void RecordTrace( const char* path );
+
 private:
     void Load();
     void Save() const;
@@ -30,6 +34,7 @@ private:
 
     std::unordered_map<std::string, uint64_t> m_connectionsMap;
     std::vector<std::unordered_map<std::string, uint64_t>::const_iterator> m_connectionsVec;
+    std::vector<std::string> m_recentTraces;
 };
 
 #endif
